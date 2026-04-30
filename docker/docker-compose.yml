@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: feedback-plugin-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: feedback_plugin
+      POSTGRES_USER: feedback_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-feedback_secure_pass_2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - feedback-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedback_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for rate limiting & sessions
+  redis:
+    image: redis:7-alpine
+    container_name: feedback-plugin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - feedback-network
+    command: redis-server --appendonly yes
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: feedback-plugin-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: feedback_plugin
+      DB_USER: feedback_user
+      DB_PASSWORD: ${DB_PASSWORD:-feedback_secure_pass_2024}
+      REDIS_URL: redis://redis:6379
+      CANVAS_URL: ${CANVAS_URL:-http://localhost:3000}
+      TOOL_URL: ${TOOL_URL:-http://localhost:3001}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET}
+      LTI_CLIENT_ID: ${LTI_CLIENT_ID:-feedback-plugin-client}
+      LTI_DEPLOYMENT_ID: ${LTI_DEPLOYMENT_ID:-feedback-plugin-deployment}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    networks:
+      - feedback-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (built and served by backend in production, or separate)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${API_URL:-http://localhost:3001}
+    container_name: feedback-plugin-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - feedback-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: feedback-plugin-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@unab.cl
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - feedback-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  feedback-network:
+    driver: bridge
