@@ -1,16 +1,64 @@
+# =============================================================================
+# Plugin Feedback - Archivo de Variables de Entorno
+# Copia este archivo como ".env" y completa los valores según tu entorno.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Canvas LMS Configuration
+# -----------------------------------------------------------------------------
+# URL base de la instancia de Canvas.
+# Para desarrollo local con Docker: http://localhost:8080
+# Para producción: https://canvas.tu-institucion.edu
 VITE_CANVAS_BASE_URL=https://canvas.instructure.com
+
+# Token de acceso a la API de Canvas (requiere rol de administrador o profesor).
+# Se obtiene en Canvas: Account > Settings > New Access Token.
+# Dejar vacío si usas modo Mock o Canvas Local con Docker.
 VITE_CANVAS_ACCESS_TOKEN=your_token_here
+
+# -----------------------------------------------------------------------------
+# Modo de Ejecución
+# -----------------------------------------------------------------------------
+# Si es "true", usa datos simulados en memoria (no requiere Canvas ni PostgreSQL).
+# Ideal para desarrollo y pruebas.
+# Si es "false", se conecta a Canvas real y a la base de datos.
+# Valores válidos: true | false
 VITE_USE_MOCK_DATA=true
 
-# Database Configuration (PostgreSQL)
+# -----------------------------------------------------------------------------
+# Base de Datos (PostgreSQL)
+# -----------------------------------------------------------------------------
+# Solo requerido si VITE_USE_MOCK_DATA=false.
+# Si no hay conexión disponible, el sistema cambia automáticamente a modo Mock.
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=password
 DB_NAME=feedback_plugin_db
 DB_PORT=5432
 
-# Security
+# -----------------------------------------------------------------------------
+# Seguridad
+# -----------------------------------------------------------------------------
+# Clave de encriptación AES-256 para proteger datos sensibles
+# (tokens LTI, configuraciones de IA, etc.) almacenados en la base de datos.
+# Genera una clave segura de 64 caracteres hexadecimales.
+# Ejemplo: openssl rand -hex 32
 ENCRYPTION_KEY=d8f6e2a1b9c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9
 
-# AI Configuration
+# -----------------------------------------------------------------------------
+# Inteligencia Artificial - Google Gemini
+# -----------------------------------------------------------------------------
+# API Key de Google Generative AI (Gemini).
+# Obtén una gratuitamente en: https://aistudio.google.com/app/apikey
+# Requerida para la generación de feedback personalizado con IA.
 GEMINI_API_KEY=YOUR_API_KEY_HERE
+
+# -----------------------------------------------------------------------------
+# Configuración LTI 1.3 (Canvas Local Docker o LTI real)
+# -----------------------------------------------------------------------------
+# Estos valores se autocompletan automáticamente al usar Canvas Local con Docker.
+# En modo Mock no son necesarios.
+# LTI_CLIENT_ID=
+# CANVAS_OIDC_URL=
+# LTI_REDIRECT_URI=
+# FRONTEND_URL=
