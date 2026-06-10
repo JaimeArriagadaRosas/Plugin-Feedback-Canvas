@@ -7,7 +7,7 @@ import EncryptionService from '../servicios/EncryptionService.js';
 export default class TokenRepository {
   async getActiveKey(service) {
     const res = await db.query(
-      'SELECT api_key_encriptada FROM tokens_ia WHERE servicio = $1 AND activo = TRUE',
+      'SELECT api_key_encriptada FROM Llaves_API_IA WHERE servicio = $1 AND activo = TRUE',
       [service]
     );
     
@@ -30,24 +30,35 @@ export default class TokenRepository {
     // Encriptar antes de guardar en la DB
     const encryptedKey = EncryptionService.encrypt(plainKey);
     
-    // Usar UPSERT: insertar o actualizar si ya existe
-    const res = await db.query(
-      `INSERT INTO tokens_ia (servicio, api_key_encriptada, activo) 
-       VALUES ($1, $2, TRUE) 
-       ON CONFLICT (servicio) 
-       DO UPDATE SET 
-         api_key_encriptada = EXCLUDED.api_key_encriptada,
-         activo = TRUE,
-         fecha_actualizacion = NOW()
-       RETURNING id`,
-      [normalizedService, encryptedKey]
+    // Consultar si la llave ya existe para el servicio dado que no hay índice único
+    const existing = await db.query(
+      'SELECT id FROM Llaves_API_IA WHERE servicio = $1',
+      [normalizedService]
     );
+
+    let res;
+    if (existing.rows.length > 0) {
+      res = await db.query(
+        `UPDATE Llaves_API_IA 
+         SET api_key_encriptada = $1, activo = TRUE, ultima_verificacion = NOW() 
+         WHERE servicio = $2 
+         RETURNING id`,
+        [encryptedKey, normalizedService]
+      );
+    } else {
+      res = await db.query(
+        `INSERT INTO Llaves_API_IA (servicio, api_key_encriptada, activo, ultima_verificacion) 
+         VALUES ($1, $2, TRUE, NOW()) 
+         RETURNING id`,
+        [normalizedService, encryptedKey]
+      );
+    }
     
     return res.rows[0];
   }
 
   async deactivateKey(id) {
-    await db.query('UPDATE tokens_ia SET activo = FALSE WHERE id = $1', [id]);
+    await db.query('UPDATE Llaves_API_IA SET activo = FALSE WHERE id = $1', [id]);
     return true;
   }
 }

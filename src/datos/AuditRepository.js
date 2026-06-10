@@ -7,7 +7,7 @@ export default class AuditRepository {
   static async log(userId, action, details, ip = '0.0.0.0') {
     try {
       await db.query(
-        'INSERT INTO logs_auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)',
         [userId, action, details, ip]
       );
     } catch (error) {
@@ -16,7 +16,7 @@ export default class AuditRepository {
   }
 
   async getLogs(limit = 100) {
-    const res = await db.query('SELECT * FROM logs_auditoria ORDER BY fecha DESC LIMIT $1', [limit]);
+    const res = await db.query('SELECT * FROM Logs_Auditoria ORDER BY fecha DESC LIMIT $1', [limit]);
     return res.rows;
   }
 }
