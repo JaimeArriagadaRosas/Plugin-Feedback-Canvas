@@ -2,13 +2,20 @@
  * Controlador de Configuración (RF55, RF56)
  */
 export default class ConfigController {
-  constructor(iaConfigManager) {
+  constructor(iaConfigManager, configRepo) {
     this.iaConfigManager = iaConfigManager;
+    this.configRepo = configRepo;
   }
 
   async setIAModel(req, res, next) {
     try {
-      const { servicio, modelo } = req.body;
+      const { servicio, modelo, temperatura, longitud_maxima, endpoint_api } = req.body;
+      
+      // Update config table
+      if (this.configRepo) {
+        await this.configRepo.saveConfigIA(modelo, temperatura, longitud_maxima, endpoint_api, req.user?.id || 1);
+      }
+      
       const config = await this.iaConfigManager.updateServiceStatus(servicio, true);
       res.json({ exito: true, mensaje: `Modelo cambiado a ${modelo}`, data: config });
     } catch (error) {

@@ -147,7 +147,7 @@ export default function AdminPanel({ onExit }) {
     }
   };
 
-  const handleSaveMotorConfig = () => {
+  const handleSaveMotorConfig = async () => {
     setValidationError("");
     setSaveSuccess(false);
 
@@ -171,9 +171,28 @@ export default function AdminPanel({ onExit }) {
       return;
     }
 
-    // Si pasa todas las validaciones
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 4000);
+    try {
+      const response = await fetch('/api/config/ia-model', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          servicio: model.toLowerCase(),
+          modelo: model,
+          temperatura: tempNum,
+          longitud_maxima: maxTokens,
+          endpoint_api: endpoint
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar la configuración de IA");
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 4000);
+    } catch (e) {
+      setValidationError(e.message);
+    }
   };
 
   const handleSaveTokenConfig = async () => {

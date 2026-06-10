@@ -87,6 +87,7 @@ const styles = {
 
 export default function ApprovalModal({ feedback, onConfirm, onClose }) {
   const [now, setNow] = useState("");
+  const [rating, setRating] = useState(0);
 
   useEffect(() => {
     const d = new Date();
@@ -123,11 +124,25 @@ export default function ApprovalModal({ feedback, onConfirm, onClose }) {
             </div>
           </div>
         </div>
+        <div style={{ padding: "0 20px 10px 20px", fontSize: 13, fontWeight: "bold" }}>
+          ¿Qué tan útil o preciso te parece este feedback generado por IA?
+          <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
+            {[1, 2, 3, 4, 5].map(star => (
+              <span 
+                key={star} 
+                style={{ cursor: "pointer", fontSize: "20px", color: star <= rating ? "#f1c40f" : "#ccc" }}
+                onClick={() => setRating(star)}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+        </div>
         <div style={{ padding: "0 20px", fontSize: 11, color: "#666" }}>
           El feedback se guarda como comentario de rúbrica en Canvas. Se registran fecha, hora e ID de usuario en BD local.
         </div>
         <div style={styles.footer}>
-          <button style={styles.btnConfirm} onClick={onConfirm}>Confirmar Aprobación</button>
+          <button style={styles.btnConfirm} onClick={() => onConfirm(rating)}>Confirmar Aprobación</button>
           <button style={styles.btnCancel} onClick={onClose}>Cancelar</button>
         </div>
       </div>

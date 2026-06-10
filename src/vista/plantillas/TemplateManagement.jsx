@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import WizardProgress from "../cursos/WizardProgress";
 import StatusFooter from "../cursos/StatusFooter";
 import TemplateEditor from "./TemplateEditor";
@@ -97,21 +97,42 @@ const styles = {
   }
 };
 
-const MOCK_TEMPLATES = [
-  { id: 1, name: "Plantilla Estándar ISWII", ranges: 3 },
-  { id: 2, name: "Feedback Detallado SD", ranges: 5 },
-  { id: 3, name: "Evaluación TG1", ranges: 2 },
-];
-
 export default function TemplateManagement({ onBack, onNext }) {
-  const [templates, setTemplates] = useState(MOCK_TEMPLATES);
+  const [templates, setTemplates] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch('/api/templates', {
+        headers: { 'Authorization': 'Bearer dev-token' }
+      });
+      const result = await response.json();
+      if (result.exito && result.data) {
+        setTemplates(result.data.map(t => ({
+          id: t.id,
+          name: t.nombre,
+          ranges: 1, // simplified representation
+          contenido: t.contenido,
+          rango: t.rango
+        })));
+      }
+    } catch (e) {
+      console.error("Error fetching templates:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const filteredTemplates = templates.filter(t => 
-    t.name.toLowerCase().includes(searchTerm.toLowerCase())
+    t.name && t.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (template) => {
@@ -124,13 +145,28 @@ export default function TemplateManagement({ onBack, onNext }) {
     setShowDeleteModal(true);
   };
 
-  const handleSave = (template) => {
-    if (template.id) {
-      setTemplates(templates.map(t => t.id === template.id ? template : t));
-    } else {
-      setTemplates([...templates, { ...template, id: Date.now() }]);
+  const handleSave = async (template) => {
+    try {
+      const method = template.id ? 'PUT' : 'POST';
+      const url = template.id ? `/api/templates/${template.id}` : '/api/templates';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer dev-token' },
+        body: JSON.stringify({
+          nombre: template.name,
+          rango: template.rango || '>=6.0',
+          contenido: template.contenido || 'Feedback content...'
+        })
+      });
+      
+      if (response.ok) {
+        fetchTemplates();
+        setShowEditor(false);
+      }
+    } catch (e) {
+      console.error("Error saving template:", e);
     }
-    setShowEditor(false);
   };
 
   if (showEditor) {
@@ -224,14 +260,22 @@ export default function TemplateManagement({ onBack, onNext }) {
         <WizardProgress currentStep={2} />
       </main>
 
-      <StatusFooter lastSync="10:45:15" count={templates.length} label="Plantillas locales" />
+      <StatusFooter lastSync="10:45:15" count={templates.length} label="Plantillas locales" isConnected={true} />
 
       {showDeleteModal && (
         <DeleteTemplateModal 
           template={currentTemplate} 
-          onConfirm={() => {
-            setTemplates(templates.filter(t => t.id !== currentTemplate.id));
-            setShowDeleteModal(false);
+          onConfirm={async () => {
+            try {
+              await fetch(`/api/templates/${currentTemplate.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer dev-token' }
+              });
+              setTemplates(templates.filter(t => t.id !== currentTemplate.id));
+              setShowDeleteModal(false);
+            } catch (e) {
+              console.error("Error deleting template:", e);
+            }
           }}
           onClose={() => setShowDeleteModal(false)}
         />

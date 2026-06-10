@@ -27,6 +27,10 @@ export default class CanvasService {
     return this._fetch('/courses?enrollment_type=teacher&per_page=50');
   }
 
+  async getStudents(courseId) {
+    return this._fetch(`/courses/${courseId}/users?enrollment_type[]=student&per_page=50`);
+  }
+
   async getCourse(courseId) {
     return this._fetch(`/courses/${courseId}`);
   }

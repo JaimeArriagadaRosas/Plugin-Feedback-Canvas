@@ -16,13 +16,14 @@ import { AppError } from '../middlewares/ErrorHandler.js';
  *  8. Persistencia en BD
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasService, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico) {
+  constructor(iaProvider, canvasService, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
     this.iaProvider = iaProvider;
     this.canvasService = canvasService;
     this.feedbackRepo = feedbackRepo;
     this.templateRepo = templateRepo;
     this.academicHistoryService = academicHistoryService;
     this.validadorAcademico = validadorAcademico;
+    this.configRepo = configRepo;
   }
 
   /**
@@ -85,6 +86,21 @@ export default class FeedbackService {
           }).join('\n\n')
         : null;
 
+      // ── 6.5 Variables de Personalización (BD) ───────────────────────────
+      let activeVariablesText = "";
+      if (this.configRepo) {
+        const configAsignacion = await this.configRepo.getConfigAsignacion(courseId, assignmentId);
+        if (configAsignacion && configAsignacion.variables) {
+          const activeVars = configAsignacion.variables.filter(v => v.variable_activa);
+          if (activeVars.length > 0) {
+            activeVariablesText = "\\nAdicionalmente, ten en cuenta las siguientes variables de personalización solicitadas por el profesor:\\n";
+            activeVars.forEach(v => {
+               activeVariablesText += `- ${v.variable_id} (Relevancia: ${v.ponderacion}%)\\n`;
+            });
+          }
+        }
+      }
+
       // ── 7. Construir Contexto ───────────────────────────────────────────
       const correctCount   = submission.correct_count   ?? questionSet.filter(q => q.is_correct).length;
       const incorrectCount = submission.incorrect_count ?? (questionSet.length - correctCount);
@@ -109,7 +125,8 @@ export default class FeedbackService {
         rubric,
         profile,
         instructionIA: `El estudiante tiene un nivel ${profile.level} y tendencia ${profile.trend}. ` +
-          `La calificación Canvas es ${canvasScore}/100, que equivale a ${chileGrade}/7.0 en la escala chilena (aprobado: ${approved}).`
+          `La calificación Canvas es ${canvasScore}/100, que equivale a ${chileGrade}/7.0 en la escala chilena (aprobado: ${approved}).` +
+          activeVariablesText
       };
 
       const prompt = PromptManager.buildPrompt(template.contenido, context);

@@ -78,6 +78,8 @@ export default class FeedbackController {
     try {
       const { id } = req.params;
       const { nuevoContenido } = req.body;
+      // Actualizar en DB
+      await this.feedbackService.feedbackRepo.updateStatusAndContent(id, 'EDITADO', nuevoContenido);
       res.json({ exito: true, mensaje: 'Feedback editado', data: { id, nuevoContenido } });
     } catch (error) {
       next(error);
@@ -86,9 +88,41 @@ export default class FeedbackController {
 
   async approveAndSend(req, res, next) {
     try {
-      const { feedbackId, courseId, assignmentId, studentId, content } = req.body;
+      const { feedbackId, courseId, assignmentId, studentId, content, rating, grade } = req.body;
+      // Actualizar en DB
+      if (feedbackId) {
+        await this.feedbackService.feedbackRepo.updateStatusAndContent(feedbackId, 'APROBADO', content);
+        if (rating) {
+           await this.feedbackService.feedbackRepo.updateProfesorRating(feedbackId, rating);
+        }
+      }
+      // Enviar a Canvas
       await this.canvasService.postComment(courseId, assignmentId, studentId, content);
-      res.json({ exito: true, mensaje: 'Feedback aprobado y enviado a Canvas SpeedGrader' });
+      
+      if (grade) {
+        await this.canvasService.updateGrade(courseId, assignmentId, studentId, grade);
+      }
+      
+      // Simular Notificación
+      if (feedbackId) {
+        await this.feedbackService.feedbackRepo.saveNotification(
+          studentId, 
+          feedbackId, 
+          `Tienes un nuevo feedback aprobado en el curso ${courseId}`
+        );
+      }
+
+      res.json({ exito: true, mensaje: 'Feedback aprobado y enviado a Canvas SpeedGrader. Notificación enviada.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async rateByStudent(req, res, next) {
+    try {
+      const { feedbackId, rating } = req.body;
+      await this.feedbackService.feedbackRepo.updateEstudianteRating(feedbackId, rating);
+      res.json({ exito: true, mensaje: 'Calificación guardada' });
     } catch (error) {
       next(error);
     }
@@ -97,7 +131,26 @@ export default class FeedbackController {
   async getStudentView(req, res, next) {
     try {
       const { studentId } = req.params;
-      res.json({ exito: true, data: { status: 'Recibido', text: 'Excelente trabajo...' } });
+      // Get all feedback for this student
+      const history = await this.feedbackService.feedbackRepo.findByStudent(studentId, 14852);
+      
+      // Filter only approved ones
+      const approved = history.filter(fb => fb.estado === 'APROBADO' || fb.estado === 'ENVIADO');
+      
+      const assignments = [
+        { id: 101, name: "Control 1: Diagramas de Clase", due: "05/05/2026", score: "6.0", total: "7.0", hasFeedback: false },
+        { id: 102, name: "Proyecto Semestral: Fase 1", due: "12/05/2026", score: "5.5", total: "7.0", hasFeedback: false },
+        { id: 103, name: "Entrega Final: Prototipo", due: "20/05/2026", score: "-", total: "7.0", hasFeedback: false },
+      ];
+
+      // Map approved feedback to assignments
+      approved.forEach(fb => {
+        const assignment = assignments.find(a => a.id == fb.tarea_id) || assignments[0];
+        assignment.hasFeedback = true;
+        assignment.feedback = fb;
+      });
+      
+      res.json({ exito: true, data: assignments });
     } catch (error) {
       next(error);
     }

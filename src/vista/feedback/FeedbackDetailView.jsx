@@ -160,6 +160,49 @@ const styles = {
 export default function FeedbackDetailView({ feedback, onBack }) {
   const [text, setText] = useState(feedback?.feedback || "");
 
+  const handleApprove = async () => {
+    try {
+      const response = await fetch('/api/feedback/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer dev-token' },
+        body: JSON.stringify({
+          feedbackId: feedback.id,
+          courseId: feedback.courseId,
+          assignmentId: feedback.assignmentId,
+          studentId: feedback.studentId,
+          content: text
+        })
+      });
+      const result = await response.json();
+      if (result.exito) {
+        alert("Feedback aprobado y enviado a Canvas.");
+        onBack();
+      } else {
+        alert("Error: " + result.mensaje);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al intentar aprobar el feedback.");
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`/api/feedback/${feedback.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer dev-token' },
+        body: JSON.stringify({ nuevoContenido: text })
+      });
+      const result = await response.json();
+      if (result.exito) {
+        alert("Edición guardada exitosamente.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al guardar edición.");
+    }
+  };
+
   return (
     <div style={styles.wrapper}>
       <header style={styles.header}>
@@ -251,9 +294,9 @@ export default function FeedbackDetailView({ feedback, onBack }) {
                 <strong>Última Sinc. Local:</strong> 11:30:05
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <button style={styles.btnPrimary}>APROBAR Y PUBLICAR EN SPEEDGRADER</button>
-                <button style={styles.btnSecondary}>SOLICITAR RE-GENERACIÓN (IA)</button>
-                <button style={styles.btnTertiary} onClick={onBack}>DESCARTAR Y VOLVER A LISTA</button>
+                <button style={styles.btnPrimary} onClick={handleApprove}>APROBAR Y PUBLICAR EN SPEEDGRADER</button>
+                <button style={styles.btnSecondary} onClick={handleSave}>GUARDAR EDICIÓN (SIN ENVIAR)</button>
+                <button style={styles.btnTertiary} onClick={onBack}>VOLVER A LISTA</button>
               </div>
             </div>
           </div>

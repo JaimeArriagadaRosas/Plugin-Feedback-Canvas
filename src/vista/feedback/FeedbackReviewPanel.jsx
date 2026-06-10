@@ -132,9 +132,7 @@ export default function FeedbackReviewPanel({ onEditFeedback }) {
   const fetchFeedbacks = async () => {
     try {
       const response = await fetch('/api/feedback/list', {
-        headers: {
-          'Authorization': 'Bearer dev-token'
-        }
+        headers: { 'Authorization': 'Bearer dev-token' }
       });
       const result = await response.json();
       if (result.exito && result.data) {
@@ -147,14 +145,68 @@ export default function FeedbackReviewPanel({ onEditFeedback }) {
     }
   };
 
+  const handleApprove = async (rating) => {
+    if (!activeFeedback) return;
+    try {
+      const response = await fetch('/api/feedback/approve', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer dev-token' 
+        },
+        body: JSON.stringify({
+          feedbackId: activeFeedback.id,
+          courseId: activeFeedback.courseId,
+          assignmentId: activeFeedback.assignmentId,
+          studentId: activeFeedback.studentId,
+          content: activeFeedback.feedback,
+          rating: rating || null
+        })
+      });
+      const result = await response.json();
+      if (result.exito) {
+        setShowApprovalModal(false);
+        fetchFeedbacks(); // Refrescar lista para ver el cambio de estado
+      } else {
+        alert("Error: " + result.mensaje);
+      }
+    } catch (e) {
+      console.error("Error al aprobar:", e);
+      alert("Error al intentar aprobar el feedback.");
+    }
+  };
+
   useEffect(() => {
     fetchFeedbacks();
   }, []);
 
+  const handleExportCSV = () => {
+    const header = "Estudiante,Curso,Asignacion,Estado,Calificacion IA,Perfil Academico\n";
+    const rows = filteredFeedbacks.map(fb => 
+      `${fb.student},${fb.courseId},${fb.assignmentId},${fb.status},${fb.grade},${fb.profile}`
+    ).join("\n");
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "reporte_feedbacks.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div style={styles.wrapper}>
       <main style={styles.main}>
-        <h1 style={styles.pageTitle}>PANEL DE REVISIÓN (INTELIGENCIA ACADÉMICA ACTIVA)</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, borderBottom: "2px solid #2d3b45", paddingBottom: "10px" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, textTransform: "uppercase", margin: 0 }}>PANEL DE REVISIÓN (INTELIGENCIA ACADÉMICA ACTIVA)</h1>
+          <button 
+            style={{ padding: "8px 15px", background: "#27ae60", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}
+            onClick={handleExportCSV}
+          >
+            📊 Exportar Reporte CSV
+          </button>
+        </div>
 
         {/* Sección de Filtros (CU23) */}
         <div style={styles.filterSection}>
@@ -286,12 +338,12 @@ export default function FeedbackReviewPanel({ onEditFeedback }) {
         </div>
       </main>
 
-      <StatusFooter lastSync="En Tiempo Real" count={feedbacks.length} label="Análisis Académico Activo" />
+      <StatusFooter lastSync="En Tiempo Real" count={feedbacks.length} label="Análisis Académico Activo" isConnected={true} />
 
       {showApprovalModal && (
         <ApprovalModal 
           feedback={activeFeedback}
-          onConfirm={() => setShowApprovalModal(false)}
+          onConfirm={handleApprove}
           onClose={() => setShowApprovalModal(false)}
         />
       )}

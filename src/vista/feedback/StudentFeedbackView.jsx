@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusFooter from "../cursos/StatusFooter";
 
 const styles = {
@@ -58,81 +58,106 @@ const styles = {
     alignItems: "center",
     gap: "5px",
   },
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: "rgba(0,0,0,0.4)",
-    display: "flex",
-    justifyContent: "flex-end",
-    zIndex: 3000,
-  },
-  panel: {
-    width: "450px",
-    background: "#fff",
-    height: "100%",
-    boxShadow: "-5px 0 15px rgba(0,0,0,0.1)",
+  canvasDocViewer: {
+    flex: 1,
+    background: "#e0e4e7",
     display: "flex",
     flexDirection: "column",
-    animation: "slideIn 0.3s ease-out",
-  },
-  panelHeader: {
-    padding: "20px",
-    background: "#2d3b45",
-    color: "#fff",
-    display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
+    padding: "40px",
+    overflow: "auto",
+  },
+  paper: {
+    width: "100%",
+    maxWidth: "800px",
+    background: "#fff",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    padding: "50px",
+    minHeight: "600px",
+  },
+  canvasSidebar: {
+    width: "350px",
+    background: "#f9f9f9",
+    borderLeft: "1px solid #c7cdd1",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: "-2px 0 10px rgba(0,0,0,0.05)",
+  },
+  sidebarHeader: {
+    padding: "20px",
+    borderBottom: "1px solid #c7cdd1",
   },
   bubble: {
-    background: "#f0f4f7",
+    background: "#fff",
     border: "1px solid #c7cdd1",
-    borderRadius: "8px",
-    padding: "25px",
-    margin: "20px",
-    position: "relative",
+    borderRadius: "4px",
+    padding: "15px",
+    margin: "15px",
   },
   studentHeader: {
     display: "flex",
     alignItems: "center",
-    gap: "15px",
-    marginBottom: "20px",
-    borderBottom: "1px solid #c7cdd1",
-    paddingBottom: "15px",
+    gap: "10px",
+    marginBottom: "10px",
+    borderBottom: "1px solid #eee",
+    paddingBottom: "10px",
   },
   avatar: {
-    width: "50px",
-    height: "50px",
+    width: "40px",
+    height: "40px",
     borderRadius: "50%",
-    background: "#eee",
-    border: "1px solid #ccc",
+    background: "#2d3b45",
+    color: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 24,
+    fontSize: 16,
   },
   feedbackText: {
-    fontSize: 15,
-    lineHeight: "1.7",
+    fontSize: 14,
+    lineHeight: "1.6",
     color: "#333",
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "4px",
-    border: "1px solid #ddd",
-    minHeight: "150px",
+    whiteSpace: "pre-wrap"
   }
 };
 
 export default function StudentFeedbackView({ onExit }) {
   const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [studentRating, setStudentRating] = useState(0);
+  const [ratingSaved, setRatingSaved] = useState(false);
 
-  const assignments = [
-    { id: 1, name: "Control 1: Diagramas de Clase", due: "05/05/2026", score: "6.0", total: "7.0", hasFeedback: true },
-    { id: 2, name: "Taller 2: Casos de Uso", due: "12/05/2026", score: "5.5", total: "7.0", hasFeedback: false },
-    { id: 3, name: "Examen Parcial", due: "20/05/2026", score: "-", total: "7.0", hasFeedback: false },
-  ];
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'details'
+
+  // Para poder probar con distintos estudiantes generados
+  const [studentId, setStudentId] = useState(1);
+
+  useEffect(() => {
+    const fetchStudentView = async () => {
+      try {
+        const response = await fetch(`/api/student/feedback/${studentId}`, {
+          headers: { 'Authorization': 'Bearer dev-token' }
+        });
+        const result = await response.json();
+        if (result.exito && result.data) {
+          setAssignments(result.data);
+        }
+      } catch (e) {
+        console.error("Error fetching student feedback view:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStudentView();
+  }, [studentId]);
+
+  const handleSelectAssignment = (a) => {
+    setSelectedFeedback(a);
+    setStudentRating(a.feedback?.calificacion_estudiante || 0);
+    setRatingSaved(!!a.feedback?.calificacion_estudiante);
+    setViewMode("details");
+  };
 
   return (
     <div style={styles.wrapper}>
@@ -146,17 +171,39 @@ export default function StudentFeedbackView({ onExit }) {
       </style>
       
       <header style={styles.header}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>CALIFICACIONES</h1>
-        <button 
-          style={{ background: "#2d3b45", color: "#fff", border: "none", padding: "8px 20px", borderRadius: "4px", cursor: "pointer" }}
-          onClick={onExit}
-        >
-          Cerrar Vista Estudiante
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{viewMode === 'list' ? 'CALIFICACIONES' : 'DETALLES DE LA ENTREGA'}</h1>
+          {viewMode === 'list' && (
+            <select value={studentId} onChange={(e) => setStudentId(Number(e.target.value))} style={{ padding: "5px" }}>
+              <option value={1}>Simular como Estudiante 1</option>
+              <option value={2}>Simular como Estudiante 2</option>
+              <option value={3}>Simular como Estudiante 3</option>
+              <option value={4}>Simular como Estudiante 4</option>
+            </select>
+          )}
+        </div>
+        <div>
+          {viewMode === 'details' && (
+            <button 
+              style={{ background: "#fff", color: "#2d3b45", border: "1px solid #c7cdd1", padding: "8px 20px", borderRadius: "4px", cursor: "pointer", marginRight: "10px" }}
+              onClick={() => { setViewMode("list"); setSelectedFeedback(null); fetchStudentView(); }}
+            >
+              Volver a Calificaciones
+            </button>
+          )}
+          <button 
+            style={{ background: "#2d3b45", color: "#fff", border: "none", padding: "8px 20px", borderRadius: "4px", cursor: "pointer" }}
+            onClick={onExit}
+          >
+            Cerrar Vista Estudiante
+          </button>
+        </div>
       </header>
 
-      <main style={styles.main}>
-        <div style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>
+      <main style={{ ...styles.main, padding: viewMode === 'details' ? 0 : "30px", display: viewMode === 'details' ? "flex" : "block" }}>
+        {viewMode === 'list' ? (
+          <div>
+            <div style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>
           ISWII - Sección 1: Ingeniería de Software II
         </div>
 
@@ -183,9 +230,9 @@ export default function StudentFeedbackView({ onExit }) {
                   {a.hasFeedback && (
                     <button 
                       style={styles.feedbackBtn}
-                      onClick={() => setSelectedFeedback(a)}
+                      onClick={() => handleSelectAssignment(a)}
                     >
-                      <span>💬</span> Ver Feedback UNIDA
+                      <span>💬</span> Ver Entrega y Feedback
                     </button>
                   )}
                 </td>
@@ -198,52 +245,87 @@ export default function StudentFeedbackView({ onExit }) {
           <strong>Nota del Mockup:</strong> Esta pantalla simula la vista de "Calificaciones" de un estudiante en Canvas. 
           El feedback adaptativo generado por el plugin aparece como un anexo directo a la tarea calificada.
         </div>
-      </main>
-
-      {/* Feedback Side Panel */}
-      {selectedFeedback && (
-        <div style={styles.overlay} onClick={() => setSelectedFeedback(null)}>
-          <div style={styles.panel} onClick={e => e.stopPropagation()}>
-            <div style={styles.panelHeader}>
-              <div style={{ fontWeight: "700" }}>DETALLE DE FEEDBACK UNIDA</div>
-              <button 
-                style={{ background: "none", border: "none", color: "#fff", fontSize: "20px", cursor: "pointer" }}
-                onClick={() => setSelectedFeedback(null)}
-              >
-                ✕
-              </button>
-            </div>
+        </div>
+        ) : (
+          /* PANTALLA DIVIDIDA: DETALLES DE LA ENTREGA (Simulación de Canvas) */
+          <>
+            <section style={styles.canvasDocViewer}>
+              <div style={styles.paper}>
+                <h2>Entrega: {selectedFeedback?.name}</h2>
+                <p>Estudiante {studentId}</p>
+                <hr style={{ border: "0.5px solid #eee", margin: "20px 0" }}/>
+                <p style={{ lineHeight: "1.8", color: "#555" }}>
+                  (El documento del estudiante aparece aquí en el visor de Canvas...)<br/><br/>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+                </p>
+              </div>
+            </section>
             
-            <div style={{ padding: "20px", borderBottom: "1px solid #eee" }}>
-              <div style={{ fontSize: "18px", fontWeight: "700" }}>{selectedFeedback.name}</div>
-              <div style={{ fontSize: "14px", color: "#666" }}>Calificación: {selectedFeedback.score} / {selectedFeedback.total}</div>
-            </div>
+            <section style={styles.canvasSidebar}>
+              <div style={styles.sidebarHeader}>
+                <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "5px" }}>Detalles de la Entrega</div>
+                <div style={{ fontSize: "14px", color: "#666" }}>Calificación: <strong>{selectedFeedback?.score} / {selectedFeedback?.total}</strong></div>
+              </div>
 
-            <div style={styles.bubble}>
-              <div style={styles.studentHeader}>
-                <div style={styles.avatar}>👤</div>
-                <div>
-                  <div style={{ fontSize: "16px", fontWeight: "700" }}>Juan Pérez</div>
-                  <div style={{ fontSize: "12px", color: "#666" }}>Estudiante</div>
+              <div style={{ padding: "15px", fontWeight: "bold", borderBottom: "1px solid #eee" }}>Comentarios de la Tarea</div>
+
+              <div style={styles.bubble}>
+                <div style={styles.studentHeader}>
+                  <div style={styles.avatar}>P</div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: "700" }}>Profesor del Curso</div>
+                    <div style={{ fontSize: "11px", color: "#666" }}>
+                      {selectedFeedback?.feedback ? new Date(selectedFeedback.feedback.fecha_generacion).toLocaleString() : ""}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={styles.feedbackText}>
+                  {selectedFeedback?.feedback ? selectedFeedback.feedback.contenido_generado : "Cargando feedback..."}
+                </div>
+
+                <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px dashed #ccc", textAlign: "center" }}>
+                  <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "5px", color: "#0770a3" }}>
+                    ⭐ Valora este feedback (Estudiante)
+                  </div>
+                  <div style={{ display: "flex", gap: "5px", justifyContent: "center" }}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <span 
+                        key={star} 
+                        style={{ cursor: ratingSaved ? "default" : "pointer", fontSize: "28px", color: star <= studentRating ? "#f1c40f" : "#ddd" }}
+                        onClick={async () => {
+                          if (ratingSaved) return;
+                          setStudentRating(star);
+                          try {
+                            await fetch('/api/student/rate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer dev-token' },
+                              body: JSON.stringify({ feedbackId: selectedFeedback.feedback.id, rating: star })
+                            });
+                            setRatingSaved(true);
+                            // Actualizar local
+                            setAssignments(prev => prev.map(a => {
+                              if (a.id === selectedFeedback.id && a.feedback) {
+                                a.feedback.calificacion_estudiante = star;
+                              }
+                              return a;
+                            }));
+                          } catch (e) {
+                            console.error("Error saving rating", e);
+                          }
+                        }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  {ratingSaved && <div style={{ fontSize: "11px", color: "#27ae60", marginTop: "5px" }}>¡Gracias por tu valoración!</div>}
                 </div>
               </div>
-
-              <div style={styles.feedbackText}>
-                Excelente trabajo, Juan Pérez. Tu calificación de 6.0 en este {selectedFeedback.name} muestra un progreso significativo respecto a tus entregas anteriores. ¡Estamos muy contentos con tu mejora, sigue así!
-              </div>
-
-              <div style={{ marginTop: "20px", fontSize: "11px", color: "#666", textAlign: "right", fontStyle: "italic" }}>
-                Generado por IA y aprobado por Prof. Elena Ramírez el 06/05/2026.
-              </div>
-            </div>
-            
-            <div style={{ flex: 1 }} />
-            <div style={{ padding: "20px", background: "#f5f5f5", fontSize: "12px", color: "#888", textAlign: "center" }}>
-              Plugin de Feedback Adaptativo - UNIDA UNAB
-            </div>
-          </div>
-        </div>
-      )}
+            </section>
+          </>
+        )}
+      </main>
 
       <StatusFooter 
         lastSync="16:20:10" 

@@ -8,12 +8,12 @@ const styles = {
     fontSize: 12,
     color: "#2d3b45",
     fontWeight: 600,
-    position: "sticky",
+    position: "fixed",
     bottom: 0,
+    left: 0,
     width: "100%",
-    zIndex: 1000,
+    zIndex: 9999,
     boxSizing: "border-box",
-    marginTop: "auto",
   }
 };
 
@@ -29,7 +29,10 @@ export default function StatusFooter({
 
   return (
     <footer style={styles.statusbar}>
-      {statusMessage} {label}: {count}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <span>{statusMessage}</span>
+        <span>{label}: {count}</span>
+      </div>
     </footer>
   );
 }

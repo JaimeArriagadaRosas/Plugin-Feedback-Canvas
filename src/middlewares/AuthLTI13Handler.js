@@ -10,9 +10,9 @@ export const AuthLTI13Handler = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.lti_token;
 
-    // Simulación de roles para desarrollo/mocks
-    if (process.env.NODE_ENV !== 'production') {
-      const mockRole = req.headers['x-mock-role'];
+    // Simulación de roles para desarrollo/mocks (SOLO si se eligió usar datos mock)
+    if (process.env.VITE_USE_MOCK_DATA === 'true') {
+      const mockRole = req.headers['x-mock-role'] || process.env.MOCK_USER_ROLE;
       if (mockRole || token === 'dev-token') {
         const roles = {
           admin: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator'],
@@ -40,11 +40,20 @@ export const AuthLTI13Handler = async (req, res, next) => {
     }
 
     if (!token) {
-      if (req.path === '/api/lti/login' || req.path === '/api/health') return next();
-      throw new AppError('No autorizado: Token LTI 1.3 ausente', 401);
+      const publicPaths = ['/lti/login', '/lti/callback', '/lti/jwks', '/health', '/config/startup-mode'];
+      if (publicPaths.includes(req.path)) return next();
+      
+      console.error(`[LTI Auth Error] Bloqueado acceso a ${req.path}: No se recibió Token LTI. ¿Se inició el plugin desde Canvas?`);
+      throw new AppError('No autorizado: Token LTI 1.3 ausente. Debe iniciarse desde Canvas LMS.', 401);
     }
 
-    const decoded = await ltiService.verifyToken(token);
+    let decoded;
+    try {
+      decoded = await ltiService.verifyToken(token);
+    } catch (verifyError) {
+      console.error(`[LTI Auth Error] Token inválido o corrupto: ${verifyError.message}`);
+      throw new AppError(`Validación LTI fallida: ${verifyError.message}`, 401);
+    }
     
     req.ltiContext = {
       user: decoded.sub,

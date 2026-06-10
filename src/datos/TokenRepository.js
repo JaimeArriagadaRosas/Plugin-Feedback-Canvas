@@ -7,7 +7,7 @@ import EncryptionService from '../servicios/EncryptionService.js';
 export default class TokenRepository {
   async getActiveKey(service) {
     const res = await db.query(
-      'SELECT api_key_encriptada FROM tokens_ia WHERE servicio = $1 AND activo = TRUE',
+      'SELECT api_key_encriptada FROM Llaves_API_IA WHERE servicio = $1 AND activo = TRUE',
       [service]
     );
     
@@ -32,7 +32,7 @@ export default class TokenRepository {
     
     // Usar UPSERT: insertar o actualizar si ya existe
     const res = await db.query(
-      `INSERT INTO tokens_ia (servicio, api_key_encriptada, activo) 
+      `INSERT INTO Llaves_API_IA (servicio, api_key_encriptada, activo) 
        VALUES ($1, $2, TRUE) 
        ON CONFLICT (servicio) 
        DO UPDATE SET 
@@ -47,7 +47,7 @@ export default class TokenRepository {
   }
 
   async deactivateKey(id) {
-    await db.query('UPDATE tokens_ia SET activo = FALSE WHERE id = $1', [id]);
+    await db.query('UPDATE Llaves_API_IA SET activo = FALSE WHERE id = $1', [id]);
     return true;
   }
 }

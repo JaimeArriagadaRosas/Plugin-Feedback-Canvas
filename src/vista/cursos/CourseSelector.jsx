@@ -137,8 +137,14 @@ export default function CourseSelector({
       setLoading(true);
       setError(null);
       try {
-        const service = new CanvasService(CANVAS_ACCESS_TOKEN, CANVAS_BASE_URL);
-        const data = await service.getCourses();
+        const res = await fetch('/api/courses');
+        const json = await res.json();
+        
+        if (!res.ok || !json.exito) {
+          throw new Error(json.error || 'Error al obtener cursos');
+        }
+
+        const data = json.data || [];
         const filteredCourses = data.filter(c => c.name).map(c => ({
           id: c.id,
           name: c.name,

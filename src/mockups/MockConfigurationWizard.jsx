@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MockCourseSelector from "./MockCourseSelector";
 import AssignmentList from "../vista/cursos/AssignmentList";
 import TemplateManagement from "../vista/plantillas/TemplateManagement";
@@ -63,6 +63,22 @@ export default function MockConfigurationWizard({ onStudentViewChange }) {
   const [view, setView] = useState("wizard"); // "wizard", "review", "detail", "admin", "student"
   const [currentFeedback, setCurrentFeedback] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/config/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.exito && data.role) {
+          setRole(data.role);
+          if (data.role === 'student') {
+            setView("student");
+            if (onStudentViewChange) onStudentViewChange(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [onStudentViewChange]);
 
   const handleCourseSelected = (course) => {
     setSelectedCourse(course);
@@ -93,8 +109,8 @@ export default function MockConfigurationWizard({ onStudentViewChange }) {
 
   return (
     <div className="feedback-plugin-mock-container" style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <div style={{ ...styles.topNav, justifyContent: view !== "wizard" ? "space-between" : "flex-end" }}>
-        {view !== "wizard" ? (
+      <div style={{ ...styles.topNav, justifyContent: view !== "wizard" && role !== 'student' ? "space-between" : "flex-end" }}>
+        {view !== "wizard" && role !== 'student' ? (
           <button
             style={{
               background: "none",
@@ -109,27 +125,28 @@ export default function MockConfigurationWizard({ onStudentViewChange }) {
             ← Volver al Asistente
           </button>
         ) : (
-          <span style={{ color: "#8899a6", fontSize: 11, marginRight: "auto" }}>MODO MOCKUP ACTIVO</span>
+          <span style={{ color: "#8899a6", fontSize: 11, marginRight: "auto" }}>MODO MOCKUP ACTIVO {role ? `(${role.toUpperCase()})` : ''}</span>
         )}
         
-        <button
-          style={styles.menuBtn}
-          onClick={() => setShowMenu(!showMenu)}
-          onBlur={() => setTimeout(() => setShowMenu(false), 200)}
-        >
-          ⋮
-        </button>
+        {role !== 'student' && (
+          <button
+            style={styles.menuBtn}
+            onClick={() => setShowMenu(!showMenu)}
+            onBlur={() => setTimeout(() => setShowMenu(false), 200)}
+          >
+            ⋮
+          </button>
+        )}
 
-        {showMenu && (
+        {showMenu && role !== 'student' && (
           <div style={styles.dropdown}>
-            <button style={styles.dropdownItem} onClick={() => navigateTo("admin")}>
-              <span>⚙️</span> Administración
-            </button>
-            <button style={styles.dropdownItem} onClick={() => navigateTo("review")}>
+            {(role === 'admin' || role === 'teacher') && (
+              <button style={styles.dropdownItem} onClick={() => navigateTo("admin")}>
+                <span>⚙️</span> Administración
+              </button>
+            )}
+            <button style={{ ...styles.dropdownItem, borderBottom: "none" }} onClick={() => navigateTo("review")}>
               <span>📋</span> Panel de Revisión
-            </button>
-            <button style={{ ...styles.dropdownItem, borderBottom: "none" }} onClick={() => navigateTo("student")}>
-              <span>🎓</span> Vista Estudiante
             </button>
           </div>
         )}

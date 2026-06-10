@@ -197,17 +197,41 @@ const styles = {
   }
 };
 
-const MOCK_ASSIGNMENTS = [
-  { id: 101, name: "Control 1: Diagramas de Clase", due: "2026-03-15", rubric: true, template: "Clase Standard", active: true },
-  { id: 102, name: "Proyecto Semestral: Fase 1", due: "2026-04-20", rubric: true, template: "", active: true },
-  { id: 103, name: "Entrega Final: Prototipo", due: "2026-06-01", rubric: true, template: "", active: true },
-];
-
 export default function AssignmentList({ course, onBack, onNext }) {
-  const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
+  const [assignments, setAssignments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await fetch(`/api/courses/${course.id}/assignments`, {
+        headers: { 'Authorization': 'Bearer dev-token' }
+      });
+      const result = await response.json();
+      if (result.exito && result.data) {
+        setAssignments(result.data.map(a => ({
+          id: a.id,
+          name: a.name,
+          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
+          rubric: true, // Assuming mocked to true for now
+          template: a.template || "",
+          active: a.active || false
+        })));
+      }
+    } catch (e) {
+      console.error("Error fetching assignments:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (course && course.id) {
+      fetchAssignments();
+    }
+  }, [course]);
 
   const handleToggle = (assignment) => {
     if (assignment.active) {
@@ -218,11 +242,27 @@ export default function AssignmentList({ course, onBack, onNext }) {
     }
   };
 
-  const updateAssignmentStatus = (id, status) => {
-    setAssignments(assignments.map(a => a.id === id ? { ...a, active: status } : a));
-    if (!status) {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+  const updateAssignmentStatus = async (id, status) => {
+    try {
+      const response = await fetch(`/api/courses/${course.id}/assignments/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer dev-token' },
+        body: JSON.stringify({
+          activo: status,
+          plantilla_id: 1, // Default template or the one selected
+          variables: []
+        })
+      });
+      const result = await response.json();
+      if (result.exito) {
+        setAssignments(assignments.map(a => a.id === id ? { ...a, active: status } : a));
+        if (!status) {
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 3000);
+        }
+      }
+    } catch (e) {
+      console.error("Error updating status:", e);
     }
   };
 
@@ -235,9 +275,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
           TAREAS EVALUABLES CON RÚBRICA ASOCIADA (Curso: {course.name})
         </div>
 
-        <div style={styles.noteBox}>
-          <strong>Nota:</strong> Solo se listan a continuación las tareas con una rúbrica asociada en Canvas. Datos obtenidos mediante API REST.
-        </div>
+
 
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
@@ -305,7 +343,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
         <WizardProgress currentStep={1} />
       </main>
 
-      <StatusFooter lastSync="10:35:12" count={assignments.length} label="Cantidad de tareas" />
+      <StatusFooter lastSync="10:35:12" count={assignments.length} label="Cantidad de tareas" isConnected={true} />
 
       {/* Confirmation Modal (RF40) */}
       {showModal && (
