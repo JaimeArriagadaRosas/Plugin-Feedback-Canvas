@@ -197,14 +197,14 @@ const styles = {
   }
 };
 
-const MOCK_ASSIGNMENTS = [
+const LOCAL_ASSIGNMENTS = [
   { id: 101, name: "Control 1: Diagramas de Clase", due: "2026-03-15", rubric: true, template: "Clase Standard", active: true },
   { id: 102, name: "Proyecto Semestral: Fase 1", due: "2026-04-20", rubric: true, template: "", active: true },
   { id: 103, name: "Entrega Final: Prototipo", due: "2026-06-01", rubric: true, template: "", active: true },
 ];
 
 export default function AssignmentList({ course, onBack, onNext }) {
-  const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
+  const [assignments, setAssignments] = useState(LOCAL_ASSIGNMENTS);
   const [showModal, setShowModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [showToast, setShowToast] = useState(false);

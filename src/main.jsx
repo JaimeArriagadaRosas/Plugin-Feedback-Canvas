@@ -1,19 +1,19 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import ConfigurationWizard from './vista/cursos/ConfigurationWizard'
-import MockAppWrapper from './mockups/MockAppWrapper'
+import LocalAppWrapper from './local/LocalAppWrapper'
 
-const INITIAL_USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === "true";
+const INITIAL_USE_LOCAL_DATA = import.meta.env.VITE_USE_LOCAL_DATA === "true";
 
 function AppRoot() {
-  const [useMockData, setUseMockData] = useState(INITIAL_USE_MOCK_DATA);
+  const [useLocalData, setUseLocalData] = useState(INITIAL_USE_LOCAL_DATA);
 
   return (
     <React.StrictMode>
-      {useMockData ? (
-        <MockAppWrapper />
+      {useLocalData ? (
+        <LocalAppWrapper />
       ) : (
-        <ConfigurationWizard onApiError={() => setUseMockData(true)} />
+        <ConfigurationWizard onApiError={() => setUseLocalData(true)} />
       )}
     </React.StrictMode>
   );

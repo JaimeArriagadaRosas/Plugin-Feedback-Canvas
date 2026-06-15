@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
-import CanvasService from "../../servicios/CanvasService";
-import CanvasServiceLocal from "../../servicios/CanvasService.local";
-import WizardProgress from "./WizardProgress";
-import StatusFooter from "./StatusFooter";
-
-const CANVAS_BASE_URL = import.meta.env.VITE_CANVAS_BASE_URL;
-const CANVAS_ACCESS_TOKEN = import.meta.env.VITE_CANVAS_ACCESS_TOKEN;
+import CanvasServiceLocal from "../servicios/CanvasService.local";
+import WizardProgress from "../vista/cursos/WizardProgress";
+import StatusFooter from "../vista/cursos/StatusFooter";
 
 const styles = {
   wrapper: {
     fontFamily: "'Lato', 'Helvetica Neue', Arial, sans-serif",
     fontSize: 14,
     color: "#2d3b45",
-    background: "transparent",
+    background: "#f5f5f5", // Original local background
     minHeight: "100%",
     display: "flex",
     flexDirection: "column",
@@ -115,78 +111,39 @@ const styles = {
 function SettingsIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96a6.98 6.98 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+      <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96a6.98 6.98 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
     </svg>
   );
 }
 
-export default function CourseSelector({
-  onCourseSelected,
-  userName = "Usuario de Canvas",
-  onApiError
-}) {
+export default function LocalCourseSelector({ onCourseSelected }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [syncTime, setSyncTime] = useState("---");
   const [hoverRow, setHoverRow] = useState(null);
   const [hoverBtn, setHoverBtn] = useState(null);
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const service = new CanvasService(CANVAS_ACCESS_TOKEN, CANVAS_BASE_URL);
-        const data = await service.getCourses();
-        const filteredCourses = data.filter(c => c.name).map(c => ({
-          id: c.id,
-          name: c.name,
-          term: c.course_code || "N/A"
-        }));
-        setCourses(filteredCourses);
-        setSyncTime(new Date().toLocaleTimeString());
-      } catch (err) {
-        console.warn("Error al conectar con la API de Canvas.", err);
-        if (onApiError) {
-          onApiError();
-          return; // Exit early, AppRoot will switch to LocalAppWrapper
-        }
-        try {
-          const localService = new CanvasServiceLocal(CANVAS_ACCESS_TOKEN, CANVAS_BASE_URL);
-          const data = await localService.getCourses();
-          const filteredCourses = data.filter(c => c.name).map(c => ({
-            id: c.id,
-            name: c.name,
-            term: c.course_code || "N/A"
-          }));
-          setCourses(filteredCourses);
-          setSyncTime(new Date().toLocaleTimeString() + " (Local)");
-        } catch (localErr) {
-          setError("Error al conectar con la API de Canvas y no se pudo cargar el entorno local.");
-          console.error(localErr);
-        }
-      } finally {
-        setLoading(false);
-      }
+    const fetchLocals = async () => {
+      const service = new CanvasServiceLocal();
+      const data = await service.getCourses();
+      setCourses(data.map(c => ({ ...c, term: c.course_code })));
+      setSyncTime(new Date().toLocaleTimeString());
+      setLoading(false);
     };
-
-    fetchCourses();
+    fetchLocals();
   }, []);
 
   return (
     <div style={styles.wrapper}>
+      <div style={{ background: "#fff3cd", color: "#856404", padding: "10px", textAlign: "center", borderBottom: "1px solid #ffeeba" }}>
+        <strong>MODO LOCAL</strong> - La API no está disponible actualmente. Usando datos simulados.
+      </div>
       <main style={styles.main}>
-        <h1 style={styles.pageTitle}>CONFIGURACIÓN - SELECCIONAR CURSO</h1>
-
-        {error && (
-          <div style={{ background: "#f8d7da", color: "#721c24", padding: "10px", borderRadius: "4px", marginBottom: "20px", border: "1px solid #f5c6cb" }}>
-            {error}
-          </div>
-        )}
+        <h1 style={styles.pageTitle}>CONFIGURACIÓN</h1>
 
         <p style={styles.sectionHeading}>
-          CURSOS ACTIVOS DE LA API DE CANVAS <span style={styles.sectionHeadingLight}>(Usuario: {userName})</span>
+          CURSOS SIMULADOS <span style={styles.sectionHeadingLight}>(Usuario: Dr. Elena Ramirez)</span>
         </p>
 
         <div style={styles.tableWrapper}>
@@ -195,16 +152,14 @@ export default function CourseSelector({
               <tr>
                 <th style={styles.th}>Nombre del Curso</th>
                 <th style={{ ...styles.th, width: "15%" }}>ID de Canvas</th>
-                <th style={{ ...styles.th, width: "15%" }}>Periodo / Código</th>
+                <th style={{ ...styles.th, width: "15%" }}>Periodo</th>
                 <th style={{ ...styles.th, width: "25%" }}>Acción</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: "30px", textAlign: "center", color: "#666" }}>
-                    Cargando cursos desde la API de Canvas...
-                  </td>
+                  <td colSpan={4} style={{ padding: "30px", textAlign: "center" }}>Cargando simulaciones...</td>
                 </tr>
               ) : (
                 courses.map((course) => (
@@ -215,10 +170,7 @@ export default function CourseSelector({
                     style={{ background: hoverRow === course.id ? "#f9fbfc" : "#fff" }}
                   >
                     <td style={styles.td}>
-                      <button 
-                        style={styles.courseLink}
-                        onClick={() => onCourseSelected(course)}
-                      >
+                      <button style={styles.courseLink} onClick={() => onCourseSelected(course)}>
                         {course.name}
                       </button>
                     </td>
@@ -237,12 +189,7 @@ export default function CourseSelector({
                         >
                           Seleccionar para Aplicar Plugin
                         </button>
-                        <button 
-                          style={styles.btnSettings}
-                          title="Configuración del curso"
-                        >
-                          <SettingsIcon />
-                        </button>
+                        <button style={styles.btnSettings}><SettingsIcon /></button>
                       </div>
                     </td>
                   </tr>
@@ -252,14 +199,10 @@ export default function CourseSelector({
           </table>
         </div>
 
-        <p style={styles.footnote}>
-          Mostrando cursos activos donde usted es el Instructor. Datos obtenidos vía API REST.
-        </p>
-
+        <p style={styles.footnote}>Mostrando cursos simulados para pruebas de diseño.</p>
         <WizardProgress currentStep={0} />
       </main>
-
-      <StatusFooter lastSync={syncTime} count={3} isConnected={!error && courses.length > 0} />
+      <StatusFooter lastSync={syncTime} count={3} isConnected={false} />
     </div>
   );
 }

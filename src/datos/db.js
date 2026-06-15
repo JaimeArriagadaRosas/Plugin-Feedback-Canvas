@@ -6,9 +6,9 @@ dotenv.config();
 const { Pool } = pg;
 
 let pool;
-let isMock = process.env.VITE_USE_MOCK_DATA === 'true' || !process.env.DB_HOST;
+let isLocal = process.env.VITE_USE_LOCAL_DATA === 'true' || !process.env.DB_HOST;
 
-if (!isMock) {
+if (!isLocal) {
   try {
   pool = new Pool({
     host: process.env.DB_HOST,
@@ -25,26 +25,26 @@ if (!isMock) {
     console.error('[DB] Error inesperado:', err.message);
   });
   } catch (error) {
-    console.warn('[DB] No se pudo inicializar el pool de conexiones. Usando modo MOCK.');
-    isMock = true;
+    console.warn('[DB] No se pudo inicializar el pool de conexiones. Usando modo LOCAL.');
+    isLocal = true;
   }
 } else {
-  console.log('[DB] Inicializando base de datos en modo MOCK.');
+  console.log('[DB] Inicializando base de datos en modo LOCAL.');
 }
 
-const mockFeedbacks = [
+const localFeedbacks = [
   { id: 1, estudiante_id: 1, curso_id: 14852, tarea_id: 101, plantilla_id: 1, contenido_generado: "Buen trabajo en la entrega. Presentas una estructura bastante sólida y bien enfocada. Sigue así.", estado: "EDITADO", calificacion_profesor: 4, calificacion_estudiante: null, fecha_generacion: new Date() },
   { id: 2, estudiante_id: 2, curso_id: 14852, tarea_id: 101, plantilla_id: 1, contenido_generado: "Muy buen desarrollo, demuestras un dominio sobresaliente de los conceptos de diseño y análisis.", estado: "APROBADO", calificacion_profesor: 5, calificacion_estudiante: null, fecha_generacion: new Date() },
   { id: 3, estudiante_id: 3, curso_id: 14852, tarea_id: 101, plantilla_id: 1, contenido_generado: "Se requiere revisión urgente de los temas de arquitectura de software para nivelar el desempeño.", estado: "RECHAZADO", calificacion_profesor: null, calificacion_estudiante: null, fecha_generacion: new Date() }
 ];
 
 /**
- * Cliente Mock para desarrollo sin PostgreSQL
+ * Cliente Local para desarrollo sin PostgreSQL
  * Simula respuestas de éxito para que el flujo de orquestación funcione.
  */
-const mockDb = {
+const localDb = {
   query: async (text, params) => {
-    console.log(`[DB-MOCK] Ejecutando: ${text.substring(0, 100)}...`);
+    console.log(`[DB-LOCAL] Ejecutando: ${text.substring(0, 100)}...`);
     
     // 1. Simular búsqueda de plantilla
     if (text.includes('SELECT * FROM Plantilla_Feedback')) {
@@ -89,7 +89,7 @@ const mockDb = {
         nota_chile: params[7] || null,
         aprobado: params[8] !== undefined ? params[8] : null
       };
-      mockFeedbacks.unshift(newFb);
+      localFeedbacks.unshift(newFb);
       return {
         rows: [newFb]
       };
@@ -98,19 +98,19 @@ const mockDb = {
     // 3b. Simular SELECT en Historial_Feedback_Generado
     if (text.includes('SELECT') && text.includes('Historial_Feedback_Generado')) {
       return {
-        rows: mockFeedbacks
+        rows: localFeedbacks
       };
     }
 
     // 3c. Simular UPDATE en Historial_Feedback_Generado (ratings)
     if (text.includes('UPDATE Historial_Feedback_Generado') && text.includes('calificacion_profesor')) {
-       const fb = mockFeedbacks.find(f => f.id == params[1]);
+       const fb = localFeedbacks.find(f => f.id == params[1]);
        if (fb) fb.calificacion_profesor = params[0];
        return { rows: [fb] };
     }
     
     if (text.includes('UPDATE Historial_Feedback_Generado') && text.includes('calificacion_estudiante')) {
-       const fb = mockFeedbacks.find(f => f.id == params[1]);
+       const fb = localFeedbacks.find(f => f.id == params[1]);
        if (fb) fb.calificacion_estudiante = params[0];
        return { rows: [fb] };
     }
@@ -165,16 +165,16 @@ const mockDb = {
 
 export default {
   query: async (text, params) => {
-    if (isMock) return mockDb.query(text, params);
+    if (isLocal) return localDb.query(text, params);
     try {
       return await pool.query(text, params);
     } catch (error) {
       const errorMsg = error.errors ? error.errors.map(e => e.message).join(', ') : error.message;
-      console.warn(`[DB] Error en base de datos real: ${errorMsg}. Cambiando a MOCK.`);
-      isMock = true;
-      return mockDb.query(text, params);
+      console.warn(`[DB] Error en base de datos real: ${errorMsg}. Cambiando a LOCAL.`);
+      isLocal = true;
+      return localDb.query(text, params);
     }
   },
   pool: pool,
-  isMock: () => isMock
+  isLocal: () => isLocal
 };

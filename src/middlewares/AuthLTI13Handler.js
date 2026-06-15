@@ -4,16 +4,16 @@ import { AppError } from './ErrorHandler.js';
 const ltiService = new LTITokenService();
 
 /**
- * Middleware de autenticación LTI 1.3 Mejorado (con soporte para Mocks)
+ * Middleware de autenticación LTI 1.3 Mejorado (con soporte para Locals)
  */
 export const AuthLTI13Handler = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.lti_token;
 
-    // Simulación de roles para desarrollo/mocks
+    // Simulación de roles para desarrollo/locals
     if (process.env.NODE_ENV !== 'production') {
-      const mockRole = req.headers['x-mock-role'];
-      if (mockRole || token === 'dev-token') {
+      const localRole = req.headers['x-local-role'];
+      if (localRole || token === 'dev-token') {
         const roles = {
           admin: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator'],
           teacher: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'],
@@ -21,15 +21,15 @@ export const AuthLTI13Handler = async (req, res, next) => {
         };
         req.ltiContext = { 
           user: 'dev-user', 
-          role: roles[mockRole] || roles.teacher,
+          role: roles[localRole] || roles.teacher,
           courseId: '123'
         };
         return next();
       }
       
-      // En modo mock y sin credenciales específicas, dar acceso de admin por defecto para facilitar pruebas
+      // En modo local y sin credenciales específicas, dar acceso de admin por defecto para facilitar pruebas
       // Esto es solo para desarrollo, nunca para producción
-      if (!token && !mockRole) {
+      if (!token && !localRole) {
         req.ltiContext = { 
           user: 'dev-user-admin', 
           role: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator'],

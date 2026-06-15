@@ -36,7 +36,7 @@ export default class GeminiProvider extends IAProvider {
 
     if (!this.genAI) {
       console.warn("[IA] API Key de Gemini ausente. Usando respuesta simulada.");
-      return this._generateMockResponse();
+      return this._generateLocalResponse();
     }
 
     try {
@@ -58,7 +58,7 @@ export default class GeminiProvider extends IAProvider {
       // Si Gemini devuelve vacío después de los guardrails, usar fallback
       if (!text || text.length < 20) {
         console.warn("[IA] Respuesta vacía o muy corta. Usando fallback.");
-        return this._generateMockResponse();
+        return this._generateLocalResponse();
       }
 
       return text;
@@ -72,7 +72,7 @@ export default class GeminiProvider extends IAProvider {
    * Respuesta de respaldo cuando no hay API Key o Gemini falla.
    * Ahora incluye datos concretos del estudiante para simular una respuesta real.
    */
-  async _generateMockResponse() {
+  async _generateLocalResponse() {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(`[SIMULACIÓN – Sin API Key] El trabajo tiene aspectos relevantes y otros que requieren atención.

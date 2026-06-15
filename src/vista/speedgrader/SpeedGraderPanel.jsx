@@ -131,8 +131,8 @@ const styles = {
   }
 };
 
-// MOCK DATA Fallback
-const MOCK_STUDENTS = [
+// LOCAL DATA Fallback
+const LOCAL_STUDENTS = [
   { id: 1, name: "Juan Pérez", submission: "Análisis de requisitos para el sistema de biblioteca..." },
   { id: 2, name: "María García", submission: "Propuesta de arquitectura basada en microservicios..." },
   { id: 3, name: "Pedro López", submission: "Diagrama de clases detallado con 15 entidades..." },
@@ -140,7 +140,7 @@ const MOCK_STUDENTS = [
 ];
 
 export default function SpeedGraderPanel({ onExit }) {
-  const [students, setStudents] = useState(MOCK_STUDENTS);
+  const [students, setStudents] = useState(LOCAL_STUDENTS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [grade, setGrade] = useState(7.0);
   const [loading, setLoading] = useState(false);

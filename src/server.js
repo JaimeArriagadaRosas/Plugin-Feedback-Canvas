@@ -9,7 +9,7 @@ import { AuthLTI13Handler } from './middlewares/AuthLTI13Handler.js';
 
 // Servicios y Repositorios
 import CanvasService from './servicios/CanvasService.js';
-import CanvasServiceMock from './servicios/CanvasService.mock.js';
+import CanvasServiceLocal from './servicios/CanvasService.local.js';
 import FeedbackService from './servicios/FeedbackService.js';
 import TemplateManager from './servicios/TemplateManager.js';
 import IAConfigManager from './servicios/IAConfigManager.js';
@@ -31,12 +31,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const USE_MOCKS = process.env.VITE_USE_MOCK_DATA === 'true';
+const USE_LOCAL = process.env.VITE_USE_LOCAL_DATA === 'true';
 
-// Middleware para establecer contexto de mock en desarrollo
-const setupMockContext = (req, res, next) => {
-  if (USE_MOCKS) {
-    // En modo mock, establecer contexto de admin por defecto para facilitar pruebas
+// Middleware para establecer contexto de local en desarrollo
+const setupLocalContext = (req, res, next) => {
+  if (USE_LOCAL) {
+    // En modo local, establecer contexto de admin por defecto para facilitar pruebas
     req.ltiContext = { 
       user: 'dev-user-admin', 
       role: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator'],
@@ -54,9 +54,9 @@ const configRepo = new ConfigRepository(db);
 const tokenRepo = new TokenRepository(db);
 const studentRepo = new StudentRepository(db);
 
-// 2. Selección de Servicios (Real vs Mock)
-const canvasService = USE_MOCKS 
-  ? new CanvasServiceMock() 
+// 2. Selección de Servicios (Real vs Local)
+const canvasService = USE_LOCAL 
+  ? new CanvasServiceLocal() 
   : new CanvasService(process.env.VITE_CANVAS_ACCESS_TOKEN, process.env.VITE_CANVAS_BASE_URL);
 
 const iaProvider = new GeminiProvider(process.env.GEMINI_API_KEY);
@@ -89,11 +89,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. Middleware de contexto de mock (debe ir antes de las rutas que lo necesiten)
-app.use('/api', setupMockContext);
+// 4. Middleware de contexto de local (debe ir antes de las rutas que lo necesiten)
+app.use('/api', setupLocalContext);
 
-// 5. AuthLTI13Handler (solo en producción, en modo mock usamos el contexto de mock anterior)
-if (!USE_MOCKS) {
+// 5. AuthLTI13Handler (solo en producción, en modo local usamos el contexto de local anterior)
+if (!USE_LOCAL) {
   app.use('/api', AuthLTI13Handler);
 }
 
@@ -110,7 +110,7 @@ app.use(ErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`
-  🚀 API FEEDBACK PLUGIN - INICIADA ${USE_MOCKS ? '(MODO MOCK ACTIVADO)' : ''}
+  🚀 API FEEDBACK PLUGIN - INICIADA ${USE_LOCAL ? '(MODO LOCAL ACTIVADO)' : ''}
   ----------------------------------
   Puerto: ${PORT}
   API Base: http://localhost:${PORT}/api
