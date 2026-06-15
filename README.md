@@ -30,8 +30,8 @@ Plugin Feedback es una herramienta LTI 1.3 que se integra como plugin externo en
 
 | Capa        | Tecnologia                          |
 |-------------|-------------------------------------|
-| Frontend    | React 18, Vite 5                   |
-| Backend     | Node.js, Express                   |
+| Capa de logica    | React 18, Vite 5              |
+| Capa de visualización     | Node.js, Express      |
 | Base de Datos | PostgreSQL                       |
 | IA          | Google Generative AI (Gemini)      |
 | Integracion | LTI 1.3 (Canvas LMS)               |
