@@ -1,6 +1,6 @@
 VITE_CANVAS_BASE_URL=https://canvas.instructure.com
 VITE_CANVAS_ACCESS_TOKEN=your_token_here
-VITE_USE_MOCK_DATA=true
+VITE_USE_LOCAL_DATA=true
 
 # Database Configuration (PostgreSQL)
 DB_HOST=localhost
