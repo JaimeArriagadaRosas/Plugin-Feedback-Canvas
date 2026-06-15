@@ -314,7 +314,7 @@ SpeedGrader → Pestaña "Settings" (⚙️) → Activa "Feedback Plugin"
 }
 ```
 
-### Cpa de visualización
+### Capa de visualización
 
 ```json
 {
