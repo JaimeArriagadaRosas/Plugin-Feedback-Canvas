@@ -286,7 +286,7 @@ SpeedGrader → Pestaña "Settings" (⚙️) → Activa "Feedback Plugin"
 
 ## Stack Tecnológico
 
-### Backend
+### Capa de lógica
 
 ```json
 {
@@ -314,7 +314,7 @@ SpeedGrader → Pestaña "Settings" (⚙️) → Activa "Feedback Plugin"
 }
 ```
 
-### Frontend
+### Cpa de visualización
 
 ```json
 {
