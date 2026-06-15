@@ -1,10 +1,10 @@
 ﻿import FeedbackService from './src/servicios/FeedbackService.js';
-import CanvasServiceMock from './src/servicios/CanvasService.mock.js';
+import CanvasServiceLocal from './src/servicios/CanvasService.local.js';
 
 async function main() {
   try {
-    const s = new CanvasServiceMock('t','u');
-    console.log('=== Test Canvas Mock ===');
+    const s = new CanvasServiceLocal('t','u');
+    console.log('=== Test Canvas Local ===');
 
     const courses = await s.getCourses();
     console.log('Cursos:', JSON.stringify(courses[0]));

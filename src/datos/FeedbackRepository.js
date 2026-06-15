@@ -1,7 +1,7 @@
 import db from './db.js';
 
 /**
- * Repositorio de Historial de Feedbacks (PostgreSQL + Mock)
+ * Repositorio de Historial de Feedbacks (PostgreSQL + Local)
  */
 export default class FeedbackRepository {
   async save(feedbackData) {

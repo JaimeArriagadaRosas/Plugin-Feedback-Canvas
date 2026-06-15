@@ -1,6 +1,6 @@
 import FeedbackService from '../servicios/FeedbackService.js';
 import GeminiProvider from '../servicios/ia/GeminiProvider.js';
-import CanvasServiceMock from '../servicios/CanvasService.mock.js';
+import CanvasServiceLocal from '../servicios/CanvasService.local.js';
 import FeedbackRepository from '../datos/FeedbackRepository.js';
 import TemplateRepository from '../datos/TemplateRepository.js';
 import StudentRepository from '../datos/StudentRepository.js';
@@ -12,8 +12,8 @@ async function testFlow() {
   console.log('--- TEST DE ORQUESTACIÓN DE FEEDBACK ---');
 
   // 1. Setup
-  const iaProvider      = new GeminiProvider('mock-api-key');
-  const canvasService   = new CanvasServiceMock('token', 'https://canvas.instructure.com');
+  const iaProvider      = new GeminiProvider('local-api-key');
+  const canvasService   = new CanvasServiceLocal('token', 'https://canvas.instructure.com');
   const feedbackRepo    = new FeedbackRepository({});
   const templateRepo    = new TemplateRepository({});
   const studentRepo     = new StudentRepository({});

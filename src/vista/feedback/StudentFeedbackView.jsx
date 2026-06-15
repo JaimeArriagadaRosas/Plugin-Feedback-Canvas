@@ -195,7 +195,7 @@ export default function StudentFeedbackView({ onExit }) {
         </table>
 
         <div style={{ marginTop: "40px", padding: "20px", background: "#f9f9f9", borderRadius: "4px", border: "1px dashed #ccc", fontSize: "13px", color: "#666" }}>
-          <strong>Nota del Mockup:</strong> Esta pantalla simula la vista de "Calificaciones" de un estudiante en Canvas. 
+          <strong>Nota del entorno local:</strong> Esta pantalla simula la vista de "Calificaciones" de un estudiante en Canvas. 
           El feedback adaptativo generado por el plugin aparece como un anexo directo a la tarea calificada.
         </div>
       </main>

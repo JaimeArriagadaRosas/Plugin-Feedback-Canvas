@@ -97,14 +97,14 @@ const styles = {
   }
 };
 
-const MOCK_TEMPLATES = [
+const LOCAL_TEMPLATES = [
   { id: 1, name: "Plantilla Estándar ISWII", ranges: 3 },
   { id: 2, name: "Feedback Detallado SD", ranges: 5 },
   { id: 3, name: "Evaluación TG1", ranges: 2 },
 ];
 
 export default function TemplateManagement({ onBack, onNext }) {
-  const [templates, setTemplates] = useState(MOCK_TEMPLATES);
+  const [templates, setTemplates] = useState(LOCAL_TEMPLATES);
   const [showEditor, setShowEditor] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState(null);
