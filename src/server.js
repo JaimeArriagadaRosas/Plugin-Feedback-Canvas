@@ -11,7 +11,7 @@ import { AuthLTI13Handler } from './middlewares/AuthLTI13Handler.js';
 
 // Servicios y Repositorios
 import CanvasService from './servicios/CanvasService.js';
-import CanvasServiceLocal from './servicios/CanvasService.mock.js';
+import CanvasServiceLocal from './servicios/CanvasService.local.js';
 import FeedbackService from './servicios/FeedbackService.js';
 import TemplateManager from './servicios/TemplateManager.js';
 import IAConfigManager from './servicios/IAConfigManager.js';
@@ -67,18 +67,18 @@ app.use(cookieParser());
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNCIÓN PRINCIPAL DE INICIO DEL SERVIDOR
-// FIX: setupMockContext ELIMINADO — toda la lógica de sesión está en AuthLTI13Handler
+// FIX: setupLocalContext ELIMINADO — toda la lógica de sesión está en AuthLTI13Handler
 // FIX: Encoding UTF-8 corregido en todos los strings
 // ─────────────────────────────────────────────────────────────────────────────
 function startServer() {
   const useLocalData = process.env.USE_LOCAL_DATA === 'true' ||
-                       process.env.VITE_USE_MOCK_DATA === 'true'; // compatibilidad
+                       process.env.VITE_USE_LOCAL_DATA === 'true';
 
   logger.info('Iniciando servidor backend del Plugin Feedback...', {
     port: PORT,
     modo: process.env.STARTUP_MODE || '3',
     useLocalData,
-    localUserRole: process.env.LOCAL_USER_ROLE || process.env.MOCK_USER_ROLE || 'N/A'
+    localUserRole: process.env.LOCAL_USER_ROLE || 'N/A'
   });
 
   // ── 1. Capa de Datos (Repositorios) ──────────────────────────────────────
@@ -89,7 +89,7 @@ function startServer() {
   const studentRepo   = new StudentRepository(db);
 
   logger.info('Repositorios de datos inicializados', {
-    db: db.isMock() ? 'LOCAL (sin PostgreSQL)' : 'PostgreSQL real'
+    db: db.isLocalMode() ? 'LOCAL (sin PostgreSQL)' : 'PostgreSQL real'
   });
 
   // ── 2. Selección de Servicios ─────────────────────────────────────────────
@@ -142,39 +142,40 @@ function startServer() {
     res.json({
       mode: process.env.STARTUP_MODE || '3',
       useLocalData,
-      localRole: process.env.LOCAL_USER_ROLE || process.env.MOCK_USER_ROLE || 'admin',
+      localRole: process.env.LOCAL_USER_ROLE || 'admin',
       initializing: global.isCanvasInitializing === true,
-      dbMode: db.isMock() ? 'local' : 'postgresql',
+      dbMode: db.isLocalMode() ? 'local' : 'postgresql',
       serverTime: new Date().toISOString()
     });
   });
 
   // ── 6. Endpoint de configuración de sesión local ──────────────────────────
-  app.post('/api/config/set-mock-role', (req, res) => {
+  const setLocalRoleHandler = (req, res) => {
     const { role } = req.body;
     if (!role) {
       return res.status(400).json({ exito: false, error: { mensaje: 'Se requiere el campo "role"' } });
     }
 
-    // Soporte para retrocompatibilidad (MOCK_USER_ROLE) y nueva variable (LOCAL_USER_ROLE)
-    process.env.MOCK_USER_ROLE = role;
     process.env.LOCAL_USER_ROLE = role;
     process.env.USE_LOCAL_DATA = 'true';
-    process.env.VITE_USE_MOCK_DATA = 'true';
+    process.env.VITE_USE_LOCAL_DATA = 'true';
 
     res.cookie('dev-token', 'true', { path: '/', httpOnly: false });
     logger.info(`Sesión local configurada mediante API`, { role, ip: req.ip });
     res.json({ exito: true, role, mensaje: `Sesión local establecida como ${role}` });
-  });
+  };
 
-  app.post('/api/config/clear-mock-role', (req, res) => {
+  const clearLocalRoleHandler = (req, res) => {
     process.env.USE_LOCAL_DATA = 'false';
-    process.env.VITE_USE_MOCK_DATA = 'false';
+    process.env.VITE_USE_LOCAL_DATA = 'false';
     res.clearCookie('dev-token');
     res.clearCookie('lti_token');
     logger.info('Sesión local limpiada', { ip: req.ip });
     res.json({ exito: true, mensaje: 'Sesión local eliminada' });
-  });
+  };
+
+  app.post('/api/config/set-local-role', setLocalRoleHandler);
+  app.post('/api/config/clear-local-role', clearLocalRoleHandler);
 
   // ── 7. Endpoint de identidad del usuario ─────────────────────────────────
   app.get('/api/config/me', (req, res) => {
@@ -264,8 +265,8 @@ function startServer() {
     logger.info('═══════════════════════════════════════════════════');
     logger.info(`Puerto interno: ${PORT}`);
     logger.info(`Modo de inicio: ${modeName}`);
-    logger.info(`Base de datos: ${db.isMock() ? 'Datos locales (sin PostgreSQL)' : 'PostgreSQL real'}`);
-    logger.info(`Sesión local: ${useLocalData ? `Activa (rol: ${process.env.LOCAL_USER_ROLE || process.env.MOCK_USER_ROLE || 'admin'})` : 'Inactiva'}`);
+    logger.info(`Base de datos: ${db.isLocalMode() ? 'Datos locales (sin PostgreSQL)' : 'PostgreSQL real'}`);
+    logger.info(`Sesión local: ${useLocalData ? `Activa (rol: ${process.env.LOCAL_USER_ROLE || 'admin'})` : 'Inactiva'}`);
     logger.info('───────────────────────────────────────────────────');
     logger.info('👉 Interfaz de usuario: http://localhost:5173/');
     logger.info(`📋 Logs del backend: ${logger.logFile || 'Solo consola'}`);

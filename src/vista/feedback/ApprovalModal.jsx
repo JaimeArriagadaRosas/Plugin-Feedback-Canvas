@@ -54,7 +54,7 @@ const styles = {
     fontSize: 11,
     background: "#fdfdfd",
   },
-  rubricMock: {
+  rubricLocal: {
     border: "1px solid #ddd",
     padding: "5px",
     marginBottom: "10px",
@@ -113,7 +113,7 @@ export default function ApprovalModal({ feedback, onConfirm, onClose }) {
           <div style={styles.rightCol}>
             <div style={styles.sectionTitle}>DESTINO DEL FEEDBACK (Canvas)</div>
             <div style={styles.canvasPreview}>
-              <div style={styles.rubricMock}>
+              <div style={styles.rubricLocal}>
                 <div style={{ borderBottom: "1px solid #eee", paddingBottom: "2px", marginBottom: "5px", fontWeight: "bold" }}>Sets a new standard</div>
                 <div style={{ fontSize: "9px", color: "#666" }}>Comments:</div>
                 <div style={{ fontWeight: "bold" }}>✓ {feedback?.feedback.substring(0, 50)}...</div>

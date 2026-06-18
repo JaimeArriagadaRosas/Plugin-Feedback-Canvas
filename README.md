@@ -160,7 +160,7 @@ El archivo `.env` guarda información de configuración confidencial.
 3.  Abre el archivo `.env` con cualquier editor de texto.
 4.  Si solo quieres hacer pruebas rápidas locales sin montar Docker ni base de datos, mantén la siguiente variable en `true`:
     ```env
-    VITE_USE_MOCK_DATA=true
+    VITE_USE_LOCAL_DATA=true
     ```
 5.  Si deseas probar la integración de Inteligencia Artificial, agrega tu API Key de IA en la variable correspondiente (por ejemplo: `GEMINI_API_KEY=tu_clave_aqui`).
 

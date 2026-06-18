@@ -215,7 +215,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
           id: a.id,
           name: a.name,
           due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
-          rubric: true, // Assuming mocked to true for now
+          rubric: true, // Assuming set to true for now
           template: a.template || "",
           active: a.active || false
         })));

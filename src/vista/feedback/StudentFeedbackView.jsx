@@ -240,7 +240,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
         </table>
         </div>
         ) : (
-          /* PANTALLA DIVIDIDA: DETALLES DE LA ENTREGA (Simulación de Canvas) */
+          /* PANTALLA DIVIDIDA: DETALLES DE LA ENTREGA (Vista local de Canvas) */
           <>
             <section style={styles.canvasDocViewer}>
               <div style={styles.paper}>
@@ -323,7 +323,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
       <StatusFooter 
         lastSync="16:20:10" 
         count={1} 
-        label="Simulación de Vista de Calificaciones activa" 
+        label="Vista de Calificaciones local activa" 
       />
     </div>
   );

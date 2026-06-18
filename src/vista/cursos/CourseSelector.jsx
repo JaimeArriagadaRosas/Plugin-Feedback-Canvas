@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import CanvasService from "../../servicios/CanvasService";
-import CanvasServiceMock from "../../servicios/CanvasService.mock";
+import CanvasServiceLocal from "../../servicios/CanvasService.local";
 import WizardProgress from "./WizardProgress";
 import StatusFooter from "./StatusFooter";
 
@@ -156,21 +156,21 @@ export default function CourseSelector({
         console.warn("Error al conectar con la API de Canvas.", err);
         if (onApiError) {
           onApiError();
-          return; // Exit early, AppRoot will switch to MockAppWrapper
+          return; // Exit early, AppRoot will switch to LocalAppWrapper
         }
         try {
-          const mockService = new CanvasServiceMock(CANVAS_ACCESS_TOKEN, CANVAS_BASE_URL);
-          const data = await mockService.getCourses();
+          const localService = new CanvasServiceLocal(CANVAS_ACCESS_TOKEN, CANVAS_BASE_URL);
+          const data = await localService.getCourses();
           const filteredCourses = data.filter(c => c.name).map(c => ({
             id: c.id,
             name: c.name,
             term: c.course_code || "N/A"
           }));
           setCourses(filteredCourses);
-          setSyncTime(new Date().toLocaleTimeString() + " (Mock)");
-        } catch (mockErr) {
-          setError("Error al conectar con la API de Canvas y no se pudo cargar el mockup.");
-          console.error(mockErr);
+          setSyncTime(new Date().toLocaleTimeString() + " (Local)");
+        } catch (localErr) {
+          setError("Error al conectar con la API de Canvas y no se pudo cargar la vista local.");
+          console.error(localErr);
         }
       } finally {
         setLoading(false);

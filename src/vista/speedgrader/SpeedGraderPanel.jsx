@@ -131,14 +131,14 @@ const styles = {
   }
 };
 
-// MOCK DATA Fallback
-const MOCK_ASSIGNMENTS = [
+// LOCAL DATA Fallback
+const LOCAL_ASSIGNMENTS = [
   { id: 101, name: "Examen Parcial: Arquitectura de Software", points: 100 },
   { id: 102, name: "Proyecto Final: Sistema de Gestión", points: 100 },
   { id: 103, name: "Control 1: Diagramas de Secuencia", points: 20 }
 ];
 
-const MOCK_STUDENTS = [
+const LOCAL_STUDENTS = [
   { id: 1, name: "Juan Pérez" },
   { id: 2, name: "María García" },
   { id: 3, name: "Pedro López" },
@@ -146,7 +146,7 @@ const MOCK_STUDENTS = [
   { id: 5, name: "Carlos Méndez" }
 ];
 
-const MOCK_SUBMISSIONS = {
+const LOCAL_SUBMISSIONS = {
   101: {
     1: "Análisis de requisitos para el sistema de biblioteca con especificación de casos de uso y diagramas iniciales.",
     2: "Propuesta de arquitectura basada en microservicios, utilizando Spring Boot para el backend y React en el frontend.",
@@ -172,9 +172,9 @@ const MOCK_SUBMISSIONS = {
 
 export default function SpeedGraderPanel({ onExit }) {
   const [courseId, setCourseId] = useState(14852);
-  const [assignments, setAssignments] = useState(MOCK_ASSIGNMENTS);
-  const [students, setStudents] = useState(MOCK_STUDENTS);
-  const [submissions, setSubmissions] = useState(MOCK_SUBMISSIONS);
+  const [assignments, setAssignments] = useState(LOCAL_ASSIGNMENTS);
+  const [students, setStudents] = useState(LOCAL_STUDENTS);
+  const [submissions, setSubmissions] = useState(LOCAL_SUBMISSIONS);
   const [currentAssignmentId, setCurrentAssignmentId] = useState(101);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [grade, setGrade] = useState(7.0);
@@ -195,8 +195,8 @@ export default function SpeedGraderPanel({ onExit }) {
         ]);
       })
       .then(([assignRes, studRes]) => {
-        let loadedAssignments = MOCK_ASSIGNMENTS;
-        let loadedStudents = MOCK_STUDENTS;
+        let loadedAssignments = LOCAL_ASSIGNMENTS;
+        let loadedStudents = LOCAL_STUDENTS;
         if (assignRes.exito && assignRes.data && assignRes.data.length > 0) {
           loadedAssignments = assignRes.data.map(a => ({ id: a.id, name: a.name, points: a.points_possible || 100 }));
           setAssignments(loadedAssignments);
@@ -210,7 +210,7 @@ export default function SpeedGraderPanel({ onExit }) {
       })
       .catch(e => {
         console.error(e);
-        setStatusMsg("Error cargando datos de Canvas. Usando Mocks.");
+        setStatusMsg("Error cargando datos de Canvas. Usando datos locales.");
       });
   }, []);
 
@@ -237,7 +237,7 @@ export default function SpeedGraderPanel({ onExit }) {
         }
       })
       .catch(() => {
-        setStatusMsg("Error cargando entrega. Usando Mock si existe.");
+        setStatusMsg("Error cargando entrega. Usando datos locales si existen.");
       });
   }, [currentAssignmentId, currentIndex, students, courseId]);
 
@@ -338,7 +338,7 @@ export default function SpeedGraderPanel({ onExit }) {
 
   return (
     <div style={styles.wrapper}>
-      {/* Real Canvas SpeedGrader Header Simulation */}
+      {/* Real Canvas SpeedGrader Header Local Preview */}
       <header style={{
         ...styles.header,
         padding: "8px 20px",
@@ -382,7 +382,7 @@ export default function SpeedGraderPanel({ onExit }) {
                 setCurrentAssignmentId(newAssignId);
                 setFeedback("");
                 setGeneratedFeedbackId(null);
-                const points = MOCK_ASSIGNMENTS.find(a => a.id === newAssignId)?.points || 100;
+                const points = LOCAL_ASSIGNMENTS.find(a => a.id === newAssignId)?.points || 100;
                 setGrade(points === 20 ? 14.0 : 7.0);
               }}
               style={{

@@ -49,7 +49,7 @@ function resolveLocalRole(rawRole, fallbackCourseId = '1') {
  *   4. Sin token + ruta pública → pasar sin contexto
  *   5. Sin token + ruta protegida → 401
  *
- * FIX CRÍTICO 4: setupMockContext de server.js eliminado. Toda la lógica
+ * FIX CRÍTICO 4: setupLocalContext de server.js eliminado. Toda la lógica
  *   de contexto LTI está centralizada aquí. Sin duplicación.
  */
 export const AuthLTI13Handler = async (req, res, next) => {
@@ -67,9 +67,8 @@ export const AuthLTI13Handler = async (req, res, next) => {
       : req.cookies?.lti_token || null;
 
     const useLocalData = process.env.USE_LOCAL_DATA === 'true' ||
-                         process.env.VITE_USE_MOCK_DATA === 'true'; // compatibilidad retroactiva
+                         process.env.VITE_USE_LOCAL_DATA === 'true';
     const localUserRole = process.env.LOCAL_USER_ROLE ||
-                          process.env.MOCK_USER_ROLE || // compatibilidad retroactiva
                           'admin';
 
     console.log(`[LTI-AUTH] [${reqId}] Token: ${token ? (token === 'dev-token' ? '"dev-token" (local)' : `JWT (${token.length} chars)`) : 'ninguno'} | Modo local: ${useLocalData} | Rol local: ${localUserRole}`);
@@ -113,7 +112,7 @@ export const AuthLTI13Handler = async (req, res, next) => {
 
     // ── CASO 3: Rutas públicas sin token ────────────────────────────────────
     if (!token) {
-      const publicPaths = ['/lti/login', '/lti/callback', '/lti/jwks', '/health', '/config/startup-mode', '/config/set-mock-role', '/config/clear-mock-role', '/config/me'];
+      const publicPaths = ['/lti/login', '/lti/callback', '/lti/jwks', '/health', '/config/startup-mode', '/config/set-local-role', '/config/clear-local-role', '/config/me'];
       const isPublic = publicPaths.some(pub => path === pub || path.startsWith(pub));
       if (isPublic) {
         console.log(`[LTI-AUTH] [${reqId}] Ruta pública, sin requerir token: ${path}`);

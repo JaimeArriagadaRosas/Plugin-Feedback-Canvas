@@ -13,23 +13,23 @@ VITE_CANVAS_BASE_URL=https://canvas.instructure.com
 
 # Token de acceso a la API de Canvas (requiere rol de administrador o profesor).
 # Se obtiene en Canvas: Account > Settings > New Access Token.
-# Dejar vacío si usas modo Mock o Canvas Local con Docker.
+# Dejar vacío si usas modo Local o Canvas Local con Docker.
 VITE_CANVAS_ACCESS_TOKEN=your_token_here
 
 # -----------------------------------------------------------------------------
 # Modo de Ejecución
 # -----------------------------------------------------------------------------
-# Si es "true", usa datos simulados en memoria (no requiere Canvas ni PostgreSQL).
+# Si es "true", usa datos locales en memoria (no requiere Canvas ni PostgreSQL).
 # Ideal para desarrollo y pruebas.
 # Si es "false", se conecta a Canvas real y a la base de datos.
 # Valores válidos: true | false
-VITE_USE_MOCK_DATA=true
+VITE_USE_LOCAL_DATA=true
 
 # -----------------------------------------------------------------------------
 # Base de Datos (PostgreSQL)
 # -----------------------------------------------------------------------------
-# Solo requerido si VITE_USE_MOCK_DATA=false.
-# Si no hay conexión disponible, el sistema cambia automáticamente a modo Mock.
+# Solo requerido si VITE_USE_LOCAL_DATA=false.
+# Si no hay conexión disponible, el sistema cambia automáticamente a modo Local.
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=password
@@ -57,7 +57,7 @@ GEMINI_API_KEY=YOUR_API_KEY_HERE
 # Configuración LTI 1.3 (Canvas Local Docker o LTI real)
 # -----------------------------------------------------------------------------
 # Estos valores se autocompletan automáticamente al usar Canvas Local con Docker.
-# En modo Mock no son necesarios.
+# En modo Local no son necesarios.
 # LTI_CLIENT_ID=
 # CANVAS_OIDC_URL=
 # LTI_REDIRECT_URI=

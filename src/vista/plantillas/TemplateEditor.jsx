@@ -342,7 +342,7 @@ export default function TemplateEditor({ template, onSave, onClose }) {
           </div>
 
           <div style={styles.card}>
-            <div style={styles.cardHeader}>👁️ VISTA PREVIA (SIMULADA)</div>
+            <div style={styles.cardHeader}>👁️ VISTA PREVIA (LOCAL)</div>
             <div style={styles.cardBody}>
               <div style={styles.previewContainer}>
                 <div style={styles.previewMessage}>
@@ -350,7 +350,7 @@ export default function TemplateEditor({ template, onSave, onClose }) {
                 </div>
               </div>
               <p style={{ fontSize: 11, color: "#718096", marginTop: "12px", fontStyle: "italic" }}>
-                * Esta es una simulación de cómo el estudiante verá el feedback en Canvas.
+                * Esta es una vista previa de cómo el estudiante verá el feedback en Canvas.
               </p>
             </div>
           </div>

@@ -173,7 +173,7 @@ class CanvasLocalManager {
           const restored = await CanvasSnapshotManager.restoreSnapshot('pre_lti');
           if (restored) {
              console.log('[CanvasLocalManager] ⏭️ Omitiendo compilación de Assets, base de datos restaurada.');
-             await CanvasConfigurator.setupLtiAndMockData();
+             await CanvasConfigurator.setupLtiAndLocalData();
              CanvasSnapshotManager.markState('canvas_initialized', true);
              CanvasSnapshotManager.markState('lti_configured', true);
              return true;
@@ -199,7 +199,7 @@ class CanvasLocalManager {
       CanvasSnapshotManager.markState('assets_compiled', true);
       await CanvasSnapshotManager.takeSnapshot('pre_lti');
       
-      await CanvasConfigurator.setupLtiAndMockData();
+      await CanvasConfigurator.setupLtiAndLocalData();
       CanvasSnapshotManager.markState('canvas_initialized', true);
       CanvasSnapshotManager.markState('lti_configured', true);
     } else {
@@ -218,14 +218,14 @@ class CanvasLocalManager {
 
       // Saltar configuración LTI si ya fue hecha anteriormente
       if (CanvasSnapshotManager.hasState('lti_configured')) {
-        console.log('[CanvasLocalManager] ⚡ LTI y datos mock ya configurados. Iniciando directamente...');
+        console.log('[CanvasLocalManager] ⚡ LTI y datos locales ya configurados. Iniciando directamente...');
         return true;
       }
 
       console.log('[CanvasLocalManager] Aplicando actualizaciones de LTI y perfiles...');
       try {
         await CanvasConfigurator.runPluginMigrations();
-        await CanvasConfigurator.setupLtiAndMockData();
+        await CanvasConfigurator.setupLtiAndLocalData();
         CanvasSnapshotManager.markState('lti_configured', true);
       } catch (e) {
         console.warn('[CanvasLocalManager] Error actualizando configuración LTI/datos:', e.message);

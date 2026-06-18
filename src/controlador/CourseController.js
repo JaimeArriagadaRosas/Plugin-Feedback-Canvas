@@ -52,7 +52,7 @@ export default class CourseController {
       const { activo, plantilla_id, variables } = req.body; 
       
       // En un entorno real se extraería el ID interno del profesor usando req.ltiContext.user
-      // Por ahora, en entorno mock, asignaremos 1 (Admin/Teacher)
+      // Por ahora, en entorno local de pruebas, asignaremos 1 (Admin/Teacher)
       const profesorId = 1; 
       
       const configAsig = await this.configRepo.saveConfigAsignacion(

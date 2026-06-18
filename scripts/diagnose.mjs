@@ -91,7 +91,7 @@ async function runDiagnosis() {
     ['src/rutas/GestorRutasAPI.js', 'Rutas de la API'],
     ['src/utils/logger.js', 'Logger estructurado'],
     ['src/datos/db.js', 'Módulo de base de datos'],
-    ['src/servicios/CanvasService.mock.js', 'Datos locales de Canvas'],
+    ['src/servicios/CanvasService.local.js', 'Datos locales de Canvas'],
     ['vite.config.js', 'Configuración de Vite'],
     ['.env', 'Variables de entorno'],
   ];
@@ -126,10 +126,10 @@ async function runDiagnosis() {
     }
   }
 
-  const useMock = env.VITE_USE_MOCK_DATA === 'true' || env.USE_LOCAL_DATA === 'true';
-  const localRole = env.LOCAL_USER_ROLE || env.MOCK_USER_ROLE;
+  const useLocal = env.VITE_USE_LOCAL_DATA === 'true' || env.USE_LOCAL_DATA === 'true';
+  const localRole = env.LOCAL_USER_ROLE;
 
-  if (useMock) {
+  if (useLocal) {
     ok('Modo local activo', `Rol configurado: ${localRole || '(ninguno)'}`);
     if (!localRole) {
       warn('LOCAL_USER_ROLE no definido', 'Agrega LOCAL_USER_ROLE=admin en .env para auto-login local');
@@ -138,7 +138,7 @@ async function runDiagnosis() {
       warn(`Rol '${localRole}' no reconocido`, "Use: admin, teacher, student, student-1..student-5");
     }
   } else {
-    warn('Modo local inactivo', 'Si no tienes Canvas LMS corriendo, agrega USE_LOCAL_DATA=true en .env');
+    warn('Modo local inactivo', 'Si no tienes Canvas LMS corriendo, agrega VITE_USE_LOCAL_DATA=true en .env');
   }
 
   // ── 3. PUERTOS Y SERVICIOS ─────────────────────────────────────────────────

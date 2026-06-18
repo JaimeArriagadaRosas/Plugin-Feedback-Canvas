@@ -100,7 +100,7 @@ function AccesoRestringido({ apiError }) {
     setLocalError(null);
     FrontendLogger.info(`Solicitando acceso local con rol: ${role}`);
     try {
-      const response = await fetch('/api/config/set-mock-role', {
+      const response = await fetch('/api/config/set-local-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role })

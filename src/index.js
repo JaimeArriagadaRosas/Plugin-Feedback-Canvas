@@ -153,11 +153,11 @@ function writeEnvOverrides(role, mode) {
   const envPath = path.resolve(PLUGIN_DIR, '.env');
   let env = '';
   if (fs.existsSync(envPath)) env = fs.readFileSync(envPath, 'utf8');
-  const lines = env.split('\n').filter(l => !l.startsWith('MOCK_USER_ROLE=') && !l.startsWith('VITE_USE_MOCK_DATA=') && !l.startsWith('STARTUP_MODE=') && !l.startsWith('NON_INTERACTIVE='));
+  const lines = env.split('\n').filter(l => !l.startsWith('MOCK_USER_ROLE=') && !l.startsWith('LOCAL_USER_ROLE=') && !l.startsWith('VITE_USE_MOCK_DATA=') && !l.startsWith('VITE_USE_LOCAL_DATA=') && !l.startsWith('STARTUP_MODE=') && !l.startsWith('NON_INTERACTIVE='));
   lines.push(`STARTUP_MODE=${mode}`);
   lines.push('NON_INTERACTIVE=true');
-  lines.push('VITE_USE_MOCK_DATA=true');
-  lines.push(`MOCK_USER_ROLE=${role}`);
+  lines.push('VITE_USE_LOCAL_DATA=true');
+  lines.push(`LOCAL_USER_ROLE=${role}`);
   fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf8');
   log(`Variables de entorno configuradas (modo: ${mode}, rol: ${role}).`);
 }
@@ -259,7 +259,7 @@ async function main() {
         };
         const student = studentsInfo[studentIndex] || studentsInfo['1'];
         console.log('\n=========================================================');
-        console.log(`  SIMULANDO ROL ESTUDIANTE: ${student.name}`);
+        console.log(`  INICIANDO CON ROL LOCAL ESTUDIANTE: ${student.name}`);
         console.log('=========================================================');
         console.log(`  Email Canvas:    ${student.email}`);
         console.log(`  Password Canvas: ${student.pass}`);
@@ -268,7 +268,7 @@ async function main() {
         console.log('=========================================================\n');
       } else if (role === 'teacher') {
         console.log('\n=========================================================');
-        console.log(`  SIMULANDO ROL PROFESOR`);
+        console.log(`  INICIANDO CON ROL LOCAL PROFESOR`);
         console.log('=========================================================');
         console.log(`  Email Canvas:    profesor@canvas.local`);
         console.log(`  Password Canvas: teacherpassword123`);
@@ -277,7 +277,7 @@ async function main() {
         console.log('=========================================================\n');
       } else if (role === 'admin') {
         console.log('\n=========================================================');
-        console.log(`  SIMULANDO ROL ADMINISTRADOR`);
+        console.log(`  INICIANDO CON ROL LOCAL ADMINISTRADOR`);
         console.log('=========================================================');
         console.log(`  Email Canvas:    admin@canvas.local`);
         console.log(`  Password Canvas: adminpassword123`);
@@ -292,11 +292,11 @@ async function main() {
       process.env.STARTUP_MODE = mode;
       process.env.NON_INTERACTIVE = 'true';
       if (mode === '2') {
-        process.env.VITE_USE_MOCK_DATA = 'false';
+        process.env.VITE_USE_LOCAL_DATA = 'false';
         log('Abriendo Frontend del Plugin en el navegador...');
         await openBrowser('http://localhost:5173/');
       } else {
-        process.env.VITE_USE_MOCK_DATA = 'true';
+        process.env.VITE_USE_LOCAL_DATA = 'true';
         const roleOpt = await showRoleMenu();
         role = roleOpt === '1' ? 'admin' : roleOpt === '2' ? 'teacher' : roleOpt;
         writeEnvOverrides(role, mode);
@@ -312,7 +312,7 @@ async function main() {
           };
           const student = studentsInfo[studentIndex] || studentsInfo['1'];
           console.log('\n=========================================================');
-          console.log(`  SIMULANDO ROL ESTUDIANTE: ${student.name}`);
+          console.log(`  INICIANDO CON ROL LOCAL ESTUDIANTE: ${student.name}`);
           console.log('=========================================================');
           console.log(`  Email Canvas:    ${student.email}`);
           console.log(`  Password Canvas: ${student.pass}`);

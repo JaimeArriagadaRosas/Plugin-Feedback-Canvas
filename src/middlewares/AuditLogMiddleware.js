@@ -24,7 +24,7 @@ export const auditLogMiddleware = (req, res, next) => {
       const accion = `${method} ${url}`;
       const detalle = `Status: ${statusCode} | Body: ${JSON.stringify(req.body || {}).substring(0, 300)}`;
 
-      if (db.isMock()) {
+      if (db.isLocalMode()) {
         logger.debug(`[AUDIT-LOCAL] ${accion} por ${usuarioId}`, {
           status: statusCode,
           detalle: detalle.substring(0, 100)

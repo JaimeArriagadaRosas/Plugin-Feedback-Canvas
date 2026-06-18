@@ -103,7 +103,7 @@ export default class FeedbackController {
         await this.canvasService.updateGrade(courseId, assignmentId, studentId, grade);
       }
       
-      // Simular Notificación
+      // Registrar Notificación local
       if (feedbackId) {
         await this.feedbackService.feedbackRepo.saveNotification(
           studentId, 

@@ -5,11 +5,11 @@ import jwt from 'jsonwebtoken';
  * Permite enviar calificaciones y comentarios a SpeedGrader sin API Keys individuales.
  */
 export default class LTIAGSService {
-  constructor(clientId, authUrl, privateKey = null, useMock = false) {
+  constructor(clientId, authUrl, privateKey = null, useLocalMode = false) {
     this.clientId = clientId;
     this.authUrl = authUrl || 'https://canvas.instructure.com/login/oauth2/token';
     this.privateKey = privateKey;
-    this.useMock = useMock;
+    this.useLocalMode = useLocalMode;
     this.accessToken = null;
     this.tokenExpiry = 0;
   }
@@ -23,9 +23,9 @@ export default class LTIAGSService {
       return this.accessToken;
     }
 
-    if (this.useMock || !this.privateKey) {
-      console.log('[LTI-AGS] Utilizando Access Token de simulación (Modo Mock)');
-      this.accessToken = 'mock-ags-token-12345';
+    if (this.useLocalMode || !this.privateKey) {
+      console.log('[LTI-AGS] Utilizando Access Token local (Modo Local)');
+      this.accessToken = 'local-ags-token-12345';
       this.tokenExpiry = Date.now() + 3600 * 1000;
       return this.accessToken;
     }
@@ -83,13 +83,13 @@ export default class LTIAGSService {
    * @param {string} comment Comentario de feedback
    */
   async submitScoreAndComment(scoresUrl, studentId, score, maxScore, comment) {
-    if (this.useMock) {
-      console.log(`[LTI-AGS] [MOCK] Enviando nota a Canvas SpeedGrader:
+    if (this.useLocalMode) {
+      console.log(`[LTI-AGS] [LOCAL] Enviando nota a Canvas SpeedGrader:
         URL: ${scoresUrl}
         Estudiante: ${studentId}
         Nota: ${score}/${maxScore}
         Comentario: ${comment.substring(0, 60)}...`);
-      return { success: true, message: 'Calificación de pruebas enviada exitosamente (Mock)' };
+      return { success: true, message: 'Calificación de pruebas enviada exitosamente (Local)' };
     }
 
     try {

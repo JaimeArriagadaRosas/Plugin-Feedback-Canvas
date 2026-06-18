@@ -17,7 +17,7 @@ export default class AcademicHistoryService {
 
     if (!history) {
       console.log(`[HISTORY] Sincronizando historial de Canvas para Estudiante:${studentId}`);
-      // 2. Si no hay cache, traer de Canvas (simulación de múltiples tareas)
+      // 2. Si no hay cache, traer de Canvas (ejecución local de múltiples tareas)
       const enrollments = await this.canvasService.getStudentGrades(courseId, studentId);
       
       // Procesar datos crudos de Canvas

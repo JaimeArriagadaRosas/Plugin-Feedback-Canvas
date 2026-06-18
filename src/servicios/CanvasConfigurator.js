@@ -152,7 +152,7 @@ class CanvasConfigurator {
     }
   }
 
-  static setupLtiAndMockData() {
+  static setupLtiAndLocalData() {
     return new Promise((resolve, reject) => {
       console.log('[CanvasConfigurator] Iniciando configuración de LTI y datos dummy...');
       
