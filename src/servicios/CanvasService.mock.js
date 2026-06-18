@@ -240,6 +240,7 @@ export default class CanvasServiceMock {
       2: { q1: 'B', q2: 'A', q3: 'A', q4: 'C', q5: 'B', q6: 'A', q7: 'D', q8: 'B', q9: 'A', q10: 'B' }, // 5/10 = 50 pts
       3: { q1: 'B', q2: 'B', q3: 'C', q4: 'B', q5: 'D', q6: 'C', q7: 'A', q8: 'C', q9: 'B', q10: 'C' }, // 4/10 = 40 pts
       4: { q1: 'B', q2: 'A', q3: 'C', q4: 'B', q5: 'B', q6: 'C', q7: 'C', q8: 'B', q9: 'A', q10: 'D' }, // 8/10 = 80 pts
+      5: { q1: 'B', q2: 'A', q3: 'C', q4: 'B', q5: 'B', q6: 'C', q7: 'C', q8: 'B', q9: 'A', q10: 'C' }, // 10/10 = 100 pts
     };
 
     const questions = await this.getQuizQuestions(courseId, assignmentId);
@@ -280,9 +281,6 @@ export default class CanvasServiceMock {
     };
   }
 
-  // ──────────────────────────────────────────────
-  // HISTORIAL ACADÉMICO POR ESTUDIANTE
-  // ──────────────────────────────────────────────
   async getStudentGrades(courseId, studentId) {
     const historyByStudent = {
       1: [ // Juan Pérez
@@ -302,6 +300,10 @@ export default class CanvasServiceMock {
         [ { grades: { current_score: 80 }, assignment_name: "Tarea 1" },
           { grades: { current_score: 85 }, assignment_name: "Tarea 2" },
           { grades: { current_score: 88 }, assignment_name: "Control 1" } ],
+      5: // Carlos Méndez
+        [ { grades: { current_score: 92 }, assignment_name: "Tarea 1" },
+          { grades: { current_score: 90 }, assignment_name: "Tarea 2" },
+          { grades: { current_score: 94 }, assignment_name: "Control 1" } ],
     };
     return historyByStudent[studentId] || [];
   }
@@ -311,7 +313,8 @@ export default class CanvasServiceMock {
       { id: 1, name: "Juan Pérez", sortable_name: "Pérez, Juan" },
       { id: 2, name: "María García", sortable_name: "García, María" },
       { id: 3, name: "Pedro López", sortable_name: "López, Pedro" },
-      { id: 4, name: "Ana Torres", sortable_name: "Torres, Ana" }
+      { id: 4, name: "Ana Torres", sortable_name: "Torres, Ana" },
+      { id: 5, name: "Carlos Méndez", sortable_name: "Méndez, Carlos" }
     ];
   }
 

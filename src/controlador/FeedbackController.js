@@ -28,10 +28,10 @@ export default class FeedbackController {
         const student = students.find(s => s.id === fb.estudiante_id) || { name: `Estudiante ${fb.estudiante_id}` };
         
         // Determinar perfil dinámico en base a ID
-        const profiles = ["PROMEDIO", "SOBRESALIENTE", "EN RIESGO"];
-        const trends = ["Estable", "Mejorando", "Bajando"];
-        const profile = profiles[fb.estudiante_id % 3];
-        const trend = trends[fb.estudiante_id % 3];
+        const profiles = ["PROMEDIO", "SOBRESALIENTE", "EN RIESGO", "DESTACADO", "REQUIERE APOYO"];
+        const trends = ["Estable", "Mejorando", "Bajando", "Ascendente", "Estable"];
+        const profile = profiles[(fb.estudiante_id - 1) % 5] || profiles[0];
+        const trend = trends[(fb.estudiante_id - 1) % 5] || trends[0];
 
         return {
           id: fb.id,
@@ -40,7 +40,7 @@ export default class FeedbackController {
           courseId: fb.curso_id,
           assignmentId: fb.tarea_id,
           templateId: fb.plantilla_id,
-          grade: "7.0/10", // Fallback de nota
+          grade: fb.nota_chile ? `${fb.nota_chile}/7.0` : "7.0/10", // Fallback de nota
           profile: profile,
           trend: trend,
           status: fb.estado || "PENDIENTE",

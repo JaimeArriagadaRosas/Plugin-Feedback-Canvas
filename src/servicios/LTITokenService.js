@@ -7,8 +7,9 @@ import { AppError } from '../middlewares/ErrorHandler.js';
  */
 export default class LTITokenService {
   constructor() {
+    const baseUrl = process.env.VITE_CANVAS_BASE_URL || 'https://canvas.instructure.com';
     this.client = jwksClient({
-      jwksUri: 'https://canvas.instructure.com/api/lti/security/jwks' // URI estándar de Canvas
+      jwksUri: `${baseUrl}/api/lti/security/jwks` // URI configurable de Canvas
     });
   }
 
@@ -34,10 +35,13 @@ export default class LTITokenService {
 
       const publicKey = await this.getPublicKey(decodedHeader);
       
+      const baseUrl = process.env.VITE_CANVAS_BASE_URL || 'https://canvas.instructure.com';
+      const expectedIssuer = process.env.LTI_ISSUER || baseUrl;
+
       return jwt.verify(token, publicKey, {
         algorithms: ['RS256'],
         audience: process.env.LTI_CLIENT_ID,
-        issuer: 'https://canvas.instructure.com'
+        issuer: expectedIssuer
       });
     } catch (error) {
       console.error('[LTI] Error de verificación:', error.message);

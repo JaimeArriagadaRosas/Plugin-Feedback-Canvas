@@ -7,8 +7,11 @@
     "dev": "vite",
     "server": "node src/server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node src/index.js",
+    "diagnose": "node scripts/diagnose.mjs"
   },
+
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "cookie-parser": "^1.4.6",
