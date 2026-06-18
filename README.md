@@ -1,416 +1,205 @@
-# Plugin Feedback
+# Plugin Feedback - Canvas LMS
 
-Aplicacion web de retroalimentacion academica adaptativa integrada con Canvas LMS y potenciada por inteligencia artificial (Google Gemini). La aplicacion permite a profesores configurar plantillas de feedback, generar retroalimentacion personalizada automaticamente para estudiantes y gestionar su aprobacion antes del envio.
-
-## Indice
-
-*   [Descripcion del Proyecto](#descripcion-del-proyecto)
-*   [Repo Structure Note](#repo-structure-note)
-*   [Prerrequisitos](#prerrequisitos)
-*   [Installation - Windows](#installation---windows)
-*   [Installation - macOS](#installation---macos)
-*   [Installation - Linux](#installation---linux)
-*   [Running the Application](#running-the-application)
-*   [Verification](#verification)
-*   [Troubleshooting](#troubleshooting)
+Aplicación web de retroalimentación académica adaptativa integrada con Canvas LMS y potenciada por Inteligencia Artificial (IA). Permite a los profesores configurar plantillas de feedback, generar retroalimentación personalizada automáticamente para los estudiantes y gestionar su aprobación antes del envío.
 
 ---
 
-## Descripcion del Proyecto
+## Índice
 
-Plugin Feedback es una herramienta LTI 1.3 que se integra como plugin externo en Canvas LMS. Su proposito es automatizar la generacion de retroalimentacion academica detallada para estudiantes, utilizando:
-
-- **Plantillas personalizables**: Los profesores definen estructuras de feedback por rango de calificacion.
-- **IA Generativa (Google Gemini)**: Adapta el contenido de cada retroalimentacion al historial academico y al rendimiento especifico de cada estudiante.
-- **Flujo de aprobacion**: El profesor revisa, edita y aprueba el feedback antes de que llegue al estudiante.
-- **Historial academico**: Cache local de calificaciones pasadas para enriquecer el contexto de la IA.
-- **Roles diferenciados**: Interfaces para Administradores, Profesores y Estudiantes.
-
-### Tecnologias
-
-| Capa        | Tecnologia                          |
-|-------------|-------------------------------------|
-| Frontend    | React 18, Vite 5                   |
-| Backend     | Node.js, Express                   |
-| Base de Datos | PostgreSQL                       |
-| IA          | Google Generative AI (Gemini)      |
-| Integracion | LTI 1.3 (Canvas LMS)               |
-| Testing     | Mocks nativos (sin framework extra) |
+*   [Descripción del Proyecto](#descripción-del-proyecto)
+*   [Cómo abrir la Consola / Terminal](#cómo-abrir-la-consola--terminal)
+*   [Instalación de Programas Requeridos](#instalación-de-programas-requeridos)
+*   [Organización de Carpetas y Estructura](#organización-de-carpetas-y-estructura)
+*   [Guía de Instalación Paso a Paso](#guía-de-instalación-paso-a-paso)
+*   [Configuración de Variables de Entorno (.env)](#configuración-de-variables-de-entorno-env)
+*   [Compilación y Ejecución](#compilación-y-ejecución)
+*   [Resolución de Problemas Frecuentes (Troubleshooting)](#resolución-de-problemas-frecuentes-troubleshooting)
 
 ---
 
-## Repo Structure Note
+## Descripción del Proyecto
 
-Solo la carpeta `Plugin Feedback/` sera subida al repositorio publico de GitHub. Los archivos y carpetas en la raiz del proyecto (documentacion, diagramas, scripts auxiliares, etc.) son excluidos del push.
+El **Plugin Feedback** es una herramienta integrada en Canvas LMS. Su propósito es automatizar la generación de retroalimentación académica detallada para estudiantes, utilizando:
 
-Si al clonar el repositorio notas que faltan archivos o carpetas de documentacion que esperabas encontrar en la raiz, consulta la seccion [Repo Structure Note](#repo-structure-note) en este README para entender por que.
-
----
-
-## Prerrequisitos
-
-El proyecto soporta dos modos de ejecucion. Elige uno segun tus necesidades:
-
-- **Modo Mock (Recomendado para desarrollo y pruebas rapidas)**: No requiere servicios externos. Utiliza datos simulados en memoria. Solo necesitas Node.js.
-- **Modo Docker (Canvas LMS Local)**: Levanta una instancia completa de Canvas LMS en contenedores Docker. Requiere Docker Desktop. Ver `Plugin Feedback/src/servicios/CanvasLocalManager.js`.
-
-### Requisitos minimos (Modo Mock)
-
-| Herramienta | Version minima | Notas |
-|-------------|----------------|-------|
-| Node.js     | 18.x           | Incluye npm |
-| npm         | 9.x            | Incluido con Node.js |
-
-### Requisitos adicionales (Modo Docker)
-
-| Herramienta    | Notas                                      |
-|----------------|--------------------------------------------|
-| Docker Desktop | WSL2 activo en Windows                     |
-| Git            | Para clonar el repositorio                 |
-
-> PostgreSQL es opcional. Si no esta disponible, el sistema cae automaticamente a modo Mock sin intervencion del usuario.
+*   **Plantillas personalizables:** Los profesores definen estructuras de feedback según rangos de calificación.
+*   **Modelos de Inteligencia Artificial (IA):** Adaptan el contenido de cada retroalimentación al rendimiento específico de cada estudiante.
+*   **Flujo de aprobación:** El profesor revisa, edita y aprueba el feedback antes de que sea visible para el estudiante.
+*   **Roles diferenciados:** Vistas diseñadas para Administradores, Profesores y Estudiantes.
 
 ---
 
-## Installation - Windows
+## Cómo abrir la Consola / Terminal
 
-### Paso 1: Instalar Node.js y npm
+Para instalar y ejecutar este proyecto, necesitarás usar la línea de comandos de tu sistema operativo. Sigue estas instrucciones para abrirla:
 
-1. Ve a [https://nodejs.org](https://nodejs.org) y descarga la version LTS (18.x o superior).
-2. Ejecuta el instalador.
-3. Acepta todos los valores por defecto.
-4. Al finalizar, abre una nueva terminal (PowerShell o Símbolo del sistema) y verifica:
+### En Windows:
+1.  Presiona la tecla **Inicio** (o presiona la tecla `Windows` en tu teclado).
+2.  Escribe **cmd** (Símbolo del sistema) o **PowerShell**.
+3.  Presiona **Enter**.
 
-```powershell
-node --version
-npm --version
+### En macOS:
+1.  Presiona las teclas `Cmd + Espacio` para abrir el buscador Spotlight.
+2.  Escribe **Terminal**.
+3.  Presiona **Enter**.
+
+### En Linux:
+*   Presiona la combinación de teclas `Ctrl + Alt + T` en tu teclado.
+
+> [!NOTE]
+> **Navegación básica:** Para entrar a una carpeta desde la consola, escribe el comando `cd` seguido de la ruta entre comillas. Ejemplo: `cd "C:\Mis Proyectos\Proyecto Plugin feedback\Plugin Feedback"`.
+
+---
+
+## Instalación de Programas Requeridos
+
+Antes de ejecutar el proyecto, debes instalar las siguientes herramientas en tu computadora:
+
+1.  **Node.js (LTS):** Motor que permite ejecutar la aplicación backend y compilar el frontend.
+    *   **Cómo descargarlo:** Entra a la página oficial de [Node.js](https://nodejs.org/), haz clic en la versión recomendada **LTS** para tu sistema operativo y descarga el instalador.
+    *   **Instalación:** Abre el archivo descargado, presiona "Siguiente" (Next) en todas las pantallas y acepta las opciones recomendadas por defecto hasta terminar.
+2.  **Docker Desktop:** Requerido únicamente para correr la versión local y completa de Canvas LMS.
+    *   **Cómo descargarlo:** Entra a [Docker Desktop](https://www.docker.com/products/docker-desktop/) y descarga la versión correspondiente para tu sistema operativo.
+    *   **Instalación:** Abre el instalador y sigue las instrucciones de pantalla (en Windows asegúrate de mantener marcada la opción de utilizar WSL2/Hyper-V).
+    *   **Uso:** **Basta con tener la aplicación Docker Desktop abierta ejecutándose en segundo plano** antes de iniciar la instalación de Canvas. No requieres realizar ninguna configuración interna en Docker.
+
+---
+
+## Organización de Carpetas y Estructura
+
+Para evitar errores de rutas y asegurar que el instalador automatizado funcione correctamente, te recomendamos organizar tus carpetas de la siguiente forma:
+
+1.  Crea una carpeta contenedora principal (por ejemplo, `Proyecto Plugin feedback` en tu disco).
+2.  Dentro de ella, coloca los archivos de este repositorio dentro de una carpeta llamada exactamente `Plugin Feedback`.
+3.  **Clonación de Canvas LMS:** Cuando ejecutes el asistente de instalación interactivo y selecciones montar Canvas localmente (opción 3), el script clonará automáticamente el repositorio `canvas-lms-master` al lado de la carpeta de tu plugin.
+
+La estructura final de carpetas lucirá así:
+```text
+Proyecto Plugin feedback/
+├── Plugin Feedback/      <-- Carpeta raíz de este plugin (donde está este archivo)
+└── canvas-lms-master/    <-- Creada automáticamente por el instalador interactivo
 ```
 
-Ambos comandos deben devolver números de version. Si obtienes un error de comando no reconocido, cierra y vuelve a abrir la terminal.
+---
 
-### Paso 2: Clonar el repositorio
+## Guía de Instalación Paso a Paso
 
+Abre tu consola/terminal y navega hasta la carpeta del plugin (`Plugin Feedback`). Sigue las instrucciones correspondientes a tu sistema operativo:
+
+### En Windows (PowerShell)
+
+Si usas PowerShell, es posible que el sistema bloquee la ejecución de scripts locales. Ejecuta este comando para habilitarlos temporalmente en tu sesión de consola actual:
 ```powershell
-git clone <URL_DEL_REPOSITORIO>
-cd "Proyecto Plugin feedback\Plugin Feedback"
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
 
-> La carpeta `Plugin Feedback` contiene espacios en el nombre. En PowerShell se accede con comillas, o navega manualmente con `Tab` para autocompletar.
-
-### Paso 3: Instalar dependencias
-
+Luego, instala las dependencias necesarias de Node.js:
 ```powershell
 npm install
 ```
 
-Esto instalara todas las dependencias declaradas en `package.json` dentro de `Plugin Feedback/node_modules/`.
+### En macOS y Linux (Terminal)
 
-### Paso 4: Configurar variables de entorno
-
-Copia el archivo de ejemplo y editalo con tus valores:
-
-```powershell
-Copy-Item env_example .env
-notepad .env
-```
-
-Edita las siguientes variables en `.env`:
-
-```env
-# Canvas LMS
-VITE_CANVAS_BASE_URL=http://localhost:8080
-VITE_CANVAS_ACCESS_TOKEN=
-
-# Modo mock (true para desarrollo sin servicios externos)
-VITE_USE_MOCK_DATA=true
-
-# Base de datos (solo si usas modo real sin Docker)
-# DB_HOST=localhost
-# DB_USER=postgres
-# DB_PASSWORD=password
-# DB_NAME=feedback_plugin_db
-# DB_PORT=5432
-
-# Seguridad
-ENCRYPTION_KEY=
-
-# IA - Gemini
-GEMINI_API_KEY=
-
-# LTI 1.3 (solo necesario si usas Canvas Local Docker o LTI real)
-# LTI_CLIENT_ID=
-# CANVAS_OIDC_URL=
-# LTI_REDIRECT_URI=
-# FRONTEND_URL=
-```
-
-En **Modo Mock** solo necesitas configurar `GEMINI_API_KEY` y asegurarte de que `VITE_USE_MOCK_DATA=true`. El resto de las variables se autocompletan cuando usas Canvas Local con Docker o se dejan vacías para modo Mock.
-
-> **Importante**: Nunca subas el archivo `.env` al repositorio. Contiene credenciales y secretos. Usa `env_example` como plantilla pública.
-
----
-
-## Installation - macOS
-
-### Paso 1: Instalar Node.js y npm
-
-**Opcion A — Homebrew (recomendada si ya lo tienes instalado):**
-
-```bash
-brew install node@18
-```
-
-**Opcion B — Instalador oficial:**
-
-1. Ve a [https://nodejs.org](https://nodejs.org) y descarga la version LTS (18.x o superior) para macOS.
-2. Ejecuta el archivo `.pkg` y sigue las instrucciones.
-3. Abre una nueva terminal y verifica:
-
-```bash
-node --version
-npm --version
-```
-
-### Paso 2: Clonar el repositorio
-
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd "Proyecto Plugin feedback/Plugin Feedback"
-```
-
-### Paso 3: Instalar dependencias
-
+Ejecuta el siguiente comando para instalar las dependencias:
 ```bash
 npm install
 ```
 
-### Paso 4: Configurar variables de entorno
-
-```bash
-cp env_example .env
-nano .env  # o el editor de tu preferencia: vim, code, etc.
-```
-
-Edita las variables igual que en la seccion de Windows. Para modo Mock, asegurate de que `VITE_USE_MOCK_DATA=true` este presente.
+*(Esto creará la carpeta `node_modules` localmente con todas las librerías necesarias del proyecto).*
 
 ---
 
-## Installation - Linux
+## Configuración de Variables de Entorno (.env)
 
-### Paso 1: Instalar Node.js y npm
-
-**Ubuntu / Debian:**
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-**Fedora / RHEL / CentOS:**
-
-```bash
-curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-sudo dnf install -y nodejs
-```
-
-**Arch Linux:**
-
-```bash
-sudo pacman -S nodejs npm
-```
-
-Verifica la instalacion:
-
-```bash
-node --version
-npm --version
-```
-
-### Paso 2: Clonar el repositorio
-
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd "Proyecto Plugin feedback/Plugin Feedback"
-```
-
-### Paso 3: Instalar dependencias
-
-```bash
-npm install
-```
-
-### Paso 4: Configurar variables de entorno
-
-```bash
-cp env_example .env
-nano .env  # o vim, code, etc.
-```
-
-Edita las variables igual que en la seccion de Windows. En modo Mock, las unicas variables requeridas son:
-
-```env
-VITE_USE_MOCK_DATA=true
-GEMINI_API_KEY=tu_api_key_aqui
-```
-
-Las variables LTI y Canvas se autocompletan automaticamente al usar Canvas Local con Docker.
+El archivo `.env` guarda información de configuración confidencial.
+1.  Encuentra el archivo [`env_example`](file:///d:/Descargas/Proyecto%20Plugin%20feedback/Plugin%20Feedback/env_example) en la raíz de la carpeta `Plugin Feedback`.
+2.  Duplica este archivo en la misma carpeta y cámbiale el nombre a **`.env`** (asegúrate de que empiece con un punto y no tenga extensión `.txt`).
+    *   *En consola (Windows PowerShell):* `Copy-Item env_example .env`
+    *   *En consola (macOS/Linux):* `cp env_example .env`
+3.  Abre el archivo `.env` con cualquier editor de texto.
+4.  Si solo quieres hacer pruebas rápidas locales sin montar Docker ni base de datos, mantén la siguiente variable en `true`:
+    ```env
+    VITE_USE_MOCK_DATA=true
+    ```
+5.  Si deseas probar la integración de Inteligencia Artificial, agrega tu API Key de IA en la variable correspondiente (por ejemplo: `GEMINI_API_KEY=tu_clave_aqui`).
 
 ---
 
-## Running the Application
+## Compilación y Ejecución
 
-La aplicacion consta de dos procesos que deben ejecutarse simultaneamente: el **frontend** (Vite) y el **backend** (Express). Abre dos terminales separadas en la carpeta `Plugin Feedback/`.
+El proyecto ofrece un script interactivo en consola para administrar el inicio y configuración de las capas del sistema.
 
-### Terminal 1 — Backend (Express)
+### Ejecución Interactiva (Recomendado)
 
+En la terminal dentro de `Plugin Feedback`, ejecuta el siguiente comando:
+```bash
+node src/index.js
+```
+*(O también puedes usar el comando alternativo: `npm start`)*
+
+Este comando abrirá un menú interactivo en la terminal con tres opciones.
+
+> [!IMPORTANT]
+> **Menú de selección (Opción 3):** Actualmente, **únicamente la opción 3** (`[3] Ejecutar localmente Canvas LMS (Open Source)`) está completamente operativa y funciona correctamente.
+
+> [!WARNING]
+> **Duración de la primera ejecución:** Al seleccionar la opción 3 por primera vez, el proceso descarga, configura y compila la infraestructura de Canvas LMS y la base de datos local dentro de Docker. Este proceso es pesado y **puede tardar entre 30 y 45 minutos** en completarse. No cierres la ventana de la consola hasta que finalice.
+
+> [!WARNING]
+> **Bugs conocidos de visualización:** En la versión actual del frontend del plugin, las pantallas de administrador, profesor y estudiante experimentan un problema visual de superposición (se mezclan en pantalla). Este bug está identificado y se resolverá en próximas actualizaciones.
+
+---
+
+### Compilación y Ejecución Manual (Desarrollo)
+
+Si eres desarrollador y deseas levantar por separado las partes del proyecto de manera tradicional, abre dos pestañas de terminal en la carpeta `Plugin Feedback` y ejecuta:
+
+#### Pestaña 1 — Iniciar Servidor Backend (Express)
 ```bash
 npm run server
 ```
+El servidor backend arrancará en el puerto `http://localhost:3000`.
 
-El backend escucha en `http://localhost:3000`. Deberias ver el mensaje:
-
-```
-BACKEND INICIADO (Puerto Interno: 3000)
-Modo de Inicio: MOCKUP (Simulado)
-```
-
-### Terminal 2 — Frontend (Vite + React)
-
+#### Pestaña 2 — Iniciar Frontend de Desarrollo (Vite + React)
 ```bash
 npm run dev
 ```
+El frontend de desarrollo estará disponible en `http://localhost:5173/`.
 
-El frontend escucha en `http://localhost:5173`. Deberias ver el mensaje:
-
-```
-VITE v5.x.x  ready in xxx ms
-➜  Local:   http://localhost:5173/
-➜  Network: use --host to expose
-```
-
-### Abrir en el navegador
-
-Accede a `http://localhost:5173/` en tu navegador. El frontend enruta todas las peticiones `/api` automaticamente al backend en el puerto 3000 mediante el proxy de Vite configurado en `vite.config.js`.
-
-### Si usas Docker + Canvas LMS Local
-
-Antes de ejecutar, asegurate de que Docker Desktop este abierto y en ejecucion:
-
+#### Compilación de producción del Frontend
+Para verificar que el frontend compila correctamente y no tiene errores de código de cara a su distribución en producción, ejecuta:
 ```bash
-# Inicia el backend con Canvas Local (modo no interactivo)
-# Requiere Docker Desktop corriendo
-$env:NON_INTERACTIVE="true"
-$env:STARTUP_MODE="3"
-npm run server
+npm run build
 ```
-
-En Linux / macOS:
-
-```bash
-NON_INTERACTIVE=true STARTUP_MODE=3 npm run server
-```
-
-El proceso levantara los contenedores Docker, ejecutara las migraciones Ruby de Canvas, compilara assets y configurara LTI automaticamente. Los logs de Docker se guardan en `Plugin Feedback/logs/docker_canvas.log`.
+Esto generará una carpeta `dist/` en la raíz con el código minimizado y optimizado.
 
 ---
 
-## Verification
+## Resolución de Problemas Frecuentes (Troubleshooting)
 
-### 1. Verificar que el backend responde
-
-Abre otra terminal y ejecuta:
-
-```bash
-curl http://localhost:3000/api/config/startup-mode
-```
-
-Debe devolver un JSON con `mode`, `useMock`, `role`, etc. Cualquier respuesta JSON valida indica que el backend esta funcionando.
-
-### 2. Verificar que el frontend carga
-
-Abre `http://localhost:5173/` en tu navegador. Deberias ver la interfaz del plugin con un selector de curso (en modo Mock) o el panel de administracion.
-
-### 3. Verificar que el proxy funciona
-
-Desde el navegador, abre las herramientas de desarrollador (F12), ve a la pestaña Network y navega por la aplicacion. Las peticiones a `/api/...` deben tener status 200 y provenir de `localhost:5173`, no de `localhost:3000` directamente (eso confirma que el proxy de Vite esta activo).
-
-### 4. Verificar modo Mock activo
-
-Si la aplicacion carga datos de ejemplo sin credenciales de Canvas, el modo Mock esta funcionando correctamente.
-
-### 5. Verificar Gemini (opcional)
-
-En modo Mock, la generacion con IA requiere una `GEMINI_API_KEY` valida en el archivo `.env`. Sin ella, la aplicacion funcionara pero retornara feedback de respaldo.
-
----
-
-## Troubleshooting
-
-### `npm install` falla con errores de permisos
-
-No ejecutes `npm install` con `sudo`. Soluciones alternativas:
-
-```bash
-npm install --prefix "Proyecto Plugin feedback/Plugin Feedback"
-```
-
-O configura npm para usar un directorio de caché en tu carpeta de usuario:
-
-```bash
-npm config set cache ${HOME}/.npm-cache --global
-```
-
-### Puerto 3000 o 5173 ya en uso
-
-Otro proceso esta ocupando el puerto. En Windows:
-
+### Error de permisos de scripts en Windows (UnauthorizedAccess)
+Si al ejecutar `npm` obtienes un error que indica que la ejecución de scripts está deshabilitada en el sistema, abre PowerShell y ejecuta:
 ```powershell
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
+Esto te permitirá ejecutar los scripts de Node únicamente durante la sesión actual de esa consola.
 
-En macOS / Linux:
+### Puertos ya ocupados (3000 o 5173)
+Si te aparece un error que indica que los puertos ya están siendo utilizados por otra aplicación, puedes liberar los puertos manualmente:
 
-```bash
-lsof -ti:3000 | xargs kill -9
-lsof -ti:5173 | xargs kill -9
-```
+*   **En Windows (CMD/PowerShell):**
+    ```powershell
+    netstat -ano | findstr :3000
+    taskkill /PID <PID_encontrado> /F
+    ```
+*   **En macOS o Linux:**
+    ```bash
+    lsof -ti:3000 | xargs kill -9
+    lsof -ti:5173 | xargs kill -9
+    ```
 
-### Docker falla en Windows (WSL2)
-
-Asegurate de que Docker Desktop tenga WSL2 activo:
-
-1. Abre Docker Desktop > Settings > Resources > WSL Integration.
-2. Activa la integracion con tu distribucion WSL.
-3. Reinicia Docker Desktop.
-
-### CORS errors en el navegador
-
-Verifica que el backend este corriendo en el puerto 3000 y que `vite.config.js` tenga el proxy configurado correctamente. Revisa que no haya otras instancias de Vite escuchando en el mismo puerto.
-
-### La base de datos no conecta en modo real
-
-Si no tienes PostgreSQL instalado, el sistema cambiara automaticamente a modo Mock y mostrara un warning en consola. Para usar PostgreSQL:
-
-```bash
-# Instalar PostgreSQL (varia por plataforma)
-# Luego crear la base de datos:
-psql -U postgres -c "CREATE DATABASE feedback_plugin_db;"
-# Ejecutar migraciones:
-psql -U postgres -d feedback_plugin_db -f src/datos/schema.sql
-```
-
-### Archivos `.backup`, `.new`, `.fixed` en el codigo
-
-Los archivos como `PromptManager.js.backup`, `PromptManager.js.new`, `PromptManager.js.fixed`, entre otros, son artefactos de desarrollo. El archivo activo y utilizado es `src/servicios/PromptManager.js`. Estos archivos de respaldo pueden ignorarse y no deben editarse.
-
----
-
-## Scripts Disponibles
-
-| Comando            | Descripcion                                              |
-|--------------------|-----------------------------------------------------------|
-| `npm run dev`      | Inicia el servidor de desarrollo Vite (Frontend)          |
-| `npm run server`   | Inicia el servidor backend Express (Backend)              |
-| `npm run build`    | Compila el frontend para produccion                       |
-| `npm run preview`  | Previsualiza la build de produccion localmente            |
+### Docker Desktop no responde o falla WSL2 en Windows
+Asegúrate de que Docker Desktop esté abierto y configurado con la integración de WSL2 activa:
+1.  Abre **Docker Desktop**.
+2.  Ve a **Settings (Engranaje) > Resources > WSL Integration**.
+3.  Activa la casilla correspondiente a tu distribución Linux de WSL activa.
+4.  Presiona **Apply & restart** y vuelve a arrancar el comando en tu consola.
