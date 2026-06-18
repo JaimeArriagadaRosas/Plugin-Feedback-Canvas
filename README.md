@@ -13,6 +13,7 @@ Aplicación web de retroalimentación académica adaptativa integrada con Canvas
 *   [Guía de Instalación Paso a Paso](#guía-de-instalación-paso-a-paso)
 *   [Configuración de Variables de Entorno (.env)](#configuración-de-variables-de-entorno-env)
 *   [Compilación y Ejecución](#compilación-y-ejecución)
+*   [Usuarios de Prueba Locales (Canvas LMS)](#usuarios-de-prueba-locales-canvas-lms)
 *   [Resolución de Problemas Frecuentes (Troubleshooting)](#resolución-de-problemas-frecuentes-troubleshooting)
 
 ---
@@ -245,6 +246,40 @@ Para verificar que el frontend compila correctamente y no tiene errores de códi
 npm run build
 ```
 Esto generará una carpeta `dist/` en la raíz con el código minimizado y optimizado.
+
+---
+
+## Usuarios de Prueba Locales (Canvas LMS)
+
+Al montar la plataforma localmente con Docker (Opción 3), se inyectará una base de datos de prueba con usuarios y contraseñas listos para iniciar sesión y testear el comportamiento del plugin LTI.
+
+### 1. Administrador de Canvas
+Tiene permisos para configurar integraciones y gestionar todas las cuentas:
+*   **Correo:** `admin@canvas.local`
+*   **Contraseña:** `adminpassword123`
+
+### 2. Profesor (Elena Ramírez)
+Tiene permisos para calificar tareas, crear plantillas de feedback y autorizar envíos de retroalimentación con IA:
+*   **Correo:** `profesor@canvas.local`
+*   **Contraseña:** `teacherpassword123`
+
+### 3. Estudiantes Matriculados
+Tienen permisos para ingresar y visualizar su historial académico y el feedback asignado por el profesor:
+*   **Estudiante 1 (Juan Perez):**
+    *   **Correo:** `estudiante1@canvas.local`
+    *   **Contraseña:** `estudiante1pass`
+*   **Estudiante 2 (Maria Garcia):**
+    *   **Correo:** `estudiante2@canvas.local`
+    *   **Contraseña:** `estudiante2pass`
+*   **Estudiante 3 (Pedro Lopez):**
+    *   **Correo:** `estudiante3@canvas.local`
+    *   **Contraseña:** `estudiante3pass`
+*   **Estudiante 4 (Ana Torres):**
+    *   **Correo:** `estudiante4@canvas.local`
+    *   **Contraseña:** `estudiante4pass`
+*   **Estudiante 5 (Carlos Mendez):**
+    *   **Correo:** `estudiante5@canvas.local`
+    *   **Contraseña:** `estudiante5pass`
 
 ---
 
