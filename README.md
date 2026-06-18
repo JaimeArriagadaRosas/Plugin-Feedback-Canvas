@@ -108,6 +108,29 @@ npm install
 
 ---
 
+### ¿Qué hace exactamente `npm install` y cómo cambia tu carpeta?
+
+Cuando ejecutas `npm install`, el sistema realiza las siguientes tareas de forma automática:
+1.  **Lectura de instrucciones:** Lee el archivo `package.json` de tu proyecto, que funciona como una "lista de compras" donde se definen todas las librerías externas que requiere la aplicación para funcionar (por ejemplo, React, Express, etc.).
+2.  **Descarga de paquetes:** Se conecta a internet para descargar la versión exacta de cada librería especificada.
+3.  **Creación de `node_modules`:** Al finalizar el comando, verás que en la carpeta raíz `Plugin Feedback/` se habrá creado automáticamente una nueva carpeta llamada **`node_modules/`**.
+
+**¿Cómo se ve tu carpeta tras la instalación?**
+```text
+Plugin Feedback/
+├── db/
+├── node_modules/         <-- ¡NUEVA CARPETA CREADA! Contiene miles de subcarpetas
+├── src/
+├── package.json
+├── package-lock.json
+└── ... (otros archivos)
+```
+> [!NOTE]
+> **¿Qué es la carpeta `node_modules`?**
+> Imagínala como una "caja de herramientas" gigante. Contiene miles de pequeños archivos de código que tu aplicación usará de fondo. Puede llegar a pesar entre 100 MB y 300 MB. **Es completamente normal y nunca debes borrarla ni modificarla manualmente**, ya que de ella depende que el plugin arranque.
+
+---
+
 ## Configuración de Variables de Entorno (.env)
 
 El archivo `.env` guarda información de configuración confidencial.
@@ -146,6 +169,39 @@ Este comando abrirá un menú interactivo en la terminal con tres opciones.
 
 > [!WARNING]
 > **Bugs conocidos de visualización:** En la versión actual del frontend del plugin, las pantallas de administrador, profesor y estudiante experimentan un problema visual de superposición (se mezclan en pantalla). Este bug está identificado y se resolverá en próximas actualizaciones.
+
+---
+
+### ¿Qué es la "Capa de Instalación" de la Opción 3 y qué componentes instala?
+
+Cuando ejecutas el script interactivo y seleccionas la **Opción 3** (`Ejecutar localmente Canvas LMS`), el script entra en la "capa de instalación". Si es la primera vez que lo corres y no tienes nada configurado, el instalador realizará el siguiente flujo automatizado:
+
+1.  **Detección Automática de Componentes:** 
+    El instalador analiza tu computadora para verificar si Docker Desktop está corriendo, y busca si ya existe el código de Canvas LMS clonado en tu disco. Si nota que faltan componentes, los instalará automáticamente uno por uno.
+2.  **Clonación de la Plataforma Canvas LMS:** 
+    Descarga de manera automática la carpeta completa de la plataforma de aprendizaje virtual `canvas-lms-master` al lado del plugin.
+3.  **Creación e Inicialización de Contenedores Docker:**
+    Docker creará mini "computadoras virtuales" independientes (contenedores) que se ejecutarán de fondo en tu PC. Instalará y configurará:
+    *   **Base de Datos PostgreSQL (Contenedor):** El motor donde se guarda toda la información.
+    *   **Servidor de Aplicaciones (Contenedor Web):** Encargado de procesar y mostrar la plataforma Canvas LMS en tu navegador.
+    *   **Servidor de Trabajos en Cola (Contenedor Redis/Jobs):** Encargado de las tareas pesadas de fondo de Canvas LMS, como el envío de correos o notificaciones.
+4.  **Instalación de Dependencias de Ruby/Rails:**
+    Dado que Canvas LMS está escrito en una tecnología diferente al plugin (llamada Ruby on Rails), el instalador descarga todos los paquetes de código internos específicos de Ruby (llamados "gemas") que Canvas necesita para ejecutarse.
+5.  **Configuración e Inicialización de la Base de Datos:**
+    Crea la estructura de base de datos desde cero, inyectando miles de tablas vacías y configurando el usuario administrador por defecto para que puedas iniciar sesión.
+6.  **Compilación de Assets (Recursos Visuales):**
+    Traduce, junta y comprime todas las imágenes, estilos de diseño (CSS) y código interactivo de la interfaz de Canvas LMS para que cargue lo más rápido posible en el navegador.
+
+---
+
+### ¿Por qué demora entre 30 y 45 minutos la primera vez?
+
+La demana se debe principalmente a tres procesos sumamente pesados que exigen mucho esfuerzo del procesador y la memoria de tu computadora:
+*   **Descarga inicial:** Docker debe descargar imágenes base que pesan varios Gigabytes en total.
+*   **Compilación de recursos visuales (Assets):** Canvas LMS es una plataforma gigantesca con miles de archivos de diseño que deben unirse y optimizarse. Este proceso por sí solo suele tomar más de 20 minutos de procesamiento continuo.
+*   **Migraciones de base de datos:** El sistema debe ejecutar miles de scripts para dibujar y estructurar la base de datos interna PostgreSQL.
+
+Una vez que este largo proceso se completa exitosamente la primera vez, **las siguientes ejecuciones tardarán menos de un minuto**, ya que los componentes quedarán guardados en tu sistema y Docker solo tendrá que encenderlos.
 
 ---
 
