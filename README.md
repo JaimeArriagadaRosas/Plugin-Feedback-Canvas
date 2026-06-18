@@ -13,6 +13,7 @@ Aplicación web de retroalimentación académica adaptativa integrada con Canvas
 *   [Guía de Instalación Paso a Paso](#guía-de-instalación-paso-a-paso)
 *   [Configuración de Variables de Entorno (.env)](#configuración-de-variables-de-entorno-env)
 *   [Compilación y Ejecución](#compilación-y-ejecución)
+*   [Usuarios de Prueba Locales (Canvas LMS)](#usuarios-de-prueba-locales-canvas-lms)
 *   [Resolución de Problemas Frecuentes (Troubleshooting)](#resolución-de-problemas-frecuentes-troubleshooting)
 
 ---
@@ -83,16 +84,34 @@ Proyecto Plugin feedback/
 
 ## Guía de Instalación Paso a Paso
 
-Abre tu consola/terminal y navega hasta la carpeta del plugin (`Plugin Feedback`). Sigue las instrucciones correspondientes a tu sistema operativo:
+### Paso 1: Entrar a la carpeta del plugin mediante consola
+Antes de poder instalar dependencias o ejecutar el proyecto, debes asegurarte de que tu consola esté posicionada dentro de la carpeta del plugin. Para ello, utiliza el comando `cd` (cambiar de directorio):
+
+*   **Si abres la consola de manera general, navega escribiendo la ruta completa:**
+    ```bash
+    cd "d:\Descargas\Proyecto Plugin feedback\Plugin Feedback"
+    ```
+*   **Si ya te encuentras en la carpeta contenedora principal (`Proyecto Plugin feedback`), entra al plugin con:**
+    ```bash
+    cd "Plugin Feedback"
+    ```
+
+> [!TIP]
+> Sabrás que estás en el lugar correcto porque el texto al principio de la línea en tu consola terminará con `...\Plugin Feedback>`.
+
+---
+
+### Paso 2: Instalar las dependencias de Node.js
+Una vez dentro de la carpeta en la consola, sigue las instrucciones según tu sistema operativo:
 
 ### En Windows (PowerShell)
 
-Si usas PowerShell, es posible que el sistema bloquee la ejecución de scripts locales. Ejecuta este comando para habilitarlos temporalmente en tu sesión de consola actual:
+Si usas PowerShell, es posible que Windows bloquee la ejecución de scripts locales de Node. Ejecuta este comando para habilitarlos temporalmente en tu sesión de consola actual:
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
 
-Luego, instala las dependencias necesarias de Node.js:
+Luego, instala las dependencias de Node.js ejecutando:
 ```powershell
 npm install
 ```
@@ -227,6 +246,40 @@ Para verificar que el frontend compila correctamente y no tiene errores de códi
 npm run build
 ```
 Esto generará una carpeta `dist/` en la raíz con el código minimizado y optimizado.
+
+---
+
+## Usuarios de Prueba Locales (Canvas LMS)
+
+Al montar la plataforma localmente con Docker (Opción 3), se inyectará una base de datos de prueba con usuarios y contraseñas listos para iniciar sesión y testear el comportamiento del plugin LTI.
+
+### 1. Administrador de Canvas
+Tiene permisos para configurar integraciones y gestionar todas las cuentas:
+*   **Correo:** `admin@canvas.local`
+*   **Contraseña:** `adminpassword123`
+
+### 2. Profesor (Elena Ramírez)
+Tiene permisos para calificar tareas, crear plantillas de feedback y autorizar envíos de retroalimentación con IA:
+*   **Correo:** `profesor@canvas.local`
+*   **Contraseña:** `teacherpassword123`
+
+### 3. Estudiantes Matriculados
+Tienen permisos para ingresar y visualizar su historial académico y el feedback asignado por el profesor:
+*   **Estudiante 1 (Juan Perez):**
+    *   **Correo:** `estudiante1@canvas.local`
+    *   **Contraseña:** `estudiante1pass`
+*   **Estudiante 2 (Maria Garcia):**
+    *   **Correo:** `estudiante2@canvas.local`
+    *   **Contraseña:** `estudiante2pass`
+*   **Estudiante 3 (Pedro Lopez):**
+    *   **Correo:** `estudiante3@canvas.local`
+    *   **Contraseña:** `estudiante3pass`
+*   **Estudiante 4 (Ana Torres):**
+    *   **Correo:** `estudiante4@canvas.local`
+    *   **Contraseña:** `estudiante4pass`
+*   **Estudiante 5 (Carlos Mendez):**
+    *   **Correo:** `estudiante5@canvas.local`
+    *   **Contraseña:** `estudiante5pass`
 
 ---
 
