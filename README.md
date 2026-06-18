@@ -1,4 +1,4 @@
-# Plugin Feedback - Canvas LMS
+# Plugin Feedback - Canvas LMS.
 
 Aplicación web de retroalimentación académica adaptativa integrada con Canvas LMS y potenciada por Inteligencia Artificial (IA). Permite a los profesores configurar plantillas de feedback, generar retroalimentación personalizada automáticamente para los estudiantes y gestionar su aprobación antes del envío.
 
