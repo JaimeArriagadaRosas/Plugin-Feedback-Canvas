@@ -204,6 +204,13 @@ async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
         return reject(new Error('Timeout esperando a Canvas LMS.'));
       }
 
+      let active = true;
+      const scheduleNext = () => {
+        if (!active) return;
+        active = false;
+        setTimeout(poll, 3000);
+      };
+
       const req = http.get('http://localhost:3000/api/config/startup-mode', (res) => {
         let data = '';
         res.on('data', chunk => { data += chunk; });
@@ -211,23 +218,34 @@ async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
           try {
             const json = JSON.parse(data);
             if (json.initializing === false) {
-              resolve();
+              if (active) {
+                active = false;
+                resolve();
+              }
             } else {
-              setTimeout(poll, 3000);
+              scheduleNext();
             }
           } catch {
-            setTimeout(poll, 3000);
+            scheduleNext();
           }
         });
       });
-      req.on('error', () => setTimeout(poll, 3000));
-      req.setTimeout(2000, () => { req.destroy(); setTimeout(poll, 3000); });
+
+      req.on('error', () => {
+        scheduleNext();
+      });
+
+      req.setTimeout(2000, () => {
+        req.destroy();
+        scheduleNext();
+      });
     }
 
     // Espera 2s antes del primer intento (el backend aún puede estar arrancando)
     setTimeout(poll, 2000);
   });
 }
+
 
 async function main() {
   try {
