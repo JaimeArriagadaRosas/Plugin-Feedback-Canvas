@@ -267,35 +267,25 @@ Tras esto, para interactuar con Canvas desde tu navegador debes acceder siempre 
 
 ## Usuarios de Prueba Locales (Canvas LMS)
 
-Al montar la plataforma localmente con Docker (Opción 3), se inyectará una base de datos de prueba con usuarios y contraseñas listos para iniciar sesión y testear el comportamiento del plugin LTI.
+Al montar la plataforma localmente con Docker (Opción 3), se inyectará una base de datos de prueba con usuarios listos para iniciar sesión y testear el comportamiento del plugin LTI. 
+
+> [!NOTE]
+> Las contraseñas pueden personalizarse desde tu archivo `.env`. Si no las modificaste allí, el sistema te habrá asignado automáticamente los siguientes valores por defecto:
 
 ### 1. Administrador de Canvas
 Tiene permisos para configurar integraciones y gestionar todas las cuentas:
 *   **Correo:** `admin@canvas.local`
-*   **Contraseña:** `adminpassword123`
+*   **Contraseña:** `password123` *(Configurable con: `CANVAS_ADMIN_PASS`)*
 
 ### 2. Profesor (Elena Ramírez)
 Tiene permisos para calificar tareas, crear plantillas de feedback y autorizar envíos de retroalimentación con IA:
 *   **Correo:** `profesor@canvas.local`
-*   **Contraseña:** `teacherpassword123`
+*   **Contraseña:** `password123` *(Configurable con: `CANVAS_TEACHER_PASS`)*
 
 ### 3. Estudiantes Matriculados
 Tienen permisos para ingresar y visualizar su historial académico y el feedback asignado por el profesor:
-*   **Estudiante 1 (Juan Perez):**
-    *   **Correo:** `estudiante1@canvas.local`
-    *   **Contraseña:** `estudiante1pass`
-*   **Estudiante 2 (Maria Garcia):**
-    *   **Correo:** `estudiante2@canvas.local`
-    *   **Contraseña:** `estudiante2pass`
-*   **Estudiante 3 (Pedro Lopez):**
-    *   **Correo:** `estudiante3@canvas.local`
-    *   **Contraseña:** `estudiante3pass`
-*   **Estudiante 4 (Ana Torres):**
-    *   **Correo:** `estudiante4@canvas.local`
-    *   **Contraseña:** `estudiante4pass`
-*   **Estudiante 5 (Carlos Mendez):**
-    *   **Correo:** `estudiante5@canvas.local`
-    *   **Contraseña:** `estudiante5pass`
+*   **Estudiantes 1 al 5:** (`estudiante1@canvas.local`, `estudiante2@canvas.local`, etc.)
+*   **Contraseña (común para todos):** `password123` *(Configurable con: `CANVAS_STUDENT_PASS`)*
 
 ---
 
