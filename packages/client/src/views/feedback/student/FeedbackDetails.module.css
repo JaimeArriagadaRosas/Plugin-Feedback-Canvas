@@ -1,0 +1,189 @@
+.splitView {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.viewer {
+  flex: 1;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.paper {
+  flex: 1;
+  padding: 40px;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.paperInner {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: 50px;
+  min-height: 800px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.student {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 20px 0;
+}
+
+.divider {
+  border: 0.5px solid #eee;
+  margin: 20px 0;
+}
+
+.text {
+  margin-top: 30px;
+  line-height: 1.8;
+  border: 1px solid #eee;
+  padding: 20px;
+  background-color: #fafafa;
+}
+
+.sidebar {
+  width: 350px;
+  background-color: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebarTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.sidebarScore {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.commentsHeader {
+  padding: 15px 20px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+}
+
+.bubble {
+  margin: 15px;
+  padding: 15px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.studentHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 10px;
+}
+
+.teacherName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.teacherDate {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.feedbackText {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.ratingSection {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--color-border);
+  text-align: center;
+}
+
+.ratingLabel {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--color-primary);
+}
+
+.ratingStars {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.ratingSaved {
+  font-size: 11px;
+  color: var(--color-success);
+  margin-top: 5px;
+}
+
+.sidebarActions {
+  padding: 20px;
+  border-top: 1px solid var(--color-border-light);
+  margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .splitView {
+    flex-direction: column;
+  }
+
+  .viewer {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .paper {
+    padding: 20px;
+  }
+
+  .paperInner {
+    padding: 24px;
+    min-height: auto;
+  }
+}

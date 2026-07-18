@@ -1,4 +1,6 @@
 class CreatePluginTables < ActiveRecord::Migration[7.0]
+  tag :predeploy
+
   def change
     # 1. Tabla de Plantillas de Feedback
     create_table :plantilla_feedbacks do |t|
@@ -13,7 +15,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.string :estudiante_id, limit: 50, null: false
       t.string :curso_id, limit: 50, null: false
       t.string :tarea_id, limit: 50, null: false
-      t.references :plantilla_feedback, foreign_key: true
+      t.bigint :plantilla_feedback_id
       t.text :contenido_generado, null: false
       t.text :prompt_usado
       t.integer :nota_canvas
@@ -34,7 +36,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.jsonb :config_json, null: false
       t.datetime :actualizado_en, default: -> { 'CURRENT_TIMESTAMP' }
     end
-    add_index :configuracion_curso_tareas, [:contexto_tipo, :contexto_id], unique: true
+    add_index :configuracion_curso_tareas, [:contexto_tipo, :contexto_id], unique: true, name: 'idx_config_curso_tareas'
 
     # 4. Tokens y Llaves de API de Servicios IA
     create_table :llaves_api_ia do |t|
@@ -51,7 +53,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.jsonb :resumen_desempeno
       t.datetime :ultimo_sync, default: -> { 'CURRENT_TIMESTAMP' }
     end
-    add_index :historial_academico_locales, [:estudiante_id, :curso_id], unique: true
+    add_index :historial_academico_locales, [:estudiante_id, :curso_id], unique: true, name: 'idx_historial_academico_loc'
 
     # 6. Logs de Auditoría
     create_table :logs_auditoria do |t|
@@ -64,7 +66,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
     # 7. Historial de Notificaciones
     create_table :notificaciones_feedbacks do |t|
       t.string :estudiante_id, limit: 50, null: false
-      t.references :historial_feedback_generado, foreign_key: true
+      t.bigint :historial_feedback_generado_id
       t.text :mensaje, null: false
       t.string :metodo, limit: 20, default: 'email'
       t.datetime :enviado_en, default: -> { 'CURRENT_TIMESTAMP' }

@@ -1,0 +1,25 @@
+# Configuración de gitleaks para detectar secretos en el repositorio.
+# Se extiende la configuración por defecto y se excluyen falsos positivos
+# conocidos (datos de prueba y archivos muertos/corruptos).
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+  '''logs/''',
+  '''coverage/''',
+  '''packages/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
+  '''packages/server/src/services/infraestructura/DockerRunner\.js$''',
+  '''env_example$''',
+]
+regexes = [
+  # Emails de prueba locales (p. ej. profesor@canvas.local)
+  '''[a-z0-9._%+-]+@canvas\.local''',
+  # Password de prueba usado en seeds locales
+  '''password123''',
+  # Hash bcrypt de prueba hardcodeado en db.js (modo local)
+  '''\$2b\$10\$McRiCLIZ4FP686ZSDnr9HeiFe4xrmDB2v/WwY3\.1ExOI5TW64Rp7K''',
+]

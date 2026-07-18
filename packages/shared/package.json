@@ -1,0 +1,13 @@
+{
+  "name": "shared",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    "./tokens": "./tokens/index.js",
+    "./tokens/theme.css": "./tokens/theme.css",
+    "./api": "./api/index.js",
+    "./lib/authToken": "./lib/authToken.js",
+    "./*": "./*.js"
+  }
+}

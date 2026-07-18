@@ -1,0 +1,160 @@
+.wrapper {
+  font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #2d3b45;
+  background: transparent;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  padding: 24px 30px;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3b45;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #2d3b45;
+  padding-bottom: 10px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.btnCreate {
+  background: #0770a3;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.searchBar {
+  background: #fff;
+  border: 1px solid #c7cdd1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  width: 300px;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  width: 100%;
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.tableWrapper {
+  background: #fff;
+  border: 1px solid #c7cdd1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  background: #f0f4f7;
+  text-align: left;
+  padding: 12px 15px;
+  font-weight: 700;
+  font-size: 12px;
+  border-bottom: 2px solid #c7cdd1;
+}
+
+.td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e4e8;
+}
+
+.actionIcon {
+  cursor: pointer;
+  margin-right: 10px;
+  color: #0770a3;
+  font-size: 18px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.templateNameBtn {
+  background: none;
+  border: none;
+  color: #0770a3;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
+.navButtons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btnBack {
+  padding: 10px 25px;
+  background: #fff;
+  border: 1px solid #c7cdd1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btnNext {
+  padding: 10px 25px;
+  background: #0770a3;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .searchBar {
+    width: 100%;
+  }
+  
+  .tableWrapper {
+    overflow-x: auto;
+  }
+  
+  .navButtons {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .btnBack, .btnNext {
+    width: 100%;
+  }
+}

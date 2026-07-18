@@ -1,0 +1,89 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { api } from "shared/api";
+import { logout as logoutToken } from "shared/lib/authToken";
+const AuthContext = createContext(null);
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+const AuthProvider = ({ children }) => {
+  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
+  const [courseId, setCourseId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
+  const fetchRole = useCallback(async () => {
+    try {
+      console.log("[Auth] Iniciando verificaci\xF3n de sesi\xF3n...");
+      const data = await api.get("/config/me");
+      if (data.exito && data.role) {
+        const sourceLabel = data.source === "lti" ? "Canvas LMS (JWT LTI 1.3 real)" : data.source === "local" ? "Sesi\xF3n local (modo dev)" : data.source === "dev-token" ? "dev-token (bypass local)" : data.source || "desconocido";
+        const correcto = data.source === "lti";
+        console.log(`[Auth] \u2705 LOGIN correcto | Usuario: ${data.user} | Permisos: ${data.role} | Fuente: ${sourceLabel} ${correcto ? "\u2705" : "\u26A0\uFE0F"}`);
+        if (data.role === "admin") {
+          console.log("[Auth] Permisos de Administrador habilitados. Acceso total al sistema.");
+        } else if (data.role === "teacher") {
+          console.log("[Auth] Permisos de Profesor habilitados. Gesti\xF3n docente.");
+        } else if (data.role === "student") {
+          console.log("[Auth] Restricciones de Estudiante aplicadas. Solo vista de alumno.");
+        } else {
+          console.log(`[Auth] Rol desconocido: ${data.role}`);
+        }
+        if (!correcto) {
+          console.warn("[Auth] \u26A0\uFE0F El login NO provino de un JWT real de Canvas. Fuente detectada:", sourceLabel);
+        } else {
+          console.log("[Auth] Todo correcto: sesi\xF3n autenticada contra Canvas LMS v\xEDa LTI 1.3.");
+        }
+        setRole(data.role);
+        setUser(data.user);
+        setCourseId(data.courseId);
+        setApiError(null);
+      } else {
+        console.warn("[Auth] No se pudo verificar la sesi\xF3n:", data);
+        setApiError(JSON.stringify(data));
+        setRole(null);
+      }
+    } catch (e) {
+      console.error(`[Auth] Error de red durante la verificaci\xF3n: ${e.message}`);
+      setApiError(`Error de red: ${e.message}`);
+      setRole(null);
+    } finally {
+      setIsLoading(false);
+      console.log("[Auth] Proceso de verificaci\xF3n finalizado.");
+    }
+  }, []);
+  useEffect(() => {
+    fetchRole();
+  }, [fetchRole]);
+  const logout = useCallback(async () => {
+    try {
+      await logoutToken();
+      console.info("[Auth] \u2705 LOGOUT: sesi\xF3n cerrada y token eliminado del frontend.");
+    } catch (e) {
+      console.warn("[Auth] Logout backend fall\xF3, limpiando localmente:", e?.message);
+    } finally {
+      setRole(null);
+      setUser(null);
+      setCourseId(null);
+      setApiError(null);
+      window.location.href = "/";
+    }
+  }, [logoutToken]);
+  const value = {
+    role,
+    user,
+    courseId,
+    isLoading,
+    apiError,
+    fetchRole,
+    logout
+  };
+  return /* @__PURE__ */ React.createElement(AuthContext.Provider, { value }, children);
+};
+export {
+  AuthProvider,
+  useAuth
+};

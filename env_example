@@ -1,16 +1,100 @@
-VITE_CANVAS_BASE_URL=https://canvas.instructure.com
-VITE_CANVAS_ACCESS_TOKEN=your_token_here
-VITE_USE_LOCAL_DATA=true
+# =============================================================================
+# Plugin Feedback - Archivo de Variables de Entorno
+# Copia este archivo como ".env" y completa los valores según tu entorno.
+# =============================================================================
 
-# Database Configuration (PostgreSQL)
+# -----------------------------------------------------------------------------
+# Canvas LMS Configuration
+# -----------------------------------------------------------------------------
+# URL base de la instancia de Canvas.
+# En desarrollo local Canvas se sirve vía el proxy TLS inverso del host
+# (scripts/tls-proxy) en https://localhost:8443, que reenvía al contenedor
+# Docker HTTP en 8080. Mantener HTTPS para coherencia LTI sin mixed content.
+# Para producción: https://canvas.tu-institucion.edu
+CANVAS_BASE_URL=https://localhost:8443
+
+# Issuer de Canvas (usado para validar el token LTI).
+CANVAS_ISSUER=https://localhost:8443
+
+# Token de acceso a la API de Canvas (requiere rol de administrador o profesor).
+# Se obtiene en Canvas: Account > Settings > New Access Token.
+# Dejar vacío si usas modo Local o Canvas Local con Docker.
+CANVAS_ACCESS_TOKEN=your_canvas_access_token_here
+
+# -----------------------------------------------------------------------------
+# Modo de Ejecución
+# -----------------------------------------------------------------------------
+# Si es "true", usa datos locales en memoria (no requiere Canvas ni PostgreSQL).
+# Ideal para desarrollo y pruebas.
+# Si es "false", se conecta a Canvas real y a la base de datos.
+# Valores válidos: true | false
+
+# -----------------------------------------------------------------------------
+# Base de Datos (PostgreSQL)
+# -----------------------------------------------------------------------------
+# Solo requerido si VITE_USE_LOCAL_DATA=false.
+# Si no hay conexión disponible, el sistema cambia automáticamente a modo Local.
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=password
 DB_NAME=feedback_plugin_db
 DB_PORT=5432
 
-# Security
-ENCRYPTION_KEY=d8f6e2a1b9c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9
+# -----------------------------------------------------------------------------
+# Seguridad
+# -----------------------------------------------------------------------------
+# Clave de encriptación AES-256 para proteger datos sensibles
+# (tokens LTI, configuraciones de IA, etc.) almacenados en la base de datos.
+# Genera una clave segura de 64 caracteres hexadecimales.
+# Ejemplo: openssl rand -hex 32
+ENCRYPTION_KEY=your_encryption_key_here
 
-# AI Configuration
+# Secreto para validar webhooks de Canvas (HMAC-SHA256).
+# Configurar en Canvas: Account > Settings > Webhooks > Secret.
+# Generado con: node -e "crypto.randomBytes(32).toString('hex')"
+WEBHOOK_SECRET=your_webhook_secret_here
+
+# Lista de deployment_ids permitidos (separados por coma). Vacío = todos permitidos.
+LTI_DEPLOYMENT_IDS=
+
+# -----------------------------------------------------------------------------
+# Inteligencia Artificial - Google Gemini
+# -----------------------------------------------------------------------------
+# API Key de Google Generative AI (Gemini).
+# Obtén una gratuitamente en: https://aistudio.google.com/app/apikey
+# Requerida para la generación de feedback personalizado con IA.
 GEMINI_API_KEY=YOUR_API_KEY_HERE
+
+# -----------------------------------------------------------------------------
+# Configuración LTI 1.3 (Canvas Local Docker o LTI real)
+# -----------------------------------------------------------------------------
+# Estos valores se autocompletan automáticamente al usar Canvas Local con Docker.
+# En modo Local no son necesarios.
+# LTI_CLIENT_ID=
+# CANVAS_OIDC_URL=https://localhost:8443/api/lti/authorize_redirect
+# LTI_REDIRECT_URI=https://localhost:3000/api/lti/callback
+# FRONTEND_URL=https://localhost:5173
+# VITE_BACKEND_URL=https://localhost:3000
+# HTTPS=true
+
+CANVAS_COURSE_ID=1
+
+# Host header que el backend debe enviar a la Canvas API. Canvas resuelve la
+# cuenta (y valida el API token) a partir de este header. En Canvas Local el
+# dominio configurado es "canvas.local".
+# CANVAS_API_HOST=canvas.local
+
+# -----------------------------------------------------------------------------
+# Credenciales de usuarios semilla en Canvas Local (Hardcodeadas por defecto)
+# -----------------------------------------------------------------------------
+CANVAS_ADMIN_PASS=CHANGE_ME_ADMIN_PASSWORD
+CANVAS_TEACHER_PASS=CHANGE_ME_TEACHER_PASSWORD
+CANVAS_STUDENT_PASS=CHANGE_ME_STUDENT_PASSWORD
+
+# -----------------------------------------------------------------------------
+# Control de arranque del orquestador (generado/autocompletado)
+# -----------------------------------------------------------------------------
+USE_LOCAL_DATA=false
+VITE_USE_LOCAL_DATA=false
+STARTUP_MODE=3
+NON_INTERACTIVE=false

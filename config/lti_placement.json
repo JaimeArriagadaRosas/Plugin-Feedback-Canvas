@@ -1,0 +1,39 @@
+{
+  "title": "Unida Feedback",
+  "scopes": [
+    "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+    "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly",
+    "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+    "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+  ],
+  "extensions": [
+    {
+      "domain": "localhost",
+      "tool_id": "unida-feedback",
+      "platform": "localhost:8443",
+      "settings": {
+        "text": "Unida",
+        "icon_url": "https://localhost:3000/icon.png",
+        "selection_height": 800,
+        "selection_width": 1200,
+        "placements": [
+          {
+            "text": "Feedback",
+            "enabled": true,
+            "placement": "course_navigation",
+            "message_type": "LtiResourceLinkRequest",
+            "target_link_uri": "https://localhost:3000/api/lti/callback",
+            "default": "enabled",
+            "visibility": "admins",
+            "windowTarget": "_self",
+            "canvas_icon_class": "icon-feedback"
+          }
+        ]
+      }
+    }
+  ],
+  "public_jwk_url": "https://localhost:3000/api/lti/jwks",
+  "description": "Herramienta Unida para Canvas",
+  "target_link_uri": "https://localhost:3000/api/lti/callback",
+  "oidc_initiation_url": "https://localhost:3000/api/lti/login"
+}

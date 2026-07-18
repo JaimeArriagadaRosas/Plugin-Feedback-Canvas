@@ -1,0 +1,64 @@
+.viewer {
+  flex: 1;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.content {
+  flex: 1;
+  padding: 40px;
+  overflow: auto;
+  background-color: var(--color-doc-bg);
+  display: flex;
+  justify-content: center;
+}
+
+.paper {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: 50px;
+  min-height: 800px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 10px 0;
+}
+
+.student {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 20px 0;
+}
+
+.divider {
+  border: 0.5px solid #eee;
+  margin: 20px 0;
+}
+
+.text {
+  margin-top: 30px;
+  line-height: 1.8;
+  border: 1px solid #eee;
+  padding: 20px;
+  white-space: pre-wrap;
+  background-color: #fafafa;
+  font-size: var(--font-size-base);
+}
