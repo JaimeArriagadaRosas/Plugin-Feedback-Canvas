@@ -16,7 +16,7 @@ describe('Webhook idempotency  Caja Negra', () => {
     const payload = { event_name: 'grade_change', course_id: 14852, assignment_id: 101, user_id: 1, grade: 9 };
     const body = JSON.stringify(payload);
 
-    const sig = crypto.createHmac('sha256', 'secret').update(body).digest('hex');
+    const sig = crypto.createHmac('sha256', 'secret').update(body).digest('base64');
 
     const first = await request(app)
       .post('/api/webhooks/canvas')
@@ -33,7 +33,7 @@ describe('Webhook idempotency  Caja Negra', () => {
     const payload = { event_name: 'grade_change', course_id: 14852, assignment_id: 101, user_id: 1, grade: 9 };
     const body = JSON.stringify(payload);
 
-    const sig = crypto.createHmac('sha256', 'secret').update(body).digest('hex');
+    const sig = crypto.createHmac('sha256', 'secret').update(body).digest('base64');
 
     const first = await request(app)
       .post('/api/webhooks/canvas')

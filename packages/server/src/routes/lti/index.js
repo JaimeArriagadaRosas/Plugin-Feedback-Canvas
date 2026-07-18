@@ -34,9 +34,9 @@ const loginHandler = (req, res) => {
   const nonce = secureNonce();
   storeNonce(nonce);
 
-  const isProduction = isHttpsEnabled();
-  const cookieSecure = isProduction;
-  const cookieSameSite = isProduction ? 'None' : 'Lax';
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieSecure = isProd || isHttpsEnabled();
+  const cookieSameSite = cookieSecure ? 'None' : 'Lax';
   res.cookie('lti_state', state, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
   res.cookie('lti_nonce', nonce, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
 

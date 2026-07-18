@@ -90,6 +90,7 @@ CANVAS_COURSE_ID=1
 CANVAS_ADMIN_PASS=password123
 CANVAS_TEACHER_PASS=password123
 CANVAS_STUDENT_PASS=password123
+LOCAL_DEV_PASSWORD_HASH=$2b$10$OQmwWbGwDpUBmzguBm5NTO.aKPijtXwVha2RZQnZ1JgBnbDcwWlRu
 
 # -----------------------------------------------------------------------------
 # Control de arranque del orquestador (generado/autocompletado)

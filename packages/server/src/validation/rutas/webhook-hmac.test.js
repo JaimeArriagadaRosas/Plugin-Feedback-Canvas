@@ -8,7 +8,7 @@ describe('Webhook HMAC  Caja Negra', () => {
 
   async function sign(body) {
     const crypto = await import('node:crypto');
-    return crypto.default.createHmac('sha256', secret).update(body).digest('hex');
+    return crypto.default.createHmac('sha256', secret).update(body).digest('base64');
   }
 
   beforeEach(() => {
