@@ -17,7 +17,7 @@ describe('Rate limit  Caja Negra', () => {
   it('limite de webhook bloquea burst de eventos', async () => {
     const payload = { event_name: 'grade_change', course_id: 14852, assignment_id: 101, user_id: 1, grade: 9 };
     const body = JSON.stringify(payload);
-    const sig = (await import('node:crypto')).default.createHmac('sha256', 'secret').update(body).digest('hex');
+    const sig = (await import('node:crypto')).default.createHmac('sha256', 'secret').update(body).digest('base64');
 
     for (let i = 0; i < 50; i++) {
       const res = await request(app)
