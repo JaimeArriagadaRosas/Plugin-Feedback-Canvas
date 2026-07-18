@@ -87,9 +87,9 @@ CANVAS_COURSE_ID=1
 # -----------------------------------------------------------------------------
 # Credenciales de usuarios semilla en Canvas Local (Hardcodeadas por defecto)
 # -----------------------------------------------------------------------------
-CANVAS_ADMIN_PASS=CHANGE_ME_ADMIN_PASSWORD
-CANVAS_TEACHER_PASS=CHANGE_ME_TEACHER_PASSWORD
-CANVAS_STUDENT_PASS=CHANGE_ME_STUDENT_PASSWORD
+CANVAS_ADMIN_PASS=password123
+CANVAS_TEACHER_PASS=password123
+CANVAS_STUDENT_PASS=password123
 
 # -----------------------------------------------------------------------------
 # Control de arranque del orquestador (generado/autocompletado)

@@ -27,10 +27,10 @@ const PLUGIN_DIR = path.resolve(__dirname, '..', '..', '..', '..');
 const CANVAS_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'canvas-lms-master');
 
 const CANVAS_ADMIN_EMAIL = process.env.CANVAS_ADMIN_EMAIL || 'admin@canvas.local';
-const CANVAS_ADMIN_PASS = process.env.CANVAS_ADMIN_PASS || 'adminpassword123';
+const CANVAS_ADMIN_PASS = process.env.CANVAS_ADMIN_PASS || 'password123';
 const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_PASS ? process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local' : 'profesor@canvas.local';
-const CANVAS_TEACHER_PASS = process.env.CANVAS_TEACHER_PASS || 'teacherpassword123';
-const CANVAS_STUDENT_PASS = process.env.CANVAS_STUDENT_PASS || 'estudiantepass';
+const CANVAS_TEACHER_PASS = process.env.CANVAS_TEACHER_PASS || 'password123';
+const CANVAS_STUDENT_PASS = process.env.CANVAS_STUDENT_PASS || 'password123';
 
 if (!process.env.CANVAS_ADMIN_PASS) {
   boot.info('Usando contraseñas por defecto para cuentas de prueba locales.');
