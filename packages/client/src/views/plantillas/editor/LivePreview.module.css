@@ -1,0 +1,32 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview {
+  background-color: var(--color-surface-header);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  background-color: #f0f4f7;
+}
+
+.previewInner {
+  background-color: var(--color-surface);
+  padding: 15px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--color-text);
+  min-height: 100px;
+  white-space: pre-wrap;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}

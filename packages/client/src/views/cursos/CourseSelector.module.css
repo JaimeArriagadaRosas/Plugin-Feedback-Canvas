@@ -1,0 +1,144 @@
+.wrapper {
+  font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #2d3b45;
+  background: transparent;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  padding: 24px 30px;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3b45;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #2d3b45;
+  padding-bottom: 10px;
+}
+
+.sectionHeading {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d3b45;
+  margin-bottom: 15px;
+}
+
+.sectionHeadingLight {
+  font-weight: 400;
+  color: #666;
+}
+
+.tableWrapper {
+  background: #fff;
+  border: 1px solid #c7cdd1;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.th {
+  background: #f0f4f7;
+  text-align: left;
+  padding: 12px 15px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #2d3b45;
+  border-bottom: 2px solid #c7cdd1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e4e8;
+  vertical-align: middle;
+}
+
+.courseLink {
+  color: #0770a3;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}
+
+.btnSelect {
+  background: #fff;
+  border: 1px solid #0770a3;
+  color: #0770a3;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btnSelect:hover {
+  background: #0770a3;
+  color: #fff;
+}
+
+.btnSettings {
+  background: #fff;
+  border: 1px solid #c7cdd1;
+  color: #555;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-left: 8px;
+  vertical-align: middle;
+  transition: background 0.2s;
+}
+
+.btnSettings:hover {
+  background: #f0f4f7;
+}
+
+.footnote {
+  text-align: right;
+  font-size: 12px;
+  color: #666;
+  margin-top: 15px;
+  font-style: italic;
+}
+
+.actionCell {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .tableWrapper {
+    overflow-x: auto;
+  }
+  
+  .actionCell {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .btnSettings {
+    margin-left: 0;
+  }
+}

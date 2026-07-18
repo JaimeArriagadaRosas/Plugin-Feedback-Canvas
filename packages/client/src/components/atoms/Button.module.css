@@ -1,0 +1,104 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.primary {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.primary:hover:not(.disabled) {
+  background-color: color-mix(in srgb, var(--color-primary) 85%, #000);
+}
+
+.secondary {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.secondary:hover:not(.disabled) {
+  background-color: var(--color-surface-alt);
+}
+
+.danger {
+  background-color: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+}
+
+.danger:hover:not(.disabled) {
+  background-color: color-mix(in srgb, var(--color-danger) 85%, #000);
+}
+
+.success {
+  background-color: #27ae60;
+  color: #fff;
+  border-color: #27ae60;
+}
+
+.success:hover:not(.disabled) {
+  background-color: #219a52;
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-text);
+  border-color: transparent;
+}
+
+.ghost:hover:not(.disabled) {
+  background-color: var(--color-surface-muted);
+}
+
+/* Sizes */
+.sm {
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+}
+
+.md {
+  padding: 10px 20px;
+  font-size: var(--font-size-base);
+}
+
+.lg {
+  padding: 14px 28px;
+  font-size: var(--font-size-lg);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loadingText {
+  opacity: 0.8;
+}

@@ -1,0 +1,29 @@
+# Backups temporales generados durante la refactorización
+.backups/
+*.before-*
+*.backup
+*.backup2
+*.new
+*.fixed
+*.placeholder-fix
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+
+# Variables de entorno
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/

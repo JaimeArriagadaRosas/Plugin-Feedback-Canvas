@@ -1,0 +1,31 @@
+.rating {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.star {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-border);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.star:hover:not(.readonly) {
+  transform: scale(1.1);
+}
+
+.active {
+  color: var(--color-star);
+}
+
+.readonly {
+  cursor: default;
+}
+
+.readonly:hover {
+  transform: none;
+}

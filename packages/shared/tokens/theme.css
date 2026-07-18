@@ -1,0 +1,173 @@
+/**
+ * theme.css — Variables CSS globales, estilos base y animaciones compartidas.
+ *
+ * Espeja los design tokens de tokens.js para poder usarlos desde CSS Modules
+ * (p. ej. `color: var(--color-primary)`), y centraliza las keyframes que antes
+ * se declaraban inline con <style> repetidos en varios componentes.
+ */
+
+:root {
+  /* Colores */
+  --color-primary: #0770a3;
+  --color-text: #2d3b45;
+  --color-border: #c7cdd1;
+  --color-border-light: #e0e4e8;
+
+  --color-bg: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f9f9f9;
+  --color-surface-header: #f0f4f7;
+  --color-surface-muted: #eee;
+  --color-doc-bg: #e0e4e7;
+
+  --color-text-muted: #666;
+  --color-text-faint: #888;
+  --color-text-disabled: #aaa;
+
+  --color-success: #27ae60;
+  --color-success-bg: #e9f7ef;
+  --color-success-text: #1d8348;
+  --color-danger: #c0392b;
+  --color-danger-alt: #e74c3c;
+  --color-danger-bg: #fdedec;
+  --color-danger-text: #922b21;
+  --color-warning: #b58900;
+  --color-warning-bg: #fef9e7;
+  --color-warning-border: #f9e79f;
+  --color-info: #31708f;
+  --color-info-bg: #d9edf7;
+  --color-info-border: #bce8f1;
+  --color-star: #f1c40f;
+
+  --color-overlay: rgba(0,0,0,0.5);
+
+  /* Tipografía */
+  --font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-xxl: 22px;
+  --font-size-title: 24px;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Espaciado */
+  --space-xs: 5px;
+  --space-sm: 8px;
+  --space-md: 15px;
+  --space-lg: 20px;
+  --space-xl: 30px;
+  --space-xxl: 40px;
+
+  /* Radios */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-pill: 12px;
+  --radius-round: 50%;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 15px rgba(0, 0, 0, 0.2);
+  --shadow-panel: -2px 0 10px rgba(0, 0, 0, 0.05);
+
+  /* Z-index */
+  --z-modal: 1000;
+  --z-toast: 1100;
+  --z-navbar: 1000;
+  --z-footer: 9999;
+
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Breakpoints (para referencia en media queries) */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+}
+
+/* Base */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  font-family: var(--font-family);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utilidades */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Focus visible accesible */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Animaciones compartidas */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
