@@ -86,10 +86,19 @@ export default class FeedbackRepository {
     return res.rows;
   }
 
-  async listAll() {
-    const res = await db.query(
-      'SELECT * FROM Historial_Feedback_Generado ORDER BY fecha_generacion DESC'
-    );
+  async listAll(limit = null, courseId = null) {
+    let query = 'SELECT * FROM Historial_Feedback_Generado WHERE 1=1';
+    const params = [];
+    if (courseId) {
+      params.push(courseId);
+      query += ` AND curso_id = $${params.length}`;
+    }
+    query += ' ORDER BY fecha_generacion DESC';
+    if (limit !== null && limit !== undefined) {
+      params.push(limit);
+      query += ` LIMIT $${params.length}`;
+    }
+    const res = await db.query(query, params);
     return res.rows;
   }
 

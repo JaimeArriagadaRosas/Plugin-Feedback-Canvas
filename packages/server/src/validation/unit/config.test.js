@@ -105,7 +105,8 @@ describe('config/secrets.js', () => {
     process.env.NODE_ENV = 'development';
     process.env.WEBHOOK_SECRET = 'change_me';
     process.env.DB_PASSWORD = 'realpass';
-    process.env.ENCRYPTION_KEY = 'a'.repeat(64);
+    process.env.ENCRYPTION_KEY = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@';
+    process.env.DEV_TOKEN_SECRET = 'dev_token_secret_123';
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const problems = validateSecretsOrThrow(SECRET_REGISTRY);
     expect(problems).toContain('WEBHOOK_SECRET');
@@ -116,7 +117,8 @@ describe('config/secrets.js', () => {
   it('en no-producción no lanza si falta un secreto no requerido', () => {
     process.env.NODE_ENV = 'development';
     process.env.DB_PASSWORD = 'realpass';
-    process.env.ENCRYPTION_KEY = 'a'.repeat(64);
+    process.env.ENCRYPTION_KEY = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@';
+    process.env.DEV_TOKEN_SECRET = 'dev_token_secret_123';
     expect(() => validateSecretsOrThrow(SECRET_REGISTRY)).not.toThrow();
   });
 
@@ -130,14 +132,16 @@ describe('config/secrets.js', () => {
   it('en producción LANZA si hay placeholder en secreto requerido', () => {
     process.env.NODE_ENV = 'production';
     process.env.DB_PASSWORD = 'changeme';
-    process.env.ENCRYPTION_KEY = 'a'.repeat(64);
+    process.env.ENCRYPTION_KEY = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@';
+    process.env.DEV_TOKEN_SECRET = 'dev_token_secret_123';
     expect(() => validateSecretsOrThrow(SECRET_REGISTRY)).toThrow(/producción/);
   });
 
   it('en producción no lanza con todos los requeridos válidos', () => {
     process.env.NODE_ENV = 'production';
     process.env.DB_PASSWORD = 'realpass';
-    process.env.ENCRYPTION_KEY = 'a'.repeat(64);
+    process.env.ENCRYPTION_KEY = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@';
+    process.env.DEV_TOKEN_SECRET = 'dev_token_secret_123';
     process.env.WEBHOOK_SECRET = 'whsec_123456';
     expect(() => validateSecretsOrThrow(SECRET_REGISTRY)).not.toThrow();
   });

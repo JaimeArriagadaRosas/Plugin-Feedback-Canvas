@@ -6,6 +6,6 @@ export { helmetMiddleware } from './headers.js';
 export { schemas, validateBody } from './validation.js';
 export { verifyCanvasWebhook } from './webhook.js';
 export { redactBody } from './audit.js';
-export { shouldDegradeToLocal, handleDbError } from './dbGuard.js';
-export { isPlaceholderSecret, validateSecretsOrThrow } from './secrets.js';
+export { handleDbError } from './dbGuard.js';
+export { isPlaceholderSecret, validateSecretsOrThrow } from '../config/secrets.js';
 export { storeNonce, validateAndConsumeNonce, getNonceStats } from './nonceStore.js';

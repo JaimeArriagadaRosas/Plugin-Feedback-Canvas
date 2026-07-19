@@ -36,7 +36,7 @@ const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
 const CERTS_DIR = path.join(PLUGIN_ROOT, 'packages', 'server', 'certs');
 
 const TLS_LISTEN_PORT = parseInt(process.env.TLS_LISTEN_PORT || '8443', 10);
-const CANVAS_HTTP_HOST = process.env.CANVAS_HTTP_HOST || 'localhost';
+const CANVAS_HTTP_HOST = process.env.CANVAS_HTTP_HOST || '127.0.0.1';
 const CANVAS_HTTP_PORT = parseInt(process.env.CANVAS_HTTP_PORT || '8080', 10);
 const CERT_PEM = path.join(CERTS_DIR, 'localhost.pem');
 const CERT_KEY = path.join(CERTS_DIR, 'localhost-key.pem');
@@ -59,11 +59,26 @@ function createCanvasProxy() {
     };
 
     if (req.url.includes('/api/lti/')) {
-      console.log(`[TLS-PROXY] [$] TÚNEL OIDC: ${req.method} ${req.url} (Host: ${req.headers.host})`);
+      try {
+        const urlObj = new URL(req.url, `http://${req.headers.host}`);
+        const clientId = urlObj.searchParams.get('client_id') || 'N/A';
+        const redirectUri = urlObj.searchParams.get('redirect_uri') || 'N/A';
+        console.log(`[TLS-PROXY] ⚡ TÚNEL OIDC: ${req.method} ${urlObj.pathname} | Client: ${clientId} | Redirige a: ${redirectUri}`);
+      } catch (e) {
+        console.log(`[TLS-PROXY] ⚡ TÚNEL OIDC: ${req.method} ${req.url} (Host: ${req.headers.host})`);
+      }
     }
 
     const proxyReq = http.request(options, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+      const headers = { ...proxyRes.headers };
+      if (headers.location && headers.location.includes(`${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`)) {
+        headers.location = headers.location.replace(`http://${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`, `https://localhost:${TLS_LISTEN_PORT}`);
+        headers.location = headers.location.replace(`https://${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`, `https://localhost:${TLS_LISTEN_PORT}`);
+        if (req.url.includes('/api/lti/')) {
+          console.log(`[TLS-PROXY] [$] TÚNEL OIDC: Reescribiendo Location -> ${headers.location}`);
+        }
+      }
+      res.writeHead(proxyRes.statusCode || 502, headers);
       proxyRes.pipe(res);
     });
 

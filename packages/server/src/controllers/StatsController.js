@@ -61,12 +61,11 @@ export default class StatsController {
   async exportCsv(req, res, next) {
     try {
       const { courseId } = req.params;
-      // Get all feedback history for the course
-      const data = await this.statsService.feedbackRepo.listAll();
-      const filtered = courseId ? data.filter(d => d.curso_id === courseId) : data;
+      const courseIdNum = courseId ? Number(courseId) : null;
+      const data = await this.statsService.feedbackRepo.listAll(500, courseIdNum);
       
       let csv = 'ID,Estudiante ID,Curso ID,Tarea ID,Nota Canvas,Nota Chile,Estado,Fecha Generacion\n';
-      filtered.forEach(row => {
+      data.forEach(row => {
         csv += `${row.id},${row.estudiante_id},${row.curso_id},${row.tarea_id},${row.nota_canvas},${row.nota_chile},${row.estado},${row.fecha_generacion}\n`;
       });
 

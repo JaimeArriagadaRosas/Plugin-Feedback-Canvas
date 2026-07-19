@@ -1,9 +1,12 @@
-import { randomBytes } from 'node:crypto';
+import crypto from 'node:crypto';
 
-const DEFAULT_BYTES = 32;
+const DEV_TOKEN_SECRET = process.env.DEV_TOKEN_SECRET;
+if (!DEV_TOKEN_SECRET) {
+  throw new Error('DEV_TOKEN_SECRET no configurado. Defina esta variable de entorno para habilitar autenticación local.');
+}
 
-export function secureToken(bytes = DEFAULT_BYTES) {
-  return randomBytes(bytes).toString('hex');
+export function secureToken(bytes = 32) {
+  return crypto.randomBytes(bytes).toString('hex');
 }
 
 export function secureState() {
@@ -15,12 +18,8 @@ export function secureNonce() {
 }
 
 export function secureRequestId() {
-  return randomBytes(6).toString('hex');
+  return crypto.randomBytes(6).toString('hex');
 }
-
-import crypto from 'crypto';
-
-const DEV_TOKEN_SECRET = process.env.DEV_TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
 
 export function signDevToken(payload) {
   const hmac = crypto.createHmac('sha256', DEV_TOKEN_SECRET);

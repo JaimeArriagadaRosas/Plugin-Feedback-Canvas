@@ -14,13 +14,13 @@ import pc from 'picocolors';
  */
 
 const LEVELS = {
-  info:     { tag: pc.cyan('ℹ'),  plain: 'INFO ' },
+  info:     { tag: pc.cyan('·'),  plain: 'INFO ' },
   progress: { tag: pc.blue('…'),  plain: '.... ' },
-  success:  { tag: pc.green('✔'),  plain: 'OK   ' },
-  warn:     { tag: pc.yellow('⚠'),  plain: 'WARN ' },
-  error:    { tag: pc.red('✖'),  plain: 'ERROR' },
-  auto:     { tag: pc.magenta('⚙'), plain: 'AUTO ' },
-  action:   { tag: pc.bold(pc.yellow('▶')), plain: 'ACTION' },
+  success:  { tag: pc.green('√'),  plain: 'OK   ' },
+  warn:     { tag: pc.yellow('!'),  plain: 'WARN ' },
+  error:    { tag: pc.red('×'),  plain: 'ERROR' },
+  auto:     { tag: pc.magenta('~'), plain: 'AUTO ' },
+  action:   { tag: pc.bold(pc.yellow('>')), plain: 'ACTION' },
 };
 
 const STAGE_COLORS = [
@@ -49,6 +49,12 @@ export class BootLogger {
     return msg;
   }
 
+  plain(msg) {
+    if (!this._visible('info')) return;
+    const indent = '  '.repeat(this.stageStack.length);
+    process.stdout.write(`${indent}${msg}\n`);
+  }
+
   log(level, msg, opts = {}) {
     const meta = LEVELS[level] || LEVELS.info;
     if (!this._visible(level)) return;
@@ -60,10 +66,7 @@ export class BootLogger {
     }
 
     const indent = '  '.repeat(this.stageStack.length);
-    const stageTag = this.stageStack.length
-      ? pc.gray(`[${this.stageStack[this.stageStack.length - 1]}] `)
-      : '';
-    process.stdout.write(`${indent}${meta.tag} ${stageTag}${msg}\n`);
+    process.stdout.write(`${indent}${meta.tag} ${msg}\n`);
   }
 
   info(msg, opts)     { this.log('info', msg, opts); }

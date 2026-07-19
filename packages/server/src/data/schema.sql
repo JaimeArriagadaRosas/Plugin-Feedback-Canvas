@@ -151,6 +151,28 @@ CREATE TABLE IF NOT EXISTS Notificaciones_Feedback (
 
 CREATE INDEX idx_notificaciones_feedback ON Notificaciones_Feedback(feedback_id);
 
+-- Tabla de idempotencia de webhooks de Canvas
+CREATE TABLE IF NOT EXISTS webhook_events (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_hash VARCHAR(64) NOT NULL UNIQUE,
+    event_type VARCHAR(50) NOT NULL,
+    attempts INTEGER DEFAULT 1,
+    processed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_webhook_events_hash ON webhook_events(event_hash);
+CREATE INDEX idx_webhook_events_type ON webhook_events(event_type);
+
+CREATE TABLE IF NOT EXISTS webhook_dead_letter (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_hash VARCHAR(64) NOT NULL UNIQUE,
+    event_type VARCHAR(50) NOT NULL,
+    payload JSONB,
+    last_error TEXT,
+    attempts INTEGER,
+    creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ==============================
 -- 8. CONFIGURACIÓN GLOBAL DE IA
 -- ==============================
@@ -240,3 +262,21 @@ CREATE TABLE IF NOT EXISTS user_lti_mappings (
 
 CREATE INDEX idx_user_lti_mappings_canvas_sub ON user_lti_mappings(canvas_sub);
 CREATE INDEX idx_user_lti_mappings_deployment ON user_lti_mappings(deployment_id, issuer);
+
+-- ==============================
+-- 12. CANVAS USER TOKENS (OAuth2)
+-- ==============================
+CREATE TABLE IF NOT EXISTS canvas_user_tokens (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    canvas_sub TEXT NOT NULL UNIQUE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    expires_at TIMESTAMPTZ,
+    creado_en TIMESTAMPTZ DEFAULT NOW(),
+    actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER canvas_user_tokens_updated_at
+  BEFORE UPDATE ON canvas_user_tokens
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+

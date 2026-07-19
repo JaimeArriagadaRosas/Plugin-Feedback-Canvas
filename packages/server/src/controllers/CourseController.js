@@ -4,8 +4,8 @@
 import { AppError } from '../utils/errors.js';
 
 export default class CourseController {
-  constructor(canvasService, configRepo, templateRepo) {
-    this.canvasService = canvasService;
+  constructor(canvasGateway, configRepo, templateRepo) {
+    this.canvasGateway = canvasGateway;
     this.configRepo = configRepo;
     this.templateRepo = templateRepo;
   }
@@ -17,7 +17,7 @@ export default class CourseController {
         throw new AppError('No se pudo determinar el usuario (sub) desde el contexto LTI', 401);
       }
       
-      const courses = await this.canvasService.getCourses(userId);
+      const courses = await this.canvasGateway.getCourses(userId);
       res.json({ exito: true, data: courses });
     } catch (error) {
       next(error);
@@ -27,7 +27,8 @@ export default class CourseController {
   async getAssignments(req, res, next) {
     try {
       const { courseId } = req.params;
-      const assignments = await this.canvasService.getAssignments(courseId);
+      const teacherId = req.ltiContext?.user;
+      const assignments = await this.canvasGateway.getAssignments(courseId, teacherId);
       res.json({ exito: true, data: assignments });
     } catch (error) {
       next(error);
@@ -37,7 +38,8 @@ export default class CourseController {
   async getStudents(req, res, next) {
     try {
       const { courseId } = req.params;
-      const students = await this.canvasService.getStudents(courseId);
+      const teacherId = req.ltiContext?.user;
+      const students = await this.canvasGateway.getStudents(courseId, teacherId);
       res.json({ exito: true, data: students });
     } catch (error) {
       next(error);
@@ -47,7 +49,8 @@ export default class CourseController {
   async getSubmission(req, res, next) {
     try {
       const { courseId, assignmentId, studentId } = req.params;
-      const submission = await this.canvasService.getSubmission(courseId, assignmentId, studentId);
+      const teacherId = req.ltiContext?.user;
+      const submission = await this.canvasGateway._fetchWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions/${studentId}?include[]=submission_history&include[]=submission_comments`, teacherId);
       res.json({ exito: true, data: submission });
     } catch (error) {
       next(error);

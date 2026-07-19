@@ -38,7 +38,7 @@ export default class FeedbackController {
       const isStudentRole = req.ltiContext?.localRole === 'student'
         || roleList.some(r => typeof r === 'string' && r.toLowerCase().includes('learner'));
 
-      if (isStudentRole && String(req.ltiContext?.user) !== String(studentId)) {
+      if (isStudentRole && String(req.ltiContext?.studentId ?? req.ltiContext?.user) !== String(studentId)) {
         const { AppError } = await import('../utils/errors.js');
         throw new AppError('Acceso prohibido al detalle del feedback de otro estudiante', 403);
       }
@@ -53,7 +53,16 @@ export default class FeedbackController {
   async generate(req, res, next) {
     try {
       const { courseId, assignmentId, studentId, templateId, grade } = req.body;
-      const result = await this.feedbackService.generateFeedback(courseId, assignmentId, studentId, templateId, grade);
+
+      if (grade !== undefined && grade !== null) {
+        const numGrade = Number(grade);
+        if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
+          const { AppError } = await import('../utils/errors.js');
+          throw new AppError('La calificación debe ser un número entre 0 y 100', 400);
+        }
+      }
+      const teacherId = req.ltiContext?.user || req.user?.id || 'system';
+      const result = await this.feedbackService.generateFeedback(courseId, assignmentId, studentId, templateId, grade, teacherId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -101,7 +110,7 @@ export default class FeedbackController {
       const isStudentRole = req.ltiContext?.localRole === 'student'
         || roleList.some(r => typeof r === 'string' && r.toLowerCase().includes('learner'));
 
-      if (isStudentRole && String(req.ltiContext?.user) !== String(studentId)) {
+      if (isStudentRole && String(req.ltiContext?.studentId ?? req.ltiContext?.user) !== String(studentId)) {
         const { AppError } = await import('../utils/errors.js');
         throw new AppError('Acceso prohibido al feedback de otro estudiante', 403);
       }

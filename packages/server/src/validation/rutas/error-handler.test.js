@@ -65,4 +65,16 @@ describe('Error handler  Caja Negra', () => {
     expect(res.body.error.codigo).toBe(500);
     expect(res.body.error.timestamp).toBeDefined();
   });
+
+  it('registra en logs_auditoria en modo local para 403', async () => {
+    process.env.USE_LOCAL_DATA = 'true';
+    process.env.VITE_USE_LOCAL_DATA = 'true';
+    process.env.LOCAL_USER_ROLE = 'student-1';
+
+    const res = await request(app).get('/api/courses');
+
+    expect(res.status).toBe(403);
+    expect(res.body.exito).toBe(false);
+    expect(res.body.error.codigo).toBe(403);
+  });
 });

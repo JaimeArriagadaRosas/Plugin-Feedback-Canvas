@@ -32,7 +32,7 @@ export class LtiBootstrap {
   constructor(opts) {
     this.mode = opts.mode;
     this.log = opts.log;
-    this.installerFactory = opts.installerFactory || (async () => (await import('../../setup/LtiInstaller.js')).LtiInstaller);
+    this.installerFactory = opts.installerFactory || (async () => (await import('../../setup/local-dev/LtiInstaller.js')).LtiInstaller);
     this.shouldInstall = this.mode === '3';
   }
 
@@ -45,24 +45,7 @@ export class LtiBootstrap {
     }
   }
 
-  async _activateButton() {
-    const scriptPath = path.resolve(__dirname, '../../setup/activar_boton_cursos.py');
-    const pythonExecutable = process.platform === 'win32' ? 'python' : 'python3';
-    try {
-      const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execAsync = promisify(exec);
-      const { stdout } = await execAsync(`"${pythonExecutable}" "${scriptPath}"`);
-      this.log.debug(stdout.trim());
-      if (stdout.includes('ACTIVACION_COMPLETA') || stdout.includes('LTI_NO_ENCONTRADO')) {
-        // LTI_NO_ENCONTRADO => la tool no existe aún; se activará tras instalar.
-        return !stdout.includes('LTI_NO_ENCONTRADO');
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
+
 
   /**
    * Ejecuta el flujo LTI. En modo no-local solo verifica; en modo local
@@ -83,10 +66,6 @@ export class LtiBootstrap {
 
     if (!this.shouldInstall) {
       this.log.info('Modo LTI/API real: se asume el tool LTI ya configurado en Canvas.');
-      const activated = await this._activateButton();
-      if (!activated) {
-        this.log.warn('No se pudo confirmar la activación del botón Feedback en este entorno.');
-      }
       return BootResult.ok({ verifiedOnly: true });
     }
 
@@ -100,15 +79,6 @@ export class LtiBootstrap {
       await Installer.verifyAndInstall();
     }
 
-    const activated = await this._activateButton();
-    if (activated) {
-      this.log.success('Botón "Feedback" activado en la navegación de cursos.');
-      return BootResult.ok({ installed: true, buttonActivated: true });
-    }
-
-    this.log.warn('No se pudo auto-activar el botón Feedback en cursos existentes.');
-    this.log.action('Actívelo manualmente en Canvas: Curso > Settings > Apps > Feedback.');
-    return BootResult.warn('Botón Feedback no auto-activado',
-      'Actívelo manualmente en Canvas (Curso > Settings > Apps). No bloquea el arranque.');
+    return BootResult.ok({ installed: true });
   }
 }

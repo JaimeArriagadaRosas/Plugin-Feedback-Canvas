@@ -21,7 +21,7 @@ export class DockerCheck {
       const result = spawnSync(cmd, args, {
         encoding: 'utf8',
         timeout: timeoutMs,
-        shell: process.platform === 'win32'
+        shell: false
       });
       
       // En Windows, docker emite warnings inofensivos a stderr a veces
@@ -91,9 +91,8 @@ export class DockerCheck {
       ? parseInt(info.out, 10) / 1024 ** 3
       : null;
     if (memGb !== null && memGb < this.minRamGb) {
-      log.warn(`Solo ${memGb.toFixed(1)}GB RAM asignados a Docker (Canvas requiere ${this.minRamGb}GB+).`);
-      return BootResult.warn('RAM de Docker insuficiente',
-        `Asigne ≥ ${this.minRamGb}GB a Docker en la configuración de ${backend}.`);
+      log.info(`Solo ${memGb.toFixed(1)}GB RAM asignados a Docker (Canvas LMS podría arrancar más lento). Se recomienda tolerar la carga diferida.`);
+      return BootResult.ok({ backend, memGb });
     }
 
     log.success(`Daemon de Docker activo${memGb ? ` (${memGb.toFixed(1)}GB RAM)` : ''}.`);

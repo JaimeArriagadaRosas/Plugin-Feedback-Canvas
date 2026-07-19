@@ -1,43 +1,58 @@
-import crypto from 'node:crypto';
 import logger from '../utils/logger.js';
 
 const nonces = new Map();
 const NONCE_TTL_MS = 5 * 60 * 1000;
+const CLEANUP_INTERVAL = 10;
+let validationCount = 0;
+
+let mutex = Promise.resolve();
+
+async function withLock(fn) {
+  const prev = mutex;
+  let resolve;
+  const p = new Promise(r => resolve = r);
+  mutex = p.then(() => resolve());
+  try {
+    return await fn();
+  } finally {
+    // prev ya resolvió; mantener la cadena para que nuevas peticiones esperen
+  }
+}
 
 export function storeNonce(nonce) {
   if (!nonce) return null;
-  const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const entry = {
-    nonce,
+  nonces.set(nonce, {
     createdAt: Date.now(),
     consumed: false
-  };
-  nonces.set(id, entry);
-  cleanupExpired();
-  return id;
+  });
+  return nonce;
 }
 
-export function validateAndConsumeNonce(nonce) {
+export async function validateAndConsumeNonce(nonce) {
   if (!nonce) return false;
-  cleanupExpired();
-  for (const [id, entry] of nonces) {
-    if (entry.nonce === nonce && !entry.consumed) {
-      entry.consumed = true;
-      entry.consumedAt = Date.now();
-      logger.info('[LTI-NONCE] Nonce consumido', { id, age: Date.now() - entry.createdAt });
-      return true;
+  return withLock(() => {
+    validationCount++;
+    if (validationCount % CLEANUP_INTERVAL === 0) {
+      cleanupExpired();
     }
-  }
-  logger.warn('[LTI-NONCE] Nonce inválido o reutilizado', { nonce: nonce.substring(0, 20) });
-  return false;
+    const entry = nonces.get(nonce);
+    if (!entry || entry.consumed) {
+      logger.warn('[LTI-NONCE] Nonce inválido o reutilizado', { nonce: nonce.substring(0, 20) });
+      return false;
+    }
+    entry.consumed = true;
+    entry.consumedAt = Date.now();
+    logger.info('[LTI-NONCE] Nonce consumido', { nonce: nonce.substring(0, 20), age: Date.now() - entry.createdAt });
+    return true;
+  });
 }
 
 function cleanupExpired() {
   const now = Date.now();
   let removed = 0;
-  for (const [id, entry] of nonces) {
+  for (const [nonce, entry] of nonces) {
     if (now - entry.createdAt > NONCE_TTL_MS) {
-      nonces.delete(id);
+      nonces.delete(nonce);
       removed++;
     }
   }
@@ -47,9 +62,15 @@ function cleanupExpired() {
 }
 
 export function getNonceStats() {
+  let consumed = 0;
+  let pending = 0;
+  for (const entry of nonces.values()) {
+    if (entry.consumed) consumed++;
+    else pending++;
+  }
   return {
     total: nonces.size,
-    consumed: Array.from(nonces.values()).filter(e => e.consumed).length,
-    pending: Array.from(nonces.values()).filter(e => !e.consumed).length
+    consumed,
+    pending
   };
 }

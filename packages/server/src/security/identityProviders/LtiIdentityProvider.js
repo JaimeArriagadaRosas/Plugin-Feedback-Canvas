@@ -1,6 +1,7 @@
 import { getLTITokenService } from '../../services/infrastructure/LTITokenService.js';
 import { extractLtiToken, isDevToken } from '../ltiCookie.js';
 import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
+import { AppError } from '../../utils/errors.js';
 
 const ltiService = getLTITokenService();
 
@@ -18,17 +19,17 @@ export class LtiIdentityProvider {
     for (const token of tokensToTry) {
       try {
         const decoded = await ltiService.verifyToken(token);
-      const deploymentId = decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
-      const allowedDeploymentIds = (process.env.LTI_DEPLOYMENT_IDS || '')
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
+        const deploymentId = decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
+        const allowedDeploymentIds = (process.env.LTI_DEPLOYMENT_IDS || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
 
-      if (allowedDeploymentIds.length > 0 && !allowedDeploymentIds.includes(deploymentId)) {
-        return null;
-      }
+        if (allowedDeploymentIds.length > 0 && !allowedDeploymentIds.includes(deploymentId)) {
+          throw new AppError('Deployment ID no permitido', 403);
+        }
 
-      const ltiRoles = getRolesFromClaims(decoded);
+        const ltiRoles = getRolesFromClaims(decoded);
         return {
           user: decoded.sub,
           role: ltiRoles,
@@ -38,6 +39,10 @@ export class LtiIdentityProvider {
           entry: getEntryFromClaims(decoded)
         };
       } catch (e) {
+        // Si el error es de validación LTI definitiva, detenemos la cadena
+        if (e instanceof AppError && [401, 403].includes(e.statusCode)) {
+          throw e;
+        }
         // Ignorar y probar con el siguiente token
       }
     }

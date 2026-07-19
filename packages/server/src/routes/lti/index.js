@@ -4,6 +4,7 @@ import { secureState, secureNonce } from '../../security/crypto.js';
 import { storeNonce } from '../../security/nonceStore.js';
 import { isHttpsEnabled } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
+import { handleLtiError } from '../../middlewares/LtiErrorHandler.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const loginHandler = (req, res) => {
   const bodyData = (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { iss, login_hint, target_link_uri, lti_message_hint } = bodyData;
   const reqId = Math.random().toString(36).substring(2, 8);
-  logger.info(`[LTI-LOGIN] [$] [${reqId}] ENTRADA login`, { method: req.method, path: req.originalUrl, iss, login_hint: login_hint?.substring(0, 30), lti_message_hint: !!lti_message_hint });
+  logger.info(`[LTI-LOGIN] [$] [${reqId}] ENTRADA login | method="${req.method}" path="${req.originalUrl}" iss="${iss}" login_hint="${login_hint?.substring(0, 30)}" lti_message_hint=${!!lti_message_hint}`);
 
   if (!iss || !login_hint || !target_link_uri) {
     logger.warn(`[LTI-LOGIN] [$] [${reqId}] Parámetros LTI insuficientes detectados.`);
@@ -39,8 +40,15 @@ const loginHandler = (req, res) => {
   const cookieSameSite = cookieSecure ? 'None' : 'Lax';
   res.cookie('lti_state', state, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
   res.cookie('lti_nonce', nonce, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
+  
+  // Guardamos el referer o link del curso para la autorreparación
+  const targetUrl = req.headers.referer || target_link_uri;
+  if (targetUrl) {
+    res.cookie('lti_target_url', targetUrl, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, maxAge: 60 * 60 * 1000 });
+  }
 
-  const canvasAuthUrl = process.env.CANVAS_OIDC_URL || 'https://localhost:8080/api/lti/authorize_redirect';
+  const canvasBaseUrl = (process.env.CANVAS_BASE_URL || 'https://localhost:8443').replace(/\/$/, '');
+  const canvasAuthUrl = process.env.CANVAS_OIDC_URL || `${canvasBaseUrl}/api/lti/authorize_redirect`;
   const clientId = process.env.LTI_CLIENT_ID || '10000000000001';
 
   const defaultRedirectUri = 'https://localhost:3000/api/lti/callback';
@@ -71,7 +79,7 @@ const loginHandler = (req, res) => {
   if (lti_message_hint) authParams.append('lti_message_hint', lti_message_hint);
 
   const redirectUrl = `${canvasAuthUrl}?${authParams.toString()}`;
-  logger.info(`[LTI-LOGIN] [$] [${reqId}] FLUJO OIDC URL ensamblada con éxito:\n\t- Client ID: ${clientId}\n\t- Redirect URI: ${redirectUri}\n\t- Destino: ${redirectUrl.substring(0, 120)}...`);
+  logger.info(`[LTI-LOGIN] [$] [${reqId}] FLUJO OIDC URL ensamblada con éxito | clientId="${clientId}" redirectUri="${redirectUri}" destino="${redirectUrl.substring(0, 120)}..."`);
   logger.info(`[LTI-LOGIN] [$] [${reqId}] RESPONDIENDO redirect 302 a Canvas authorize`);
   res.redirect(redirectUrl);
 };
@@ -83,7 +91,7 @@ const loginHandler = (req, res) => {
  */
 const authorizeHandler = (req, res) => {
   const reqId = Math.random().toString(36).substring(2, 8);
-  const canvasBase = (process.env.CANVAS_BASE_URL || 'https://localhost:8080').replace(/\/$/, '');
+  const canvasBase = (process.env.CANVAS_BASE_URL || 'https://localhost:8443').replace(/\/$/, '');
   const canvasAuthorizeUrl = `${canvasBase}/api/lti/authorize`;
 
   // Reconstruimos la query string de forma robusta preservando repetidos y el
@@ -119,16 +127,12 @@ router.get('/authorize', authorizeHandler);
 router.post('/callback', asyncSafe(async (req, res, next) => {
   const reqId = Math.random().toString(36).substring(2, 8);
   const bodyKeys = Object.keys(req.body || {});
-  logger.info(`[LTI-CALLBACK] [${reqId}] ENTRADA callback`, {
-    method: req.method,
-    path: req.originalUrl,
-    hasIdToken: !!(req.body?.id_token || req.query?.id_token),
-    hasLoginHint: !!(req.body?.login_hint || req.query?.login_hint),
-    hasError: !!(req.body?.error || req.query?.error),
-    bodyKeys,
-    origin: req.headers.origin,
-    referer: req.headers.referer
-  });
+  const hasIdToken = !!(req.body?.id_token || req.query?.id_token);
+  const hasError = !!(req.body?.error || req.query?.error);
+  const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : 'unknown');
+  const cleanPath = req.originalUrl.split('?')[0];
+
+  logger.info(`[LTI-CALLBACK] [${reqId}] ENTRADA callback | ${req.method} ${cleanPath} | keys: [${bodyKeys.join(', ')}] | flags: idToken=${hasIdToken} error=${hasError} | origin: ${origin}`);
 
   // Manejo robusto: Si Canvas envía la petición de inicio OIDC al target_link_uri (/callback)
   // en lugar del oidc_initiation_url (/login), lo detectamos por la presencia de login_hint y ausencia de id_token.
@@ -142,16 +146,16 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   // Defensa en profundidad CSRF (ref: Snyk/StackHawk CSRF SPA 2026):
   // el callback LTI es un form-post cross-origin desde el LMS; validamos que
   // el Origin/Referer corresponda al issuer/cliente conocido.
-  const origin = req.headers.origin;
+  const rawOrigin = req.headers.origin;
   const referer = req.headers.referer;
   const allowedOrigin = process.env.LTI_OIDC_URL
     ? new URL(process.env.LTI_OIDC_URL).origin
     : (process.env.CANVAS_OIDC_URL ? new URL(process.env.CANVAS_OIDC_URL).origin : null);
 
   if (allowedOrigin) {
-    const refOrigin = origin || (referer ? new URL(referer).origin : null);
+    const refOrigin = rawOrigin || (referer ? new URL(referer).origin : null);
     if (refOrigin && refOrigin !== allowedOrigin) {
-      logger.error(`[LTI-CALLBACK] [${reqId}] Origin/Referer no coincide con el LMS`, { origin, referer, allowedOrigin });
+      logger.error(`[LTI-CALLBACK] [${reqId}] Origin/Referer no coincide con el LMS`, { origin: rawOrigin, referer, allowedOrigin });
       return res.status(403).json({ error: 'Origen del callback LTI no permitido.' });
     }
   }
@@ -166,7 +170,10 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   } catch (err) {
     const status = err.statusCode || err.status || 401;
     logger.error(`[LTI-CALLBACK] [${reqId}] validateLtiCallback FALLÓ`, { status, message: err.message });
-    return res.status(status).json({ error: err.message });
+    
+    // Auto-reparación: Mostrar pantalla de recuperación en lugar de un JSON plano
+    const savedReferer = req.cookies?.['lti_target_url'] || req.headers.referer;
+    return handleLtiError(res, err, savedReferer);
   }
 
   const token = (req.body && req.body.id_token) ? req.body.id_token : req.query.id_token;

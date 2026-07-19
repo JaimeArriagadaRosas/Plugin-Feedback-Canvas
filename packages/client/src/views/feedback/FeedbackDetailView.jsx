@@ -3,6 +3,9 @@ import { api } from "shared/api";
 import ConfirmDialog from "../../components/molecules/ConfirmDialog";
 import Toast from "../../components/atoms/Toast";
 import styles from "./FeedbackDetailView.module.css";
+import StudentInfoCard from "./components/StudentInfoCard";
+import FeedbackEditor from "./components/FeedbackEditor";
+import ActionControls from "./components/ActionControls";
 
 export default function FeedbackDetailView({ feedback, onBack }) {
   const [text, setText] = useState(feedback?.feedback || "");
@@ -55,97 +58,16 @@ export default function FeedbackDetailView({ feedback, onBack }) {
       </header>
 
       <main className={styles.main}>
-        {/* Left Column */}
         <section className={styles.leftCol}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>INFORMACIÓN DEL ESTUDIANTE</div>
-            <div className={styles.cardBody}>
-              <div className={styles.studentInfo}>
-                <div className={styles.avatar}>👤</div>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>Nombre:</div>
-                  <div style={{ fontSize: 16 }}>{feedback?.student}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "15px" }}>
-                <span>📋</span>
-                <div>
-                  <strong>Calificación Obtenida:</strong>
-                  <div>{feedback?.grade}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "15px" }}>
-                <span style={{ color: "green", fontSize: "24px" }}>⬆</span>
-                <div>
-                  <strong>Trayectoria:</strong>
-                  <div>{feedback?.trajectory}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>HISTORIAL DE CALIFICACIONES PREVIAS</div>
-            <div className={styles.cardBody}>
-              {feedback?.historial && feedback.historial.length > 0 ? (
-                feedback.historial.map((h, i) => (
-                  <div key={i} className={styles.scoreItem}>
-                    <span>Evaluación {i + 1}:</span> <strong>{h.grade || h.nota}</strong>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 13, color: "#666" }}>
-                  Datos históricos no disponibles o cargando...
-                </div>
-              )}
-            </div>
-          </div>
+          <StudentInfoCard feedback={feedback} />
         </section>
 
-        {/* Center Column */}
         <section className={styles.centerCol}>
-          <div className={styles.card} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <div className={styles.cardHeader}>TEXTO GENERADO PARA EDICIÓN</div>
-            <div style={{ padding: "10px 15px", borderBottom: "1px solid #eee", fontSize: 13, background: "#f9f9f9" }}>
-              Previsualización y Edición de Feedback
-            </div>
-            <div className={styles.toolbar}>
-              <button className={styles.toolBtn}><b>B</b></button>
-              <button className={styles.toolBtn}><i>I</i></button>
-              <button className={styles.toolBtn}><u>U</u></button>
-              <div style={{ width: "1px", background: "#ddd", margin: "0 5px" }} />
-              <button className={styles.toolBtn}>•≡</button>
-              <button className={styles.toolBtn}>1≡</button>
-              <button className={styles.toolBtn}>≡</button>
-              <div style={{ width: "1px", background: "#ddd", margin: "0 5px" }} />
-              <button className={styles.toolBtn}>↩</button>
-              <button className={styles.toolBtn}>↪</button>
-            </div>
-            <textarea
-              className={styles.editor}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </div>
+          <FeedbackEditor text={text} setText={setText} />
         </section>
 
-        {/* Right Column */}
         <section className={styles.rightCol}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>CONTROLES DE ACCIÓN</div>
-            <div className={styles.cardBody}>
-              <div style={{ fontSize: 12, color: "#666", marginBottom: "15px" }}>
-                <strong>Estado:</strong> Feedback visualizado para revisión.<br />
-                Personalización Aplicada.<br />
-                <strong>Última Sinc. Local:</strong> 11:30:05
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <button className={styles.btnPrimary} onClick={confirmApprove}>APROBAR Y PUBLICAR EN SPEEDGRADER</button>
-                <button className={styles.btnSecondary} onClick={handleSave}>GUARDAR EDICIÓN (SIN ENVIAR)</button>
-                <button className={styles.btnTertiary} onClick={onBack}>VOLVER A LISTA</button>
-              </div>
-            </div>
-          </div>
+          <ActionControls onApprove={confirmApprove} onSave={handleSave} onBack={onBack} />
         </section>
       </main>
 

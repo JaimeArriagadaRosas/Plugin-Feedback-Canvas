@@ -1,25 +1,18 @@
-import { spawn } from 'child_process';
+import spawn from 'cross-spawn';
 
 const DEFAULT_DOCKER_TIMEOUT_MS = 15 * 60 * 1000;
 const CANVAS_RAILS_ENV = { DISABLE_SPRING: '1' };
 
 export function buildShellCommand(command, args) {
-  if (process.platform === 'win32') {
-    const escaped = args.map(arg => `"${String(arg).replace(/"/g, '\\"')}"`).join(' ');
-    return `${command} ${escaped}`;
-  }
   return command;
 }
 
 export function spawnDocker(args, options = {}) {
   const { cwd, env } = options;
-  const useShell = process.platform === 'win32';
-  const command = useShell ? buildShellCommand('docker', args) : 'docker';
-  const finalArgs = useShell ? [] : args;
-  return spawn(command, finalArgs, {
+  return spawn('docker', args, {
     cwd,
     env: { ...process.env, ...CANVAS_RAILS_ENV, ...env },
-    shell: useShell
+    shell: false
   });
 }
 

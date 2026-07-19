@@ -36,6 +36,14 @@ export class DependenciesCheck {
         'Ejecute `npm install` para sincronizar dependencias.');
     }
 
+    // Verificación específica de Playwright para E2E
+    const playwrightPath = path.join(nm, '@playwright', 'test');
+    if (!fs.existsSync(playwrightPath)) {
+       log.warn('Faltan dependencias de Caja Negra/E2E (@playwright/test).');
+       return BootResult.warn('Falta Playwright para pruebas E2E',
+         'Si usas la Opción 5, ejecuta `npm install` y luego `npx playwright install`.');
+    }
+
     log.success('Dependencias del plugin instaladas (reutilizando node_modules).');
     return BootResult.ok({ cached: true });
   }

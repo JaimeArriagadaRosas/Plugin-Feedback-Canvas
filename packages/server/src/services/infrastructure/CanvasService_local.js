@@ -42,13 +42,23 @@ export default class CanvasServiceLocal {
     return getSharedStudents();
   }
 
-  async postComment(courseId, assignmentId, studentId, comment) {
+  async postComment(courseId, assignmentId, studentId, teacherId, comment) {
     console.log(`[LOCAL-CANVAS] Comentario enviado para estudiante ${studentId}: ${comment.substring(0, 60)}...`);
     return { success: true };
   }
 
-  async updateGrade(courseId, assignmentId, studentId, grade) {
+  async updateGrade(courseId, assignmentId, studentId, teacherId, grade) {
     console.log(`[LOCAL-CANVAS] Calificación actualizada para estudiante ${studentId} en tarea ${assignmentId}: ${grade}`);
+    return { success: true };
+  }
+
+  async pushRubricAssessment(courseId, assignmentId, studentId, teacherId, rubricAssessment) {
+    console.log(`[LOCAL-CANVAS] Rúbrica enviada para estudiante ${studentId}.`);
+    return { success: true };
+  }
+
+  async pushInAppMessage(courseId, studentId, teacherId, subject, bodyText) {
+    console.log(`[LOCAL-CANVAS] Mensaje in-app enviado a ${studentId}: ${subject}`);
     return { success: true };
   }
 }

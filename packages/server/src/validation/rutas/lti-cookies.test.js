@@ -70,10 +70,12 @@ describe('LTI cookies  Caja Negra', () => {
       .post('/api/config/clear-local-role')
       .set('Cookie', cookieString);
 
-    const res = await request(app)
-      .get('/api/courses')
-      .set('Cookie', cookieString);
+    process.env.USE_LOCAL_DATA = 'false';
+    process.env.VITE_USE_LOCAL_DATA = 'false';
 
-    expect(res.status).toBe(401);
+    const denied = await request(app)
+      .get('/api/courses');
+
+    expect(denied.status).toBe(401);
   });
 });

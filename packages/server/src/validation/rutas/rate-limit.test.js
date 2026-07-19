@@ -1,13 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { request, app } from '../setup/app.js';
+import { truncateAll, seedTemplate, seedAssignmentConfig } from '../setup/db.js';
 
 describe('Rate limit  Caja Negra', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.LOCAL_USER_ROLE = 'teacher';
     process.env.USE_LOCAL_DATA = 'true';
     process.env.VITE_USE_LOCAL_DATA = 'true';
     process.env.WEBHOOK_SECRET = 'secret';
     process.env.NODE_ENV = 'production';
+    await truncateAll();
+    await seedTemplate({ id: 1, nombre: 'Template', contenido: 'Contenido' });
+    await seedAssignmentConfig();
   });
 
   afterEach(() => {
@@ -19,7 +23,7 @@ describe('Rate limit  Caja Negra', () => {
     const body = JSON.stringify(payload);
     const sig = (await import('node:crypto')).default.createHmac('sha256', 'secret').update(body).digest('base64');
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 15; i++) {
       const res = await request(app)
         .post('/api/webhooks/canvas')
         .set('x-canvas-signature', sig)

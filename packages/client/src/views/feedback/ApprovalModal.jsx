@@ -85,7 +85,7 @@ const styles = {
   }
 };
 
-export default function ApprovalModal({ feedback, onConfirm, onClose }) {
+export default function ApprovalModal({ feedback, onApprove, onClose, isOpen }) {
   const [now, setNow] = useState("");
   const [rating, setRating] = useState(0);
 
@@ -93,6 +93,8 @@ export default function ApprovalModal({ feedback, onConfirm, onClose }) {
     const d = new Date();
     setNow(d.toLocaleString());
   }, []);
+
+  if (!isOpen) return null;
 
   return (
     <div style={styles.overlay}>
@@ -142,7 +144,7 @@ export default function ApprovalModal({ feedback, onConfirm, onClose }) {
           El feedback se guarda como comentario de rúbrica en Canvas. Se registran fecha, hora e ID de usuario en BD local.
         </div>
         <div style={styles.footer}>
-          <button style={styles.btnConfirm} onClick={() => onConfirm(rating)}>Confirmar Aprobación</button>
+          <button style={styles.btnConfirm} onClick={() => onApprove(rating)}>Confirmar Aprobación</button>
           <button style={styles.btnCancel} onClick={onClose}>Cancelar</button>
         </div>
       </div>

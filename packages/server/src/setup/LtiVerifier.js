@@ -1,42 +1,38 @@
-import { runDockerCommand, spawnDocker, waitForDockerProcess } from '../utils/dockerRunner.js';
-import path from 'path';
-import fs from 'fs/promises';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { runCommand } from '../orchestration/boot/setup/utils/Runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../canvas-lms-master');
+const CANVAS_DIR = path.resolve(__dirname, '../../../../canvas-lms-master');
 
-/**
- * Módulo dedicado EXCLUSIVAMENTE a verificar la integridad de la instalación LTI 1.3 en Canvas.
- * No instala ni modifica nada.
- */
 export class LtiVerifier {
   static async isCanvasRunning() {
     try {
-      const { stdout } = await runDockerCommand(['compose', 'ps', '-q', 'web'], { cwd: CANVAS_DIR });
-      return stdout.trim().length > 0;
+      const { success, out } = await runCommand('docker', ['compose', 'ps', '-q', 'web'], { cwd: CANVAS_DIR });
+      return success && out.trim().length > 0;
     } catch (e) {
       return false;
     }
   }
 
-  /**
-   * Ejecuta un script de validación en Canvas para detectar si la herramienta LTI 1.3 está
-   * configurada nativamente mediante oidc_initiation_url.
-   */
   static async checkLtiStatus() {
-    console.log('[LtiVerifier] Ejecutando script de verificación OIDC en Canvas (rails runner)...');
     const canvasDomain = process.env.CANVAS_DOMAIN || 'localhost:8443';
     
     try {
       const domainYmlPath = path.join(CANVAS_DIR, 'config', 'domain.yml');
       const domainContent = `test:\n  domain: localhost\n\ndevelopment:\n  domain: "${canvasDomain}"\n  ssl: true\n\nproduction:\n  domain: "canvas.example.com"\n  ssl: true`;
       await fs.writeFile(domainYmlPath, domainContent, 'utf-8');
-      console.log(`[LtiVerifier] [$] [Docker-Patch] Archivo domain.yml forzado a ${canvasDomain} y ssl=true`);
-    } catch (err) {
-      console.warn(`[LtiVerifier] [$] Advertencia: No se pudo inyectar el parche a domain.yml: ${err.message}`);
-    }
+      
+      const redisYmlPath = path.join(CANVAS_DIR, 'config', 'redis.yml');
+      const redisContent = `development:\n  url: redis://redis:6379\ntest:\n  url: redis://redis:6379/1\nproduction:\n  url: redis://redis:6379\n`;
+      await fs.writeFile(redisYmlPath, redisContent, 'utf-8');
+
+      const cacheStoreYmlPath = path.join(CANVAS_DIR, 'config', 'cache_store.yml');
+      const cacheStoreContent = `development:\n  cache_store: redis_cache_store\ntest:\n  cache_store: redis_cache_store\nproduction:\n  cache_store: redis_cache_store\n`;
+      await fs.writeFile(cacheStoreYmlPath, cacheStoreContent, 'utf-8');
+    } catch (err) {}
 
     const script = `
       puts "[Rails-LtiVerifier] [$] Buscando DeveloperKey 'Plugin Feedback LTI'..."
@@ -55,9 +51,6 @@ export class LtiVerifier {
         has_target = tc.target_link_uri.present? rescue false
         has_redirects = dk.redirect_uris.present? rescue false
         has_docker_host = tc.public_jwk_url.include?('host.docker.internal') rescue false
-        puts "[Rails-LtiVerifier] [$] target_link_uri: #{tc.target_link_uri}"
-        puts "[Rails-LtiVerifier] [$] redirect_uris: #{dk.redirect_uris}"
-        puts "[Rails-LtiVerifier] [$] public_jwk_url: #{tc.public_jwk_url}"
         
         if has_target && has_redirects && has_docker_host
           puts '[Rails-LtiVerifier] [$] LTI detectado OK, verificando autosanación de OIDC domain...'
@@ -76,8 +69,7 @@ export class LtiVerifier {
           else
              puts "[Rails-LtiVerifier] [$] Dominio OIDC sincronizado (#{target_domain})."
           end
-          
-          puts 'LTI_OK'
+          puts "LTI_OK_ID:#{dk.id}"
         else
           puts "[Rails-LtiVerifier] Faltan campos, o public_jwk_url no usa host.docker.internal."
           puts 'LTI_MISSING'
@@ -89,35 +81,27 @@ export class LtiVerifier {
     `;
 
     try {
-      const proc = spawnDocker(
-        ['compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', '-'],
-        { cwd: CANVAS_DIR }
-      );
+      const { success, out, err } = await runCommand('docker', ['compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: CANVAS_DIR });
 
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => stdout += data.toString());
-      proc.stderr.on('data', (data) => stderr += data.toString());
-
-      proc.stdin.write(script);
-      proc.stdin.end();
-
-      const code = await waitForDockerProcess(proc);
-
-      console.log(`[LtiVerifier] Salida cruda de verificación:\n${stdout.trim()}`);
-
-      if (code !== 0) {
-        console.error(`[LtiVerifier] Código de salida fallido (${code}). Stderr:\n${stderr}`);
+      if (!success) {
+        console.error(`[LtiVerifier] Fallo el script. Stderr:\n${err}`);
         return 'ERROR';
       }
 
-      if (stdout.includes('LTI_OK')) {
-        console.log('[LtiVerifier] Diagnóstico final: OK');
+      const okMatch = out.match(/LTI_OK_ID:(\d+)/) || out.includes('LTI_OK');
+      if (okMatch) {
+        if (Array.isArray(okMatch) && okMatch[1]) {
+          const clientId = okMatch[1];
+          if (process.env.LTI_CLIENT_ID !== clientId) {
+            const pluginDir = path.resolve(__dirname, '../../../');
+            const { updateEnvVars } = await import('../orchestration/envWriter.js');
+            updateEnvVars(pluginDir, { LTI_CLIENT_ID: clientId });
+            process.env.LTI_CLIENT_ID = clientId;
+          }
+        }
         return 'OK';
       }
 
-      console.log('[LtiVerifier] Diagnóstico final: MISSING');
       return 'MISSING';
     } catch (e) {
       console.error('[LtiVerifier] Error comprobando estado de Canvas:', e.message);

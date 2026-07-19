@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import logger from '../../utils/logger.js';
+import CanvasClient from './CanvasClient.js';
 
 
 /**
@@ -8,11 +9,12 @@ import logger from '../../utils/logger.js';
  * Permite enviar calificaciones y comentarios a SpeedGrader sin API Keys individuales.
  */
 export default class LTIAGSService {
-  constructor(clientId, authUrl, privateKey = null, useLocalMode = false) {
+  constructor(clientId, authUrl, privateKey = null, useLocalMode = false, canvasClient = null) {
     this.clientId = clientId;
     this.authUrl = authUrl || 'https://canvas.instructure.com/login/oauth2/token';
     this.privateKey = privateKey;
     this.useLocalMode = useLocalMode;
+    this.canvasClient = canvasClient || new CanvasClient();
     this.accessToken = null;
     this.tokenExpiry = 0;
   }
@@ -49,14 +51,9 @@ export default class LTIAGSService {
         keyid: process.env.LTI_KEY_ID || 'lti-key-1'
       });
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
       try {
-        // Petición POST a Canvas para el intercambio de token
-        const response = await fetch(this.authUrl, {
+        const response = await this.canvasClient.rawFetch(this.authUrl, {
           method: 'POST',
-          signal: controller.signal,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           },
@@ -65,7 +62,9 @@ export default class LTIAGSService {
             client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
             client_assertion: signedAssertion,
             scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/score'
-          })
+          }),
+          returnFullResponse: true,
+          timeoutMs: 15000
         });
 
         if (!response.ok) {
@@ -76,10 +75,7 @@ export default class LTIAGSService {
         this.accessToken = data.access_token;
         this.tokenExpiry = Date.now() + (data.expires_in - 30) * 1000;
         return this.accessToken;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    } catch (error) {
+      } catch (error) {
       logger.error('[LTI-AGS] Error obteniendo access token:', { error: error.message });
       throw new Error('No se pudo autenticar con LTI AGS de Canvas');
     }
@@ -111,34 +107,28 @@ export default class LTIAGSService {
         comment: comment
       };
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
       try {
-        const response = await fetch(scoresUrl, {
+        const response = await this.canvasClient.rawFetch(scoresUrl, {
           method: 'POST',
-          signal: controller.signal,
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/vnd.ims.lis.v1.score+json'
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          returnFullResponse: true,
+          timeoutMs: 15000
         });
 
         if (!response.ok) {
           throw new Error(`Error al enviar calificación [${response.status}]: ${response.statusText}`);
         }
 
-        // Return empty string or json properly since it can be 204 No Content
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           return await response.json();
         }
         return {};
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    } catch (error) {
+      } catch (error) {
       logger.error('[LTI-AGS] Error al publicar score en Canvas:', { error: error.message });
       throw error;
     }

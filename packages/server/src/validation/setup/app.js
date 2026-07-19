@@ -1,3 +1,5 @@
+import './env-preload.js';
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -6,13 +8,6 @@ import { dirname, join } from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-process.env.NODE_ENV = 'test';
-process.env.VITE_USE_LOCAL_DATA = 'true';
-process.env.USE_LOCAL_DATA = 'true';
-process.env.LOCAL_USER_ROLE = 'admin';
-process.env.GEMINI_API_KEY = 'test-key';
-process.env.ENCRYPTION_KEY = 'a'.repeat(64);
 
 import db from '../../data/db.js';
 import { ErrorHandler } from '../../middlewares/ErrorHandler.js';
@@ -24,9 +19,13 @@ import FeedbackRepository from '../../data/FeedbackRepository.js';
 import TemplateRepository from '../../data/TemplateRepository.js';
 import ConfigRepository from '../../data/ConfigRepository.js';
 import TokenRepository from '../../data/TokenRepository.js';
+import CanvasTokenRepository from '../../data/CanvasTokenRepository.js';
 import StudentRepository from '../../data/StudentRepository.js';
 
 import CanvasServiceLocal from '../../services/infrastructure/CanvasService_local.js';
+import CanvasCourseRepository from '../../repositories/CanvasCourseRepository.js';
+import CanvasClient from '../../services/infrastructure/CanvasClient.js';
+import CanvasTokenManager from '../../services/auth/CanvasTokenManager.js';
 import FeedbackService from '../../services/FeedbackService.js';
 import TemplateManager from '../../services/TemplateManager.js';
 import IAConfigManager from '../../services/IAConfigManager.js';
@@ -49,26 +48,29 @@ const feedbackRepo = new FeedbackRepository(db);
 const templateRepo = new TemplateRepository(db);
 const configRepo = new ConfigRepository(db);
 const tokenRepo = new TokenRepository(db);
+const canvasTokenRepo = new CanvasTokenRepository();
 const studentRepo = new StudentRepository(db);
 
-const canvasService = new CanvasServiceLocal();
+const canvasGateway = process.env.TEST_USE_REAL_CANVAS === 'true' 
+  ? new CanvasCourseRepository(new CanvasClient('https://test.canvas.com'), new CanvasTokenManager(canvasTokenRepo, {}))
+  : new CanvasServiceLocal();
 const iaProvider = { generateFeedback: async () => 'Feedback de prueba generado automaticamente para el estudiante.' };
 const academicHistoryService = { getStudentAcademicProfile: async () => ({ level: 'PROMEDIO', trend: 'Estable', average: 7.0 }) };
 const validadorAcademico = { generateStudentProfile: (h) => h };
 const feedbackService = new FeedbackService(
-  iaProvider, canvasService, feedbackRepo, templateRepo,
+  iaProvider, canvasGateway, feedbackRepo, templateRepo,
   academicHistoryService, validadorAcademico, configRepo
 );
 const iaConfigManager = new IAConfigManager(tokenRepo, configRepo);
 const llmConfigService = new LLMConfigurationService();
 const variableConfigManager = new VariableConfigManager();
-const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasService);
-const webhookController = new CanvasWebhookController(feedbackService);
+const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway);
+const webhookController = new CanvasWebhookController(feedbackService, configRepo);
 
 const dependencias = {
-  canvasService, feedbackService, templateManager: new TemplateManager(templateRepo),
+  canvasService: canvasGateway, feedbackService, templateManager: new TemplateManager(templateRepo),
   iaConfigManager, configRepo, llmConfigService, variableConfigManager,
-  feedbackWorkflowService, feedbackRepo, webhookController
+  feedbackWorkflowService, feedbackRepo, webhookController, canvasTokenRepo
 };
 
 import LocalAuthController from '../../controllers/AuthController_local.js';

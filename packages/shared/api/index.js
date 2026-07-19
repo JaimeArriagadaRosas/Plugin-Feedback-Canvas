@@ -10,6 +10,15 @@ import { getToken } from '../lib/authToken';
 
 const BASE = '/api';
 
+export class ApiError extends Error {
+  constructor(message, status, payload = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.payload = payload; // Preserva requireOAuth y otros flags
+  }
+}
+
 async function apiFetch(path, options = {}) {
   const url = path.startsWith('http') ? path : `${BASE}${path}`;
 
@@ -60,7 +69,7 @@ async function apiFetch(path, options = {}) {
           (typeof data.error === 'string' ? data.error : null) ||
           data.message)) ||
       `Petición a ${url} falló con estado ${response.status}`;
-    throw new Error(message);
+    throw new ApiError(message, response.status, data?.error || data);
   }
 
   return data;

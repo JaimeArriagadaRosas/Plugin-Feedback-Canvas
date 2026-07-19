@@ -1,5 +1,5 @@
 import { getEnv, isProduction } from './index.js';
-import { isPlaceholderSecret } from '../security/secrets.js';
+import crypto from 'node:crypto';
 
 /**
  * Registro declarativo de secretos.
@@ -18,10 +18,21 @@ export const SECRET_REGISTRY = {
   CANVAS_ACCESS_TOKEN:  { required: false, critical: true },
   DB_PASSWORD:          { required: true,  critical: true },
   ENCRYPTION_KEY:       { required: true,  critical: true }, // antes validado aparte en EncryptionService
+  DEV_TOKEN_SECRET:     { required: true,  critical: true },
   CANVAS_ADMIN_PASS:    { required: false, critical: true },
   CANVAS_TEACHER_PASS:  { required: false, critical: true },
   CANVAS_STUDENT_PASS:  { required: false, critical: true },
 };
+
+const PLACEHOLDER_PATTERNS = [
+  'change_me',
+  'changeme',
+  'your_api_key_here',
+  'your-key-here',
+  'example',
+  'TODO',
+  'XXXX',
+];
 
 /** Enmascara un secreto para logs: muestra solo los últimos 4 caracteres. */
 export function maskSecret(value) {
@@ -29,6 +40,19 @@ export function maskSecret(value) {
   const s = String(value);
   if (s.length <= 4) return '****';
   return '****' + s.slice(-4);
+}
+
+function isPlaceholderSecret(value) {
+  if (!value) return true;
+  const v = String(value).toLowerCase();
+  return PLACEHOLDER_PATTERNS.some(p => v.includes(p));
+}
+
+function estimateEntropy(value) {
+  if (!value) return 0;
+  const len = value.length;
+  const unique = new Set(value).size;
+  return unique * Math.log2(len || 1);
 }
 
 /**
@@ -48,18 +72,21 @@ export function validateSecretsOrThrow(registry = SECRET_REGISTRY) {
     if (isPlaceholderSecret(value)) {
       problems.push(name);
     }
+    if (name === 'ENCRYPTION_KEY' && estimateEntropy(value) < 90) {
+      problems.push(`${name} (entropía insuficiente)`);
+    }
+  }
+
+  for (const name of problems) {
+    console.warn(`[SECURITY] Secreto ${name} parece ser un placeholder o falta.`, {
+      valor: maskSecret(getEnv(name.split(' ')[0])),
+    });
   }
 
   if (problems.length && isProduction()) {
     throw new Error(
       `Secretos no configurados correctamente en producción: ${problems.join(', ')}`
     );
-  }
-
-  for (const name of problems) {
-    console.warn(`[SECURITY] Secreto ${name} parece ser un placeholder o falta.`, {
-      valor: maskSecret(getEnv(name)),
-    });
   }
 
   return problems;

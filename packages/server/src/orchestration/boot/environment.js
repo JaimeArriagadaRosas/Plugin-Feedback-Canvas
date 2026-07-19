@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { BootResult } from './result.js';
+import KeyManager from '../../services/infrastructure/KeyManager.js';
 
 /**
  * EnvironmentDetector — Detección y validación de configuración de entorno.
@@ -46,8 +47,8 @@ export class EnvironmentDetector {
       return BootResult.ok({ present: true });
     }
     if (!fs.existsSync(this.examplePath)) {
-      log.warn('No existe .env ni env_example; se continuará sin archivo de entorno.');
-      return BootResult.warn('Falta .env y env_example', 'Crear .env manualmente con las variables requeridas.');
+      log.error('No existe .env ni env_example. El entorno no puede arrancar sin variables de entorno.');
+      throw new Error('Faltan archivos de entorno (.env y env_example).');
     }
     fs.copyFileSync(this.examplePath, this.envPath);
     log.auto('Se creó .env a partir de env_example.');
@@ -56,6 +57,8 @@ export class EnvironmentDetector {
 
   /** Valida variables críticas según el modo. */
   validate(log, mode) {
+    KeyManager.ensureKeys(this.pluginDir, log);
+
     const env = { ...process.env, ...this.readRawEnv() };
     const missing = [];
 
@@ -89,6 +92,10 @@ export class EnvironmentDetector {
     if (env.NON_INTERACTIVE === undefined) needed.NON_INTERACTIVE = 'false';
     if (env.USE_LOCAL_DATA === undefined) needed.USE_LOCAL_DATA = 'false';
     if (env.VITE_USE_LOCAL_DATA === undefined) needed.VITE_USE_LOCAL_DATA = 'false';
+    
+    if (mode === '3' && env.CANVAS_BASE_URL === undefined) {
+      needed.CANVAS_BASE_URL = 'https://localhost:8443';
+    }
     if (Object.keys(needed).length === 0) return false;
 
     const lines = fs.existsSync(this.envPath) ? fs.readFileSync(this.envPath, 'utf8').split('\n') : [];

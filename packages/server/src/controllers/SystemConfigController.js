@@ -3,7 +3,7 @@ import { classifyRoles, resolveViewRole } from '../utils/roles.js';
 import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
 import { isProduction, isHttpsEnabled } from '../security/envGuard.js';
-import { verifyDevToken, signDevRole } from '../security/crypto.js';
+import { verifyDevToken, signDevRole, signDevToken } from '../security/crypto.js';
 
 const LOCAL_ROLES_PERMITIDOS = ['admin', 'teacher', 'student'];
 const LOCAL_ROLE_PATTERN = /^student-\d+$/;
@@ -51,9 +51,10 @@ export default class SystemConfigController {
     }
 
     const secureCookies = isHttpsEnabled();
-    res.cookie('dev-token', 'true', { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'Lax' });
+    const signedToken = signDevToken(`dev-token:${role}:local`);
+    res.cookie('dev-token', signedToken, { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'Lax' });
     const signedRole = signDevRole(role);
-    res.cookie('dev-role', signedRole, { path: '/', httpOnly: false, secure: secureCookies, sameSite: 'Lax' });
+    res.cookie('dev-role', signedRole, { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'Lax' });
     logger.info('Sesion local configurada mediante API', { role, ip: req.ip });
     res.json({ exito: true, role, mensaje: `Sesion local establecida como ${role}` });
   }
@@ -80,15 +81,10 @@ export default class SystemConfigController {
       });
 
       if (req.ltiContext.isLocalSession) {
-        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Modo Local / Mock UI)`, {
-          user: req.ltiContext.user
-        });
+        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Modo Local / Mock UI) | user="${req.ltiContext.user}"`);
       } else {
-        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Autenticado via Canvas LMS JWT)`, {
-          user: req.ltiContext.user,
-          roles_claims: userRoles,
-          entry: req.ltiContext.entry ?? null
-        });
+        const shortRoles = [...new Set(userRoles.map(r => r.split('#').pop().split('/').pop()))];
+        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Autenticado via Canvas LMS JWT) | user="${req.ltiContext.user}" roles=[${shortRoles.join(', ')}] entry="${req.ltiContext.entry ?? null}"`);
       }
 
       return res.json({

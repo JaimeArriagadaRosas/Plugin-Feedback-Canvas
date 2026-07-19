@@ -10,13 +10,13 @@ import logger from '../utils/logger.js';
  * delega en servicios especializados para cumplir SRP sin romper dependencias.
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasService, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
     this.generation = new FeedbackGenerationService(
-      iaProvider, canvasService, feedbackRepo, templateRepo,
+      iaProvider, canvasGateway, feedbackRepo, templateRepo,
       academicHistoryService, validadorAcademico, configRepo
     );
     this.query = new FeedbackQueryService(
-      feedbackRepo, canvasService, academicHistoryService, validadorAcademico
+      feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico
     );
   }
 
@@ -51,7 +51,8 @@ export default class FeedbackService {
   }
 
   // Operaciones de envío (se quedan aquí por acoplamiento con Canvas)
-  async approveAndSend({ feedbackId, courseId, assignmentId, studentId, content, rating, grade }, ltiContext = null) {
+  async approveAndSend({ feedbackId, courseId, assignmentId, studentId, content, rating, grade, rubricData }, ltiContext = null) {
+    const teacherId = ltiContext?.user || 'system';
     // BOLA prevention (OWASP API1:2023): el feedback debe pertenecer al estudiante/curso
     // indicados y, si hay contexto autenticado de estudiante, coincidir con él.
     if (feedbackId) {
@@ -75,10 +76,14 @@ export default class FeedbackService {
     }
 
     try {
-      await this.generation.canvasService.postComment(courseId, assignmentId, studentId, content);
+      if (rubricData) {
+        await this.generation.canvasGateway.pushRubricAssessment(courseId, assignmentId, studentId, teacherId, rubricData);
+      } else {
+        await this.generation.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, content);
+      }
 
       if (grade) {
-        await this.generation.canvasService.updateGrade(courseId, assignmentId, studentId, grade);
+        await this.generation.canvasGateway.updateGrade(courseId, assignmentId, studentId, teacherId, grade);
       }
     } catch (canvasError) {
       // Si falla Canvas, revertir el estado en BD para mantener consistencia.
@@ -97,13 +102,22 @@ export default class FeedbackService {
         feedbackId,
         `Tienes un nuevo feedback aprobado en el curso ${courseId}`
       );
+      
+      // RF42: Mensaje In-App
+      if (teacherId) {
+        try {
+          await this.generation.canvasGateway.pushInAppMessage(courseId, studentId, teacherId, 'Nuevo Feedback Disponible', 'Se ha publicado un nuevo feedback para tu entrega.');
+        } catch (msgErr) {
+          logger.warn('[FeedbackService] Error al enviar mensaje in-app', { error: msgErr.message });
+        }
+      }
     }
 
     return { feedbackId, studentId };
   }
 
   // RF62: Feedback manual
-  async submitManualFeedback({ courseId, assignmentId, studentId, contenidoManual, grade }) {
+  async submitManualFeedback({ courseId, assignmentId, studentId, teacherId, contenidoManual, grade }) {
     if (!contenidoManual) {
       const { AppError } = await import('../utils/errors.js');
       throw new AppError('El contenido manual es requerido', 400);
@@ -124,10 +138,10 @@ export default class FeedbackService {
     await this.generation.feedbackRepo.updateStatusAndContent(fbGuardado.id, 'ENVIADO', contenidoManual);
     
     try {
-      await this.generation.canvasService.postComment(courseId, assignmentId, studentId, contenidoManual);
+      await this.generation.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, contenidoManual);
 
       if (grade) {
-        await this.generation.canvasService.updateGrade(courseId, assignmentId, studentId, grade);
+        await this.generation.canvasGateway.updateGrade(courseId, assignmentId, studentId, teacherId, grade);
       }
     } catch (canvasError) {
       await this.generation.feedbackRepo.updateStatusAndContent(fbGuardado.id, 'PENDIENTE', contenidoManual).catch(e => {

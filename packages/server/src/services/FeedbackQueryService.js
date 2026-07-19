@@ -4,9 +4,9 @@
  * Separtado de FeedbackService para cumplir SRP.
  */
 export default class FeedbackQueryService {
-  constructor(feedbackRepo, canvasService, academicHistoryService, validadorAcademico) {
+  constructor(feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico) {
     this.feedbackRepo = feedbackRepo;
-    this.canvasService = canvasService;
+    this.canvasGateway = canvasGateway;
     this.academicHistoryService = academicHistoryService;
     this.validadorAcademico = validadorAcademico;
   }
@@ -87,7 +87,7 @@ export default class FeedbackQueryService {
   async _buildAssignmentsWithFeedback(courseId, approved) {
     let assignments = [];
     try {
-      const raw = await this.canvasService.getAssignments(courseId);
+      const raw = await this.canvasGateway.getAssignments(courseId);
       assignments = raw.map(a => ({
         id: a.id,
         name: a.name || `Tarea ${a.id}`,
@@ -138,7 +138,7 @@ export default class FeedbackQueryService {
 
   async _fetchStudentName(courseId, studentId, preloadedStudents = null) {
     try {
-      const students = preloadedStudents || await this.canvasService.getStudents(courseId);
+      const students = preloadedStudents || await this.canvasGateway.getStudents(courseId);
       return students.find(s => String(s.id) === String(studentId)) || { name: `Estudiante ${studentId}` };
     } catch (err) {
       if (err?.message) {
