@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import spawn from 'cross-spawn';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,18 +8,9 @@ const VITE_PORT = 5173;
 const SERVER_PORT = 3000;
 
 export function spawnVite() {
-  const isWin = process.platform === 'win32';
-  const npmCmd = isWin ? 'npm.cmd' : 'npm';
-  const shell = isWin ? (process.env.ComSpec || 'cmd.exe') : false;
-  // Con shell activado, pasar args como array dispara DEP0190 (Node no los
-  // escapa, solo los concatena). Los args aquí son constantes y controlados,
-  // así que componemos el comando completo como string para evitar el warning.
-  const command = shell ? `${npmCmd} run dev` : npmCmd;
-  const args = shell ? [] : ['run', 'dev'];
-  const child = spawn(command, args, {
+  const child = spawn('npm', ['run', 'dev'], {
     cwd: PLUGIN_DIR,
     detached: true,
-    shell,
     stdio: 'ignore',
   });
   child.unref();
@@ -27,17 +18,52 @@ export function spawnVite() {
 }
 
 export function spawnBackend() {
-  const isWin = process.platform === 'win32';
-  const npmCmd = isWin ? 'npm.cmd' : 'npm';
-  const shell = isWin ? (process.env.ComSpec || 'cmd.exe') : false;
-  const command = shell ? `${npmCmd} run server` : npmCmd;
-  const args = shell ? [] : ['run', 'server'];
-  const child = spawn(command, args, {
+  const child = spawn('npm', ['run', 'server'], {
     cwd: PLUGIN_DIR,
-    shell,
     stdio: 'inherit',
   });
   return child;
+}
+
+export function stopBackend(backend) {
+  return new Promise((resolve) => {
+    if (!backend || backend.killed) {
+      return resolve();
+    }
+    const onExit = () => {
+      backend.removeListener('error', onError);
+      resolve();
+    };
+    const onError = () => {
+      backend.removeListener('exit', onExit);
+      resolve();
+    };
+    backend.once('exit', onExit);
+    backend.once('error', onError);
+    backend.kill('SIGINT');
+  });
+}
+
+export function waitForBackend(backend) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn) => {
+      if (settled) return;
+      settled = true;
+      backend.removeListener('error', onError);
+      backend.removeListener('exit', onExit);
+      clearTimeout(timer);
+      fn();
+    };
+    const onError = (err) => finish(() => reject(err));
+    const onExit = (code) => finish(() => {
+      if (code !== 0 && code !== null) reject(new Error(`Backend cerrado con código ${code}`));
+      else resolve();
+    });
+    backend.on('error', onError);
+    backend.on('exit', onExit);
+    const timer = setTimeout(() => finish(resolve), 4000); // 4s: el server arranca en ms
+  });
 }
 
 export { VITE_PORT, SERVER_PORT };

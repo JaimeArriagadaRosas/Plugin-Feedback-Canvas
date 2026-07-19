@@ -3,6 +3,7 @@ import jwksClient from 'jwks-rsa';
 import https from 'https';
 import { AppError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
+import LtiOidcRecoveryManager from '../../middlewares/LtiOidcRecoveryManager.js';
 
 
 export default class LTITokenService {
@@ -21,8 +22,8 @@ export default class LTITokenService {
       rateLimit: true,
       jwksRequestsPerMinute: 10,
       // Timeout de red: si el JWKS de Canvas no responde, jwks-rsa debe fallar
-      // rapido en vez de colgar la promesa -> evita ERR_EMPTY_RESPONSE en el callback.
-      timeout: 5000,
+      // rápido en vez de colgar la promesa. Aumentado a 20s para entornos Docker lentos.
+      timeout: 20000,
       requestHeaders: {},
       getKeysInterceptor: undefined
     });
@@ -41,16 +42,33 @@ export default class LTITokenService {
   }
 
   async getPublicKey(header) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`Timeout esperando clave JWKS para kid=${header?.kid} (${this.jwksUri})`));
-      }, 6000);
-      this.client.getSigningKey(header.kid, (err, key) => {
-        clearTimeout(timer);
-        if (err) reject(err);
-        else resolve(key.getPublicKey());
-      });
-    });
+    const maxRetries = 3;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      attempt++;
+      try {
+        return await new Promise((resolve, reject) => {
+          // Timeout de contingencia (ligeramente superior al timeout de jwks-rsa)
+          const timer = setTimeout(() => {
+            reject(new Error(`Timeout esperando clave JWKS para kid=${header?.kid} (${this.jwksUri})`));
+          }, 25000);
+          this.client.getSigningKey(header.kid, (err, key) => {
+            clearTimeout(timer);
+            if (err) reject(err);
+            else resolve(key.getPublicKey());
+          });
+        });
+      } catch (error) {
+        if (attempt >= maxRetries) {
+          logger.error(`[LTI-TOKEN] getPublicKey falló definitivamente tras ${maxRetries} intentos: ${error.message}`);
+          throw error;
+        }
+        logger.warn(`[LTI-TOKEN] Fallo obteniendo JWKS (intento ${attempt}/${maxRetries}): ${error.message}. Reintentando en breve...`);
+        // Backoff: 2s, 4s...
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+      }
+    }
   }
 
   async verifyToken(token) {
@@ -58,11 +76,7 @@ export default class LTITokenService {
       const decodedHeader = jwt.decode(token, { complete: true })?.header;
       if (!decodedHeader) throw new AppError('Token mal formado', 401);
 
-      logger.info('[LTI-TOKEN] verifyToken: header del id_token', {
-        alg: decodedHeader.alg,
-        kid: decodedHeader.kid,
-        jwksUri: this.jwksUri
-      });
+      logger.info(`[LTI-TOKEN] verifyToken: header del id_token | alg="${decodedHeader.alg}" kid="${decodedHeader.kid}" jwksUri="${this.jwksUri}"`);
       logger.info('[LTI-TOKEN] verifyToken: solicitando clave publica a JWKS...');
       const publicKey = await this.getPublicKey(decodedHeader);
       logger.info('[LTI-TOKEN] verifyToken: clave publica obtenida del JWKS (OK)');
@@ -72,10 +86,13 @@ export default class LTITokenService {
 
       const decoded = jwt.verify(token, publicKey, {
         algorithms: ['RS256'],
-        audience: process.env.CANVAS_CLIENT_ID || process.env.LTI_CLIENT_ID,
         issuer: [expectedIssuer, 'https://canvas.instructure.com', 'http://localhost:8080']
       });
 
+      const clientId = process.env.CANVAS_CLIENT_ID || process.env.LTI_CLIENT_ID;
+      
+      // Delegar la validación e intentos de autorreparación al nuevo módulo
+      LtiOidcRecoveryManager.validateAndRecoverAudience(decoded, clientId);
       if (this.allowedDeploymentIds.length > 0) {
         const deploymentId = decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
         if (!this.allowedDeploymentIds.includes(deploymentId)) {
@@ -85,15 +102,14 @@ export default class LTITokenService {
 
       // LTI 1.3 / OIDC: validar azp (authorized party) contra el client_id.
       // Si el token fue emitido para otra aplicación, se rechaza (confusión de token).
-      const clientId = process.env.CANVAS_CLIENT_ID || process.env.LTI_CLIENT_ID;
-      if (decoded.azp !== undefined && decoded.azp !== clientId) {
+      if (decoded.azp !== undefined && !LtiOidcRecoveryManager.isValidCanvasId(decoded.azp, clientId)) {
         throw new AppError(`azp '${decoded.azp}' no coincide con el client_id autorizado`, 403);
       }
 
       return decoded;
     } catch (error) {
-      logger.error('[LTI] Error de verificación:', { error: error.message });
-      throw new AppError('Error verificando token LTI 1.3', 401);
+      LtiOidcRecoveryManager.traceError(error, { jwksUri: this.jwksUri });
+      throw new AppError('Token LTI 1.3 inválido o expirado', 401);
     }
   }
 }

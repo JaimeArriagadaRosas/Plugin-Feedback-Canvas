@@ -154,10 +154,9 @@ Plugin Feedback/
 ## Configuración de Variables de Entorno (.env)
 
 El archivo `.env` guarda información de configuración confidencial.
-1.  Encuentra el archivo [`env_example`](file:///d:/Descargas/Proyecto%20Plugin%20feedback/Plugin%20Feedback/env_example) en la raíz de la carpeta `Plugin Feedback`.
-2.  Duplica este archivo en la misma carpeta y cámbiale el nombre a **`.env`** (asegúrate de que empiece con un punto y no tenga extensión `.txt`).
-    *   *En consola (Windows PowerShell):* `Copy-Item env_example .env`
-    *   *En consola (macOS/Linux):* `cp env_example .env`
+1.  Copia el archivo `.env.example` a `.env` en la raíz de la carpeta `Plugin Feedback`.
+    *   *En consola (Windows PowerShell):* `Copy-Item .env.example .env`
+    *   *En consola (macOS/Linux):* `cp .env.example .env`
 3.  Abre el archivo `.env` con cualquier editor de texto.
 4.  Si solo quieres hacer pruebas rápidas locales sin montar Docker ni base de datos, mantén la siguiente variable en `true`:
     ```env

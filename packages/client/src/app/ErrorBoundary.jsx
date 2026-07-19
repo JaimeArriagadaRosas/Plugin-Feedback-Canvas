@@ -22,6 +22,34 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const isOAuthError = this.state.error?.payload?.requireOAuth;
+
+      if (isOAuthError) {
+        return (
+          <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center', backgroundColor: '#f9fafb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <h2 style={{ color: '#111827', marginBottom: '16px' }}>Conexión Requerida</h2>
+            <p style={{ color: '#4b5563', marginBottom: '24px', maxWidth: '400px' }}>
+              El plugin necesita permisos de Canvas para cargar tus cursos y datos. Haz clic en el botón de abajo para autorizar la conexión.
+            </p>
+            <a
+              href={this.state.error.payload.oauthUrl || '/api/oauth2/canvas/login'}
+              style={{
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}
+            >
+              Conectar con Canvas
+            </a>
+          </div>
+        );
+      }
+
       return (
         <div style={{ padding: '40px', fontFamily: 'sans-serif', color: 'red' }}>
           <h2>Algo salió mal en el Frontend (React Crash)</h2>

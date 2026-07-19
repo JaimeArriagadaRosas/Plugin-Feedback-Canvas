@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { api } from "shared/api";
+import { useState } from "react";
 import WizardProgress from "./WizardProgress";
 import StatusFooter from "./StatusFooter";
-import logger from "../../utils/logger";
+import { useCourseData } from "./hooks/useCourseData";
 
 import styles from "./CourseSelector.module.css";
 
@@ -19,66 +18,9 @@ export default function CourseSelector({
   userName = "Usuario de Canvas",
   onApiError
 }) {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [retrying, setRetrying] = useState(false);
-  const [syncTime, setSyncTime] = useState("---");
+  const { courses, loading, error, retrying, syncTime } = useCourseData(onApiError);
   const [hoverRow, setHoverRow] = useState(null);
   const [hoverBtn, setHoverBtn] = useState(null);
-  const inFlightRef = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    let attempt = 0;
-    const MAX_ATTEMPTS = 3;
-
-    const fetchCourses = async () => {
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
-      setLoading(true);
-      setError(null);
-      try {
-        const json = await api.get('/courses');
-
-        if (!json.exito) {
-          throw new Error(json.error || 'Error al obtener cursos');
-        }
-
-        if (cancelled) return;
-        const data = json.data || [];
-        const filteredCourses = data.filter(c => c.name).map(c => ({
-          id: c.id,
-          name: c.name,
-          term: c.course_code || "N/A"
-        }));
-        setCourses(filteredCourses);
-        setSyncTime(new Date().toLocaleTimeString());
-      } catch (err) {
-        logger.warn('CourseSelector', "Error al conectar con la API de Canvas.", { error: err });
-        if (cancelled) return;
-        if (onApiError) {
-          onApiError();
-          return;
-        }
-        // Backoff: reintenta con espera creciente antes de mostrar error fatal.
-        if (attempt < MAX_ATTEMPTS - 1) {
-          attempt += 1;
-          setRetrying(true);
-          const delay = 1000 * attempt;
-          setTimeout(() => { inFlightRef.current = false; fetchCourses(); }, delay);
-          return;
-        }
-        setError("Error al conectar con la API de Canvas. Verifique que el backend tenga un token válido de Canvas.");
-      } finally {
-        if (!cancelled) setLoading(false);
-        inFlightRef.current = false;
-      }
-    };
-
-    fetchCourses();
-    return () => { cancelled = true; };
-  }, []);
 
   return (
     <div className={styles.wrapper}>
@@ -92,7 +34,7 @@ export default function CourseSelector({
         )}
 
         <p className={styles.sectionHeading}>
-          CURSOS ACTIVOS DE LA API DE CANVAS <span className={styles.sectionHeadingLight}>(Usuario: {userName})</span>
+          CURSOS ACTIVOS DE LA API DE CANVAS
         </p>
 
         <div className={styles.tableWrapper}>
@@ -109,7 +51,7 @@ export default function CourseSelector({
                {loading ? (
                  <tr>
                    <td colSpan={4} style={{ padding: "30px", textAlign: "center", color: "#666" }}>
-                     {retrying ? "Reintentando conexión con la API de Canvas..." : "Cargando cursos desde la API de Canvas..."}
+                     {retrying ? "Reintentando conexión con la API de Canvas..." : "Cargando cursos de Canvas..."}
                    </td>
                  </tr>
                ) : (
@@ -157,7 +99,7 @@ export default function CourseSelector({
         </div>
 
         <p className={styles.footnote}>
-          Mostrando cursos activos donde usted es el Instructor. Datos obtenidos vía API REST.
+          Mostrando cursos activos donde usted es el Instructor.
         </p>
 
         <WizardProgress currentStep={0} />

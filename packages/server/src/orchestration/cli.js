@@ -24,10 +24,11 @@ export async function showMainMenu() {
     console.log(pc.blue('\n========================================================='));
     console.log('  ' + pc.bold(pc.white('SELECCIONE EL MODO DE INICIO DEL SERVIDOR')));
     console.log(pc.blue('========================================================='));
-    console.log('  ' + pc.yellow('[1]') + ' Conexion LTI 1.3 ' + pc.dim('(Flujo Real de Autenticacion Canvas)'));
-    console.log('  ' + pc.yellow('[2]') + ' Conexion por API ' + pc.dim('(Ingreso manual de Token Canvas)'));
-    console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Open Source)'));
-    console.log('  ' + pc.yellow('[4]') + ' Validaciones de Caja Negra ' + pc.dim('(suite automatizada)'));
+    console.log('  ' + pc.green('[1]') + ' Ejecutar Entorno de Producción LTI 1.3 ' + pc.dim('(Servidor Real/AWS)'));
+    console.log('  ' + pc.magenta('[2]') + ' Setup de Despliegue LTI ' + pc.dim('(Instalación Automatizada en Canvas)'));
+    console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Entorno Docker de desarrollo)'));
+    console.log('  ' + pc.yellow('[4]') + ' Modo Standalone / Pruebas de API ' + pc.dim('(Frontend + API Token manual)'));
+    console.log('  ' + pc.red('[5]') + ' Validaciones de Caja Negra ' + pc.dim('(Health Checks y Tests E2E)'));
     console.log(pc.blue('========================================================='));
     console.log(`- Seleccion automatica: ${mode} (NON_INTERACTIVE mode)`);
     return mode;
@@ -36,12 +37,13 @@ export async function showMainMenu() {
   console.log('\n' + pc.blue('========================================================='));
   console.log('  ' + pc.bold(pc.white('SELECCIONE EL MODO DE INICIO DEL SERVIDOR')));
   console.log(pc.blue('========================================================='));
-  console.log('  ' + pc.yellow('[1]') + ' Conexion LTI 1.3 ' + pc.dim('(Flujo Real de Autenticacion Canvas)'));
-  console.log('  ' + pc.yellow('[2]') + ' Conexion por API ' + pc.dim('(Ingreso manual de Token Canvas)'));
-  console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Open Source)'));
-  console.log('  ' + pc.yellow('[4]') + ' Validaciones de Caja Negra ' + pc.dim('(suite automatizada)'));
+  console.log('  ' + pc.green('[1]') + ' Ejecutar Entorno de Producción LTI 1.3 ' + pc.dim('(Servidor Real/AWS)'));
+  console.log('  ' + pc.magenta('[2]') + ' Setup de Despliegue LTI ' + pc.dim('(Instalación Automatizada en Canvas)'));
+  console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Entorno Docker de desarrollo)'));
+  console.log('  ' + pc.yellow('[4]') + ' Modo Standalone / Pruebas de API ' + pc.dim('(Frontend + API Token manual)'));
+  console.log('  ' + pc.red('[5]') + ' Validaciones de Caja Negra ' + pc.dim('(Health Checks y Tests E2E)'));
   console.log(pc.blue('========================================================='));
-  const mode = await ask('Seleccione una opcion (1-4)', '3');
+  const mode = await ask('Seleccione una opcion (1-5)', '3');
   return mode;
 }
 

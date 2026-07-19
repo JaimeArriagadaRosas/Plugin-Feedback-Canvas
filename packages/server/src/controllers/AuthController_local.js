@@ -49,7 +49,7 @@ export default class LocalAuthController {
       });
 
       res.cookie('dev-role', signedRole, {
-        httpOnly: false,
+        httpOnly: true,
         secure: isSecure,
         sameSite: isSecure ? 'None' : 'Lax',
         maxAge: 8 * 60 * 60 * 1000,

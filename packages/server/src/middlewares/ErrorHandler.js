@@ -28,16 +28,14 @@ export const ErrorHandler = (err, req, res, next) => {
   if (statusCode === 401 || statusCode === 403) {
     try {
       import('../data/db.js').then(({ default: db }) => {
-        if (!db.isLocalMode()) {
-          const ipAddress = req.ip || req.socket?.remoteAddress || null;
-          const usuarioId = req.ltiContext?.user || req.user?.id || 'ANON';
-          const accion = `DENIED ${req.method} ${req.originalUrl}`;
-          const detalle = `Status: ${statusCode} | Mensaje: ${err.message}`;
-          db.query(
-            `INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)`,
-            [usuarioId, accion, detalle, ipAddress]
-          ).catch(() => {});
-        }
+        const ipAddress = req.ip || req.socket?.remoteAddress || null;
+        const usuarioId = req.ltiContext?.user || req.user?.id || 'ANON';
+        const accion = `DENIED ${req.method} ${req.originalUrl}`;
+        const detalle = `Status: ${statusCode} | Mensaje: ${err.message}`;
+        db.query(
+          `INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)`,
+          [usuarioId, accion, detalle, ipAddress]
+        ).catch(() => {});
       });
     } catch (e) {}
   }

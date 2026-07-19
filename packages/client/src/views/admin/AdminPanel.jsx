@@ -8,6 +8,7 @@ import TokenConfigTab from './tabs/TokenConfigTab';
 import PermissionsConfigTab from './tabs/PermissionsConfigTab';
 import StatsTab from './tabs/StatsTab';
 import AuditLogTab from './tabs/AuditLogTab';
+import AdminTabs from './AdminTabs';
 import styles from './AdminPanel.module.css';
 
 export default function AdminPanel({ onExit }) {
@@ -37,38 +38,7 @@ export default function AdminPanel({ onExit }) {
       <ConfigHeader title="PANEL DE ADMINISTRACIÓN" onExit={onExit} activeTab={config.activeTab} />
 
       <main className={styles.main}>
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tabButton} ${config.activeTab === 'RF56' ? styles.tabActive : ''}`}
-            onClick={() => config.setActiveTab('RF56')}
-          >
-            Gestión de Tokens IA
-          </button>
-          <button
-            className={`${styles.tabButton} ${config.activeTab === 'RF55' ? styles.tabActive : ''}`}
-            onClick={() => config.setActiveTab('RF55')}
-          >
-            Configuración Motor IA
-          </button>
-          <button
-            className={`${styles.tabButton} ${config.activeTab === 'RF52' ? styles.tabActive : ''}`}
-            onClick={() => config.setActiveTab('RF52')}
-          >
-            Roles y Permisos
-          </button>
-          <button
-            className={`${styles.tabButton} ${config.activeTab === 'RF46' ? styles.tabActive : ''}`}
-            onClick={() => config.setActiveTab('RF46')}
-          >
-            Reportes y Métricas
-          </button>
-          <button
-            className={`${styles.tabButton} ${config.activeTab === 'RF40' ? styles.tabActive : ''}`}
-            onClick={() => config.setActiveTab('RF40')}
-          >
-            Logs de Auditoría
-          </button>
-        </div>
+        <AdminTabs activeTab={config.activeTab} setActiveTab={config.setActiveTab} />
 
         {config.activeTab === 'RF55' && (
           <ModelConfigTab

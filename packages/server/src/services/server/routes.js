@@ -4,9 +4,12 @@ import SystemConfigController from '../../controllers/SystemConfigController.js'
 import LocalAuthController from '../../controllers/AuthController_local.js';
 import canvasSessionRouter from '../../routes/canvasSession.js';
 import deepDiagnosticRouter from '../../routes/deepDiagnostic.js';
+import db from '../../data/db.js';
+import logger from '../../utils/logger.js';
+import { getCanvasCircuitBreaker } from '../../services/infrastructure/CanvasClient.js';
+import { nowIso } from '../../utils/datetime.js';
 
 export function registerRoutes(app, services, ltiPublicJwk) {
-  // Endpoint visual para que el desarrollador confirme el certificado mkcert
   app.get('/health', (req, res) => {
     res.send(`
       <div style="font-family: sans-serif; padding: 40px; text-align: center; color: #333;">
@@ -15,6 +18,77 @@ export function registerRoutes(app, services, ltiPublicJwk) {
         <p><strong>Ya puedes cerrar esta pestaña y volver a Canvas. El plugin cargará sin problemas.</strong></p>
       </div>
     `);
+  });
+
+  app.get('/health/detailed', async (req, res) => {
+    const reqId = req._logId;
+    const checks = {
+      timestamp: nowIso(),
+      uptime: process.uptime(),
+      db: { status: 'unknown' },
+      canvas: { status: 'unknown' },
+      webhooks: { status: 'unknown' },
+      jwks: { status: 'unknown' }
+    };
+
+    let dbOk = false;
+    try {
+      if (db.isLocalMode()) {
+        checks.db.status = 'local';
+        dbOk = true;
+      } else {
+        await db.query('SELECT 1');
+        checks.db.status = 'ok';
+        dbOk = true;
+      }
+    } catch (e) {
+      checks.db.status = 'error';
+      checks.db.error = e.message;
+      logger.warn('[Health] DB check failed:', { reqId, error: e.message });
+    }
+
+    let canvasOk = false;
+    try {
+      if (services.canvasClient) {
+        const circuit = getCanvasCircuitBreaker();
+        checks.canvas.status = circuit.canAttempt() ? 'ok' : 'circuit_open';
+        checks.canvas.circuitState = circuit.state;
+        canvasOk = circuit.state === 'CLOSED' || circuit.state === 'HALF_OPEN';
+      } else {
+        checks.canvas.status = 'no_client';
+      }
+    } catch (e) {
+      checks.canvas.status = 'error';
+      checks.canvas.error = e.message;
+    }
+
+    let webhookOk = false;
+    try {
+      if (services.webhookController) {
+        const dlResult = await db.query('SELECT COUNT(*) AS count FROM webhook_dead_letter');
+        checks.webhooks.deadLetterCount = parseInt(dlResult.rows[0]?.count || '0', 10);
+        checks.webhooks.status = checks.webhooks.deadLetterCount > 100 ? 'degraded' : 'ok';
+        webhookOk = true;
+      } else {
+        checks.webhooks.status = 'no_controller';
+      }
+    } catch (e) {
+      checks.webhooks.status = 'error';
+      checks.webhooks.error = e.message;
+    }
+
+    try {
+      checks.jwks.status = ltiPublicJwk?.kid ? 'ok' : 'missing';
+      checks.jwks.kid = ltiPublicJwk?.kid || null;
+    } catch (e) {
+      checks.jwks.status = 'error';
+    }
+
+    const allOk = dbOk && (canvasOk || !services.canvasClient) && (webhookOk || !services.webhookController);
+    const statusCode = allOk ? 200 : 503;
+
+    logger.info('[Health] Detailed check', { reqId, status: allOk ? 'healthy' : 'degraded' });
+    res.status(statusCode).json({ status: allOk ? 'healthy' : 'degraded', checks });
   });
   app.use('/api', AuthLTI13Handler, refreshLtiTokenCookie);
 
@@ -37,6 +111,9 @@ export function registerRoutes(app, services, ltiPublicJwk) {
     feedbackWorkflowService: services.feedbackWorkflowService,
     feedbackRepo: services.feedbackRepo,
     webhookController: services.webhookController,
+    statsService: services.statsService,
+    permissionsService: services.permissionsService,
+    canvasTokenRepo: services.canvasTokenRepo,
     ltiPublicJwk
   };
   const gestorRutas = new GestorRutasAPI(dependencias);

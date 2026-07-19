@@ -1,3 +1,16 @@
+/**
+ * DEPRECATED: Este runner legacy ya no se usa.
+ *
+ * Las migraciones activas se encuentran en db/migrations/*.sql y son aplicadas
+ * por packages/server/src/data/migrations.js en orden alfabético dentro de
+ * transacciones, con tracking en schema_migrations.
+ *
+ * Este archivo se mantiene solo como referencia histórica. No ejecutarlo en
+ * producción porque su ruta de import (../../src/datos/db.js) está rota y su
+ * esquema difiere del actual (SERIAL vs BIGINT GENERATED ALWAYS AS IDENTITY,
+ * nombres de tablas y columnas inconsistentes).
+ */
+
 import db from '../../src/datos/db.js';
 import logger from '../../src/utils/logger.js';
 

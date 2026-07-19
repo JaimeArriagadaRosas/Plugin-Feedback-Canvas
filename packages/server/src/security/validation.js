@@ -18,7 +18,10 @@ export const schemas = {
     assignmentId: idNum,
     studentId: idNum,
     templateId: idNum.optional(),
-    grade: z.union([z.string().min(1), z.number()]).optional(),
+    grade: z.union([
+      z.string().min(1).transform(v => Number(v)).pipe(z.number().min(0).max(100)),
+      z.number().min(0).max(100)
+    ]).optional(),
   }).strict(),
   feedbackApprove: z.object({
     feedbackId: idNum.optional(),
@@ -35,7 +38,7 @@ export const schemas = {
     studentId: idNum,
     content: z.string().min(1).max(20000),
     templateId: idNum.optional(),
-  }),
+  }).strict(),
   iaModel: z.object({
     servicio: z.string().min(1).max(64),
     modelo: z.string().min(1).max(64),

@@ -51,22 +51,44 @@ export function getEntryFromClaims(decoded = {}) {
  *
  * PRINCIPIO CLAVE: separa el rol de CUENTA (institution/person#Administrator)
  * del rol de CONTEXTO de curso (membership#Instructor, #Learner, etc.).
- * `includes('Administrator')` cubre tanto membership#Administrator como
- * institution/person#Administrator, por lo que un Account Admin en un contexto
- * de curso (que Canvas suele enviar con membership#Instructor) sigue siendo
- * detectado como administrador de cuenta.
+ *
+ * SEGURIDAD: la coincidencia es EXACTA contra las URNs IMS estándar definidas
+ * en LTI_ROLE_URNS. Antes se usaba `includes('Administrator')`, lo que permitía
+ * falsos positivos: cualquier claim no estándar que contuviera la subcadena
+ * "Administrator" (p.ej. "...#AdministratorAssistant") clasificaba al usuario
+ * como accountAdmin y escalaba privilegios.
  */
+const ROLE_TO_FLAG = {
+  isAccountAdmin: 'admin',
+  isInstructor: 'teacher',
+  isTA: 'ta',
+  isDesigner: 'designer',
+  isLearner: 'student',
+};
+
 export function classifyRoles(roles = []) {
   const list = Array.isArray(roles) ? roles : [roles];
-  const has = (needle) => list.some(r => typeof r === 'string' && r.includes(needle));
+  const normalized = new Set(
+    list.filter(r => typeof r === 'string').map(r => r.trim())
+  );
 
-  const isAccountAdmin = has('Administrator');
-  const isInstructor = has('Instructor') || has('Faculty');
-  const isTA = has('TeachingAssistant');
-  const isDesigner = has('ContentDeveloper');
-  const isLearner = has('Learner') || has('Student');
+  const flags = {
+    isAccountAdmin: false,
+    isInstructor: false,
+    isTA: false,
+    isDesigner: false,
+    isLearner: false,
+    raw: list,
+  };
 
-  return { isAccountAdmin, isInstructor, isTA, isDesigner, isLearner, raw: list };
+  for (const [flag, category] of Object.entries(ROLE_TO_FLAG)) {
+    const urns = LTI_ROLE_URNS[category] || [];
+    if (urns.some(urn => normalized.has(urn))) {
+      flags[flag] = true;
+    }
+  }
+
+  return flags;
 }
 
 /**

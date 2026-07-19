@@ -1,7 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { request, app } from '../setup/app.js';
 
 describe('Auth routes  Caja Negra', () => {
+  const originalEnv = process.env.USE_LOCAL_DATA;
+  const originalViteEnv = process.env.VITE_USE_LOCAL_DATA;
+
+  afterEach(() => {
+    process.env.USE_LOCAL_DATA = originalEnv;
+    process.env.VITE_USE_LOCAL_DATA = originalViteEnv;
+  });
   it('retorna 401 en ruta protegida sin autenticacion', async () => {
     process.env.USE_LOCAL_DATA = 'false';
     process.env.VITE_USE_LOCAL_DATA = 'false';
@@ -98,7 +105,7 @@ describe('Auth routes  Caja Negra', () => {
       .send({ email: 'profesor@canvas.local', password: 'password123' });
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    expect(res.body.exito).toBe(true);
     expect(res.body.devToken).toContain('dev-token');
     expect(res.body.user.rol).toBe('teacher');
   });

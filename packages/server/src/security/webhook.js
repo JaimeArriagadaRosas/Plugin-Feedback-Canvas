@@ -8,7 +8,8 @@ import crypto from 'node:crypto';
  * y producir verificaciones incorrectas. Aquí se exige el raw body
  * (capturado con express.json({ verify }) en middleware.js).
  *
- * Usa timingSafeEqual para evitar ataques de tiempo.
+ * Usa timingSafeEqual comparando directamente la firma esperada (Base64) con
+ * la firma recibida, evitando el doble hash intermedio y el length probing.
  */
 export function verifyCanvasWebhook(rawBody, signature, secret) {
   if (!secret) return false;
@@ -17,14 +18,19 @@ export function verifyCanvasWebhook(rawBody, signature, secret) {
     rawBody = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
   }
 
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody)
-    .digest('base64'); // Canvas envia la firma en Base64
+  const expected = Buffer.from(
+    crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('base64'), // Canvas envia la firma en Base64
+    'utf8'
+  );
 
-  // Evitar length probing haciendo hash de ambas firmas antes de comparar
-  const hashExpected = crypto.createHash('sha256').update(expected).digest();
-  const hashReceived = crypto.createHash('sha256').update(signature || '').digest();
+  const received = Buffer.from(signature || '', 'utf8');
 
-  return crypto.timingSafeEqual(hashExpected, hashReceived);
+  // timingSafeEqual exige buffers de igual longitud; si difieren en longitud
+  // la firma es inválida por definición.
+  if (expected.length !== received.length) return false;
+
+  return crypto.timingSafeEqual(expected, received);
 }

@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import * as os from 'node:os';
 import * as net from 'node:net';
 
@@ -19,20 +19,22 @@ export function killProcessOnPort(port) {
     const platform = os.platform();
     if (platform === 'win32') {
       try {
-        const stdout = execSync(`netstat -aon | findstr :${port} | findstr LISTENING`, { encoding: 'utf8', shell: true });
+        const stdout = execFileSync('netstat', ['-aon'], { encoding: 'utf8' });
         const lines = stdout.trim().split('\n');
         for (const line of lines) {
-          const parts = line.trim().split(/\s+/);
-          const pid = parts[parts.length - 1];
-          if (pid && pid !== '0') {
-            console.log(`[run] Terminando proceso PID ${pid} en puerto ${port}`);
-            execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8', shell: true });
+          if (line.includes(`:${port}`) && line.includes('LISTENING')) {
+            const parts = line.trim().split(/\s+/);
+            const pid = parts[parts.length - 1];
+            if (pid && pid !== '0') {
+              console.log(`[run] Terminando proceso PID ${pid} en puerto ${port}`);
+              execFileSync('taskkill', ['/F', '/PID', pid], { encoding: 'utf8' });
+            }
           }
         }
       } catch { /* puerto libre */ }
     } else {
       try {
-        const stdout = execSync(`lsof -ti:${port}`, { encoding: 'utf8' });
+        const stdout = execFileSync('lsof', [`-ti:${port}`], { encoding: 'utf8' });
         const pids = stdout.trim().split('\n').filter(Boolean);
         for (const pid of pids) {
           console.log(`[run] Terminando proceso PID ${pid} en puerto ${port}`);

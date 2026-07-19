@@ -12,12 +12,14 @@ export async function truncateAll() {
     'Logs_Auditoria',
     'Notificaciones_Feedback',
     'Configuracion_IA',
-    'webhook_events'
+    'webhook_events',
+    'webhook_dead_letter',
+    'canvas_user_tokens'
   ];
 
   for (const table of tables) {
     try {
-      await db.query(`TRUNCATE TABLE ${table} CASCADE`);
+      await db.query(`TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE`);
     } catch (error) {
       console.warn(`[TEST-DB] No se pudo truncar ${table}:`, error.message);
     }
@@ -35,7 +37,7 @@ export async function seedFeedback(data = {}) {
     nota_canvas: 90,
     nota_chile: 6.9,
     aprobado: true,
-    estado: 'generado'
+    estado: 'PENDIENTE'
   };
   const merged = { ...defaults, ...data };
 
@@ -61,6 +63,25 @@ export async function seedTemplate(data = {}) {
   const res = await db.query(
     'INSERT INTO Plantilla_Feedback (nombre, contenido) VALUES ($1, $2) RETURNING *',
     [merged.nombre, merged.contenido]
+  );
+  return res.rows[0];
+}
+
+export async function seedAssignmentConfig(data = {}) {
+  const defaults = {
+    canvas_course_id: '14852',
+    canvas_assignment_id: '101',
+    feedback_activo: true,
+    plantilla_id: 1,
+    profesor_id: '1'
+  };
+  const merged = { ...defaults, ...data };
+
+  const res = await db.query(
+    `INSERT INTO configuracion_asignacion (canvas_course_id, canvas_assignment_id, feedback_activo, plantilla_id, profesor_id)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [merged.canvas_course_id, merged.canvas_assignment_id, merged.feedback_activo, merged.plantilla_id, merged.profesor_id]
   );
   return res.rows[0];
 }

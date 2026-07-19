@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { request, app } from '../setup/app.js';
+import { signDevToken } from '../../security/crypto.js';
 
 describe('Deployment ID  Caja Negra', () => {
   it('modo local permite acceso sin restriccion de deployment', async () => {
@@ -7,9 +8,10 @@ describe('Deployment ID  Caja Negra', () => {
     process.env.USE_LOCAL_DATA = 'true';
     process.env.VITE_USE_LOCAL_DATA = 'true';
 
+    const devToken = signDevToken('dev-token:teacher:local-user-teacher');
     const res = await request(app)
       .get('/api/config/me')
-      .set('Cookie', 'lti_token=dev-token');
+      .set('Cookie', `lti-token=${devToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.exito).toBe(true);

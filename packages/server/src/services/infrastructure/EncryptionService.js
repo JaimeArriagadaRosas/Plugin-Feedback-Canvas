@@ -8,26 +8,26 @@ const ALGORITHM = 'aes-256-gcm';
 // B6 FIX: NIST SP 800-38D recomienda IV de 12 bytes (96 bits) para AES-GCM.
 // Con 16 bytes funciona pero es subóptimo (requiere operaciones GHASH adicionales).
 const IV_LENGTH = 12;
-const KEY_HEX = getSecret('ENCRYPTION_KEY');
 const EXPECTED_KEY_HEX_LENGTH = 64;
 
-let KEY;
-if (!KEY_HEX) {
-  throw new Error('ENCRYPTION_KEY es requerida en .env para cifrar credenciales sensibles.');
-}
+let cachedKey = null;
 
-if (KEY_HEX.length !== EXPECTED_KEY_HEX_LENGTH) {
-  throw new Error(`ENCRYPTION_KEY debe tener exactamente ${EXPECTED_KEY_HEX_LENGTH} caracteres hexadecimales para AES-256. Longitud recibida: ${KEY_HEX.length}.`);
-}
+function getKey() {
+  if (cachedKey) return cachedKey;
+  
+  const KEY_HEX = getSecret('ENCRYPTION_KEY');
+  if (!KEY_HEX || KEY_HEX.length !== EXPECTED_KEY_HEX_LENGTH) {
+    throw new Error(`ENCRYPTION_KEY es requerida y debe tener ${EXPECTED_KEY_HEX_LENGTH} caracteres (hex). El KeyManager debería haberla generado. Recibido: ${KEY_HEX ? KEY_HEX.length : 0}`);
+  }
 
-try {
-  KEY = Buffer.from(KEY_HEX, 'hex');
-} catch (e) {
-  throw new Error('ENCRYPTION_KEY contiene caracteres hexadecimales inválidos.');
-}
-
-if (KEY.length !== 32) {
-  throw new Error(`ENCRYPTION_KEY debe representar 32 bytes (256 bits). Bytes decodificados: ${KEY.length}.`);
+  try {
+    const KEY = Buffer.from(KEY_HEX, 'hex');
+    if (KEY.length !== 32) throw new Error('Longitud de buffer incorrecta');
+    cachedKey = KEY;
+    return cachedKey;
+  } catch (e) {
+    throw new Error('ENCRYPTION_KEY contiene caracteres hexadecimales inválidos.');
+  }
 }
 
 /**
@@ -39,6 +39,7 @@ export default class EncryptionService {
    * Encripta un texto plano
    */
   static encrypt(text) {
+    const KEY = getKey();
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
     
@@ -60,6 +61,7 @@ export default class EncryptionService {
       
       const iv = Buffer.from(ivHex, 'hex');
       const authTag = Buffer.from(authTagHex, 'hex');
+      const KEY = getKey();
       const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
       
       decipher.setAuthTag(authTag);

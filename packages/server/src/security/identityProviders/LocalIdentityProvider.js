@@ -19,10 +19,9 @@ export class LocalIdentityProvider {
     // cookies dev-token:admin:1 (escalada de rol local). Ahora se valida la firma.
     const hasSignedDevToken = (ltiTokenCookie && ltiTokenCookie.startsWith('dev-token') && verifyDevToken(ltiTokenCookie))
       || (devTokenCookie && devTokenCookie.startsWith('dev-token') && verifyDevToken(devTokenCookie));
-    const hasLegacyDevToken = devTokenCookie === 'true';
     const hasDevRole = !!devRole;
 
-    if (!hasSignedDevToken && !hasLegacyDevToken && !hasDevRole) return null;
+    if (!hasSignedDevToken && !hasDevRole) return null;
 
     if ((ltiTokenCookie?.startsWith('dev-token') || devTokenCookie?.startsWith('dev-token')) && !hasSignedDevToken) {
       logger.warn('[LOCAL-AUTH] dev-token con firma inválida rechazado', { ip: req.ip });
@@ -45,8 +44,17 @@ export class LocalIdentityProvider {
     const courseId = process.env.CANVAS_COURSE_ID || process.env.VITE_CANVAS_COURSE_ID || '1';
 
     let userId;
-    if (ltiTokenCookie && ltiTokenCookie.startsWith('dev-token:') && ltiTokenCookie.split(':').length > 2) {
-      userId = decodeURIComponent(ltiTokenCookie.split(':').slice(2).join(':'));
+    // NOTA DE SEGURIDAD: el dev-token es `dev-token:<rol>:<id>.<hmac>`. Nunca se
+    // usa el payload crudo como userId porque filtraría la firma HMAC a los logs
+    // (ej. "local-user-teacher.<hash>"). Se deriva un userId estable a partir
+    // del rol y, si existe, del id numérico (parte 2, sin la firma).
+    const tokenParts = (ltiTokenCookie && ltiTokenCookie.startsWith('dev-token:') && ltiTokenCookie.includes('.'))
+      ? ltiTokenCookie.split('.')[0].split(':')
+      : [];
+    const tokenUserId = tokenParts.length > 2 ? tokenParts[2] : null;
+
+    if (tokenUserId) {
+      userId = `local-user-${baseRole}-${tokenUserId}`;
     } else {
       userId = studentMatch
         ? `local-user-student-${studentMatch[1]}`

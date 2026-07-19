@@ -8,6 +8,7 @@ import { globalLimiter } from '../../middlewares/security.js';
 import { helmetMiddleware } from '../../security/headers.js';
 import { corsMiddleware } from '../../security/cors.js';
 import { getEnv } from '../../config/index.js';
+import logger from '../../utils/logger.js';
 
 dotenv.config();
 
@@ -23,9 +24,9 @@ export function createApp() {
   }
 
   app.use((req, res, next) => {
-    console.debug(`-> ${req.method} ${req.originalUrl}`);
+    const reqId = logger.request(req);
     res.on('finish', () => {
-      console.debug(`<- ${req.method} ${req.originalUrl} ${res.statusCode}`);
+      logger.response(req, res, reqId);
     });
     next();
   });

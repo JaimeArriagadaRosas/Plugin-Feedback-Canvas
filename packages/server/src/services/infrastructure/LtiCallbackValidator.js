@@ -16,14 +16,7 @@ export async function validateLtiCallback(req) {
   const expectedState = req.cookies?.['lti_state'];
   const expectedNonce = req.cookies?.['lti_nonce'];
 
-  logger.info('[LTI-CALLBACK-VALIDATOR] Inicio validación', {
-    hasIdToken: !!id_token,
-    hasState: !!state,
-    hasExpectedStateCookie: !!expectedState,
-    hasExpectedNonceCookie: !!expectedNonce,
-    hasOidcError: !!oidcError,
-    canDecode: !!id_token ? !!jwtDecodeSafe(id_token) : false
-  });
+  logger.info(`[LTI-CALLBACK-VALIDATOR] Inicio validación | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
 
   if (oidcError) {
     logger.error('[LTI-CALLBACK] Canvas devolvió error en OIDC', { error: oidcError });
@@ -61,19 +54,13 @@ export async function validateLtiCallback(req) {
   try {
     logger.info('[LTI-CALLBACK-VALIDATOR] ANTES verifyToken (consulta JWKS de Canvas)');
     decoded = await ltiService.verifyToken(id_token);
-    logger.info('[LTI-CALLBACK-VALIDATOR] DESPUÉS verifyToken (OK)', {
-      iss: decoded.iss,
-      sub: decoded.sub,
-      aud: decoded.aud,
-      azp: decoded.azp,
-      deploymentId: decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-    });
+    logger.info(`[LTI-CALLBACK-VALIDATOR] DESPUÉS verifyToken (OK) | iss="${decoded.iss}" sub="${decoded.sub}" aud="${decoded.aud}" azp="${decoded.azp}" deploymentId="${decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id']}"`);
   } catch (err) {
     logger.error('[LTI-CALLBACK] Error verificando id_token', { error: err.message });
     throw new AppError('Token LTI 1.3 inválido o expirado', 401);
   }
 
-  if (!validateAndConsumeNonce(decoded.nonce)) {
+  if (!(await validateAndConsumeNonce(decoded.nonce))) {
     logger.error('[LTI-CALLBACK] Validación de nonce fallida (store)');
     throw new AppError('Validación de nonce OIDC fallida. Posible replay.', 401);
   }

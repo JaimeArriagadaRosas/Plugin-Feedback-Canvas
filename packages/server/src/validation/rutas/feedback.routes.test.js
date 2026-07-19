@@ -53,7 +53,7 @@ describe('Feedback routes  Caja Negra', () => {
     expect(res.body.data.chileGrade).toBeLessThanOrEqual(7.0);
   });
 
-  it('generateFeedback con nota negativa retorna 200 (sin validacin de rango)', async () => {
+  it('generateFeedback con nota negativa retorna 400 por validacin de rango', async () => {
     const res = await request(app)
       .post('/api/feedback/generate')
       .send({
@@ -64,8 +64,8 @@ describe('Feedback routes  Caja Negra', () => {
         grade: -5
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.exito).toBe(true);
+    expect(res.status).toBe(400);
+    expect(res.body.exito).toBe(false);
   });
 
   it('approveAndSend retorna 200 confirmando envo', async () => {
@@ -89,7 +89,7 @@ describe('Feedback routes  Caja Negra', () => {
 
     const res = await request(app)
       .put('/api/feedback/1/reject')
-      .send({ motivo: 'No cumple con el tono esperado' });
+      .send({ nota_obtenida: 3.5 });
 
     expect(res.status).toBe(200);
     expect(res.body.exito).toBe(true);

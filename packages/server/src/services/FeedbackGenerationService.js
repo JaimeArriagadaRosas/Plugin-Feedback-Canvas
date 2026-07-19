@@ -8,9 +8,9 @@ import { DomainError } from '../domain/errors/DomainError.js';
  * Separtado de FeedbackService para cumplir SRP. Usa dependency injection.
  */
 export default class FeedbackGenerationService {
-  constructor(iaProvider, canvasService, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
     this.iaProvider = iaProvider;
-    this.canvasService = canvasService;
+    this.canvasGateway = canvasGateway;
     this.feedbackRepo = feedbackRepo;
     this.templateRepo = templateRepo;
     this.academicHistoryService = academicHistoryService;
@@ -18,9 +18,9 @@ export default class FeedbackGenerationService {
     this.configRepo = configRepo;
   }
 
-  async generateFeedback(courseId, assignmentId, studentId, templateId, currentGrade) {
+  async generateFeedback(courseId, assignmentId, studentId, templateId, currentGrade, teacherId) {
     try {
-      const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId);
+      const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
       const { assignment, assignmentName, student, questions, rubric } = canvasData;
 
       const { chileGrade, approved, canvasScore } = this._convertGrade(currentGrade, canvasData.submission);
@@ -81,40 +81,47 @@ export default class FeedbackGenerationService {
     }
   }
 
-  async _fetchCanvasData(courseId, assignmentId, studentId) {
+  async _fetchCanvasData(courseId, assignmentId, studentId, teacherId) {
     const [submission, questions, rubric, students] = await Promise.all([
-      this.canvasService.getSubmission(courseId, assignmentId, studentId),
-      this.canvasService.getQuizQuestions(courseId, assignmentId),
-      this.canvasService.getRubric(courseId, assignmentId),
-      this.canvasService.getStudents(courseId)
+      this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId),
+      this.canvasGateway.getQuizQuestions(courseId, assignmentId, teacherId),
+      this.canvasGateway.getRubric(courseId, assignmentId, teacherId),
+      this.canvasGateway.getStudents(courseId, teacherId)
     ]);
 
     const student = students.find(s => s.id === studentId) || { name: 'Estudiante' };
-    const assignment = (this.canvasService.getAssignment && (await this.canvasService.getAssignment(courseId, assignmentId)))
-      || (await this.canvasService.getAssignments(courseId)).find(a => a.id === assignmentId)
+    const assignment = (this.canvasGateway.getAssignment && (await this.canvasGateway.getAssignment(courseId, assignmentId, teacherId)))
+      || (await this.canvasGateway.getAssignments(courseId, teacherId)).find(a => a.id === assignmentId)
       || { name: `Tarea ${assignmentId}` };
 
     return { submission, questions, rubric, students, student, assignment };
   }
 
   _convertGrade(currentGrade, submission) {
-    const pointsPossible = submission.points_possible || 100;
+    const pointsPossibleRaw = submission?.points_possible;
+    const pointsPossible = typeof pointsPossibleRaw === 'number' && Number.isFinite(pointsPossibleRaw)
+      ? pointsPossibleRaw
+      : 100;
 
-    // Si la calificación viene en escala chilena (1.0–7.0), se convierte a Canvas
-    // usando la escala inversa. Si ya está en escala Canvas (>= 10 o coincide con
-    // pointsPossible), se usa directamente.
-    // La heurística: si grade <= 7 y pointsPossible > 10, asumimos nota chilena.
+    if (pointsPossible <= 0) {
+      throw new DomainError('points_possible debe ser mayor a 0', 422);
+    }
+
     let rawCanvasScore;
-    if (typeof currentGrade === 'number' && currentGrade <= 7 && pointsPossible > 10) {
-      // Nota chilena → convertir a Canvas: inversa de toChileGrade
+    if (typeof currentGrade === 'number' && Number.isFinite(currentGrade) && currentGrade <= 7 && pointsPossible > 10) {
+      if (currentGrade < 1.0 || currentGrade > 7.0) {
+        throw new DomainError('Nota chilena fuera de rango (1.0–7.0)', 422);
+      }
       if (currentGrade >= 4.0) {
         rawCanvasScore = 60 + ((currentGrade - 4.0) / 3.0) * 40;
       } else {
         rawCanvasScore = ((currentGrade - 1.0) / 2.9) * 60;
       }
     } else {
-      // Ya está en escala Canvas (0–100 o puntaje directo)
-      rawCanvasScore = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade) || 0;
+      rawCanvasScore = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade);
+      if (!Number.isFinite(rawCanvasScore) || rawCanvasScore < 0 || rawCanvasScore > pointsPossible) {
+        throw new DomainError(`Calificación Canvas fuera de rango (0–${pointsPossible})`, 422);
+      }
     }
 
     const { chileGrade, approved } = GradeConverter.toChileGrade(rawCanvasScore, pointsPossible);

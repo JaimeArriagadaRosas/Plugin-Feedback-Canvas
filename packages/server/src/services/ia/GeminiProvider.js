@@ -49,14 +49,17 @@ export default class GeminiProvider extends IAProvider {
         }
       });
 
-      // Añadir guardrails al prompt final antes de enviar a Gemini
       const promptConGuardrails = prompt + OUTPUT_GUARDRAILS;
 
-      const result   = await model.generateContent(promptConGuardrails);
-      const response = await result.response;
-      const text     = response.text().trim();
+      const timeoutMs = config.timeoutMs || 60000;
+      const result = await Promise.race([
+        model.generateContent(promptConGuardrails),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: Gemini no respondió en 60s')), timeoutMs))
+      ]);
 
-      // Si Gemini devuelve vacío después de los guardrails, usar fallback
+      const response = await result.response;
+      const text = response.text().trim();
+
       if (!text || text.length < 20) {
         logger.warn('[IA] Respuesta vacía o muy corta. Usando fallback local.');
         return this._generateLocalResponse();
@@ -65,7 +68,7 @@ export default class GeminiProvider extends IAProvider {
       return text;
     } catch (error) {
       logger.error('[IA] Error en Gemini SDK:', { error: error.message });
-      return `Error al generar feedback automáticamente: ${error.message}. Por favor, revisa la configuración de la API.`;
+      return this._generateLocalResponse();
     }
   }
 

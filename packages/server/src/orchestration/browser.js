@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import * as os from 'node:os';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -11,11 +11,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function openBrowser(url) {
   const platform = os.platform();
-  let command;
-  if (platform === 'win32') command = `start "" "${url}"`;
-  else if (platform === 'darwin') command = `open "${url}"`;
-  else command = `xdg-open "${url}"`;
-  try { execSync(command, { shell: true }); } catch { /* ignorar */ }
+  try {
+    if (platform === 'win32') {
+      execFileSync('cmd.exe', ['/c', 'start', '""', url]);
+    } else if (platform === 'darwin') {
+      execFileSync('open', [url]);
+    } else {
+      execFileSync('xdg-open', [url]);
+    }
+  } catch { /* ignorar */ }
 }
 
 /**

@@ -8,6 +8,7 @@ import TextToolbar from './editor/TextToolbar';
 import VariableInserter from './editor/VariableInserter';
 import LivePreview from './editor/LivePreview';
 import AuditInfo from './editor/AuditInfo';
+import TemplateEditorActions from './editor/TemplateEditorActions';
 import Toast from '../../components/atoms/Toast';
 import styles from './TemplateEditor.module.css';
 
@@ -101,19 +102,12 @@ export default function TemplateEditor({ template, onSave, onClose }) {
         </section>
       </main>
 
-      <div className={styles.actions}>
-        <Button variant="danger" onClick={handleDelete}>
-          Eliminar esta Plantilla
-        </Button>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Button variant="secondary" onClick={handleClose}>
-            Cancelar Cambios
-          </Button>
-          <Button variant="primary" onClick={handleSave}>
-            {template ? "Actualizar Plantilla" : "Guardar Nueva Plantilla"}
-          </Button>
-        </div>
-      </div>
+      <TemplateEditorActions 
+        template={template} 
+        handleDelete={handleDelete} 
+        handleClose={handleClose} 
+        handleSave={handleSave} 
+      />
 
       {toast && (
         <Toast

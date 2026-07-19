@@ -25,6 +25,7 @@ import { storeNonce } from '../../security/nonceStore.js';
 // Mutar env ANTES de importar el app (el LTITokenService se instancia al cargar).
 process.env.CANVAS_BASE_URL = process.env.CANVAS_BASE_URL || 'http://127.0.0.1:0';
 process.env.CANVAS_ISSUER = 'http://localhost:8080';
+process.env.LTI_CLIENT_ID = '10000000000002';
 
 let jwksServer;
 let request;
