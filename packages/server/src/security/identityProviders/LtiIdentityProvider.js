@@ -39,11 +39,9 @@ export class LtiIdentityProvider {
           entry: getEntryFromClaims(decoded)
         };
       } catch (e) {
-        // Si el error es de validación LTI definitiva, detenemos la cadena
         if (e instanceof AppError && [401, 403].includes(e.statusCode)) {
           throw e;
         }
-        // Ignorar y probar con el siguiente token
       }
     }
     return null;

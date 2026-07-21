@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLogger } from '../../hooks/useLogger';
 import TutorialModal from './TutorialModal';
 
-export default function UserMenu() {
+export default function UserMenu({ mode = 'fixed' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const menuRef = useRef(null);
@@ -30,7 +30,8 @@ export default function UserMenu() {
   }, [isOpen]);
 
   // No mostrar el menú Kebab si estamos en el panel de administración
-  if (location.pathname.startsWith('/admin')) {
+  // ni en el SpeedGrader (tiene su propio menú inline)
+  if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher/speedgrader')) {
     return null;
   }
 
@@ -58,7 +59,7 @@ export default function UserMenu() {
       <div 
         ref={menuRef}
         style={{
-          position: 'fixed',
+          position: mode === 'anchored' ? 'absolute' : 'fixed',
           top: '15px',
           right: '20px',
           zIndex: 9999,
@@ -83,12 +84,12 @@ export default function UserMenu() {
             justifyContent: 'center',
             boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
             transition: 'background 0.2s ease',
-            paddingBottom: '4px' // Ajuste visual del kebab menu
+            lineHeight: 1
           }}
           onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
           onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
         >
-          &#8942; {/* Carácter de tres puntos verticales (Kebab) */}
+          &#8942;
         </button>
 
         {isOpen && (
@@ -116,35 +117,39 @@ export default function UserMenu() {
               </button>
             )}
 
-            {(role === 'teacher' || role === 'admin') && (
-              <>
-                <button 
-                  onClick={() => { setIsOpen(false); navigate('/teacher/review'); }}
-                  style={{
-                    ...menuItemStyle,
-                    borderTop: role === 'admin' ? '1px solid #eee' : 'none'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-                >
-                  <span>📋</span> Revisión de Feedbacks
-                </button>
-                <button 
-                  onClick={() => { setIsOpen(false); navigate('/teacher/speedgrader'); }}
-                  style={menuItemStyle}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-                >
-                  <span>🚀</span> SpeedGrader
-                </button>
-              </>
+            {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/review') && (
+              <button 
+                onClick={() => { setIsOpen(false); navigate('/teacher/review'); }}
+                style={{
+                  ...menuItemStyle,
+                  borderTop: role === 'admin' ? '1px solid #eee' : 'none'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+              >
+                <span>📋</span> Revisión de Feedbacks
+              </button>
+            )}
+
+            {location.pathname.startsWith('/teacher/review') && (
+              <button 
+                onClick={() => { setIsOpen(false); navigate('/teacher/courses'); }}
+                style={{
+                  ...menuItemStyle,
+                  borderTop: role === 'admin' ? '1px solid #eee' : 'none'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+              >
+                <span>↩️</span> Volver
+              </button>
             )}
             
             <button 
               onClick={handleTutorialClick}
               style={{
                 ...menuItemStyle,
-                borderTop: role === 'admin' ? '1px solid #eee' : 'none'
+                borderTop: (role === 'admin' || role === 'teacher') ? '1px solid #eee' : 'none'
               }}
               onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
               onMouseLeave={e => e.currentTarget.style.background = '#fff'}

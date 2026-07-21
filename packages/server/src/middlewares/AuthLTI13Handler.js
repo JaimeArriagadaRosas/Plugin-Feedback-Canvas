@@ -10,8 +10,38 @@ import { LocalIdentityProvider } from '../security/identityProviders/LocalIdenti
 import { LTI_PUBLIC_ROUTES } from '../config/lti-public-routes.js';
 import { shouldRefreshLtiCookie, refreshLtiCookieOptions } from '../security/ltiCookie.js';
 import { verifyDevToken } from '../security/crypto.js';
+import { verifySessionToken } from '../services/infrastructure/SessionTokenService.js';
+import { getRolesFromClaims, getEntryFromClaims } from '../utils/roles.js';
+
+class SessionTokenIdentityProvider {
+  name = 'session-token';
+
+  async authenticate(req) {
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    if (!bearerToken || !bearerToken.startsWith('eyJ')) return null;
+
+    try {
+      const decoded = verifySessionToken(bearerToken);
+      const ltiRoles = getRolesFromClaims(decoded);
+      return {
+        user: decoded.sub,
+        role: ltiRoles,
+        courseId: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.id,
+        deploymentId: decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+        isLocalSession: false,
+        entry: getEntryFromClaims(decoded),
+        source: 'session-token'
+      };
+    } catch (e) {
+      logger.debug(`[SESSION-AUTH] Token rechazado: ${e.message}`);
+      return null;
+    }
+  }
+}
 
 const providers = [
+  new SessionTokenIdentityProvider(),
   new LtiIdentityProvider(),
   new ApiTokenIdentityProvider(),
   new LocalIdentityProvider()

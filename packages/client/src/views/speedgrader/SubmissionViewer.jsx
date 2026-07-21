@@ -18,8 +18,6 @@ export default function SubmissionViewer({
       </div>
       <div className={styles.content}>
         <div className={styles.paper}>
-          <h2 className={styles.title}>Entrega: {assignmentName}</h2>
-          <p className={styles.student}>Estudiante: <strong>{studentName}</strong></p>
           <hr className={styles.divider} />
           <p className={styles.text}>{submissionText}</p>
         </div>

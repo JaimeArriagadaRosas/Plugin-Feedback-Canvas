@@ -6,37 +6,219 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   background-color: var(--color-bg);
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.wrapper * {
+  box-sizing: border-box;
 }
 
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 15px;
   padding: 8px 20px;
   background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  height: 56px;
+  height: 44px;
   box-sizing: border-box;
 }
 
-.headerLeft {
+/* ── Selector de tarea ──────────────────────────────────────── */
+.taskSelectorBar {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #f7f9fb;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
-.divider {
-  width: 1px;
-  height: 30px;
-  background-color: var(--color-border);
+.taskSelectorBarLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+  white-space: nowrap;
 }
 
-.headerRight {
+.taskSelectorWrap {
+  position: relative;
+}
+
+.taskSelectorBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  max-width: 340px;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.taskSelectorBtn:hover {
+  background: #f0f4f7;
+  border-color: var(--color-primary);
+}
+
+.taskSelectorLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.taskSelectorIcon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.taskSelectorCaret {
+  font-size: 9px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.taskDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13);
+  min-width: 280px;
+  max-width: 420px;
+  overflow: hidden;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.taskDropdownHeader {
+  padding: 10px 16px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.taskDropdownItem {
+  background: #fff;
+  border: none;
+  padding: 11px 16px 11px 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  transition: background 0.12s;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.taskDropdownItem + .taskDropdownItem {
+  border-top: 1px solid #f0f4f7;
+}
+
+.taskDropdownItem:hover {
+  background: #f5f8fa;
+}
+
+.taskDropdownItemActive {
+  background: #eef5fb;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.taskCheck {
+  position: absolute;
+  left: 14px;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.backButton {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.backButton:hover {
+  background: var(--color-surface-muted);
+}
+
+/* Contenedor del menú de opciones en el header */
+.headerMenu {
+  margin-left: auto;
+  position: relative;
+}
+
+/* Dropdown flotante del menú de opciones */
+.headerDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-width: 210px;
+  overflow: hidden;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+}
+
+.headerDropdownItem {
+  background: #fff;
+  border: none;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s;
+}
+
+.headerDropdownItem:hover {
+  background: #f0f4f7;
+}
+
+.headerDropdownItem + .headerDropdownItem {
+  border-top: 1px solid var(--color-border);
+}
+
 
 .main {
   flex: 1;
@@ -45,18 +227,98 @@
   position: relative;
 }
 
-.gradingPanel {
-  width: 250px;
-  background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  padding: 20px;
+.leftColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
-.gradeTitle {
-  font-weight: var(--font-weight-bold);
-  margin-bottom: 15px;
-  font-size: 16px;
+.rightColumn {
+  width: clamp(280px, 30%, 420px);
+  flex-shrink: 0;
+  background-color: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 14px;
+  gap: 14px;
+  scrollbar-width: none;
 }
+
+.rightColumn::-webkit-scrollbar {
+  display: none;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.gradeDisplay {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gradeValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.gradeSeparator {
+  font-size: 20px;
+  color: var(--color-text-muted);
+}
+
+.gradeMax {
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
+
+.configRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.configLabel {
+  color: var(--color-text-muted);
+}
+
+.configValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.feedbackPreview {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 15px 30px 10px;
+  gap: 12px;
+}
+
+
 
 .footer {
   background-color: var(--color-surface-muted);
@@ -64,6 +326,177 @@
   font-size: 11px;
   color: var(--color-text-muted);
   border-top: 1px solid var(--color-border-light);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.submissionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 20px;
+  background-color: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.submissionHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.submissionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.submissionStudent {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.submissionHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navButton {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.navButton:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.navButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.currentStudentName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 120px;
+  text-align: center;
+}
+
+/* -----------------------------------------------
+   Botones de acción del panel derecho
+----------------------------------------------- */
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actionBtn {
+  background: #fff;
+  border: 1px dashed var(--color-border);
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.actionBtn:hover {
+  background: var(--color-surface-muted, #f5f5f5);
+}
+
+.trajectoryBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #856404;
+  margin-left: 6px;
+}
+
+/* -----------------------------------------------
+   Panel UNIDA FEEDBACK ADAPTATIVO (IA)
+----------------------------------------------- */
+.feedbackAdaptivePanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  overflow: hidden;
+  background: #fff;
+  min-height: 160px;
+}
+
+.feedbackAdaptiveHeader {
+  background: #f0f0f0;
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text);
+}
+
+.feedbackAdaptiveBody {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedbackTag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #155724;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 3px;
+  padding: 4px 8px;
+  display: inline-block;
+}
+
+.feedbackAdaptiveText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.feedbackPlaceholder {
+  font-size: 13px;
+  color: var(--color-text-muted, #888);
+  font-style: italic;
+  text-align: center;
+  padding: 24px 12px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background: #fafafa;
+  margin: auto 0;
 }
 
 @media (max-width: 768px) {
@@ -74,24 +507,53 @@
     gap: 8px;
   }
 
-  .headerLeft,
-  .headerRight {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .divider {
-    display: none;
-  }
-
   .main {
     flex-direction: column;
     overflow: auto;
   }
 
-  .gradingPanel {
+  .leftColumn,
+  .rightColumn {
     width: 100%;
-    border-right: none;
+    overflow: visible;
+  }
+
+  .rightColumn {
+    border-left: none;
     border-top: 1px solid var(--color-border);
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .backButtonWrapper {
+    justify-content: stretch;
+  }
+
+  .backButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .submissionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .submissionHeaderRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .currentStudentName {
+    min-width: auto;
+    flex: 1;
+    text-align: center;
   }
 }

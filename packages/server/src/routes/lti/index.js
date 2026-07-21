@@ -5,6 +5,7 @@ import { storeNonce } from '../../security/nonceStore.js';
 import { isHttpsEnabled } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 import { handleLtiError } from '../../middlewares/LtiErrorHandler.js';
+import { signSessionToken } from '../../services/infrastructure/SessionTokenService.js';
 
 const router = Router();
 
@@ -187,9 +188,20 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   logger.info(`[LTI-AUTH]   Deploy  : ${claims.deploymentId}`);
   logger.info(`[LTI-AUTH]   Entry   : ${claims.entry || 'N/A'}`);
 
+  const sessionToken = signSessionToken({
+    sub: claims.sub,
+    azp: claims.azp,
+    deploymentId: claims.deploymentId,
+    context: { id: claims.courseId },
+    lis: { person_name: claims.personName, person_email: claims.personEmail },
+    roles: claims.roles,
+    entry: claims.entry,
+  });
+
   const frontendUrl = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || 'https://localhost:5173';
-  logger.info(`[LTI-CALLBACK] [${reqId}] RESPONDIENDO redirect 302 a frontend`, { frontendUrl });
-  res.redirect(frontendUrl);
+  const redirectUrl = `${frontendUrl}?lti_token=${encodeURIComponent(token)}&session_token=${encodeURIComponent(sessionToken)}`;
+  logger.info(`[LTI-CALLBACK] [${reqId}] RESPONDIENDO redirect 302 a frontend`, { frontendUrl, tokenInUrl: true });
+  res.redirect(redirectUrl);
 }));
 
 router.get('/jwks', (req, res) => {

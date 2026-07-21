@@ -1,18 +1,15 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { runCommand } from './utils/Runner.js';
 import { createSpinner } from 'nanospinner';
 import { VerifyData } from './VerifyData.js';
 import { DataSeeder } from './DataSeeder.js';
 import { DatabaseHealth } from './DatabaseHealth.js';
 import { LtiBootstrap } from '../lti.js';
+import { pingCanvasAPI } from './utils/TokenManager.js';
 
 export class PostflightSetup {
   constructor(boot, pluginDir, canvasDir) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
-    this.envFile = path.join(this.pluginDir, '.env');
   }
 
   async runChecks() {
@@ -25,6 +22,17 @@ export class PostflightSetup {
 
     if (!hasData) {
       this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
+<<<<<<< Updated upstream
+=======
+      
+      const gemInstaller = new GemInstaller(this.boot, this.canvasDir);
+      const gemsOk = await gemInstaller.ensureBundlerPlugins();
+      if (!gemsOk) {
+        this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
+        return false;
+      }
+      
+>>>>>>> Stashed changes
       const dbHealth = new DatabaseHealth(this.boot, this.canvasDir);
       await dbHealth.ensureDatabaseReady();
       
@@ -43,7 +51,16 @@ export class PostflightSetup {
       this.boot.info('Datos base de la Universidad validados.');
     }
 
-    await this.healTeacherToken();
+    // Verificar que Canvas esté respondiendo antes de continuar con la fase LTI.
+    // El healTokenViaFile se realiza dentro de LtiBootstrap → TeacherTokenGenerator,
+    // que es el único responsable de gestión de tokens (principio DRY).
+    const spinner = createSpinner('Verificando conectividad con Canvas...').start();
+    const { ready, error: pingError } = await pingCanvasAPI();
+    if (!ready) {
+      spinner.warn({ text: `Canvas no está respondiendo aún (${pingError || 'timeout'}). El token se validará durante la inicialización LTI.` });
+    } else {
+      spinner.success({ text: 'Canvas responde correctamente.' });
+    }
     
     this.boot.info('Ejecutando verificación LTI final...');
     const ltiBoot = new LtiBootstrap({ mode: '3', log: this.boot });
@@ -55,100 +72,5 @@ export class PostflightSetup {
     
     this.boot.info('Verificación post-arranque exitosa.');
     return true;
-  }
-
-  async healTeacherToken() {
-    const spinner = createSpinner('Verificando validez del token de Canvas...').start();
-    
-    let currentToken = null;
-    if (fs.existsSync(this.envFile)) {
-      const content = fs.readFileSync(this.envFile, 'utf-8');
-      const lines = content.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('CANVAS_ACCESS_TOKEN=')) {
-          currentToken = line.split('=')[1].trim();
-          break;
-        }
-      }
-    }
-
-    if (currentToken) {
-      try {
-        const response = await fetch('http://127.0.0.1:8080/api/v1/users/self/profile', {
-          headers: {
-            'Authorization': `Bearer ${currentToken}`,
-            'Host': 'localhost:8443',
-            'X-Forwarded-Proto': 'https'
-          }
-        });
-        if (response.ok) {
-          spinner.success({ text: 'Token de API Canvas validado.' });
-          return;
-        }
-      } catch (e) {
-        // Just fallback to healing
-      }
-    }
-
-    spinner.update({ text: 'Token inválido o ausente. Regenerando...' });
-
-    const rubyScript = `
-teacher = User.find_by(workflow_state: 'registered', name: 'Dr. Elena Ramirez')
-unless teacher
-  puts 'ERROR: Teacher not found'
-  exit 1
-end
-teacher.access_tokens.where(purpose: 'Local Dev Token').destroy_all
-token = teacher.access_tokens.create!(purpose: 'Local Dev Token')
-puts "NEW_TOKEN:#{token.full_token}"
-`;
-
-    const { success, out, err } = await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', rubyScript], { cwd: this.canvasDir });
-    
-    if (!success) {
-      spinner.error({ text: 'Error al regenerar token con rails runner.' });
-      this.boot.error(`Rails runner error: ${err}`);
-      return;
-    }
-
-    const match = out.match(/NEW_TOKEN:([^\\s\\r\\n]+)/);
-    if (!match) {
-      spinner.error({ text: 'No se encontró NEW_TOKEN en la salida.' });
-      return;
-    }
-
-    const newToken = match[1].trim();
-
-    // Update .env
-    let envContent = fs.existsSync(this.envFile) ? fs.readFileSync(this.envFile, 'utf-8') : '';
-    const lines = envContent.split('\n');
-    let updated = false;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('CANVAS_ACCESS_TOKEN=')) {
-        lines[i] = `CANVAS_ACCESS_TOKEN=${newToken}`;
-        updated = true;
-        break;
-      }
-    }
-    if (!updated) lines.push(`CANVAS_ACCESS_TOKEN=${newToken}`);
-    fs.writeFileSync(this.envFile, lines.join('\n') + (lines[lines.length - 1] === '' ? '' : '\n'));
-
-    spinner.success({ text: 'Token de API Canvas auto-sanado y guardado.' });
-
-    // Sync in perfiles_data.json
-    const syncScript = `
-import json
-try:
-    with open('/usr/src/app/tmp/perfiles_data.json', 'r') as f:
-        data = json.load(f)
-    for u in data.get('usuarios', []):
-        if u.get('rol') == 'teacher':
-            u['token'] = '${newToken}'
-    with open('/usr/src/app/tmp/perfiles_data.json', 'w') as f:
-        json.dump(data, f)
-except Exception:
-    pass
-`;
-    await runCommand('docker', ['compose', 'exec', '-T', 'web', 'python3', '-c', syncScript], { cwd: this.canvasDir });
   }
 }

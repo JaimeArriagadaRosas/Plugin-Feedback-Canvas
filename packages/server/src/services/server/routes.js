@@ -2,6 +2,7 @@ import { AuthLTI13Handler, refreshLtiTokenCookie } from '../../middlewares/AuthL
 import GestorRutasAPI from '../../routes/GestorRutasAPI.js';
 import SystemConfigController from '../../controllers/SystemConfigController.js';
 import LocalAuthController from '../../controllers/AuthController_local.js';
+import authRouter from '../../routes/auth.js';
 import canvasSessionRouter from '../../routes/canvasSession.js';
 import deepDiagnosticRouter from '../../routes/deepDiagnostic.js';
 import db from '../../data/db.js';
@@ -96,6 +97,8 @@ export function registerRoutes(app, services, ltiPublicJwk) {
   app.post('/api/auth/local-login', (req, res, next) => localAuth.localLogin(req, res, next));
   app.post('/api/auth/local-logout', (req, res, next) => localAuth.localLogout(req, res, next));
   app.post('/api/auth/lti-logout', (req, res, next) => localAuth.ltiLogout(req, res, next));
+
+  app.use('/api/auth', authRouter);
 
   app.use('/api/canvas', canvasSessionRouter);
   app.use('/api/canvas', deepDiagnosticRouter);

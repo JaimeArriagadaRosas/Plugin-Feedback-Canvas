@@ -39,12 +39,29 @@ import { SSLService } from '../../security/SSLService.js';
 import { isHttpsEnabled, getSslCertPaths } from '../../security/envGuard.js';
 import { runMigrations } from '../../data/migrations.js';
 import { seedLocalUsers } from '../../validation/setup/seedLocalUsers.js';
+import { seedLocalTemplates } from '../../validation/setup/seedLocalTemplates.js';
 import { isLocalModeAllowed } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 
+<<<<<<< Updated upstream
 if (isLocalModeAllowed()) {
   runMigrations().catch(err => logger.warn('[BOOTSTRAP] Migrations skipped:', err.message));
   seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed skipped:', err.message));
+=======
+if (!isLocalModeAllowed()) {
+  try {
+    logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos...');
+    await runMigrations();
+    logger.info('[BOOTSTRAP] Migraciones completadas.');
+    await seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas (postgres) skipped:', err.message));
+  } catch (err) {
+    logger.error('[BOOTSTRAP] Fallo critico en migraciones:', err.message);
+    process.exit(1);
+  }
+} else {
+  seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed usuarios skipped:', err.message));
+  seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas skipped:', err.message));
+>>>>>>> Stashed changes
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

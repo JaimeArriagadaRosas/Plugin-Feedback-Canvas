@@ -9,7 +9,7 @@ import ConfirmDialog from '../../components/molecules/ConfirmDialog';
 import styles from './FeedbackReviewPanel.module.css';
 
 export default function FeedbackReviewPanel() {
-  const { logClick } = useButtonLogger();
+  const logClick = useButtonLogger();
   const {
     feedbacks,
     loading,
@@ -35,14 +35,16 @@ export default function FeedbackReviewPanel() {
   } = useFeedbackReview();
 
   const handleReview = useCallback((row) => {
-    logClick('FEEDBACK_REVIEW_OPEN_DETAIL');
-    setActiveFeedback(row);
-    setShowApprovalModal(true);
+    logClick('FEEDBACK_REVIEW_OPEN_DETAIL', () => {
+      setActiveFeedback(row);
+      setShowApprovalModal(true);
+    })();
   }, [logClick, setActiveFeedback, setShowApprovalModal]);
 
   const handleEdit = useCallback((row) => {
-    logClick('FEEDBACK_REVIEW_EDIT');
-    // Placeholder para navegación a edición
+    logClick('FEEDBACK_REVIEW_EDIT', () => {
+      // Placeholder para navegación a edición
+    })();
   }, [logClick]);
 
   const handleClearFilters = useCallback(() => {
@@ -63,10 +65,7 @@ export default function FeedbackReviewPanel() {
           <button
             type="button"
             className={styles.exportButton}
-            onClick={() => {
-              logClick('FEEDBACK_REVIEW_BULK_APPROVE');
-              handleBulkApprove();
-            }}
+            onClick={logClick('FEEDBACK_REVIEW_BULK_APPROVE', handleBulkApprove)}
             style={{ marginRight: '10px', backgroundColor: '#1d8348' }}
           >
             ✔️ Aprobar Pendientes
@@ -74,10 +73,7 @@ export default function FeedbackReviewPanel() {
           <button
             type="button"
             className={styles.exportButton}
-            onClick={() => {
-              logClick('FEEDBACK_REVIEW_EXPORT_CSV');
-              handleExportCSV();
-            }}
+            onClick={logClick('FEEDBACK_REVIEW_EXPORT_CSV', handleExportCSV)}
           >
             📥 Exportar Reporte CSV
           </button>

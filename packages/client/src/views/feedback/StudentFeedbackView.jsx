@@ -8,7 +8,7 @@ import StatusFooter from '../cursos/StatusFooter';
 import styles from './StudentFeedbackView.module.css';
 
 export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
-  const { logClick } = useButtonLogger();
+  const logClick = useButtonLogger();
   const {
     assignments,
     loading,
@@ -22,10 +22,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
   } = useStudentFeedback(initialStudentId);
 
   const handleExit = useCallback(
-    async () => {
-      logClick('STUDENT_FEEDBACK_EXIT');
-      onExit?.();
-    },
+    () => logClick('STUDENT_FEEDBACK_EXIT', onExit)(),
     [onExit, logClick]
   );
 

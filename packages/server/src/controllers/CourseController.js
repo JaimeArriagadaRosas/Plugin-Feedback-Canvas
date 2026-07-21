@@ -2,6 +2,7 @@
  * Controlador de Cursos y Tareas (RF38, RF39, RF40)
  */
 import { AppError } from '../utils/errors.js';
+import logger from '../utils/logger.js';
 
 export default class CourseController {
   constructor(canvasGateway, configRepo, templateRepo) {
@@ -17,9 +18,12 @@ export default class CourseController {
         throw new AppError('No se pudo determinar el usuario (sub) desde el contexto LTI', 401);
       }
       
+      logger.info(`[CourseController] Solicitando cursos para usuario: ${userId}`);
       const courses = await this.canvasGateway.getCourses(userId);
+      logger.info(`[CourseController] Cursos obtenidos: ${courses?.length ?? 0} para usuario ${userId}`);
       res.json({ exito: true, data: courses });
     } catch (error) {
+      logger.error(`[CourseController] Error al obtener cursos: ${error.message}`, { stack: error.stack });
       next(error);
     }
   }

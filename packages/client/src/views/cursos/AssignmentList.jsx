@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useAssignmentList } from './hooks/useAssignmentList';
 import WizardProgress from './WizardProgress';
-import StatusFooter from './StatusFooter';
 import AssignmentTable from './assignments/AssignmentTable';
 import ActivateModal from './assignments/ActivateModal';
 import DeactivateModal from './assignments/DeactivateModal';
@@ -10,7 +9,7 @@ import Button from '../../components/atoms/Button';
 import styles from './AssignmentList.module.css';
 
 export default function AssignmentList({ course, onBack, onNext }) {
-  const { logClick } = useButtonLogger();
+  const logClick = useButtonLogger();
   const {
     assignments,
     loading,
@@ -26,19 +25,18 @@ export default function AssignmentList({ course, onBack, onNext }) {
   } = useAssignmentList(course);
 
   const handleSync = useCallback(() => {
-    logClick('ASSIGNMENT_LIST_SYNC');
-    fetchAssignments();
+    logClick('ASSIGNMENT_LIST_SYNC', fetchAssignments)();
   }, [logClick, fetchAssignments]);
 
-  const handleBack = useCallback(() => {
-    logClick('ASSIGNMENT_LIST_BACK');
-    onBack?.();
-  }, [logClick, onBack]);
+  const handleBack = useCallback(
+    () => logClick('ASSIGNMENT_LIST_BACK', onBack)(),
+    [logClick, onBack]
+  );
 
-  const handleNext = useCallback(() => {
-    logClick('ASSIGNMENT_LIST_NEXT');
-    onNext?.(assignments.length ? assignments[0].id : null);
-  }, [logClick, onNext, assignments]);
+  const handleNext = useCallback(
+    () => logClick('ASSIGNMENT_LIST_NEXT', () => onNext?.(assignments.length ? assignments[0].id : null))(),
+    [logClick, onNext, assignments]
+  );
 
   return (
     <div className={styles.wrapper}>
@@ -46,35 +44,25 @@ export default function AssignmentList({ course, onBack, onNext }) {
         <h1 className={styles.pageTitle}>CONFIGURACIÓN - LISTADO DE TAREAS</h1>
 
         <div className={styles.sectionHeading}>
-          TAREAS EVALUABLES CON RÚBRICA ASOCIADA (Curso: {course?.name})
+          <span>TAREAS EVALUABLES CON RÚBRICA ASOCIADA (Curso: {course?.name})</span>
+          <Button variant="secondary" onClick={handleSync} className={styles.btnSync}>
+            <span>🔄</span> Sincronizar Tareas Ahora
+          </Button>
         </div>
 
         <div className={styles.tableWrapper}>
           <AssignmentTable assignments={assignments} onToggle={handleToggle} />
         </div>
-
-        <Button variant="secondary" onClick={handleSync} className={styles.btnSync}>
-          <span>🔄</span> Sincronizar Tareas Ahora
-        </Button>
-
-        <div className={styles.actions}>
-          <Button variant="secondary" onClick={handleBack}>
-            Volver a Selección de Curso
-          </Button>
-          <Button variant="primary" onClick={handleNext}>
-            Continuar a Configuración
-          </Button>
-        </div>
-
-        <WizardProgress currentStep={1} />
       </main>
 
-      <StatusFooter
-        lastSync="10:35:12"
-        count={assignments.length}
-        label="Cantidad de tareas"
-        isConnected={true}
-      />
+      {/* Barra sticky inferior */}
+      <div className={styles.stickyBar}>
+        <div className={styles.navButtons}>
+          <button className={styles.btnBack} onClick={handleBack}>Volver</button>
+          <button className={styles.btnNext} onClick={handleNext}>Continuar</button>
+        </div>
+        <WizardProgress currentStep={1} />
+      </div>
 
       <DeactivateModal
         assignment={selectedAssignment}
@@ -92,7 +80,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
 
       {showToast && (
         <div className={styles.toast}>
-          <span style={{ color: 'var(--color-primary)', fontSize: 18 }}>ℹ</span>
+          <span style={{ color: 'var(--color-primary)', fontSize: 18 }}>&#x2139;</span>
           <span>
             Estado RF40 guardado: Plugin desactivado para {selectedAssignment?.name}. Sincronizando configuración...
           </span>

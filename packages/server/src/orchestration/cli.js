@@ -1,6 +1,7 @@
 import * as readline from 'node:readline';
 import dotenv from 'dotenv';
 import pc from 'picocolors';
+import { input, password } from '@inquirer/prompts';
 
 // Cargar .env para que NON_INTERACTIVE/STARTUP_MODE estén disponibles
 dotenv.config();
@@ -80,7 +81,15 @@ export async function showApiTokenMenu(defaultUrl, defaultToken, defaultCourseId
   console.log(pc.magenta('========================================================='));
   
   const baseUrl = await ask(`URL de Canvas (actual: ${defaultUrl || 'Ninguna'})`, defaultUrl || 'https://canvas.instructure.com');
-  const token = await ask(`Token de API (actual: ${defaultToken ? '***' : 'Ninguno'})`, defaultToken || '');
+  
+  // El token se solicita con enmascaramiento para evitar exposición visual en terminal
+  // y que no quede en el historial de la sesión (estándar de la industria para credenciales en CLI).
+  const tokenAnswer = await password({
+    message: `Token de API de Canvas (${defaultToken ? 'actual: ***' : 'Ninguno guardado'}):`,
+    mask: '*',
+  }).catch(() => defaultToken || '');
+  const token = tokenAnswer && tokenAnswer.trim() ? tokenAnswer.trim() : (defaultToken || '');
+  
   const courseId = await ask(`ID del Curso (actual: ${defaultCourseId || '1'})`, defaultCourseId || '1');
   
   return { baseUrl, token, courseId };

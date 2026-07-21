@@ -28,7 +28,7 @@ export class VerifyData {
       });
 
       if (success && out.includes('DATA_OK')) {
-        spinner.success({ text: 'Datos base de la institución encontrados en Canvas.' });
+        spinner.success({ text: ' Datos base de la institución encontrados en Canvas.' });
         return true;
       }
 

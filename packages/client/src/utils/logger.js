@@ -14,6 +14,21 @@ const COLORS = {
 
 const isDev = import.meta.env.DEV;
 
+let contextProvider = null;
+
+export function setLoggerContextProvider(fn) {
+  contextProvider = fn;
+}
+
+function getContext() {
+  if (!contextProvider) return {};
+  try {
+    return contextProvider() || {};
+  } catch {
+    return {};
+  }
+}
+
 function formatTimestamp() {
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
@@ -28,15 +43,20 @@ function shouldLog(level) {
 function log(level, module, message, payload = null) {
   if (!shouldLog(level)) return;
 
+  const context = getContext();
+  const enrichedPayload = context && Object.keys(context).length > 0
+    ? { ...(payload || {}), __context: context }
+    : payload;
+
   const color = COLORS[level] || '#333';
   const prefix = `%c[${formatTimestamp()}] [${level.toUpperCase()}] [${module}]`;
   const suffix = ` %c${message}`;
   const style = `color: ${color}; font-weight: bold;`;
   const style2 = 'color: inherit;';
 
-  if (payload !== null) {
+  if (enrichedPayload !== null) {
     console.groupCollapsed(prefix + suffix, style, style2);
-    console.log('Payload:', payload);
+    console.log('Payload:', enrichedPayload);
     console.groupEnd();
   } else {
     console.log(prefix + suffix, style, style2);

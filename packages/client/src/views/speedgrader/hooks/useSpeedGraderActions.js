@@ -6,6 +6,7 @@ export function useSpeedGraderActions({
   courseId,
   currentAssignmentId,
   currentStudent,
+  students = [],
   grade,
   feedback,
   generatedFeedbackId,
@@ -20,28 +21,38 @@ export function useSpeedGraderActions({
     setLoading(true);
     setStatusMsg("Conectando con el motor de IA...");
     try {
-      const result = await api.post('/feedback/generate', {
-        courseId: courseId,
-        assignmentId: currentAssignmentId,
-        studentId: currentStudent.id,
-        templateId: 1, // TODO: Seleccionar template real
-        grade: grade,
-      });
-      if (result.exito && result.data) {
-        setFeedback(result.data.content);
-        setGeneratedFeedbackId(result.data.id);
-        setStatusMsg("Feedback generado exitosamente.");
+      const results = [];
+      for (let i = 0; i < students.length; i++) {
+        const student = students[i];
+        setStatusMsg(`Generando feedback para todos los estudiantes... (${i + 1}/${students.length})`);
+        const result = await api.post('/feedback/generate', {
+          courseId: courseId,
+          assignmentId: currentAssignmentId,
+          studentId: student.id,
+          templateId: 1,
+          grade: grade,
+        });
+        if (result.exito && result.data) {
+          results.push({ studentId: student.id, data: result.data });
+        }
+      }
+
+      const currentResult = results.find(r => r.studentId === currentStudent.id);
+      if (currentResult) {
+        setFeedback(currentResult.data.content);
+        setGeneratedFeedbackId(currentResult.data.id);
+        setStatusMsg(`Feedback generado exitosamente para ${students.length} estudiantes.`);
       } else {
-        throw new Error(result.mensaje || "La respuesta del servidor no tiene el formato esperado.");
+        setStatusMsg("Feedback generado para todos, pero sin datos para el estudiante actual.");
       }
     } catch (error) {
-      logger.error('SpeedGrader', "Error al generar feedback", { error });
+      logger.error('SpeedGrader', "Error al generar feedback masivo", { error });
       setFeedback(`[ERROR] ${error.message}`);
-      setStatusMsg("Error en la generación.");
+      setStatusMsg("Error en la generación masiva.");
     } finally {
       setLoading(false);
     }
-  }, [currentAssignmentId, currentStudent, grade, courseId, setFeedback, setGeneratedFeedbackId, setLoading, setStatusMsg]);
+  }, [currentAssignmentId, currentStudent, students, grade, courseId, setFeedback, setGeneratedFeedbackId, setLoading, setStatusMsg]);
 
   const handleApprove = useCallback(async (rating) => {
     if (!generatedFeedbackId) return;
