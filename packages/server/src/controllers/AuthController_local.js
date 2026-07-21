@@ -114,8 +114,9 @@ export default class LocalAuthController {
 
       const isSecure = req.secure || req.get('x-forwarded-proto') === 'https';
       res.clearCookie('lti_token', { httpOnly: true, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
+      res.clearCookie('session-token', { httpOnly: true, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
 
-      logger.info('[LTI-AUTH] [OK] LOGOUT LTI 1.3 exitoso: cookie lti_token eliminada');
+      logger.info('[LTI-AUTH] [OK] LOGOUT LTI 1.3 exitoso: cookies lti_token y session-token eliminadas');
 
       return res.json({ exito: true });
     } catch (err) {

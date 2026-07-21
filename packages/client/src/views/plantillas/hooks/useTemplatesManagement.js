@@ -17,9 +17,8 @@ export function useTemplatesManagement() {
         setTemplates(result.data.map(t => ({
           id: t.id,
           name: t.nombre,
-          ranges: 1, // simplified representation
-          contenido: t.contenido,
-          rango: t.rango
+          ranges: 1,
+          contenido: t.contenido
         })));
       }
     } catch (e) {
@@ -43,7 +42,6 @@ export function useTemplatesManagement() {
   const saveTemplate = async (template) => {
     const payload = {
       nombre: template.name,
-      rango: template.rango || '>=6.0',
       contenido: template.contenido || 'Feedback content...'
     };
 

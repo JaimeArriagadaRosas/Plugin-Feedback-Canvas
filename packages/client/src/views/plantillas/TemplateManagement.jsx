@@ -1,6 +1,5 @@
 import { useState } from "react";
 import WizardProgress from "../cursos/WizardProgress";
-import StatusFooter from "../cursos/StatusFooter";
 import TemplateEditor from "./TemplateEditor";
 import DeleteTemplateModal from "./DeleteTemplateModal";
 import TemplateList from "./components/TemplateList";
@@ -97,17 +96,18 @@ export default function TemplateManagement({ onBack, onNext }) {
           </>
         )}
 
-        {(onBack || onNext) && (
-          <div className={styles.navButtons}>
-            {onBack && <button className={styles.btnBack} onClick={onBack}>← Volver</button>}
-            {onNext && <button className={styles.btnNext} onClick={onNext}>Continuar →</button>}
-          </div>
-        )}
-
-        <WizardProgress currentStep={2} />
       </main>
 
-      <StatusFooter lastSync="10:45:15" count={filteredTemplates.length} label="Plantillas locales" isConnected={true} />
+      {/* Barra sticky inferior */}
+      <div className={styles.stickyBar}>
+        {(onBack || onNext) && (
+          <div className={styles.navButtons}>
+            {onBack && <button className={styles.btnBack} onClick={onBack}>Volver</button>}
+            {onNext && <button className={styles.btnNext} onClick={onNext}>Continuar</button>}
+          </div>
+        )}
+        <WizardProgress currentStep={2} />
+      </div>
 
       {showDeleteModal && (
         <DeleteTemplateModal 

@@ -8,8 +8,6 @@ import AccessDenied from './AccessDenied';
 import { useLogger } from '../hooks/useLogger';
 import logger from '../utils/logger';
 
-import UserMenu from '../views/components/UserMenu';
-
 // ── Lazy imports — Layouts y vistas principales ──────────────────────────────
 const AdminLayout = lazy(() => import('../views/layouts/AdminLayout'));
 const TeacherLayout = lazy(() => import('../views/layouts/TeacherLayout'));
@@ -39,7 +37,6 @@ function AppRouter() {
 
   return (
     <>
-      <UserMenu />
       <Suspense fallback={<LoadingScreen message="Cargando módulo para tu rol..." />}>
         <Routes>
           {/* ── RUTAS ADMIN ──────────────────────────────────────────────────── */}

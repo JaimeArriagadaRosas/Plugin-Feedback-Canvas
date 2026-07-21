@@ -23,13 +23,16 @@ import TemplateManagement from '../plantillas/TemplateManagement';
 import SpeedGraderPanel from '../speedgrader/SpeedGraderPanel';
 import FeedbackReviewPanel from '../feedback/FeedbackReviewPanel';
 import FeedbackDetailView from '../feedback/FeedbackDetailView';
+import UserMenu from '../components/UserMenu';
+import logger from '../../utils/logger';
 
 export default function TeacherLayout({ isAdminView = false }) {
   const navigate   = useNavigate();
   const location   = useLocation();
 
   return (
-    <div className="teacher-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="teacher-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+      <UserMenu mode="anchored" />
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
 
       {/* ────────────────────────────────────────────────────────────────────
@@ -40,7 +43,7 @@ export default function TeacherLayout({ isAdminView = false }) {
               propia barra arriba; este componente solo renderiza el contenido.
           ──────────────────────────────────────────────────────────────────── */}
 
-      <main id="main-content">
+      <main id="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         <Routes>
         {/* Raíz → selector de cursos */}
         <Route path="/" element={<Navigate to="/teacher/courses" replace />} />
@@ -68,12 +71,6 @@ export default function TeacherLayout({ isAdminView = false }) {
         <Route
           path="templates/:courseId/:assignmentId"
           element={<TemplateRoute navigate={navigate} />}
-        />
-
-        {/* ── Paso 4: Configuración lista ───────────────────────────────── */}
-        <Route
-          path="config-ready/:courseId/:assignmentId"
-          element={<ConfigReadyRoute navigate={navigate} />}
         />
 
         {/* ── SpeedGrader ───────────────────────────────────────────────── */}
@@ -131,63 +128,8 @@ function TemplateRoute({ navigate }) {
       courseId={courseId}
       assignmentId={assignmentId}
       onBack={() => navigate(`/teacher/assignments/${courseId}`)}
-      onNext={() => navigate(`/teacher/config-ready/${courseId}/${assignmentId}`)}
+      onNext={() => navigate(`/teacher/speedgrader`)}
     />
   );
 }
 
-function ConfigReadyRoute({ navigate }) {
-  const { courseId, assignmentId } = useParams();
-
-  return (
-    <div style={{
-      padding: '40px',
-      textAlign: 'center',
-      fontFamily: "'Lato', sans-serif",
-      background: '#f5f5f5',
-      minHeight: '100vh'
-    }}>
-      <div style={{
-        maxWidth: '600px',
-        margin: '0 auto',
-        background: '#fff',
-        border: '1px solid #c7cdd1',
-        borderRadius: '8px',
-        padding: '40px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#2d3b45', marginBottom: '8px' }}>
-          Configuración Lista
-        </h2>
-        <p style={{ color: '#666', lineHeight: '1.6', marginBottom: '8px' }}>
-          La plantilla de feedback está configurada para esta tarea.
-        </p>
-        <p style={{ color: '#888', fontSize: '13px', marginBottom: '30px' }}>
-          Curso: <strong>{courseId}</strong> · Tarea: <strong>{assignmentId}</strong>
-        </p>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
-          <button
-            style={{ padding: '10px 22px', background: '#fff', border: '1px solid #c7cdd1', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-            onClick={() => navigate(`/teacher/templates/${courseId}/${assignmentId}`)}
-          >
-            ← Volver a Plantillas
-          </button>
-          <button
-            style={{ padding: '10px 22px', background: '#0770a3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
-            onClick={() => navigate('/teacher/speedgrader')}
-          >
-            🚀 Lanzar SpeedGrader
-          </button>
-          <button
-            style={{ padding: '10px 22px', background: '#27ae60', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
-            onClick={() => navigate('/teacher/review')}
-          >
-            📋 Revisar Feedback
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -10,7 +10,7 @@ export default class TemplateRepository {
   }
 
   async listAll() {
-    const res = await db.query('SELECT id, nombre FROM Plantilla_Feedback ORDER BY nombre ASC');
+    const res = await db.query('SELECT id, nombre, contenido FROM Plantilla_Feedback ORDER BY nombre ASC');
     return res.rows;
   }
 

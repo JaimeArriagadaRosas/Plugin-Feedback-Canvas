@@ -1,6 +1,8 @@
 const TOKEN_KEY = 'lti_token';
+const SESSION_TOKEN_KEY = 'session_token';
 
 let memoryToken = null;
+let memorySessionToken = null;
 
 export const isIframe = (() => {
   try {
@@ -27,7 +29,7 @@ function safeSetLocalStorage(key, value) {
 }
 
 export function getToken() {
-  return memoryToken || safeGetLocalStorage(TOKEN_KEY);
+  return memorySessionToken || memoryToken || safeGetLocalStorage(TOKEN_KEY);
 }
 
 export function setToken(token) {
@@ -35,20 +37,33 @@ export function setToken(token) {
   safeSetLocalStorage(TOKEN_KEY, token);
 }
 
+export function setSessionToken(token) {
+  memorySessionToken = token;
+  safeSetLocalStorage(SESSION_TOKEN_KEY, token);
+}
+
 export function captureTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const tokenFromUrl = params.get(TOKEN_KEY);
+  const sessionTokenFromUrl = params.get(SESSION_TOKEN_KEY);
 
   if (tokenFromUrl) {
     setToken(tokenFromUrl);
     params.delete(TOKEN_KEY);
+  }
+
+  if (sessionTokenFromUrl) {
+    setSessionToken(sessionTokenFromUrl);
+    params.delete(SESSION_TOKEN_KEY);
+  }
+
+  if (tokenFromUrl || sessionTokenFromUrl) {
     const newUrl =
       window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     window.history.replaceState({}, document.title, newUrl);
-    console.info('Token LTI capturado desde URL.');
   }
 
-  if (isIframe && safeGetLocalStorage(TOKEN_KEY) === 'dev-token') {
+  if (isIframe && !import.meta.env.DEV && safeGetLocalStorage(TOKEN_KEY) === 'dev-token') {
     try {
       localStorage.removeItem(TOKEN_KEY);
     } catch {
@@ -65,8 +80,10 @@ export async function logout() {
     console.warn('[Auth] No se pudo notificar logout al backend:', e?.message);
   } finally {
     memoryToken = null;
+    memorySessionToken = null;
     try {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(SESSION_TOKEN_KEY);
     } catch {
       /* ignore */
     }

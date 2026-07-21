@@ -15,7 +15,7 @@ const keyFile  = resolve(CERTS_DIR, 'localhost-key.pem');
 const hasCerts = fs.existsSync(certFile) && fs.existsSync(keyFile);
 
 export default defineConfig({
-  root: 'packages/client',
+  root: resolve(__dirname, '.'),
   plugins: [react()],
   server: {
     // Activar HTTPS si los certificados están disponibles
@@ -38,12 +38,9 @@ export default defineConfig({
       'shared': resolve(__dirname, '../shared'),
     }
   },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: 'esnext',
-    },
-  },
-  build: {
+build: {
+    outDir: resolve(__dirname, '../../dist'),
+    emptyOutDir: true,
     target: 'esnext',
     rollupOptions: {
       output: {

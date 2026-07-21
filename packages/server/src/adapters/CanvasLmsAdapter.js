@@ -9,6 +9,32 @@ export default class CanvasLmsAdapter {
     this.localService = null;
   }
 
+  /**
+   * En modo Docker local (STARTUP_MODE=3) resuelve el token de acceso usando
+   * la BD como fuente principal y CANVAS_ACCESS_TOKEN del .env como fallback.
+   * Esto evita cuelgues cuando el sub del JWT LTI (UUID) no coincide con el
+   * sub de Rails almacenado en canvas_user_tokens.
+   */
+  async _resolveLocalToken(teacherId) {
+    // 1. Intentar obtener desde la BD por el sub del JWT LTI
+    try {
+      const token = await this.tokenManager.getValidToken(teacherId);
+      if (token) return token;
+    } catch (e) {
+      // Token no encontrado en BD por este sub — usamos fallback
+      logger.warn(`[CanvasLmsAdapter] No se encontró token en BD para sub ${teacherId}. Usando CANVAS_ACCESS_TOKEN del env.`);
+    }
+
+    // 2. Fallback al token del .env (válido en desarrollo local)
+    const envToken = process.env.CANVAS_ACCESS_TOKEN;
+    if (envToken) {
+      logger.info(`[CanvasLmsAdapter] Usando CANVAS_ACCESS_TOKEN del .env para sub ${teacherId} (modo Docker local).`);
+      return envToken;
+    }
+
+    throw new AppError(`No hay token disponible para el usuario ${teacherId}`, 401, { requireOAuth: true });
+  }
+
   async _getLocalService() {
     if (!this.localService) {
       const { default: CanvasServiceLocal } = await import('../services/infrastructure/CanvasService_local.js');
@@ -17,13 +43,35 @@ export default class CanvasLmsAdapter {
     return this.localService;
   }
 
+<<<<<<< Updated upstream
   async _fetchWithToken(endpoint, teacherId, options = {}) {
+=======
+  async _fetchWithToken(endpoint, teacherId, options = {}, isRetry = false) {
+    const isLocalMode = process.env.STARTUP_MODE === '3';
+>>>>>>> Stashed changes
     try {
-      const token = await this.tokenManager.getValidToken(teacherId);
+      const token = isLocalMode
+        ? await this._resolveLocalToken(teacherId)
+        : await this.tokenManager.getValidToken(teacherId);
       return await this.httpClient.apiFetch(endpoint, token, options);
     } catch (error) {
       if (error instanceof AppError && error.statusCode === 401) {
+<<<<<<< Updated upstream
         await this.tokenManager.invalidateToken(teacherId);
+=======
+        if (!isRetry && !isLocalMode) {
+          logger.warn(`[CanvasLmsAdapter] 401 recibido en _fetchWithToken para ${teacherId}. Intentando forzar refresh...`);
+          try {
+            await this.tokenManager.forceRefresh(teacherId);
+            return await this._fetchWithToken(endpoint, teacherId, options, true);
+          } catch (refreshError) {
+            await this.tokenManager.invalidateToken(teacherId);
+            throw refreshError;
+          }
+        } else if (!isLocalMode) {
+          await this.tokenManager.invalidateToken(teacherId);
+        }
+>>>>>>> Stashed changes
       }
       throw error;
     }
@@ -31,24 +79,50 @@ export default class CanvasLmsAdapter {
 
   async _fetchAllWithToken(endpoint, teacherId, options = {}) {
     const results = [];
+    const isLocalMode = process.env.STARTUP_MODE === '3';
     let nextUrl = `${this.httpClient.canvasBaseUrl}/api/v1${endpoint}`;
     let pageCount = 0;
     const MAX_PAGES = 50;
+
+    // Resolvemos el token una sola vez para todas las páginas
+    let resolvedToken;
+    try {
+      resolvedToken = isLocalMode
+        ? await this._resolveLocalToken(teacherId)
+        : await this.tokenManager.getValidToken(teacherId);
+    } catch (tokenErr) {
+      logger.error(`[CanvasLmsAdapter] Error obteniendo token para ${teacherId}: ${tokenErr.message}`);
+      throw tokenErr;
+    }
 
     while (nextUrl && pageCount < MAX_PAGES) {
       pageCount++;
       const relativePath = nextUrl.replace(`${this.httpClient.canvasBaseUrl}/api/v1`, '');
       
       try {
-        const token = await this.tokenManager.getValidToken(teacherId);
-        const res = await this.httpClient.apiFetch(relativePath, token, { ...options, method: 'GET', returnFullResponse: true });
+        const res = await this.httpClient.apiFetch(relativePath, resolvedToken, { ...options, method: 'GET', returnFullResponse: true });
         
         const data = await res.json();
         results.push(...(Array.isArray(data) ? data : [data]));
         nextUrl = this.httpClient.getNextLink(res.headers.get('link'));
       } catch (error) {
         if (error instanceof AppError && error.statusCode === 401) {
+<<<<<<< Updated upstream
           await this.tokenManager.invalidateToken(teacherId);
+=======
+          if (!isRetry && !isLocalMode) {
+            logger.warn(`[CanvasLmsAdapter] 401 recibido en _fetchAllWithToken para ${teacherId}. Intentando forzar refresh...`);
+            try {
+              await this.tokenManager.forceRefresh(teacherId);
+              return await this._fetchAllWithToken(endpoint, teacherId, options, true);
+            } catch (refreshError) {
+              await this.tokenManager.invalidateToken(teacherId);
+              throw refreshError;
+            }
+          } else if (!isLocalMode) {
+            await this.tokenManager.invalidateToken(teacherId);
+          }
+>>>>>>> Stashed changes
         }
         throw error;
       }
@@ -59,17 +133,20 @@ export default class CanvasLmsAdapter {
 
   async getCourses(teacherId) {
     if (this.useLocalData) return (await this._getLocalService()).getCourses(teacherId);
-    return this._fetchAllWithToken(`/users/self/courses?enrollment_type=teacher&per_page=50`, teacherId);
+    const localOpts = process.env.STARTUP_MODE === '3' ? { maxRetries: 2, timeoutMs: 20000 } : {};
+    return this._fetchAllWithToken(`/users/self/courses?enrollment_type=teacher&per_page=50`, teacherId, localOpts);
   }
 
   async getStudents(courseId, teacherId) {
     if (this.useLocalData) return (await this._getLocalService()).getStudents(courseId);
-    return this._fetchAllWithToken(`/courses/${courseId}/users?enrollment_type[]=student&per_page=50`, teacherId);
+    const localOpts = process.env.STARTUP_MODE === '3' ? { maxRetries: 2, timeoutMs: 20000 } : {};
+    return this._fetchAllWithToken(`/courses/${courseId}/users?enrollment_type[]=student&per_page=50`, teacherId, localOpts);
   }
 
   async getAssignments(courseId, teacherId) {
     if (this.useLocalData) return (await this._getLocalService()).getAssignments(courseId);
-    return this._fetchAllWithToken(`/courses/${courseId}/assignments?per_page=50`, teacherId);
+    const localOpts = process.env.STARTUP_MODE === '3' ? { maxRetries: 2, timeoutMs: 20000 } : {};
+    return this._fetchAllWithToken(`/courses/${courseId}/assignments?per_page=50`, teacherId, localOpts);
   }
   
   async getAssignment(courseId, assignmentId, teacherId) {

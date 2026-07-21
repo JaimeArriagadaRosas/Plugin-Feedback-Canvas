@@ -20,11 +20,12 @@
 
 .content {
   flex: 1;
-  padding: 40px;
+  padding: 40px 40px 0;
   overflow: auto;
   background-color: var(--color-doc-bg);
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
 .paper {
@@ -33,19 +34,7 @@
   background-color: var(--color-surface);
   box-shadow: var(--shadow-md);
   padding: 50px;
-  min-height: 800px;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: var(--font-weight-bold);
-  margin: 0 0 10px 0;
-}
-
-.student {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 0 0 20px 0;
+  min-height: 100%;
 }
 
 .divider {
