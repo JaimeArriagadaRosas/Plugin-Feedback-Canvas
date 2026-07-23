@@ -17,12 +17,19 @@ export default function AssignmentList({ course, onBack, onNext }) {
     showActivateModal,
     selectedAssignment,
     showToast,
+    errorMsg,
+    setErrorMsg,
     fetchAssignments,
+    isSyncing,
+    isError,
+    queryError,
     handleToggle,
     handleCloseModal,
     handleConfirmDeactivate,
     handleConfirmActivate,
   } = useAssignmentList(course);
+
+  const displayError = errorMsg || (isError ? queryError?.message || "Error al cargar/sincronizar las tareas" : null);
 
   const handleSync = useCallback(() => {
     logClick('ASSIGNMENT_LIST_SYNC', fetchAssignments)();
@@ -51,7 +58,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
         </div>
 
         <div className={styles.tableWrapper}>
-          <AssignmentTable assignments={assignments} onToggle={handleToggle} />
+          <AssignmentTable assignments={assignments} onToggle={handleToggle} loading={loading} />
         </div>
       </main>
 
@@ -78,11 +85,25 @@ export default function AssignmentList({ course, onBack, onNext }) {
         onConfirm={handleConfirmActivate}
       />
 
+      {isSyncing && !loading && (
+        <div className={styles.toast} style={{ backgroundColor: '#27ae60', color: 'white' }}>
+          <span style={{ fontSize: 18 }}>&#x21BB;</span>
+          <span>Sincronizando tareas...</span>
+        </div>
+      )}
+
+      {displayError && (
+        <div className={styles.toast} style={{ backgroundColor: '#e74c3c', color: 'white', cursor: 'pointer' }} onClick={() => setErrorMsg(null)}>
+          <span style={{ fontSize: 18 }}>&#x26A0;</span>
+          <span>{displayError}</span>
+        </div>
+      )}
+
       {showToast && (
         <div className={styles.toast}>
           <span style={{ color: 'var(--color-primary)', fontSize: 18 }}>&#x2139;</span>
           <span>
-            Estado RF40 guardado: Plugin desactivado para {selectedAssignment?.name}. Sincronizando configuración...
+            Estado guardado exitosamente. Sincronizando configuración...
           </span>
         </div>
       )}

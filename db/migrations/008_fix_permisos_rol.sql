@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS Permisos_Rol (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS permisos_rol_updated_at ON Permisos_Rol;
 CREATE TRIGGER permisos_rol_updated_at
   BEFORE UPDATE ON Permisos_Rol
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();

@@ -18,11 +18,11 @@ const STATUS_COLORS = {
   'RECHAZADO': { bg: '#fdedec', text: '#922b21' }
 };
 
-export function useFeedbackReview() {
+export function useFeedbackReview({ initialSelectedCourse } = {}) {
   const queryClient = useQueryClient();
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [activeFeedback, setActiveFeedback] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState("Todos");
+  const [selectedCourse, setSelectedCourse] = useState(initialSelectedCourse || "Todos");
   const [selectedAssignment, setSelectedAssignment] = useState("Todas");
   const [toastMessage, setToastMessage] = useState(null);
   const [pendingBulkApproval, setPendingBulkApproval] = useState(null);

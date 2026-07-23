@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { isLocalModeAllowed, isHttpsEnabled } from './envGuard.js';
+import { isLocalModeAllowed, isHttpsEnabled, isProduction } from './envGuard.js';
 
 const LTI_TOKEN_COOKIE = 'lti-token';
 const DEV_ROLE_COOKIE = 'dev-role';
@@ -77,7 +77,8 @@ export function shouldRefreshLtiCookie(req) {
 }
 
 export function refreshLtiCookieOptions(req, res) {
-  const isProduction = isHttpsEnabled();
+  const isProd = isProduction();
+  const cookieSecure = isProd || isHttpsEnabled();
   const expiry = getLtiTokenExpiry(req);
   const token = extractLtiToken(req);
   if (!token || !expiry) return null;
@@ -90,8 +91,8 @@ export function refreshLtiCookieOptions(req, res) {
     value: token,
     options: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'None' : 'Lax',
+      secure: cookieSecure,
+      sameSite: cookieSecure ? 'None' : 'Lax',
       maxAge
     }
   };

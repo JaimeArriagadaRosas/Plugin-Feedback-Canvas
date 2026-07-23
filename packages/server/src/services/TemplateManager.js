@@ -26,16 +26,47 @@ export default class TemplateManager {
     // El tono se decide por la nota chilena (no por el % de Canvas)
     const tone = GradeConverter.getToneForChileGrade(chileGrade);
 
+    let toneName = 'medio';
+    if (chileGrade >= 6.0) toneName = 'alto';
+    else if (chileGrade >= 4.0) toneName = 'medio';
+    else toneName = 'bajo';
+
+    let contenido = template.contenido;
+    try {
+      const parsedContent = JSON.parse(template.contenido);
+      if (parsedContent.alto && parsedContent.medio && parsedContent.bajo) {
+        contenido = parsedContent[toneName] || parsedContent.medio;
+      }
+    } catch (e) {
+      // Fallback para plantillas antiguas en texto plano
+    }
+
     return {
       ...template,
+      contenido,
       instructionIA: `El estudiante obtuvo ${canvasScore} de ${pointsPossible} puntos en Canvas (nota chilena: ${chileGrade}/7.0, aprobado: ${chileGrade >= 4.0}). Usa un tono ${tone}.`
     };
+  }
+
+  async getTemplatesForProfesor(profesorId) {
+    let templates = await this.templateRepo.listByProfesor(profesorId);
+    
+    // Si el profesor no ha inicializado las plantillas base, las clonamos
+    const hasSeeded = await this.templateRepo.hasSeededTemplates(profesorId);
+    if (!hasSeeded) {
+      await this.templateRepo.cloneDefaultTemplates(profesorId);
+      await this.templateRepo.markTemplatesAsSeeded(profesorId);
+      templates = await this.templateRepo.listByProfesor(profesorId);
+    }
+    
+    // Retornamos solo las propias del profesor
+    return templates.filter(t => t.profesor_id === profesorId);
   }
 
   /**
    * CRUD delegado al repositorio
    */
-  async createTemplate(data) {
-    return this.templateRepo.save(data);
+  async createTemplate(data, profesorId) {
+    return this.templateRepo.save(data, profesorId);
   }
 }

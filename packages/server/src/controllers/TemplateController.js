@@ -8,7 +8,8 @@ export default class TemplateController {
 
   async getAll(req, res, next) {
     try {
-      const templates = await this.templateManager.templateRepo.listAll();
+      const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+      const templates = await this.templateManager.getTemplatesForProfesor(profesorId);
       res.json({ exito: true, data: templates });
     } catch (error) {
       next(error);
@@ -26,7 +27,8 @@ export default class TemplateController {
 
   async create(req, res, next) {
     try {
-      const newTemplate = await this.templateManager.createTemplate(req.body);
+      const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+      const newTemplate = await this.templateManager.createTemplate(req.body, profesorId);
       res.status(201).json({ exito: true, data: newTemplate });
     } catch (error) {
       next(error);
@@ -35,7 +37,8 @@ export default class TemplateController {
 
   async update(req, res, next) {
     try {
-      const updated = await this.templateManager.templateRepo.update(req.params.id, req.body);
+      const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+      const updated = await this.templateManager.templateRepo.update(req.params.id, req.body, profesorId);
       res.json({ exito: true, data: updated });
     } catch (error) {
       next(error);
@@ -44,7 +47,8 @@ export default class TemplateController {
 
   async delete(req, res, next) {
     try {
-      await this.templateManager.templateRepo.delete(req.params.id);
+      const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+      await this.templateManager.templateRepo.delete(req.params.id, profesorId);
       res.json({ exito: true, mensaje: 'Plantilla eliminada correctamente' });
     } catch (error) {
       next(error);

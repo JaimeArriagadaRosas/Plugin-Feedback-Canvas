@@ -2,6 +2,7 @@ import { createSpinner } from 'nanospinner';
 import { VerifyData } from './VerifyData.js';
 import { DataSeeder } from './DataSeeder.js';
 import { DatabaseHealth } from './DatabaseHealth.js';
+import { GemInstaller } from './installers/GemInstaller.js';
 import { LtiBootstrap } from '../lti.js';
 import { pingCanvasAPI } from './utils/TokenManager.js';
 
@@ -22,8 +23,6 @@ export class PostflightSetup {
 
     if (!hasData) {
       this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
-<<<<<<< Updated upstream
-=======
       
       const gemInstaller = new GemInstaller(this.boot, this.canvasDir);
       const gemsOk = await gemInstaller.ensureBundlerPlugins();
@@ -32,7 +31,6 @@ export class PostflightSetup {
         return false;
       }
       
->>>>>>> Stashed changes
       const dbHealth = new DatabaseHealth(this.boot, this.canvasDir);
       await dbHealth.ensureDatabaseReady();
       
@@ -48,7 +46,8 @@ export class PostflightSetup {
         return false;
       }
     } else {
-      this.boot.info('Datos base de la Universidad validados.');
+      this.boot.info('Datos base de la Universidad validados. Sincronizando tokens locales desde Docker...');
+      await seeder._syncTokenFromContainer();
     }
 
     // Verificar que Canvas esté respondiendo antes de continuar con la fase LTI.
@@ -57,16 +56,16 @@ export class PostflightSetup {
     const spinner = createSpinner('Verificando conectividad con Canvas...').start();
     const { ready, error: pingError } = await pingCanvasAPI();
     if (!ready) {
-      spinner.warn({ text: `Canvas no está respondiendo aún (${pingError || 'timeout'}). El token se validará durante la inicialización LTI.` });
+      spinner.warn({ text: `Canvas no está respondiendo aún (${pingError || 'timeout'}). El token se validará durante la inicialización LTI.`, mark: '  !' });
     } else {
-      spinner.success({ text: 'Canvas responde correctamente.' });
+      spinner.success({ text: 'Canvas responde correctamente.', mark: '  √' });
     }
     
     this.boot.info('Ejecutando verificación LTI final...');
     const ltiBoot = new LtiBootstrap({ mode: '3', log: this.boot });
     const ltiRes = await ltiBoot.run();
-    if (!ltiRes.success && !ltiRes?.data?.skipped) {
-      this.boot.error('Verificación LTI falló en el Postflight.');
+    if (!ltiRes.ok && !ltiRes?.data?.skipped) {
+      this.boot.error(`Verificación LTI falló en el Postflight: ${ltiRes.data?.error || ltiRes.message}`);
       return false;
     }
     

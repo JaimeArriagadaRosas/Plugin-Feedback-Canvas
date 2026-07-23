@@ -13,13 +13,10 @@ const loginHandler = (req, res) => {
   const bodyData = (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { iss, login_hint, target_link_uri, lti_message_hint } = bodyData;
   const reqId = Math.random().toString(36).substring(2, 8);
-  logger.info(`[LTI-LOGIN] [$] [${reqId}] ENTRADA login | method="${req.method}" path="${req.originalUrl}" iss="${iss}" login_hint="${login_hint?.substring(0, 30)}" lti_message_hint=${!!lti_message_hint}`);
+  logger.debug(`[LTI-LOGIN] OIDC Init Request recibida -> Iniciando flujo login`);
 
   if (!iss || !login_hint || !target_link_uri) {
-    logger.warn(`[LTI-LOGIN] [$] [${reqId}] Parámetros LTI insuficientes detectados.`);
-    if (!iss) logger.warn(`[LTI-LOGIN] [$] [${reqId}] -> Falta 'iss' (Issuer)`);
-    if (!login_hint) logger.warn(`[LTI-LOGIN] [$] [${reqId}] -> Falta 'login_hint'`);
-    if (!target_link_uri) logger.warn(`[LTI-LOGIN] [$] [${reqId}] -> Falta 'target_link_uri'`);
+    logger.warn(`[LTI-LOGIN] Parámetros LTI insuficientes detectados (Faltan: ${[!iss&&'iss', !login_hint&&'login_hint', !target_link_uri&&'target_link_uri'].filter(Boolean).join(', ')})`);
     
     // No exponemos req.body / req.query completos en la respuesta: pueden
     // contener login_hint, lti_message_hint u otros datos sensibles del launch.
@@ -29,7 +26,7 @@ const loginHandler = (req, res) => {
       received_params: Object.keys(bodyData)
     });
   } else {
-    logger.info(`[LTI-LOGIN] [$] [${reqId}] Validación primaria: OK. Parámetros básicos presentes.`);
+    logger.debug(`[LTI-LOGIN] Validación inicial OK. Ensamblando redirección OIDC...`);
   }
 
   const state = secureState();
@@ -39,14 +36,16 @@ const loginHandler = (req, res) => {
   const isProd = process.env.NODE_ENV === 'production';
   const cookieSecure = isProd || isHttpsEnabled();
   const cookieSameSite = cookieSecure ? 'None' : 'Lax';
-  res.cookie('lti_state', state, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
-  res.cookie('lti_nonce', nonce, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite });
   
-  // Guardamos el referer o link del curso para la autorreparación
   const targetUrl = req.headers.referer || target_link_uri;
-  if (targetUrl) {
-    res.cookie('lti_target_url', targetUrl, { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, maxAge: 60 * 60 * 1000 });
-  }
+  
+  const launchData = { nonce, targetUrl };
+  res.cookie(`lti_${state}`, JSON.stringify(launchData), { 
+    httpOnly: true, 
+    secure: cookieSecure, 
+    sameSite: cookieSameSite, 
+    maxAge: 15 * 60 * 1000 
+  });
 
   const canvasBaseUrl = (process.env.CANVAS_BASE_URL || 'https://localhost:8443').replace(/\/$/, '');
   const canvasAuthUrl = process.env.CANVAS_OIDC_URL || `${canvasBaseUrl}/api/lti/authorize_redirect`;
@@ -80,8 +79,7 @@ const loginHandler = (req, res) => {
   if (lti_message_hint) authParams.append('lti_message_hint', lti_message_hint);
 
   const redirectUrl = `${canvasAuthUrl}?${authParams.toString()}`;
-  logger.info(`[LTI-LOGIN] [$] [${reqId}] FLUJO OIDC URL ensamblada con éxito | clientId="${clientId}" redirectUri="${redirectUri}" destino="${redirectUrl.substring(0, 120)}..."`);
-  logger.info(`[LTI-LOGIN] [$] [${reqId}] RESPONDIENDO redirect 302 a Canvas authorize`);
+  logger.info(`[LTI-LOGIN] 302 -> Redirigiendo a Canvas Authorize (Client ID: ${clientId})`);
   res.redirect(redirectUrl);
 };
 
@@ -133,14 +131,14 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : 'unknown');
   const cleanPath = req.originalUrl.split('?')[0];
 
-  logger.info(`[LTI-CALLBACK] [${reqId}] ENTRADA callback | ${req.method} ${cleanPath} | keys: [${bodyKeys.join(', ')}] | flags: idToken=${hasIdToken} error=${hasError} | origin: ${origin}`);
+  logger.debug(`[LTI-CALLBACK] Procesando callback con id_token...`);
 
   // Manejo robusto: Si Canvas envía la petición de inicio OIDC al target_link_uri (/callback)
   // en lugar del oidc_initiation_url (/login), lo detectamos por la presencia de login_hint y ausencia de id_token.
   const isOidcInitiation = (req.body?.login_hint && !req.body?.id_token && !req.body?.error) || 
                            (req.query?.login_hint && !req.query?.id_token && !req.query?.error);
   if (isOidcInitiation) {
-    logger.info(`[LTI-CALLBACK] [${reqId}] Detectada petición OIDC Initiation Request. Redirigiendo al flujo de login...`);
+    logger.info(`[LTI-CALLBACK] OIDC Initiation Request recibida -> Redirigiendo a flujo de login...`);
     return loginHandler(req, res);
   }
 
@@ -162,18 +160,29 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   }
 
   let claims;
+  let savedReferer = req.headers.referer;
+  
+  if (req.body?.state || req.query?.state) {
+    const state = req.body?.state || req.query?.state;
+    const launchCookieStr = req.cookies?.[`lti_${state}`];
+    if (launchCookieStr) {
+      try {
+        const launchCookie = JSON.parse(launchCookieStr);
+        if (launchCookie.targetUrl) savedReferer = launchCookie.targetUrl;
+        res.clearCookie(`lti_${state}`);
+      } catch(e) {}
+    }
+  }
+
   try {
-    logger.info(`[LTI-CALLBACK] [${reqId}] ANTES de validateLtiCallback (inicia verifyToken/JWKS)`);
+    logger.debug(`[LTI-CALLBACK] Iniciando validateLtiCallback...`);
     claims = await validateLtiCallback(req);
-    logger.info(`[LTI-CALLBACK] [${reqId}] DESPUÉS de validateLtiCallback (OK)`, {
-      sub: claims.sub, iss: claims.iss, deploymentId: claims.deploymentId
-    });
+    logger.debug(`[LTI-CALLBACK] validateLtiCallback OK | sub=${claims.sub?.substring(0,8)}...`);
   } catch (err) {
     const status = err.statusCode || err.status || 401;
     logger.error(`[LTI-CALLBACK] [${reqId}] validateLtiCallback FALLÓ`, { status, message: err.message });
     
     // Auto-reparación: Mostrar pantalla de recuperación en lugar de un JSON plano
-    const savedReferer = req.cookies?.['lti_target_url'] || req.headers.referer;
     return handleLtiError(res, err, savedReferer);
   }
 
@@ -181,12 +190,9 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   const cookie = buildLtiCookie(token);
   res.cookie(cookie.name, cookie.value, cookie.options);
 
-  logger.info('[LTI-AUTH] [OK] LOGIN LTI 1.3 exitoso');
-  logger.info(`[LTI-AUTH]   Usuario : ${claims.sub} (${claims.personName} <${claims.personEmail}>)`);
-  logger.info(`[LTI-AUTH]   Permisos: ${claims.roles.join(', ') || 'N/A'}`);
-  logger.info(`[LTI-AUTH]   Issuer  : ${claims.iss}`);
-  logger.info(`[LTI-AUTH]   Deploy  : ${claims.deploymentId}`);
-  logger.info(`[LTI-AUTH]   Entry   : ${claims.entry || 'N/A'}`);
+  logger.info(`[LTI-AUTH] LOGIN LTI 1.3 EXITOSO`);
+  const shortRoles = [...new Set((claims.roles || []).map(r => r.split('#').pop().split('/').pop()))];
+  logger.info(`[LTI-AUTH] Usuario: ${claims.sub?.substring(0,8)}... | Roles: ${shortRoles.join(', ')}`);
 
   const sessionToken = signSessionToken({
     sub: claims.sub,
@@ -200,7 +206,7 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
 
   const frontendUrl = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || 'https://localhost:5173';
   const redirectUrl = `${frontendUrl}?lti_token=${encodeURIComponent(token)}&session_token=${encodeURIComponent(sessionToken)}`;
-  logger.info(`[LTI-CALLBACK] [${reqId}] RESPONDIENDO redirect 302 a frontend`, { frontendUrl, tokenInUrl: true });
+  logger.info(`[SESSION] Claves generadas. 302 -> Redirigiendo al frontend`);
   res.redirect(redirectUrl);
 }));
 

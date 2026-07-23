@@ -28,3 +28,6 @@ Thumbs.db
 .vscode/
 .idea/
 packages/server/certs/  
+
+# Archivos temporales locales (JSON extraído del setup, etc.)
+tmp/

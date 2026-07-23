@@ -24,13 +24,19 @@ export class StaticChecker {
   }
 
   async runAll(mode) {
-    const docker = new DockerCheck();
-    const nodeChk = new NodeCheck();
-    const deps = new DependenciesCheck(this.pluginDir);
     const env = new EnvironmentDetector(this.pluginDir);
 
     env.ensureEnvFile(boot);
     env.ensureStartupVars(mode);
+
+    if (process.env.FAST_BOOT === 'true') {
+      const envRes = await this.runCheck('Variables de entorno', () => Promise.resolve(env.validate(boot, mode)));
+      return { envRes, env };
+    }
+
+    const docker = new DockerCheck();
+    const nodeChk = new NodeCheck();
+    const deps = new DependenciesCheck(this.pluginDir);
 
     const dockerRes = await this.runCheck('Entorno Docker', () => docker.run(boot));
     const nodeRes = await this.runCheck('Node.js / NPM', () => nodeChk.run(boot));

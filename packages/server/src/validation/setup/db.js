@@ -1,6 +1,17 @@
 import db from '../../data/db.js';
 
 export async function truncateAll() {
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('[TEST-DB] TRUNCATE omitido. NODE_ENV no es test.');
+    return;
+  }
+  
+  const dbName = process.env.DB_NAME || '';
+  if (!dbName.includes('test')) {
+    console.warn(`[TEST-DB] ADVERTENCIA CRÍTICA: TRUNCATE omitido. La base de datos actual (${dbName}) no parece ser una base de datos de pruebas (debe contener 'test' en el nombre).`);
+    return;
+  }
+
   const tables = [
     'Historial_Feedback_Generado',
     'Plantilla_Feedback',
@@ -28,7 +39,8 @@ export async function truncateAll() {
 
 export async function seedFeedback(data = {}) {
   const defaults = {
-    estudiante_id: 1,
+    estudiante_id: '00000000-0000-0000-0000-000000000001',
+    profesor_id: '00000000-0000-0000-0001-000000000003',
     curso_id: 14852,
     tarea_id: 101,
     plantilla_id: 1,
@@ -43,10 +55,10 @@ export async function seedFeedback(data = {}) {
 
   const res = await db.query(
     `INSERT INTO Historial_Feedback_Generado
-      (estudiante_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (estudiante_id, profesor_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
-    [merged.estudiante_id, merged.curso_id, merged.tarea_id, merged.plantilla_id,
+    [merged.estudiante_id, merged.profesor_id, merged.curso_id, merged.tarea_id, merged.plantilla_id,
      merged.contenido_generado, merged.prompt_usado, merged.nota_canvas,
      merged.nota_chile, merged.aprobado, merged.estado]
   );
@@ -73,7 +85,7 @@ export async function seedAssignmentConfig(data = {}) {
     canvas_assignment_id: '101',
     feedback_activo: true,
     plantilla_id: 1,
-    profesor_id: '1'
+    profesor_id: '00000000-0000-0000-0000-000000000001'
   };
   const merged = { ...defaults, ...data };
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { request, app } from '../setup/app.js';
 import crypto from 'node:crypto';
+import { truncateAll, seedTemplate, seedAssignmentConfig } from '../setup/db.js';
 
 describe('Webhook HMAC  Caja Negra', () => {
   const secret = 'webhook-secret-test';
@@ -11,9 +12,12 @@ describe('Webhook HMAC  Caja Negra', () => {
     return crypto.default.createHmac('sha256', secret).update(body).digest('base64');
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.WEBHOOK_SECRET = secret;
-    process.env.NODE_ENV = 'production';
+    process.env.NODE_ENV = 'test';
+    await truncateAll();
+    await seedTemplate({ id: 1, nombre: 'Template', contenido: 'Contenido' });
+    await seedAssignmentConfig({ profesor_id: '1' });
   });
 
   afterEach(() => {

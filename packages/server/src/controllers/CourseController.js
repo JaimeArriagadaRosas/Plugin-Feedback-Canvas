@@ -18,9 +18,8 @@ export default class CourseController {
         throw new AppError('No se pudo determinar el usuario (sub) desde el contexto LTI', 401);
       }
       
-      logger.info(`[CourseController] Solicitando cursos para usuario: ${userId}`);
       const courses = await this.canvasGateway.getCourses(userId);
-      logger.info(`[CourseController] Cursos obtenidos: ${courses?.length ?? 0} para usuario ${userId}`);
+      logger.info(`[COURSES] Retornados ${courses?.length ?? 0} cursos para el usuario: ${userId?.substring(0,8)}...`);
       res.json({ exito: true, data: courses });
     } catch (error) {
       logger.error(`[CourseController] Error al obtener cursos: ${error.message}`, { stack: error.stack });
@@ -32,7 +31,35 @@ export default class CourseController {
     try {
       const { courseId } = req.params;
       const teacherId = req.ltiContext?.user;
-      const assignments = await this.canvasGateway.getAssignments(courseId, teacherId);
+      let assignments = await this.canvasGateway.getAssignments(courseId, teacherId);
+
+      const localConfigs = await this.configRepo.getConfigsByCourse(courseId);
+      const configMap = new Map();
+      (localConfigs || []).forEach(c => configMap.set(String(c.canvas_assignment_id), c));
+
+      if (!Array.isArray(assignments)) {
+        assignments = [];
+      }
+
+      assignments = await Promise.all(assignments.map(async a => {
+        const local = configMap.get(String(a.id));
+        let templateName = "";
+        if (local && local.plantilla_id) {
+          try {
+            const template = await this.templateRepo.getById(local.plantilla_id);
+            if (template) templateName = template.nombre;
+          } catch (e) {
+            logger.error(`Error fetching template ${local.plantilla_id}: ${e.message}`);
+          }
+        }
+        return {
+          ...a,
+          active: local ? Boolean(local.feedback_activo) : false,
+          template: local && local.plantilla_id ? String(local.plantilla_id) : "",
+          templateName
+        };
+      }));
+
       res.json({ exito: true, data: assignments });
     } catch (error) {
       next(error);
@@ -77,13 +104,7 @@ export default class CourseController {
         return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
       }
 
-      // RF15: No se permite activar si no hay al menos 3 plantillas (rangos) configuradas
-      if (activo && this.templateRepo) {
-        const templates = await this.templateRepo.listAll();
-        if (templates.length < 3) {
-          return next(new AppError('No se puede activar el plugin. Se requieren al menos 3 plantillas configuradas para los diferentes rangos de calificación (ej. Malo, Regular, Bueno).', 400));
-        }
-      }
+
 
       const configAsig = await this.configRepo.saveConfigAsignacion(
         courseId,

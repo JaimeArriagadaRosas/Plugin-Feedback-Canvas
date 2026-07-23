@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS canvas_user_tokens (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS canvas_user_tokens_updated_at ON canvas_user_tokens;
 CREATE TRIGGER canvas_user_tokens_updated_at
   BEFORE UPDATE ON canvas_user_tokens
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();

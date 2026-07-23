@@ -1,4 +1,4 @@
-﻿import db from './db.js';
+import db from './db.js';
 
 /**
  * Repositorio de Configuraciones (PostgreSQL)
@@ -22,6 +22,14 @@ export default class ConfigRepository {
     return { ...config, variables: varRes.rows };
   }
 
+  async getConfigsByCourse(courseId) {
+    const res = await db.query(
+      `SELECT * FROM configuracion_asignacion WHERE canvas_course_id = $1`,
+      [String(courseId)]
+    );
+    return res.rows;
+  }
+
   async saveConfigAsignacion(courseId, assignmentId, data, profesorId) {
     // Upsert logic for configuracion_asignacion
     const res = await db.query(
@@ -30,8 +38,9 @@ export default class ConfigRepository {
        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
        ON CONFLICT (canvas_course_id, canvas_assignment_id)
        DO UPDATE SET 
-         feedback_activo = COALESCE($3, configuracion_asignacion.feedback_activo),
-         plantilla_id = COALESCE($4, configuracion_asignacion.plantilla_id),
+         feedback_activo = EXCLUDED.feedback_activo,
+         plantilla_id = EXCLUDED.plantilla_id,
+         profesor_id = EXCLUDED.profesor_id,
          fecha_modificacion = CURRENT_TIMESTAMP
        RETURNING *`,
       [String(courseId), String(assignmentId), data.feedback_activo, data.plantilla_id, profesorId]

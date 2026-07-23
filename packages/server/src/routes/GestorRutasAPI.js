@@ -14,6 +14,7 @@ import CanvasOAuthController from '../controllers/CanvasOAuthController.js';
 import { requireCanvasOAuth } from '../middlewares/CanvasOAuthMiddleware.js';
 import { authorizeRole } from '../authz/authorizeRole.js';
 import { auditLogMiddleware } from '../middlewares/AuditLogMiddleware.js';
+import { tenantMiddleware } from '../middlewares/TenantMiddleware.js';
 import { webhookLimiter, authLimiter, handleValidationErrors, validateId, validateCourseId, validateAssignmentId, validateStudentId, validateFeedbackDetailQuery } from '../middlewares/security.js';
 import { schemas, validateBody, requireDeploymentId } from '../security/validation.js';
 import ltiRouter from './lti/index.js';
@@ -71,6 +72,7 @@ export default class GestorRutasAPI {
 
   configurarRutasProtegidas() {
     this.router.use(auditLogMiddleware);
+    this.router.use(tenantMiddleware); // RLS Context Injection
 
     const canvasOAuth = requireCanvasOAuth(this.deps.canvasTokenManager || this.deps.canvasTokenRepo);
 

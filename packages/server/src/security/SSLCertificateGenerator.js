@@ -29,20 +29,20 @@ export class SSLCertificateGenerator {
         const daysRemaining = (validTo - now) / (1000 * 60 * 60 * 24);
 
         if (daysRemaining > 7) {
-          logger.info('[SSLGenerator] ✅ El certificado actual es válido y aceptable.', { 
+          logger.info('[SSL] ✅ El certificado de mkcert actual es válido y aceptable.', { 
             daysRemaining: Math.floor(daysRemaining) 
           });
           needsGeneration = false;
         } else if (daysRemaining <= 0) {
-          logger.info('[SSLGenerator] ❌ El certificado actual ha expirado. Iniciando regeneración automática...');
+          logger.info('[SSL] ❌ El certificado actual ha expirado. Iniciando regeneración automática...');
         } else {
-          logger.info(`[SSLGenerator] ⚠️ El certificado expirará en ${Math.floor(daysRemaining)} días. Iniciando regeneración preventiva...`);
+          logger.info(`[SSL] ⚠️ El certificado expirará en ${Math.floor(daysRemaining)} días. Iniciando regeneración preventiva...`);
         }
       } catch (err) {
-        logger.warn('[SSLGenerator] ❌ El certificado actual está corrupto o es ilegible. Regenerando...', { error: err.message });
+        logger.warn('[SSL] ❌ El certificado actual está corrupto o es ilegible. Regenerando...', { error: err.message });
       }
     } else {
-      logger.info('[SSLGenerator] 🔍 No se encontraron certificados locales. Iniciando creación automática...');
+      logger.info('[SSL] 🔍 No se encontraron certificados locales. Iniciando creación automática...');
     }
 
     if (!needsGeneration) {
@@ -57,16 +57,16 @@ export class SSLCertificateGenerator {
       if (fs.existsSync(CERT_PEM)) fs.unlinkSync(CERT_PEM);
       if (fs.existsSync(CERT_KEY)) fs.unlinkSync(CERT_KEY);
 
-      logger.info('[SSLGenerator] ⏳ Ejecutando mkcert (Presta atención, Windows podría pedirte permisos de Administrador para confiar en la Autoridad Raíz)...');
+      logger.info('[SSL] ⏳ Ejecutando mkcert (Presta atención, Windows podría pedirte permisos de Administrador para confiar en la Autoridad Raíz)...');
       execSync('mkcert -install', { stdio: 'inherit' });
       execSync(`mkcert -key-file "${CERT_KEY}" -cert-file "${CERT_PEM}" localhost 127.0.0.1 host.docker.internal`, {
         stdio: 'ignore'
       });
       
-      logger.info('[SSLGenerator] ✨ Nuevos certificados generados exitosamente con mkcert.');
+      logger.info('[SSL] ✨ Nuevos certificados generados exitosamente con mkcert.');
       return true;
     } catch (e) {
-      logger.error('[SSLGenerator] 🚨 mkcert no está disponible o falló. Revise si tiene mkcert instalado en su PATH.', { error: e.message });
+      logger.error('[SSL] 🚨 mkcert no está disponible o falló. Revise si tiene mkcert instalado en su PATH.', { error: e.message });
       return false;
     }
   }

@@ -17,8 +17,10 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
   const [role, setRole] = useState(null);
+  const [rawRoles, setRawRoles] = useState([]);
   const [user, setUser] = useState(null);
   const [courseId, setCourseId] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
 
@@ -69,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       setRole(data.role);
+      setRawRoles(data.roles || []);
       setUser(data.user);
       setCourseId(data.courseId);
       setApiError(null);
@@ -92,6 +95,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       queryClient.invalidateQueries(['auth']);
       setRole(null);
+      setRawRoles([]);
       setUser(null);
       setCourseId(null);
       setApiError(null);
@@ -102,8 +106,11 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     role,
+    rawRoles,
     user,
     courseId,
+    selectedCourse,
+    setSelectedCourse,
     isLoading,
     apiError,
     refetchRole: refetch,

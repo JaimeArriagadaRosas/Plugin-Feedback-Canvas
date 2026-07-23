@@ -134,12 +134,17 @@ export function startTlsProxy() {
     req.pipe(proxyReq);
   });
 
+  server.setTimeout(300000);
+  server.headersTimeout = 120000;
+  server.keepAliveTimeout = 60000;
+
   proxy.listen(0, '127.0.0.1', () => {
     const internalPort = proxy.address().port;
-    console.info(`[TLS-PROXY] Proxy HTTP interno escuchando en 127.0.0.1:${internalPort}`);
+    if (global.canvasSpinner) global.canvasSpinner.clear();
+    console.info(`    [TLS-PROXY]    Proxy HTTP interno escuchando en 127.0.0.1:${internalPort}`);
     server.listen(TLS_LISTEN_PORT, () => {
-      console.info(`[TLS-PROXY] HTTPS proxy activo en https://localhost:${TLS_LISTEN_PORT} ` +
-        `-> Canvas HTTP http://${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`);
+      console.info(`    [TLS-PROXY]    HTTPS proxy activo: https://localhost:${TLS_LISTEN_PORT} -> HTTP ${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`);
+      if (global.canvasSpinner) global.canvasSpinner.start();
     });
     server.on('error', (err) => {
       console.error(`[TLS-PROXY] No se pudo escuchar en :${TLS_LISTEN_PORT}: ${err.message}`);

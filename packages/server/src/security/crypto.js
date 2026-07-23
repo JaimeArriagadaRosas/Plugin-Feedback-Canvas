@@ -68,3 +68,27 @@ export function extractDevRoleFromSigned(signedRole) {
   return parts[0];
 }
 
+export function signOAuthState(payload) {
+  const secret = process.env.ENCRYPTION_KEY || process.env.DEV_TOKEN_SECRET || 'fallback_secret';
+  const hmac = crypto.createHmac('sha256', secret);
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64');
+  hmac.update(payloadB64);
+  return `${payloadB64}.${hmac.digest('hex')}`;
+}
+
+export function verifyOAuthState(token) {
+  if (typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const secret = process.env.ENCRYPTION_KEY || process.env.DEV_TOKEN_SECRET || 'fallback_secret';
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(parts[0]);
+  const expected = Buffer.from(hmac.digest('hex'));
+  const actual = Buffer.from(parts[1]);
+  if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) return null;
+  try {
+    return JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}

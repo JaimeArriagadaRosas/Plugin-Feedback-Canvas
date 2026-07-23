@@ -18,7 +18,7 @@ export function spawnVite() {
 }
 
 export function spawnBackend() {
-  const child = spawn('npm', ['run', 'server'], {
+  const child = spawn('node', ['packages/server/src/server.js'], {
     cwd: PLUGIN_DIR,
     stdio: 'inherit',
   });

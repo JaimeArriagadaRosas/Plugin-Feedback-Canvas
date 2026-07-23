@@ -8,10 +8,10 @@ describe('Rate limit  Caja Negra', () => {
     process.env.USE_LOCAL_DATA = 'true';
     process.env.VITE_USE_LOCAL_DATA = 'true';
     process.env.WEBHOOK_SECRET = 'secret';
-    process.env.NODE_ENV = 'production';
+    process.env.NODE_ENV = 'test';
     await truncateAll();
     await seedTemplate({ id: 1, nombre: 'Template', contenido: 'Contenido' });
-    await seedAssignmentConfig();
+    await seedAssignmentConfig({ profesor_id: '1' });
   });
 
   afterEach(() => {

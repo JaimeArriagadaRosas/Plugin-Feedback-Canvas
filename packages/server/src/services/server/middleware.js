@@ -23,6 +23,9 @@ export function createApp() {
     app.set('trust proxy', trustProxy === 'true' ? 1 : trustProxy);
   }
 
+  app.disable('x-powered-by');
+  app.use(helmetMiddleware());
+
   app.use((req, res, next) => {
     const reqId = logger.request(req);
     res.on('finish', () => {
@@ -32,9 +35,6 @@ export function createApp() {
   });
 
   app.use(corsMiddleware());
-
-  app.disable('x-powered-by');
-  app.use(helmetMiddleware());
 
   // Captura el raw body para verificar la firma HMAC de los webhooks de Canvas.
   // Límite de 10kb (defensa por capas, OWASP A04): el plugin sólo envía

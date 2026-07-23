@@ -81,10 +81,10 @@ export default class SystemConfigController {
       });
 
       if (req.ltiContext.isLocalSession) {
-        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Modo Local / Mock UI) | user="${req.ltiContext.user}"`);
+        logger.info(`[AUTH] Sesión activa (Modo Local) | Usuario: ${req.ltiContext.user?.substring(0,8)}... | Rol: ${role}`);
       } else {
-        const shortRoles = [...new Set(userRoles.map(r => r.split('#').pop().split('/').pop()))];
-        logger.info(`[Auth] INICIO DE SESION EXITOSO -> Rol resuelto: ${role} (Autenticado via Canvas LMS JWT) | user="${req.ltiContext.user}" roles=[${shortRoles.join(', ')}] entry="${req.ltiContext.entry ?? null}"`);
+        const sourceStr = req.ltiContext.source === 'session-token' ? 'Session Token' : 'LTI Recuperada';
+        logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${req.ltiContext.user?.substring(0,8)}... | Rol: ${role}`);
       }
 
       return res.json({

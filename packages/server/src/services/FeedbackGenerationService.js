@@ -8,7 +8,7 @@ import { DomainError } from '../domain/errors/DomainError.js';
  * Separtado de FeedbackService para cumplir SRP. Usa dependency injection.
  */
 export default class FeedbackGenerationService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
     this.iaProvider = iaProvider;
     this.canvasGateway = canvasGateway;
     this.feedbackRepo = feedbackRepo;
@@ -16,6 +16,7 @@ export default class FeedbackGenerationService {
     this.academicHistoryService = academicHistoryService;
     this.validadorAcademico = validadorAcademico;
     this.configRepo = configRepo;
+    this.iaConfigManager = iaConfigManager;
   }
 
   async generateFeedback(courseId, assignmentId, studentId, templateId, currentGrade, teacherId) {
@@ -47,12 +48,26 @@ export default class FeedbackGenerationService {
 
       const prompt = PromptManager.buildPrompt(template.contenido, { ...context, instructionIA: context.instructionIA + activeVariablesText });
 
-      const feedbackText = await this.iaProvider.generateFeedback(prompt);
+      let aiConfig = {};
+      if (this.iaConfigManager) {
+        try {
+          aiConfig = await this.iaConfigManager.getActiveConfig('gemini');
+        } catch (e) {
+          // Si no hay configuración activa, se usará el fallback local o el key base del provider
+        }
+      }
+
+      const feedbackText = await this.iaProvider.generateFeedback(prompt, {
+        apiKey: aiConfig.apiKey,
+        model: aiConfig.model,
+        maxOutputTokens: aiConfig.maxTokens
+      });
 
       const saved = await this.feedbackRepo.save({
         cursoId: courseId,
         tareaId: assignmentId,
         estudianteId: studentId,
+        profesorId: teacherId,
         plantillaId: templateId,
         contenidoGenerado: feedbackText,
         promptUsado: prompt,

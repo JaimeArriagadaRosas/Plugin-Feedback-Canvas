@@ -5,9 +5,10 @@ import { runCommand } from './utils/Runner.js';
 import { createSpinner } from 'nanospinner';
 
 export class PreflightChecks {
-  constructor(boot, canvasDir) {
+  constructor(boot, canvasDir, pluginDir) {
     this.boot = boot;
     this.canvasDir = canvasDir;
+    this.pluginDir = pluginDir;
     this.MIN_RAM_GB = 8;
   }
 
@@ -24,7 +25,7 @@ export class PreflightChecks {
       { name: 'Canvas LMS clone', fn: () => this.checkCanvasClone() },
       { name: 'Node.js', fn: () => this.checkNode() },
       { name: 'NPM', fn: () => this.checkNpm() },
-      { name: 'Canvas Assets', fn: () => this.checkCanvasAssets() }
+      { name: 'Plugin Feedback DB', fn: () => this.checkPluginDb() }
     ];
 
     const missing = {};
@@ -44,23 +45,13 @@ export class PreflightChecks {
       }
     }
 
-    this.boot.info(`Verificación completada. allOk=${allOk}`);
+    this.boot.info(`Verificación completada.`);
     return { allOk, missing };
   }
 
   async checkDocker() {
     const { success, out } = await runCommand('docker', ['info']);
     if (success) {
-      const { success: memSuccess, out: memOut } = await runCommand('docker', ['info', '--format', '{{.MemTotal}}']);
-      if (memSuccess) {
-        const memBytes = parseInt(memOut.trim(), 10);
-        if (!isNaN(memBytes)) {
-          const memGb = memBytes / (1024 ** 3);
-          if (memGb < this.MIN_RAM_GB) {
-            this.boot.warn(`Docker en ejecución, pero solo tiene ${memGb.toFixed(1)}GB RAM asignados (Recomendado: 8GB+)`);
-          }
-        }
-      }
       return { ok: true, details: {} };
     }
 
@@ -82,15 +73,9 @@ export class PreflightChecks {
     return { ok: exists, details: exists ? {} : { missing_canvas_clone: true } };
   }
 
-  async checkCanvasAssets() {
-    const composeFile = path.join(this.canvasDir, 'docker-compose.yml');
-    if (!fs.existsSync(composeFile)) return { ok: true, details: {} };
-
-    const manifestDev = path.join(this.canvasDir, 'public', 'dist', 'webpack-dev', 'webpack-manifest.json');
-    const manifestProd = path.join(this.canvasDir, 'public', 'dist', 'webpack-manifest.json');
-
-    const exists = fs.existsSync(manifestDev) || fs.existsSync(manifestProd);
-    return { ok: exists, details: exists ? {} : { missing_canvas_assets: true } };
+  async checkPluginDb() {
+    const { success } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir });
+    return { ok: success, details: success ? {} : { missing_plugin_db: true } };
   }
 
   async checkNode() {

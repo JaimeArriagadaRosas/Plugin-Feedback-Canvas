@@ -16,74 +16,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pc from 'picocolors';
-<<<<<<< Updated upstream
-import { runCommand } from '../orchestration/boot/setup/utils/Runner.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../canvas-lms-master');
-const PROFILES_PATH = path.resolve(CANVAS_DIR, 'tmp/perfiles_data.json');
-
-export class TeacherTokenGenerator {
-  static async generate() {
-    try {
-      console.log(`${pc.cyan('[LTI Installer]')} Generando/verificando token de API del profesor para Canvas Local...`);
-      const teacherEmail = process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local';
-      const script = `
-        user = User.find_by(email: '${teacherEmail}') || User.find_by(name: 'Dr. Elena Ramirez')
-        if user
-          user.access_tokens.where(purpose: 'Local Dev Token').destroy_all
-          token = user.access_tokens.create!(purpose: 'Local Dev Token')
-          data = {
-            user_id: user.id,
-            email: user.email || '${teacherEmail}',
-            token: token.full_token
-          }
-          puts "TEACHER_TOKEN_JSON_START"
-          puts data.to_json
-          puts "TEACHER_TOKEN_JSON_END"
-        else
-          puts "TEACHER_TOKEN_JSON_START"
-          puts "{}"
-          puts "TEACHER_TOKEN_JSON_END"
-        end
-      `;
-      const { success, out, err } = await runCommand('docker', ['compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: CANVAS_DIR, env: process.env });
-      
-      if (!success) throw new Error(`Rails exit error. Stderr: ${err}`);
-      
-      const match = out.match(/TEACHER_TOKEN_JSON_START\s*([\s\S]*?)\s*TEACHER_TOKEN_JSON_END/);
-      if (!match) throw new Error(`No JSON output. Salida: ${out}`);
-      
-      const data = JSON.parse(match[1].trim());
-      if (!data.token) throw new Error('Token vacío o profesor no encontrado');
-      
-      await this.persistTeacherToken(data);
-      console.log(`${pc.green('[LTI Installer]')} Token del profesor listo (canvas_user_id=${data.user_id}). Guardado en perfiles_data.json.`);
-    } catch (e) {
-      console.log(`${pc.yellow('[LTI Installer]')} Advertencia: No se pudo generar el token del profesor. Error: ${e.message}`);
-    }
-  }
-
-  static async persistTeacherToken({ user_id, email, token }) {
-    let profiles = { usuarios: [] };
-    try {
-      const raw = await fs.readFile(PROFILES_PATH, 'utf-8');
-      profiles = JSON.parse(raw);
-    } catch {}
-
-    if (!Array.isArray(profiles.usuarios)) profiles.usuarios = [];
-
-    const user = profiles.usuarios.find(u => u.email === email);
-    if (user) {
-      user.token = token;
-      user.canvas_user_id = user_id;
-    } else {
-      profiles.usuarios.push({ id: profiles.usuarios.length + 1, nombre: 'Profesor', email, rol: 'teacher', token, canvas_user_id: user_id });
-    }
-
-    await fs.writeFile(PROFILES_PATH, JSON.stringify(profiles, null, 2), 'utf-8');
-=======
 import { validateToken, healTokenViaFile, withRetry } from '../../orchestration/boot/setup/utils/TokenManager.js';
 import { safeUpdateEnvVariable } from '../../orchestration/boot/setup/utils/FileManager.js';
 import CanvasTokenRepository from '../../data/CanvasTokenRepository.js';
@@ -104,13 +36,17 @@ export class TeacherTokenGenerator {
    */
   static async generate(spinner) {
     const log = (msg) => {
-      if (spinner) {
-        // No interrumpir el spinner, usar update
-      }
-      console.log(pc.blue('[TEACHER-TOKEN]'), msg);
+      if (spinner) spinner.clear();
+      console.log(`    ${pc.blue('[TEACHER-TOKEN]')} ${msg}`);
     };
-    const warn = (msg) => console.log(pc.yellow('[TEACHER-TOKEN]'), msg);
-    const error = (msg) => console.log(pc.red('[TEACHER-TOKEN]'), msg);
+    const warn = (msg) => {
+      if (spinner) spinner.clear();
+      console.log(`    ${pc.yellow('[TEACHER-TOKEN]')} ${msg}`);
+    };
+    const error = (msg) => {
+      if (spinner) spinner.clear();
+      console.log(`    ${pc.red('[TEACHER-TOKEN]')} ${msg}`);
+    };
 
     try {
       if (spinner) spinner.update({ text: 'Verificando token de API del profesor...' });
@@ -203,30 +139,31 @@ export class TeacherTokenGenerator {
 
             if (spinner) {
               spinner.success({
-                text: `Token del profesor listo (canvas_user_id=${userId}, ${wasRegenerated ? 'regenerado' : 'reutilizado'}). Sincronizado en PostgreSQL.`
+                text: `Token del profesor listo (canvas_user_id=${userId}, ${wasRegenerated ? 'regenerado' : 'reutilizado'}). Sincronizado en PostgreSQL.`,
+                mark: '  √'
               });
             } else {
-              console.log(`${pc.green('[TEACHER-TOKEN]')} Token del profesor listo (canvas_user_id=${userId}). Sincronizado en PostgreSQL.`);
+              console.log(`    ${pc.green('[TEACHER-TOKEN]')} Token del profesor listo (canvas_user_id=${userId}). Sincronizado en PostgreSQL.`);
             }
           } else {
             warn(`No se pudo obtener canvas_sub. Token listo pero NO sincronizado en DB.`);
-            if (spinner) spinner.warn({ text: `Token listo pero sin sincronización en DB (canvas_sub no disponible).` });
+            if (spinner) spinner.warn({ text: `Token listo pero sin sincronización en DB (canvas_sub no disponible).`, mark: '  !' });
           }
         } catch (dbErr) {
           warn(`No se pudo sincronizar el token en PostgreSQL: ${dbErr.message}`);
-          if (spinner) spinner.warn({ text: `Token listo, pero falló la sincronización en DB: ${dbErr.message}` });
+          if (spinner) spinner.warn({ text: `Token listo, pero falló la sincronización en DB: ${dbErr.message}`, mark: '  !' });
         }
       } else if (tokenData.networkError) {
         // Canvas no respondió — advertencia pero no falla el arranque
-        if (spinner) spinner.warn({ text: `Token asumido válido (Canvas no respondía). Se sincronizará en la próxima petición autenticada.` });
+        if (spinner) spinner.warn({ text: `Token asumido válido (Canvas no respondía). Se sincronizará en la próxima petición autenticada.`, mark: '  !' });
       }
 
     } catch (e) {
       error(`Error fatal al gestionar el token del profesor: ${e.message}`);
       if (spinner) {
-        spinner.warn({ text: `Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}` });
+        spinner.warn({ text: `Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`, mark: '  !' });
       } else {
-        console.log(`${pc.yellow('[TEACHER-TOKEN]')} Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
+        console.log(`    ${pc.yellow('[TEACHER-TOKEN]')} Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
       }
     }
   }
@@ -245,6 +182,5 @@ export class TeacherTokenGenerator {
     } catch (dbErr) {
       console.warn(`${pc.yellow('[DB-WARN]')} No se pudo insertar token en base de datos: ${dbErr.message}`);
     }
->>>>>>> Stashed changes
   }
 }

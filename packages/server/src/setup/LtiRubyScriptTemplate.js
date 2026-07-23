@@ -33,10 +33,31 @@ export function generateLtiRubyScript({ ltiJson, pluginUrl, internalPluginUrl, c
     key.visible = true
     key.client_type = 'confidential'
     key.is_lti_key = true
+    key.require_scopes = false
+    
+    key.scopes = [
+      'url:GET|/api/v1/users/:id',
+      'url:GET|/api/v1/users/:user_id/profile',
+      'url:GET|/api/v1/users/:user_id/courses',
+      'url:GET|/api/v1/courses',
+      'url:GET|/api/v1/courses/:id',
+      'url:GET|/api/v1/courses/:course_id/users',
+      'url:GET|/api/v1/courses/:course_id/assignments',
+      'url:GET|/api/v1/courses/:course_id/assignments/:id',
+      'url:PUT|/api/v1/courses/:course_id/assignments/:id',
+      'url:POST|/api/v1/courses/:course_id/assignments',
+      'url:GET|/api/v1/courses/:course_id/quizzes',
+      'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
+      'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+      'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+      'url:GET|/api/v1/courses/:course_id/enrollments',
+      'url:POST|/api/v1/conversations'
+    ]
+
     key.generate_rsa_keypair!(overwrite: true)
     key.save!
 
-    key.redirect_uris = "#{plugin_url}/api/lti/callback"
+    key.redirect_uris = "#{plugin_url}/api/lti/callback\n#{plugin_url}/api/oauth2/canvas/callback"
     if key.tool_configuration&.persisted?
       key.tool_configuration.destroy
     end
@@ -121,6 +142,7 @@ export function generateLtiRubyScript({ ltiJson, pluginUrl, internalPluginUrl, c
     end
 
     puts "LTI_CLIENT_ID:#{key.global_id}"
+    puts "LTI_CLIENT_SECRET:#{key.api_key}"
     puts "SUCCESS"
   `;
 }

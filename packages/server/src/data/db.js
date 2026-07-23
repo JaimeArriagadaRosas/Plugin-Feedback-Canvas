@@ -4,6 +4,11 @@ import logger from '../utils/logger.js';
 import { handleDbError } from '../security/dbGuard.js';
 import { isLocalModeAllowed, isProduction } from '../security/envGuard.js';
 import { getEnv } from '../config/index.js';
+import { execa } from 'execa';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { tenantContext } from '../middlewares/TenantMiddleware.js';
 
 dotenv.config();
 
@@ -106,11 +111,30 @@ async function reconnectPool(attempt = 1) {
 
 import { localDb } from './dbLocal.js';
 
+async function autoStartLocalDbContainer() {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const projectRoot = path.resolve(path.dirname(__filename), '../../../../');
+    const composeFile = path.join(projectRoot, 'docker-compose.db.yml');
+    
+    if (fs.existsSync(composeFile)) {
+      logger.info('[DB] Base de datos no encontrada. Encendiendo contenedor de PostgreSQL (Docker)...');
+      await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'], { cwd: projectRoot });
+      logger.info('[DB] Contenedor iniciado y PostgreSQL está listo (healthy).');
+      return true;
+    }
+  } catch (err) {
+    logger.warn('[DB] No se pudo iniciar el contenedor de BD automáticamente:', { error: err.message });
+  }
+  return false;
+}
+
 async function initializePostgres() {
   logger.info('[DB] Iniciando conexión a PostgreSQL...');
   let attempt = 1;
   const maxAttempts = 10;
   const baseDelay = 1500;
+  let autoStarted = false;
 
   while (attempt <= maxAttempts) {
     try {
@@ -125,17 +149,29 @@ async function initializePostgres() {
       logger.info('[DB] Conexión inicial a PostgreSQL exitosa.');
       return;
     } catch (error) {
-      logger.warn(`[DB] Falló intento de conexión inicial ${attempt}: ${error.message}`);
+      if (attempt > 2 || (!autoStarted && isProduction())) {
+        logger.warn(`[DB] Falló intento de conexión inicial ${attempt}: ${error.message}`);
+      }
       if (pool) {
         try { await pool.end(); } catch (e) {}
       }
+
+      if (!isProduction() && attempt === 1 && !autoStarted) {
+        autoStarted = await autoStartLocalDbContainer();
+        if (autoStarted) {
+          continue; // Reintentar inmediatamente sin incrementar intento si acabamos de iniciar Docker
+        }
+      }
+
       if (attempt === maxAttempts) {
         logger.error('[DB] Se agotaron los intentos de conexión inicial. La aplicación podría fallar.');
         pool = null;
         return;
       }
       const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), 15000);
-      logger.info(`[DB] Esperando ${delay}ms antes del próximo intento...`);
+      if (attempt > 2) {
+        logger.info(`[DB] Esperando ${delay}ms antes del próximo intento...`);
+      }
       await new Promise(r => setTimeout(r, delay));
       attempt++;
     }
@@ -148,9 +184,18 @@ if (!isLocalMode()) {
   logger.info('[DB] Inicializando base de datos en modo LOCAL.');
 }
 
-export default {
+const dbInstance = {
   query: async (text, params) => {
     if (isLocalMode()) return localDb.query(text, params);
+    
+    const tenantId = tenantContext.getStore();
+    if (tenantId) {
+      // Si hay un tenant en contexto, ejecutamos la query dentro de una transacción con RLS
+      return await dbInstance.executeTransaction(async (client) => {
+        return await client.query(text, params);
+      }, tenantId);
+    }
+    
     try {
       if (!pool) {
         await reconnectPool();
@@ -172,7 +217,7 @@ export default {
     return pool;
   },
   isLocalMode: () => isLocalMode(),
-  executeTransaction: async (callback) => {
+  executeTransaction: async (callback, tenantId = null) => {
     if (isLocalMode()) {
       const mockClient = { query: (text, params) => localDb.query(text, params) };
       return await callback(mockClient);
@@ -203,6 +248,9 @@ export default {
 
     try {
       await client.query('BEGIN');
+      if (tenantId) {
+        await client.query(`SELECT set_config('app.current_tenant', $1, true)`, [tenantId]);
+      }
       const result = await callback(client);
       await client.query('COMMIT');
       return result;
@@ -213,5 +261,10 @@ export default {
     } finally {
       if (client) client.release();
     }
+  },
+  withTenant: async (tenantId, callback) => {
+    return await dbInstance.executeTransaction(callback, tenantId);
   }
 };
+
+export default dbInstance;

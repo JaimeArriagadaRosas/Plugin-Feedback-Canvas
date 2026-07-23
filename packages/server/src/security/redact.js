@@ -31,8 +31,9 @@ export const REDACT_KEYS = [
   'canvasAccessToken', 'CANVAS_ACCESS_TOKEN',
   'ENCRYPTION_KEY', 'GEMINI_API_KEY', 'DB_PASSWORD',
   'authorization', 'cookie', 'set-cookie',
-  'email', 'personEmail', 'person_email',
+  'email', 'personEmail', 'person_email', 'name', 'nombre', 'given_name', 'family_name',
   'devToken', 'dev-token', 'dev-role', 'dev_role',
+  'state', 'nonce', 'lti_message_hint',
   ...SECRET_ENV_NAMES,
 ];
 

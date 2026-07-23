@@ -7,6 +7,7 @@ import FeedbackActions from './FeedbackActions';
 import { useSpeedGraderActions } from './hooks/useSpeedGraderActions';
 import WizardProgress from '../cursos/WizardProgress';
 import TutorialModal from '../components/TutorialModal';
+import HistoryModal from '../components/HistoryModal';
 import styles from './SpeedGraderPanel.module.css';
 
 export default function SpeedGraderPanel({ onExit }) {
@@ -15,6 +16,7 @@ export default function SpeedGraderPanel({ onExit }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [taskSelectorOpen, setTaskSelectorOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const menuRef = useRef(null);
   const taskSelectorRef = useRef(null);
 
@@ -52,12 +54,13 @@ export default function SpeedGraderPanel({ onExit }) {
     statusMsg,
     setStatusMsg,
     currentStudent,
-    submissionText,
+    submission,
     activeAssignment,
     feedback,
     setFeedback,
     generatedFeedbackId,
     setGeneratedFeedbackId,
+    isFetchingSubmission,
   } = useSpeedGraderData();
 
   const logExit = useButtonLogger();
@@ -97,8 +100,22 @@ export default function SpeedGraderPanel({ onExit }) {
     }
   }, []);
 
-  const gradeRange = grade >= 6 ? 'Logrado (6-10)' : grade >= 4 ? 'En desarrollo (4-5.9)' : 'No logrado (0-3.9)';
-  const templateName = generatedFeedbackId ? 'Feedback detallado ISW-II' : 'Sin plantilla activada';
+  const maxPoints = activeAssignment?.points || 100;
+  const percent = maxPoints > 0 ? grade / maxPoints : 0;
+  const scaledGrade = percent < 0.6 
+    ? 3 * (percent / 0.6) + 1 
+    : 3 * ((percent - 0.6) / 0.4) + 4;
+    
+  let gradeRange = 'Rango Bajo (1.0 - 3.9)';
+  if (scaledGrade >= 6.0) {
+    gradeRange = 'Rango Alto (6.0 - 7.0)';
+  } else if (scaledGrade >= 4.0) {
+    gradeRange = 'Rango Medio (4.0 - 5.9)';
+  }
+
+  const templateName = activeAssignment?.templateName 
+    ? `${activeAssignment.templateName} - ${gradeRange}` 
+    : 'Sin plantilla activada';
 
   return (
     <div className={styles.wrapper}>
@@ -136,54 +153,36 @@ export default function SpeedGraderPanel({ onExit }) {
       </header>
 
       {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
 
       <main className={styles.main}>
         <div className={styles.leftColumn}>
 
-          {/* Selector de tarea — encima de la fila de estudiante */}
-          {assignments.length > 0 && (
-            <div ref={taskSelectorRef} className={styles.taskSelectorBar}>
-              <span className={styles.taskSelectorBarLabel}>Tarea:</span>
-              <div className={styles.taskSelectorWrap}>
-                <button
-                  className={styles.taskSelectorBtn}
-                  onClick={() => setTaskSelectorOpen(o => !o)}
-                  title="Cambiar tarea visualizada"
-                >
-                  <span className={styles.taskSelectorIcon}>📋</span>
-                  <span className={styles.taskSelectorLabel}>
-                    {activeAssignment.name || 'Seleccionar tarea'}
-                  </span>
-                  <span className={styles.taskSelectorCaret}>{taskSelectorOpen ? '▲' : '▼'}</span>
-                </button>
-                {taskSelectorOpen && (
-                  <div className={styles.taskDropdown}>
-                    <div className={styles.taskDropdownHeader}>Tareas disponibles</div>
-                    {assignments.map(a => (
-                      <button
-                        key={a.id}
-                        className={`${styles.taskDropdownItem} ${a.id === currentAssignmentId ? styles.taskDropdownItemActive : ''}`}
-                        onClick={() => {
-                          setCurrentAssignmentId(a.id);
-                          setCurrentIndex(0);
-                          setGeneratedFeedbackId(null);
-                          setTaskSelectorOpen(false);
-                        }}
-                      >
-                        {a.id === currentAssignmentId && <span className={styles.taskCheck}>✓</span>}
-                        {a.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           <div className={styles.submissionHeader}>
             <div className={styles.submissionHeaderLeft}>
-              <h2 className={styles.submissionTitle}>{activeAssignment.name}</h2>
-              <p className={styles.submissionStudent}>Estudiante: <strong>{currentStudent.name}</strong></p>
+              <p className={styles.submissionStudent}>
+                Tarea:{' '}
+                <select 
+                  className={styles.studentSelectLeft}
+                  value={currentAssignmentId || ''}
+                  onChange={(e) => {
+                    const newId = Number(e.target.value);
+                    setCurrentAssignmentId(newId);
+                    setCurrentIndex(0);
+                    setGeneratedFeedbackId(null);
+                  }}
+                  style={{ minWidth: '200px' }}
+                >
+                  {assignments.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                  {assignments.length === 0 && (
+                    <option value="">Sin Tarea</option>
+                  )}
+                </select>
+              </p>
             </div>
             <div className={styles.submissionHeaderRight}>
               <button
@@ -193,7 +192,20 @@ export default function SpeedGraderPanel({ onExit }) {
               >
                 ‹ Anterior
               </button>
-              <span className={styles.currentStudentName}>{currentStudent.name}</span>
+              <select 
+                className={styles.studentSelectCenter}
+                value={currentIndex}
+                onChange={(e) => setCurrentIndex(Number(e.target.value))}
+              >
+                {students.map((student, idx) => (
+                  <option key={student.id} value={idx}>
+                    {student.name}
+                  </option>
+                ))}
+                {students.length === 0 && (
+                  <option value={0}>Sin Estudiante</option>
+                )}
+              </select>
               <button
                 className={styles.navButton}
                 onClick={() => currentIndex < students.length - 1 && setCurrentIndex(currentIndex + 1)}
@@ -205,7 +217,9 @@ export default function SpeedGraderPanel({ onExit }) {
           </div>
 
           <SubmissionViewer
-            submissionText={submissionText}
+            submission={submission}
+            studentName={currentStudent.name}
+            assignmentName={activeAssignment.name}
           />
         </div>
 
@@ -213,7 +227,7 @@ export default function SpeedGraderPanel({ onExit }) {
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Calificación y comentarios</h3>
             <div className={styles.gradeDisplay}>
-              <span className={styles.gradeValue}>{grade}</span>
+              <span className={styles.gradeValue}>{isFetchingSubmission ? '...' : grade}</span>
               <span className={styles.gradeSeparator}>/</span>
               <span className={styles.gradeMax}>{activeAssignment.points}</span>
             </div>
@@ -234,7 +248,7 @@ export default function SpeedGraderPanel({ onExit }) {
           {/* Botones de acción: Rúbrica, Ver Historial, Simular Trayectoria */}
           <div className={styles.actionButtons}>
             <button className={styles.actionBtn}>■ Rúbrica</button>
-            <button className={styles.actionBtn}>Ver Historial</button>
+            <button className={styles.actionBtn} onClick={() => setShowHistory(true)}>Ver Historial</button>
             <button className={styles.actionBtn}>
               Simular Trayectoria: {grade >= 6 ? 'ALTA' : 'BAJA'}
               <span className={styles.trajectoryBadge}>

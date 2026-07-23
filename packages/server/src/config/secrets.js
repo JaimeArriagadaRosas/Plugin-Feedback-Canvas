@@ -1,5 +1,6 @@
 import { getEnv, isProduction } from './index.js';
 import crypto from 'node:crypto';
+import logger from '../utils/logger.js';
 
 /**
  * Registro declarativo de secretos.
@@ -19,6 +20,8 @@ export const SECRET_REGISTRY = {
   DB_PASSWORD:          { required: true,  critical: true },
   ENCRYPTION_KEY:       { required: true,  critical: true }, // antes validado aparte en EncryptionService
   DEV_TOKEN_SECRET:     { required: true,  critical: true },
+  LTI_CLIENT_SECRET:    { required: false, critical: true }, // Opcional pero crítico si se usa OAuth2
+  CANVAS_CLIENT_SECRET: { required: false, critical: true }, // Alias / alternativo para OAuth2
   CANVAS_ADMIN_PASS:    { required: false, critical: true },
   CANVAS_TEACHER_PASS:  { required: false, critical: true },
   CANVAS_STUDENT_PASS:  { required: false, critical: true },
@@ -42,7 +45,7 @@ export function maskSecret(value) {
   return '****' + s.slice(-4);
 }
 
-function isPlaceholderSecret(value) {
+export function isPlaceholderSecret(value) {
   if (!value) return true;
   const v = String(value).toLowerCase();
   return PLACEHOLDER_PATTERNS.some(p => v.includes(p));
@@ -77,10 +80,10 @@ export function validateSecretsOrThrow(registry = SECRET_REGISTRY) {
     }
   }
 
-  for (const name of problems) {
-    console.warn(`[SECURITY] Secreto ${name} parece ser un placeholder o falta.`, {
-      valor: maskSecret(getEnv(name.split(' ')[0])),
-    });
+  if (problems.length) {
+    const list = problems.map(p => p.split(' ')[0]).join(', ');
+    logger.warn(`[SECURITY] ⚠️ Secretos usando placeholders o valores inseguros:`);
+    console.log(`                   ↳ ${list}`);
   }
 
   if (problems.length && isProduction()) {

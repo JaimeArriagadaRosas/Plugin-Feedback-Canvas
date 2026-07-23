@@ -12,8 +12,8 @@ export default defineConfig({
     },
     projects: [
       {
-        name: 'unit',
         test: {
+          name: 'unit',
           include: [
             'packages/server/src/validation/unit/**/*.test.js',
             'packages/server/src/validation/rutas/**/*.test.js',
@@ -25,8 +25,8 @@ export default defineConfig({
         }
       },
       {
-        name: 'integration',
         test: {
+          name: 'integration',
           include: ['packages/server/src/validation/integración/**/*.test.js'],
           setupFiles: ['packages/server/src/validation/setup/env-preload.js']
         }

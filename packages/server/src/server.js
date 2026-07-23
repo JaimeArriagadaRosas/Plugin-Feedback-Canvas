@@ -12,7 +12,7 @@ app.use('/api', (req, res, next) => {
 });
 
 const isNonInteractive = process.env.NON_INTERACTIVE === 'true';
-const mode = process.env.STARTUP_MODE || '3';
+const mode = process.env.STARTUP_MODE || (process.env.NODE_ENV === 'production' ? '1' : '3');
 process.env.STARTUP_MODE = mode;
 
 import { configureLocalTLS } from './orchestration/TLSConfigurator_local.js';
@@ -25,6 +25,9 @@ let serverInstance = null;
 async function shutdown(signal) {
   logger.info(`[SHUTDOWN] Recibida señal ${signal}. Cerrando servidor gracefully...`);
   if (serverInstance) {
+    if (serverInstance.tokenRotationJob) {
+      serverInstance.tokenRotationJob.stop();
+    }
     serverInstance.close(() => {
       logger.info('[SHUTDOWN] Servidor HTTP cerrado (no acepta nuevas conexiones).');
     });
@@ -48,8 +51,9 @@ if (isNonInteractive && mode === '3') {
   const { notifyCanvasReady, notifyCanvasError } = await import('./orchestration/browser.js');
   import('./services/infrastructure/CanvasConfigurator.js').then(({ default: CanvasConfigurator }) => {
     CanvasConfigurator.copyDefaultConfigs();
-    logger.info('[Inicio] Gestionando contenedores de Canvas local en Docker...');
+    logger.info('[CANVAS] Gestionando contenedores de Canvas local en Docker...');
     global.canvasState = 'INITIALIZING';
+    global.isCanvasInitializing = true;
     startServer(app, PORT).then((server) => {
       serverInstance = server;
       import('./services/infrastructure/CanvasManager_local.js').then(({ default: CanvasLocalManager }) => {
@@ -58,27 +62,26 @@ if (isNonInteractive && mode === '3') {
             global.isCanvasInitializing = false;
             global.canvasState = 'READY';
             notifyCanvasReady();
-            logger.info('[Inicio] Canvas local listo y proxy habilitado.');
           })
           .catch((error) => {
             global.isCanvasInitializing = false;
             global.canvasState = 'ERROR';
             notifyCanvasError(error);
-            logger.error('[Inicio] Error critico al iniciar Canvas local:', { error: error.message });
+            logger.error('[CANVAS] Error crítico al iniciar Canvas local:', { error: error.message });
             process.kill(process.pid, 'SIGINT'); 
           });
       });
     }).catch((err) => {
-      logger.error('[Inicio] No se pudo iniciar el backend:', err);
+      logger.error('[SERVER] No se pudo iniciar el backend:', err);
       process.kill(process.pid, 'SIGINT');
     });
   });
 } else {
-  logger.info('[Inicio] Entorno configurado. Esperando conexiones de autenticacion...');
+  logger.info('[SERVER] Entorno configurado. Esperando conexiones de autenticación...');
   startServer(app, PORT).then((server) => {
     serverInstance = server;
   }).catch((err) => {
-    logger.error('[Inicio] No se pudo iniciar el backend:', err);
+    logger.error('[SERVER] No se pudo iniciar el backend:', err);
     process.kill(process.pid, 'SIGINT');
   });
 }

@@ -45,22 +45,17 @@ async function runMigrations() {
     const sql = fs.readFileSync(filePath, 'utf-8');
 
     try {
-      if (!db.isLocalMode() && db.pool) {
-        const client = await db.pool.connect();
-        try {
-          await client.query('BEGIN');
-          await client.query(sql);
-          await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
-          await client.query('COMMIT');
-        } catch (e) {
-          await client.query('ROLLBACK');
-          throw e;
-        } finally {
-          client.release();
-        }
-      } else {
-        await db.query(sql);
-        await db.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(sql);
+        await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      } finally {
+        client.release();
       }
       console.log(`[MIGRATION] OK: ${file}`);
     } catch (error) {

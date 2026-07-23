@@ -38,49 +38,17 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
 
       if (typeof canvasTokenManagerOrRepo.getValidToken === 'function') {
         // Usar CanvasTokenManager para obtener o refrescar el token.
-        // Si lanza AppError con requireOAuth, continuamos al fallback local.
         try {
           accessToken = await canvasTokenManagerOrRepo.getValidToken(canvasSub);
         } catch (e) {
           if (!e.metadata?.requireOAuth) throw e;
-          // No relanzar aquí: el fallback lo maneja más abajo
+          // No relanzar aquí: se manejará en el if (!accessToken) más abajo
         }
       } else {
         // Fallback al repositorio si no se inyectó el manager
         const tokenData = await canvasTokenManagerOrRepo.getToken(canvasSub);
         accessToken = tokenData?.accessToken;
       }
-
-      // ── Fallback modo Docker Local (STARTUP_MODE=3) ────────────────────────
-      // El sub del JWT de LTI (dc6074c0-...) no coincide con el sub de Rails
-      // (86157096483e...) bajo el que TeacherTokenGenerator guardó el token.
-      // En entorno local de desarrollo, usamos directamente el CANVAS_ACCESS_TOKEN
-      // del .env que ya fue validado y regenerado en el arranque.
-      if (!accessToken && process.env.STARTUP_MODE === '3') {
-        const localToken = process.env.CANVAS_ACCESS_TOKEN;
-        if (localToken) {
-          logger.info(`[CanvasOAuthMiddleware] Modo Docker local: usando CANVAS_ACCESS_TOKEN del .env para sub ${canvasSub}.`);
-          req.canvasToken = localToken;
-
-          // Auto-registrar el sub del JWT LTI en BD para que futuras peticiones
-          // lo encuentren directamente sin necesidad del fallback.
-          try {
-            const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
-            if (typeof canvasTokenManagerOrRepo.tokenRepo?.saveToken === 'function') {
-              await canvasTokenManagerOrRepo.tokenRepo.saveToken(canvasSub, localToken, null, expiresAt);
-              logger.info(`[CanvasOAuthMiddleware] Sub LTI ${canvasSub} registrado en BD con token local.`);
-            } else if (typeof canvasTokenManagerOrRepo.saveToken === 'function') {
-              await canvasTokenManagerOrRepo.saveToken(canvasSub, localToken, null, expiresAt);
-              logger.info(`[CanvasOAuthMiddleware] Sub LTI ${canvasSub} registrado en BD con token local.`);
-            }
-          } catch (dbErr) {
-            logger.warn(`[CanvasOAuthMiddleware] No se pudo registrar sub LTI en BD (no crítico): ${dbErr.message}`);
-          }
-
-          return next();
-        }
-      }
-      // ── Fin fallback ───────────────────────────────────────────────────────
 
       if (!accessToken) {
         // Enviar un 401 estructurado que el Frontend interpretará para lanzar el flujo OAuth

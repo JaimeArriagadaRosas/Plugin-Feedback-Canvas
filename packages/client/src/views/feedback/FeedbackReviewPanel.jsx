@@ -1,8 +1,10 @@
 import { useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import ReviewFilters from './review/ReviewFilters';
 import FeedbackTable from './review/FeedbackTable';
 import ApprovalModal from './ApprovalModal';
+import { useAuth } from '../context/AuthContext';
 import { useFeedbackReview } from './review/useFeedbackReview';
 import Toast from '../../components/atoms/Toast';
 import ConfirmDialog from '../../components/molecules/ConfirmDialog';
@@ -10,6 +12,8 @@ import styles from './FeedbackReviewPanel.module.css';
 
 export default function FeedbackReviewPanel() {
   const logClick = useButtonLogger();
+  const { selectedCourse: globalSelectedCourse } = useAuth();
+  const initialCourse = globalSelectedCourse?.id;
   const {
     feedbacks,
     loading,
@@ -32,7 +36,7 @@ export default function FeedbackReviewPanel() {
     handleExportCSV,
     toastMessage,
     setToastMessage,
-  } = useFeedbackReview();
+  } = useFeedbackReview({ initialSelectedCourse: initialCourse ? String(initialCourse) : undefined });
 
   const handleReview = useCallback((row) => {
     logClick('FEEDBACK_REVIEW_OPEN_DETAIL', () => {

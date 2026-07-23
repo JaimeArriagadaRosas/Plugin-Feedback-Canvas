@@ -25,6 +25,7 @@ import TemplateValidatorService from '../../services/TemplateValidatorService.js
 import CanvasWebhookController from '../../controllers/CanvasWebhookController.js';
 import StatsService from '../../services/StatsService.js';
 import PermissionsService from '../../services/PermissionsService.js';
+import TokenRotationJob from '../auth/TokenRotationJob.js';
 
 import FeedbackRepository from '../../data/FeedbackRepository.js';
 import TemplateRepository from '../../data/TemplateRepository.js';
@@ -43,11 +44,6 @@ import { seedLocalTemplates } from '../../validation/setup/seedLocalTemplates.js
 import { isLocalModeAllowed } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 
-<<<<<<< Updated upstream
-if (isLocalModeAllowed()) {
-  runMigrations().catch(err => logger.warn('[BOOTSTRAP] Migrations skipped:', err.message));
-  seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed skipped:', err.message));
-=======
 if (!isLocalModeAllowed()) {
   try {
     logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos...');
@@ -61,7 +57,6 @@ if (!isLocalModeAllowed()) {
 } else {
   seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed usuarios skipped:', err.message));
   seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas skipped:', err.message));
->>>>>>> Stashed changes
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,10 +84,8 @@ export function resolveEnv() {
     logger.warn('WEBHOOK_SECRET no configurado. Los webhooks de Canvas no estaran autenticados.');
   }
 
-  // En modo Canvas Local (Docker), el token de API del .env es auto-sanado por el orquestador Python.
-  // Confiamos exclusivamente en el token provisto por la variable de entorno.
-  if (process.env.STARTUP_MODE === '3' && !canvasAccessToken) {
-    logger.warn('[BOOTSTRAP] No se encontró CANVAS_ACCESS_TOKEN en el .env. GET /api/courses puede responder 401.');
+  if (!canvasAccessToken) {
+    logger.warn('[BOOTSTRAP] No se encontró CANVAS_ACCESS_TOKEN en el entorno.');
   }
 
   return {
@@ -118,7 +111,7 @@ export async function generateLtiKeys() {
     use: 'sig',
     kid: `lti-key-${Date.now()}`
   };
-  logger.info('Par de claves LTI generado', { kid: ltiPublicJwk.kid });
+  logger.info('[LTI] Par de claves LTI generado exitosamente.', { kid: ltiPublicJwk.kid });
   return ltiPublicJwk;
 }
 
@@ -131,7 +124,7 @@ export function initializeDataLayer() {
   const studentRepo   = new StudentRepository(db);
   const permissionsRepo = new PermissionsRepository(db);
 
-  logger.info('Repositorios de datos inicializados', {
+  logger.info('[DATA] Repositorios de datos inicializados.', {
     db: db.isLocalMode() ? 'LOCAL (sin PostgreSQL)' : 'PostgreSQL real'
   });
 
@@ -146,11 +139,13 @@ export function initializeServiceLayer(env, repos) {
 
   const canvasGateway = new CanvasLmsAdapter(canvasClient, canvasTokenManager, env);
 
-  logger.info(`Servicio Canvas: CanvasLmsAdapter (useLocalData=${env.useLocalData})`);
+  logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapter (useLocalData=${env.useLocalData}).`);
 
   const iaProvider = new GeminiProvider(getSecret('GEMINI_API_KEY'));
   const academicHistoryService = new AcademicHistoryService(canvasGateway, repos.studentRepo);
   const templateManager = new TemplateManager(templateRepo);
+
+  const iaConfigManager = new IAConfigManager(tokenRepo, configRepo);
 
   const feedbackService = new FeedbackService(
     iaProvider,
@@ -159,10 +154,10 @@ export function initializeServiceLayer(env, repos) {
     templateRepo,
     academicHistoryService,
     ValidadorAcademico,
-    configRepo
+    configRepo,
+    iaConfigManager
   );
 
-  const iaConfigManager = new IAConfigManager(tokenRepo, configRepo);
   const llmConfigService = new LLMConfigurationService();
   const variableConfigManager = new VariableConfigManager();
   const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway);
@@ -170,13 +165,14 @@ export function initializeServiceLayer(env, repos) {
   const webhookController = new CanvasWebhookController(feedbackService, configRepo);
   const statsService = new StatsService(feedbackRepo);
   const permissionsService = new PermissionsService(permissionsRepo);
+  const tokenRotationJob = new TokenRotationJob(canvasTokenManager);
 
   return {
     canvasService: canvasGateway, feedbackService, templateManager, iaConfigManager,
     configRepo, llmConfigService, variableConfigManager,
     feedbackWorkflowService, templateValidatorService, feedbackRepo,
     webhookController, statsService, permissionsService, canvasTokenRepo,
-    canvasTokenManager, canvasClient
+    canvasTokenManager, canvasClient, tokenRotationJob
   };
 }
 
@@ -207,15 +203,17 @@ function resolveFrontendDist(startDir) {
     dir = parent;
   }
 
-  logger.warn('[BOOTSTRAP] No se encontro un build del frontend (dist/index.html). El SPA no se servira desde el backend.');
+  logger.warn('[FRONTEND] No se encontró build (dist/index.html). SPA no se servirá desde el backend.');
   return path.join(startDir, '../../../../../dist');
 }
 
 function logSecretsSummary() {
-  const resumenStr = Object.keys(SECRET_REGISTRY)
-    .map((nombre) => `${nombre}: ${getSecret(nombre) ? 'OK' : 'FALTA'}`)
-    .join(', ');
-  logger.info(`[BOOTSTRAP] Estado de secretos: [ ${resumenStr} ]`);
+  const missing = Object.keys(SECRET_REGISTRY).filter(nombre => !getSecret(nombre));
+  if (missing.length) {
+    logger.info(`[BOOTSTRAP] Estado de secretos verificado (${missing.join(', ')}: FALTA).`);
+  } else {
+    logger.info(`[BOOTSTRAP] Estado de secretos verificado (OK).`);
+  }
 }
 
 export async function startServer(app, PORT) {
@@ -229,10 +227,14 @@ export async function startServer(app, PORT) {
   const repos = initializeDataLayer();
   const services = initializeServiceLayer(env, repos);
 
+  if (services.tokenRotationJob) {
+    services.tokenRotationJob.start();
+  }
+
   registerRoutes(app, services, ltiPublicJwk);
 
   const frontendDist = resolveFrontendDist(__dirname);
-  logger.info(`[BOOTSTRAP] Sirviendo frontend estatico desde: ${frontendDist}`);
+  logger.info(`[FRONTEND] Servidor estático: Sirviendo SPA desde carpeta /dist.`);
 
   app.use(express.static(frontendDist, { index: false }));
 
@@ -264,19 +266,18 @@ export async function startServer(app, PORT) {
 
   // ── HTTPS / HTTP ──────────────────────────────────────────────────────────
   // La resolución de esquemas es inmutable (depende de SSLService).
-  logger.info('[HTTPS] Iniciando resolución de esquema de transporte...');
-  logger.info(`[HTTPS]   HTTPS env flag : ${process.env.HTTPS ?? '(indefinido / auto-detección)'}`);
-  logger.info(`[HTTPS]   NODE_ENV       : ${process.env.NODE_ENV ?? '(indefinido)'}`);
-  logger.info(`[HTTPS]   STARTUP_MODE   : ${process.env.STARTUP_MODE ?? '(indefinido)'}`);
+  logger.info(`[HTTPS] Esquema de transporte configurado (STARTUP_MODE: ${process.env.STARTUP_MODE ?? '(indefinido)'}).`);
+  logger.debug(`[HTTPS] HTTPS env flag : ${process.env.HTTPS ?? '(indefinido / auto-detección)'}`);
+  logger.debug(`[HTTPS] NODE_ENV       : ${process.env.NODE_ENV ?? '(indefinido)'}`);
 
   const sslContext = await SSLService.initializeSSLContext();
   const shouldUseHttps = isHttpsEnabled();
   const { cert, key } = getSslCertPaths();
   
-  logger.info(`[HTTPS] Entorno SSL detectado : ${JSON.stringify(sslContext.env)}`);
-  logger.info(`[HTTPS] Certificado (pem)    : ${cert} -> ${fs.existsSync(cert) ? 'ENCONTRADO' : 'AUSENTE'}`);
-  logger.info(`[HTTPS] Clave privada (key)  : ${key} -> ${fs.existsSync(key) ? 'ENCONTRADA' : 'AUSENTE'}`);
-  logger.info(`[HTTPS] DECISIÓN FINAL       : ${shouldUseHttps ? 'HTTPS (TLS)' : 'HTTP (plano)'}`);
+  logger.debug(`[HTTPS] Entorno SSL detectado : ${JSON.stringify(sslContext.env)}`);
+  logger.debug(`[HTTPS] Certificado (pem)    : ${cert} -> ${fs.existsSync(cert) ? 'ENCONTRADO' : 'AUSENTE'}`);
+  logger.debug(`[HTTPS] Clave privada (key)  : ${key} -> ${fs.existsSync(key) ? 'ENCONTRADA' : 'AUSENTE'}`);
+  logger.debug(`[HTTPS] DECISIÓN FINAL       : ${shouldUseHttps ? 'HTTPS (TLS)' : 'HTTP (plano)'}`);
 
   let server;
   if (shouldUseHttps) {
@@ -304,30 +305,36 @@ export async function startServer(app, PORT) {
                        process.env.STARTUP_MODE === '2' ? 'API Canvas (Token Manual)' :
                        process.env.STARTUP_MODE === '3' ? 'Canvas Local (Docker)' : 'Local';
 
+      server.setTimeout(300000);
+      server.headersTimeout = 120000;
+      server.keepAliveTimeout = 60000;
+      if (services.tokenRotationJob) {
+        server.tokenRotationJob = services.tokenRotationJob;
+      }
+      logger.info('[SERVER] Timeouts configurados: timeout=300s, headers=120s, keepAlive=60s');
+
+      logger.info('');
       logger.info('===================================================');
-      logger.info('BACKEND INICIADO - Plugin Feedback Adaptativo');
+      logger.info(' 🚀 BACKEND INICIADO - Plugin Feedback Adaptativo');
       logger.info('===================================================');
-      logger.info(`Puerto interno: ${PORT}`);
-      logger.info(`Modo de inicio: ${modeName}`);
-      logger.info(`Base de datos: ${db.isLocalMode() ? 'Datos locales (sin PostgreSQL)' : 'PostgreSQL real'}`);
-      logger.info(`Sesion local: ${env.useLocalData ? 'Activa (esperando dev-token cookie)' : 'Inactiva'}`);
+      logger.info(`  • Puerto interno : ${PORT}`);
+      logger.info(`  • Modo de inicio : ${modeName}`);
+      logger.info(`  • Base de datos  : ${db.isLocalMode() ? 'Datos locales (sin PostgreSQL)' : 'PostgreSQL real'}`);
+      logger.info(`  • Sesión local   : ${env.useLocalData ? 'Activa (esperando dev-token cookie)' : 'Inactiva'}`);
       logger.info('---------------------------------------------------');
       const scheme = isHttpsEnabled() ? 'https' : 'http';
-      logger.info(`Interfaz de usuario: ${process.env.FRONTEND_URL || 'https://localhost:5173/'}`);
-      logger.info(`Backend: ${scheme}://localhost:${PORT}/`);
-      logger.info(`Logs del backend: ${console.logFile || 'Solo consola'}`);
+      logger.info(`  🌐 Interfaz UI   : ${process.env.FRONTEND_URL || 'https://localhost:5173/'}`);
+      logger.info(`  ⚙️  API Backend   : ${scheme}://localhost:${PORT}/`);
+      logger.info(`  📄 Logs          : ${console.logFile || 'Solo consola'}`);
       logger.info('===================================================');
       if (shouldUseHttps) {
         logger.info('  💡 NOTA: mkcert ya instaló la confianza en el sistema.');
         logger.info('     Pero si por algún motivo tu navegador bloquea el Iframe');
-        logger.info('     en Canvas, haz clic en el siguiente enlace para forzar la confianza:');
+        logger.info('     en Canvas, haz clic en el siguiente enlace:');
         logger.info(`     👉 https://localhost:${PORT}/health`);
         logger.info('===================================================');
       }
-      server.setTimeout(120000);
-      server.headersTimeout = 60000;
-      server.keepAliveTimeout = 5000;
-      logger.info('[SERVER] Timeouts configurados: timeout=120s, headersTimeout=60s, keepAliveTimeout=5s');
+      logger.info('');
       resolve(server);
     }).on('error', (err) => {
       logger.error(`[${shouldUseHttps ? 'HTTPS' : 'HTTP'}] ERROR al escuchar en el puerto ${PORT}: ${err.message}`);

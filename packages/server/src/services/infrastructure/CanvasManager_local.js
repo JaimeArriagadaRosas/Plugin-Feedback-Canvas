@@ -10,9 +10,18 @@
  * cargo del pipeline Python; el backend solo senala que el entorno local
  * (proxy) esta listo para usarse.
  */
+import logger from '../../utils/logger.js';
+import { pingCanvasAPI } from '../../orchestration/boot/setup/utils/TokenManager.js';
+
 class CanvasLocalManager {
   static async autoStartAndInitialize() {
-    console.info('[CanvasLocalManager] Entorno Canvas Local listo (orquestacion Docker delegada a la capa Python de setup). Proxy habilitado.');
+    logger.info('[CANVAS] Esperando a que el servidor de Canvas (Puma) inicie...');
+    while (true) {
+        const { ready } = await pingCanvasAPI();
+        if (ready) break;
+        await new Promise(r => setTimeout(r, 5000));
+    }
+    logger.info('[CANVAS] Entorno Canvas Local listo (Puma respondiendo). Proxy habilitado.');
   }
 }
 
