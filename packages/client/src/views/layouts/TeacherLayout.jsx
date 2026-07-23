@@ -25,6 +25,8 @@ import FeedbackReviewPanel from '../feedback/FeedbackReviewPanel';
 import FeedbackDetailView from '../feedback/FeedbackDetailView';
 import UserMenu from '../components/UserMenu';
 import logger from '../../utils/logger';
+import { useAuth } from '../context/AuthContext';
+import { useCourseData } from '../cursos/hooks/useCourseData';
 
 export default function TeacherLayout({ isAdminView = false }) {
   const navigate   = useNavigate();
@@ -54,7 +56,7 @@ export default function TeacherLayout({ isAdminView = false }) {
           element={
             <CourseSelector
               onCourseSelected={(course) =>
-                navigate(`/teacher/assignments/${course.id}`, { state: { course } })
+                navigate(`/teacher/assignments/${course.id}`)
               }
               onApiError={(err) => logger.error('TeacherLayout', 'API Error en cursos', { error: err })}
             />
@@ -75,7 +77,7 @@ export default function TeacherLayout({ isAdminView = false }) {
 
         {/* ── SpeedGrader ───────────────────────────────────────────────── */}
         <Route
-          path="speedgrader"
+          path="speedgrader/:courseId"
           element={<SpeedGraderPanel onExit={() => navigate('/teacher/courses')} />}
         />
 
@@ -107,9 +109,13 @@ export default function TeacherLayout({ isAdminView = false }) {
 // Componentes de ruta internos — usan useParams() para leer parámetros de URL
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AssignmentListRoute({ navigate, location }) {
+function AssignmentListRoute({ navigate }) {
   const { courseId } = useParams();
-  const course = location.state?.course || { id: courseId, name: 'Curso Seleccionado' };
+  const { selectedCourse } = useAuth();
+  const { courses } = useCourseData();
+  
+  const foundCourse = courses?.find(c => String(c.id) === String(courseId));
+  const course = selectedCourse || foundCourse || { id: courseId, name: 'Curso Seleccionado' };
 
   return (
     <AssignmentList
@@ -128,7 +134,7 @@ function TemplateRoute({ navigate }) {
       courseId={courseId}
       assignmentId={assignmentId}
       onBack={() => navigate(`/teacher/assignments/${courseId}`)}
-      onNext={() => navigate(`/teacher/speedgrader`)}
+      onNext={() => navigate(`/teacher/speedgrader/${courseId}`)}
     />
   );
 }

@@ -5,7 +5,7 @@ import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
 import { AppError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 import { LTI_TOKEN_COOKIE } from '../../security/ltiCookie.js';
-import { isHttpsEnabled } from '../../security/envGuard.js';
+import { isHttpsEnabled, isProduction } from '../../security/envGuard.js';
 import { validateAndConsumeNonce } from '../../security/nonceStore.js';
 
 const ltiService = getLTITokenService();
@@ -13,8 +13,18 @@ const ltiService = getLTITokenService();
 export async function validateLtiCallback(req) {
   const bodyData = (req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { id_token, state, error: oidcError } = bodyData;
-  const expectedState = req.cookies?.['lti_state'];
-  const expectedNonce = req.cookies?.['lti_nonce'];
+  
+  let expectedState = null;
+  let expectedNonce = null;
+  const launchCookieStr = req.cookies?.[`lti_${state}`];
+  
+  if (launchCookieStr) {
+    try {
+      const launchCookie = JSON.parse(launchCookieStr);
+      expectedState = state; // Si la cookie lti_state (indexada) existe, el state matchea.
+      expectedNonce = launchCookie.nonce;
+    } catch(e) {}
+  }
 
   logger.info(`[LTI-CALLBACK-VALIDATOR] Inicio validación | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
 
@@ -85,14 +95,14 @@ export async function validateLtiCallback(req) {
 }
 
 export function buildLtiCookie(token) {
-  const isProduction = isHttpsEnabled();
+  const cookieSecure = isProduction() || isHttpsEnabled();
   return {
     name: LTI_TOKEN_COOKIE,
     value: token,
     options: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'None' : 'Lax',
+      secure: cookieSecure,
+      sameSite: cookieSecure ? 'None' : 'Lax',
       maxAge: 3600 * 1000
     }
   };

@@ -57,16 +57,20 @@ export class LocalDevOrchestrator {
 
   async waitForCanvasAndOpenBrowser() {
     await this.boot.withStage('Canvas LMS (espera de listo)', async () => {
+      this.boot.info('Inicializando servicios del servidor en segundo plano...');
       const spinner = (await import('nanospinner')).createSpinner('Canvas LMS inicializándose en segundo plano...');
+      global.canvasSpinner = spinner;
       spinner.start();
       try {
         await waitForCanvasReady();
-        spinner.success({ text: 'Canvas LMS listo' });
+        spinner.success({ text: 'Canvas LMS inicializado y proxy habilitado.', mark: '  √' });
+        global.canvasSpinner = null;
         const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
         this.boot.info(`Abriendo ${canvasBrowserUrl} ...`);
         await openBrowser(canvasBrowserUrl);
       } catch (err) {
-        spinner.error({ text: 'No se pudo detectar que Canvas estuviera listo' });
+        spinner.error({ text: 'No se pudo detectar que Canvas estuviera listo', mark: '  ×' });
+        global.canvasSpinner = null;
         this.boot.warn(err.message);
         this.boot.action('Abra manualmente: https://localhost:8443/');
       }

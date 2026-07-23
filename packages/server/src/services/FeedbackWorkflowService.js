@@ -49,7 +49,7 @@ export default class FeedbackWorkflowService {
         // Ejecutar en transacción para evitar condición de carrera y des-sincronización
         await this.feedbackRepo.executeTransaction(async (client) => {
           // Bloquear la fila para actualización
-          const res = await client.query('SELECT estado, contenido_generado, curso_id, tarea_id, estudiante_id FROM Historial_Feedback_Generado WHERE id = $1 FOR UPDATE', [id]);
+          const res = await client.query('SELECT estado, contenido_generado, curso_id, tarea_id, estudiante_id, profesor_id FROM Historial_Feedback_Generado WHERE id = $1 FOR UPDATE', [id]);
           const fb = res.rows[0];
           
           if (!fb || fb.estado === 'APROBADO' || fb.estado === 'ENVIADO') {
@@ -60,7 +60,7 @@ export default class FeedbackWorkflowService {
           await client.query('UPDATE Historial_Feedback_Generado SET estado = $1 WHERE id = $2', ['APROBADO', id]);
 
           // 2. Publicar en Canvas
-          await this.canvasService.postComment(fb.curso_id, fb.tarea_id, fb.estudiante_id, fb.contenido_generado);
+          await this.canvasService.postComment(fb.curso_id, fb.tarea_id, fb.estudiante_id, fb.profesor_id, fb.contenido_generado);
         });
 
         results.push({ id, status: 'success' });

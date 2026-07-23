@@ -90,10 +90,6 @@ export class DockerCheck {
     const memGb = info.out && /^\d+$/.test(info.out)
       ? parseInt(info.out, 10) / 1024 ** 3
       : null;
-    if (memGb !== null && memGb < this.minRamGb) {
-      log.info(`Solo ${memGb.toFixed(1)}GB RAM asignados a Docker (Canvas LMS podría arrancar más lento). Se recomienda tolerar la carga diferida.`);
-      return BootResult.ok({ backend, memGb });
-    }
 
     log.success(`Daemon de Docker activo${memGb ? ` (${memGb.toFixed(1)}GB RAM)` : ''}.`);
     return BootResult.ok({ backend, memGb });

@@ -33,7 +33,7 @@ export class AssetBuilder {
     
     if (!(await this._runLogged(['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'install', '--network-concurrency', '2', '--child-concurrency', '2'], 'Instalando dependencias Yarn...', 'Error Yarn.', 'Dependencias de Yarn instaladas', 5))) return false;
     
-    await this._runLogged(['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'], 'Inicializando base de datos...', 'Warn', 'Base de datos inicializada');
+    await this._runLogged(['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'], 'Inicializando base de datos...', 'Warn', 'Base de datos inicializada');
     await this._runLogged(['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', 'rm -rf public/dist/* node_modules/.cache'], 'Limpiando caché...', 'Warn', 'Caché limpio');
     await this._runLogged(['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', "find bin script packages -type f -name '*.sh' -o -type f -path '*/scripts/*' | xargs -r sed -i 's/\\r$//' 2>/dev/null; find bin script -type f | xargs -r sed -i 's/\\r$//' 2>/dev/null; true"], 'Normalizando CRLF...', 'Warn', 'CRLF normalizado');
     await this._runLogged(['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', "sed -i \"s|from '@instructure/platform-alerts'|from '@canvas/alerts/react/FlashAlert'|g\" ui/features/discovery_page/react/components/ConfigureModal.tsx 2>/dev/null; true"], 'Aplicando parches...', 'Warn', 'Parches aplicados');
@@ -80,6 +80,15 @@ export class AssetBuilder {
           adapter: 'postgresql',
           encoding: 'utf8',
           database: 'canvas_development',
+          host: 'postgres',
+          username: 'postgres',
+          password: 'sekret',
+          timeout: 5000
+        };
+        dbConfig.test = {
+          adapter: 'postgresql',
+          encoding: 'utf8',
+          database: 'canvas_test',
           host: 'postgres',
           username: 'postgres',
           password: 'sekret',

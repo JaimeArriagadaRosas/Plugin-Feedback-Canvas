@@ -14,6 +14,7 @@ INSERT INTO Permisos_Rol (rol, permisos) VALUES
 ('student', '{"ver_feedback": true, "editar_feedback": false, "enviar_feedback": false, "configurar_llm": false}')
 ON CONFLICT (rol) DO NOTHING;
 
+DROP TRIGGER IF EXISTS permisos_rol_updated_at ON Permisos_Rol;
 CREATE TRIGGER permisos_rol_updated_at
   BEFORE UPDATE ON Permisos_Rol
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();

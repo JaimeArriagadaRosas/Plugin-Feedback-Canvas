@@ -153,17 +153,28 @@ export function resolveViewRole({ isLocalSession, localRole, roles, entry, cours
   const classification = classifyRoles(roles);
 
   // Lanzamiento explícito desde account_navigation => panel de administración.
-  if (entry === 'admin' || classification.isAccountAdmin) {
+  if (entry === 'admin') {
     return 'admin';
   }
+  
   // Lanzamiento explícito desde global_navigation para docentes.
-  if (entry === 'teacher' || classification.isInstructor || classification.isTA || classification.isDesigner) {
+  if (entry === 'teacher') {
     return 'teacher';
   }
-  if (classification.isLearner) {
-    return 'student';
+
+  // Si estamos en un curso, los admins y docentes deben ver la vista de profesor.
+  if (courseId && (classification.isInstructor || classification.isTA || classification.isDesigner || classification.isAccountAdmin)) {
+    return 'teacher';
   }
-  // Claim desconocido: por defecto estudiante (privilegio mínimo).
-  // Antes hacía default a 'teacher' si había courseId, permitiendo escalada.
+
+  // Si no hay curso y es admin, va al panel de administración.
+  if (classification.isAccountAdmin) {
+    return 'admin';
+  }
+
+  if (classification.isInstructor || classification.isTA || classification.isDesigner) {
+    return 'teacher';
+  }
+
   return 'student';
 }

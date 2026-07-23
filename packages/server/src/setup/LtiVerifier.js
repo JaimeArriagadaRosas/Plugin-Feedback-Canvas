@@ -5,7 +5,7 @@ import { runCommand } from '../orchestration/boot/setup/utils/Runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../canvas-lms-master');
+const CANVAS_DIR = path.resolve(__dirname, '../../../../../canvas-lms-master');
 
 export class LtiVerifier {
   static async isCanvasRunning() {
@@ -49,7 +49,7 @@ export class LtiVerifier {
       if tc && tc.persisted?
         puts "[Rails-LtiVerifier] [$] ToolConfiguration encontrado (ID: #{tc.id})."
         has_target = tc.target_link_uri.present? rescue false
-        has_redirects = dk.redirect_uris.present? rescue false
+        has_redirects = (dk.redirect_uris.to_s.include?('oauth2/canvas/callback') && dk.require_scopes == false) rescue false
         has_docker_host = tc.public_jwk_url.include?('host.docker.internal') rescue false
         
         if has_target && has_redirects && has_docker_host
@@ -70,6 +70,7 @@ export class LtiVerifier {
              puts "[Rails-LtiVerifier] [$] Dominio OIDC sincronizado (#{target_domain})."
           end
           puts "LTI_OK_ID:#{dk.id}"
+          puts "LTI_CLIENT_SECRET:#{dk.api_key}"
         else
           puts "[Rails-LtiVerifier] Faltan campos, o public_jwk_url no usa host.docker.internal."
           puts 'LTI_MISSING'
@@ -88,16 +89,31 @@ export class LtiVerifier {
         return 'ERROR';
       }
 
-      const okMatch = out.match(/LTI_OK_ID:(\d+)/) || out.includes('LTI_OK');
-      if (okMatch) {
-        if (Array.isArray(okMatch) && okMatch[1]) {
-          const clientId = okMatch[1];
-          if (process.env.LTI_CLIENT_ID !== clientId) {
-            const pluginDir = path.resolve(__dirname, '../../../');
-            const { updateEnvVars } = await import('../orchestration/envWriter.js');
-            updateEnvVars(pluginDir, { LTI_CLIENT_ID: clientId });
-            process.env.LTI_CLIENT_ID = clientId;
-          }
+      const okMatchId = out.match(/LTI_OK_ID:(\d+)/);
+      const matchSecret = out.match(/LTI_CLIENT_SECRET:([^\r\n]+)/);
+      
+      if (okMatchId && okMatchId[1]) {
+        const clientId = okMatchId[1];
+        
+        let needsUpdate = false;
+        const updates = {};
+        
+        if (process.env.LTI_CLIENT_ID !== clientId) {
+          updates.LTI_CLIENT_ID = clientId;
+          process.env.LTI_CLIENT_ID = clientId;
+          needsUpdate = true;
+        }
+        
+        if (matchSecret && matchSecret[1] && process.env.LTI_CLIENT_SECRET !== matchSecret[1].trim()) {
+          updates.LTI_CLIENT_SECRET = matchSecret[1].trim();
+          process.env.LTI_CLIENT_SECRET = updates.LTI_CLIENT_SECRET;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          const pluginDir = path.resolve(__dirname, '../../../');
+          const { updateEnvVars } = await import('../orchestration/envWriter.js');
+          updateEnvVars(pluginDir, updates);
         }
         return 'OK';
       }

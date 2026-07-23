@@ -35,13 +35,16 @@ export default class GeminiProvider extends IAProvider {
   async generateFeedback(prompt, config = {}) {
     logger.info('[IA] Generando feedback con Gemini...');
 
-    if (!this.genAI) {
+    const apiKey = config.apiKey || this.apiKey;
+    const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : this.genAI;
+
+    if (!genAI) {
       logger.warn('[IA] API Key de Gemini ausente. Usando respuesta local de respaldo.');
       return this._generateLocalResponse();
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: config.model || "gemini-1.5-flash",
         generationConfig: {
           temperature: config.temperature || 0.7,

@@ -16,12 +16,12 @@ describe('Integracin  Flujo completo de Feedback', () => {
     const enc = EncryptionService.encrypt('mocked-token-123');
     await db.query(`
       INSERT INTO canvas_user_tokens (canvas_sub, access_token) 
-      VALUES ('local-user-admin', $1)
+      VALUES ('00000000-0000-0000-0000-000000000001', $1)
       ON CONFLICT (canvas_sub) DO UPDATE SET access_token = EXCLUDED.access_token
     `, [enc]);
     await db.query(`
       INSERT INTO canvas_user_tokens (canvas_sub, access_token) 
-      VALUES ('local-user-teacher', $1)
+      VALUES ('00000000-0000-0000-0001-000000000003', $1)
       ON CONFLICT (canvas_sub) DO UPDATE SET access_token = EXCLUDED.access_token
     `, [enc]);
     template = await seedTemplate({ nombre: 'Plantilla Integracin', contenido: 'Contenido de integracin' });

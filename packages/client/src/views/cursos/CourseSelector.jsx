@@ -1,15 +1,8 @@
 import { useState } from "react";
 import WizardProgress from "./WizardProgress";
 import { useCourseData } from "./hooks/useCourseData";
+import { useAuth } from "../context/AuthContext";
 import styles from "./CourseSelector.module.css";
-
-function SettingsIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96a6.98 6.98 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.22.22 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96a6.98 6.98 0 0 0 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96a.22.22 0 0 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z" />
-    </svg>
-  );
-}
 
 const SKELETON_ROWS = 5;
 
@@ -19,8 +12,14 @@ export default function CourseSelector({
   onApiError
 }) {
   const { courses, loading, error, retrying, retryCountdown, syncTime, usingCache, invalidateCache } = useCourseData(onApiError);
+  const { setSelectedCourse, role } = useAuth();
   const [hoverRow, setHoverRow] = useState(null);
   const [hoverBtn, setHoverBtn] = useState(null);
+
+  const handleCourseSelected = (course) => {
+    setSelectedCourse(course);
+    onCourseSelected(course);
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -66,7 +65,9 @@ export default function CourseSelector({
               ))
             ) : courses.length === 0 ? (
               <div className={styles.emptyState}>
-                No se encontraron cursos activos donde usted es el Instructor.
+                {role === 'admin'
+                  ? "No se encontraron cursos activos asociados a su cuenta."
+                  : "No se encontraron cursos activos donde usted es el Instructor."}
               </div>
             ) : (
               courses.map((course) => (
@@ -77,10 +78,10 @@ export default function CourseSelector({
                   onMouseLeave={() => setHoverRow(null)}
                 >
                   <div className={styles.colNombre}>
-                    <button
-                      className={styles.courseLink}
-                      onClick={() => onCourseSelected(course)}
-                    >
+                  <button
+                    className={styles.courseLink}
+                    onClick={() => handleCourseSelected(course)}
+                  >
                       {course.name}
                     </button>
                   </div>
@@ -92,15 +93,9 @@ export default function CourseSelector({
                       style={hoverBtn === `sel-${course.id}` ? { background: "#0770a3", color: "#fff" } : {}}
                       onMouseEnter={() => setHoverBtn(`sel-${course.id}`)}
                       onMouseLeave={() => setHoverBtn(null)}
-                      onClick={() => onCourseSelected(course)}
+                      onClick={() => handleCourseSelected(course)}
                     >
                       Seleccionar para Aplicar Plugin
-                    </button>
-                    <button
-                      className={styles.btnSettings}
-                      title="Configuración del curso"
-                    >
-                      <SettingsIcon />
                     </button>
                   </div>
                 </div>
@@ -136,7 +131,9 @@ export default function CourseSelector({
         )}
 
         <p className={styles.footnote}>
-          Mostrando cursos activos donde usted es el Instructor.
+          {role === 'admin'
+            ? "Mostrando cursos activos asociados a su cuenta."
+            : "Mostrando cursos activos donde usted es el Instructor."}
         </p>
       </main>
 

@@ -6,7 +6,8 @@ import { signDevToken } from '../../security/crypto.js';
  * de autenticación. Requiere ENABLE_TEST_AUTH_BYPASS=true en el entorno de prueba.
  */
 export function signedLtiCookie(role = 'admin') {
-  return `lti-token=${signDevToken(`dev-token:${role}:local`)}`;
+  const id = role === 'admin' ? '1' : role === 'student' ? '2' : '3';
+  return `lti-token=${signDevToken(`dev-token:${role}:${id}`)}`;
 }
 
 export const ADMIN_COOKIE = signedLtiCookie('admin');

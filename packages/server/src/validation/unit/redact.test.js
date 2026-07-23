@@ -13,7 +13,7 @@ describe('security/redact', () => {
   });
 
   it('redactByKey preserva valores de claves no sensibles', () => {
-    expect(redactByKey('nombre', 'Juan')).toBe('Juan');
+    expect(redactByKey('ciudad', 'Santiago')).toBe('Santiago');
     expect(redactByKey('rol', 'teacher')).toBe('teacher');
   });
 

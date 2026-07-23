@@ -12,22 +12,41 @@ const localFeedbacks = [
 
 const localWebhookEvents = [];
 const localApiKeys = [];
+const localProfesorMetadata = [];
 
 const localTemplates = [
   {
     id: 1,
-    nombre: 'Plantilla Retroalimentación - Rango Bajo (0-3.9)',
-    contenido: 'Estimado/a {{STUDENT_NAME}},\n\nTu calificación en {{ASSIGNMENT_NAME}} es {{CHILE_GRADE}} de 7.0 ({{CANVAS_SCORE}} de {{POINTS_POSSIBLE}} puntos en Canvas).\n\n{{TONE_INSTRUCTION}}.\n\nResultados del examen:\n{{QUESTIONS_DETAIL}}\n\nRevisa especialmente los temas donde tuviste dificultades y no dudes en consultar en la próxima clase.\n\nSaludos cordiales,\nProfesor'
+    nombre: 'Clase Estándar',
+    profesor_id: null,
+    deleted_at: null,
+    contenido: JSON.stringify({
+      alto: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}.\n\nLo has hecho muy bien, excelente trabajo.\n\nSaludos cordiales,\nProfesor',
+      medio: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}.\n\nHas hecho un trabajo más o menos adecuado, pero hay aspectos que puedes mejorar.\n\nSaludos cordiales,\nProfesor',
+      bajo: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}.\n\nPor favor, es necesario que le pongas mayor esfuerzo. Consulta el material para mejorar.\n\nSaludos cordiales,\nProfesor'
+    })
   },
   {
     id: 2,
-    nombre: 'Plantilla Retroalimentación - Rango Medio (4.0-5.9)',
-    contenido: 'Estimado/a {{STUDENT_NAME}},\n\nTu calificación en {{ASSIGNMENT_NAME}} es {{CHILE_GRADE}} de 7.0 ({{CANVAS_SCORE}} de {{POINTS_POSSIBLE}} puntos en Canvas).\n\n{{TONE_INSTRUCTION}}.\n\nResultados del examen:\n{{QUESTIONS_DETAIL}}\n\nBuen trabajo, pero hay aspectos que puedes mejorar. Sigue esforzándote.\n\nSaludos cordiales,\nProfesor'
+    nombre: 'Feedback Detallado',
+    profesor_id: null,
+    deleted_at: null,
+    contenido: JSON.stringify({
+      alto: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Has demostrado un dominio sobresaliente de los conceptos, con una base muy sólida que demuestra un gran nivel de comprensión y dedicación.\n\n¡Sigue así, excelente desempeño!\n\nSaludos,\nProfesor',
+      medio: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Tienes una buena base, pero existen áreas específicas que debemos reforzar para alcanzar un dominio completo de los temas tratados en esta evaluación.\n\nTe animo a revisar el material de estudio.\n\nSaludos,\nProfesor',
+      bajo: 'Estimado/a {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Es fundamental que repasemos el contenido visto en clase, ya que se evidencian conceptos clave que aún no están afianzados.\n\nPor favor, contáctame para aclarar dudas o asiste a las horas de tutoría.\n\nSaludos,\nProfesor'
+    })
   },
   {
     id: 3,
-    nombre: 'Plantilla Retroalimentación - Rango Alto (6.0-7.0)',
-    contenido: 'Estimado/a {{STUDENT_NAME}},\n\nTu calificación en {{ASSIGNMENT_NAME}} es {{CHILE_GRADE}} de 7.0 ({{CANVAS_SCORE}} de {{POINTS_POSSIBLE}} puntos en Canvas).\n\n{{TONE_INSTRUCTION}}.\n\nResultados del examen:\n{{QUESTIONS_DETAIL}}\n\nExcelente trabajo. Dominas los conceptos clave. ¡Felicitaciones!\n\nSaludos cordiales,\nProfesor'
+    nombre: 'Evaluación Cruzada',
+    profesor_id: null,
+    deleted_at: null,
+    contenido: JSON.stringify({
+      alto: 'Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Tus compañeros y yo coincidimos en que tu trabajo es destacado y aporta gran valor a la revisión entre pares.\n\n¡Felicidades!\n\nSaludos,\nProfesor',
+      medio: 'Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Según la evaluación cruzada, tu desempeño es promedio, presentando un trabajo adecuado pero con oportunidades de mejora identificadas por tus pares.\n\n¡Sigue trabajando!\n\nSaludos,\nProfesor',
+      bajo: 'Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. La revisión cruzada indica que hay debilidades importantes en tu entrega que deben ser atendidas, según el consenso de la coevaluación.\n\nRevisa los comentarios de tus compañeros.\n\nSaludos,\nProfesor'
+    })
   }
 ];
 
@@ -59,20 +78,30 @@ function sqlVerb(text) {
 
 function sqlTable(text) {
   // Patrones alineados con los nombres REALES que emite la capa de repositorios
-  // (PascalCase en la mayoría, snake_case en otras). Antes solo se reconocían
-  // las variantes snake_case, por lo que en modo LOCAL las consultas a
-  // Historial_Feedback_Generado, Plantilla_Feedback, Configuracion_IA, etc.
-  // caían en el default y devolvían [] silenciosamente (datos locales vacíos).
+  // PostgreSQL normaliza nombres sin comillas; la práctica aquí es usar los
+  // nombres exactos con los que la base real crea las tablas (PascalCase).
   const patterns = [
-    /historial_feedback_generado/i, /plantilla_feedback/i, /historial_academico_local/i,
-    /configuracion_curso_tarea/i, /llaves_api_ia/i, /logs_auditoria/i,
-    /notificaciones_feedback/i, /webhook_events/i, /configuracion_asignacion/i,
-    /variables_asignacion/i, /configuracion_ia/i, /usuarios_local/i, /user_lti_mappings/i,
-    /permisos_rol/i, /canvas_user_tokens/i, /schema_migrations/i,
+    ['Plantilla_Feedback', /plantilla_feedback/i],
+    ['Historial_Feedback_Generado', /historial_feedback_generado/i],
+    ['Historial_Academico_Local', /historial_academico_local/i],
+    ['Configuracion_Curso_Tarea', /configuracion_curso_tarea/i],
+    ['Llaves_API_IA', /llaves_api_ia/i],
+    ['Logs_Auditoria', /logs_auditoria/i],
+    ['Notificaciones_Feedback', /notificaciones_feedback/i],
+    ['webhook_events', /webhook_events/i],
+    ['configuracion_asignacion', /configuracion_asignacion/i],
+    ['variables_asignacion', /variables_asignacion/i],
+    ['Configuracion_IA', /configuracion_ia/i],
+    ['usuarios_local', /usuarios_local/i],
+    ['user_lti_mappings', /user_lti_mappings/i],
+    ['Permisos_Rol', /permisos_rol/i],
+    ['canvas_user_tokens', /canvas_user_tokens/i],
+    ['schema_migrations', /schema_migrations/i],
+    ['profesor_metadata', /profesor_metadata/i],
   ];
-  for (const p of patterns) {
+  for (const [name, p] of patterns) {
     if (p.test(text)) {
-      return p.source.replace(/\/|\/i|\(.*\)/g, '').toLowerCase();
+      return name.toLowerCase(); // Usar lowercased para el switch
     }
   }
   return null;
@@ -84,27 +113,91 @@ function handlePlantillaFeedback(verb, text, params) {
   if (verb === 'SELECT') {
     if (text.includes('WHERE id')) {
       const id = params ? params[0] : null;
-      const template = localTemplates.find(t => t.id == id);
+      const template = localTemplates.find(t => t.id == id && !t.deleted_at);
       return { rows: template ? [template] : [] };
     }
-    return { rows: [...localTemplates] };
+    // Filtrar por profesor_id y excluir soft-deleted
+    let rows = localTemplates.filter(t => !t.deleted_at);
+    if (text.includes('profesor_id')) {
+      const profId = params && params[0];
+      rows = rows.filter(t => t.profesor_id == profId || t.profesor_id === null);
+    }
+    return { rows: [...rows] };
   }
   if (verb === 'INSERT') {
-    const newTemplate = { id: localTemplates.length > 0 ? Math.max(...localTemplates.map(t => t.id)) + 1 : 1, nombre: params[0], contenido: params[1] };
+    // Detectar INSERT INTO ... SELECT (cloneDefaultTemplates)
+    if (text.includes('SELECT') && text.includes('WHERE profesor_id IS NULL')) {
+      const targetProfesorId = params && params[0];
+      const globals = localTemplates.filter(t => t.profesor_id === null && !t.deleted_at);
+      const cloned = [];
+      for (const g of globals) {
+        const newId = localTemplates.length > 0 ? Math.max(...localTemplates.map(t => t.id)) + 1 : 1;
+        const clone = { id: newId, nombre: g.nombre, contenido: g.contenido, profesor_id: targetProfesorId, deleted_at: null };
+        localTemplates.push(clone);
+        cloned.push(clone);
+      }
+      return { rows: cloned };
+    }
+    // INSERT normal
+    const profesorId = params.length >= 3 ? params[2] : null;
+    const newTemplate = {
+      id: localTemplates.length > 0 ? Math.max(...localTemplates.map(t => t.id)) + 1 : 1,
+      nombre: params[0],
+      contenido: params[1],
+      profesor_id: profesorId,
+      deleted_at: null
+    };
     localTemplates.push(newTemplate);
     return { rows: [newTemplate] };
   }
   if (verb === 'UPDATE') {
+    // Soft Delete: UPDATE ... SET deleted_at = NOW()
+    if (text.includes('deleted_at')) {
+      const id = params[0];
+      const profId = params.length >= 2 ? params[1] : null;
+      const template = localTemplates.find(t => t.id == id && (profId === null || t.profesor_id == profId));
+      if (template) { template.deleted_at = now(); }
+      return { rows: template ? [template] : [] };
+    }
+    // UPDATE normal (edit nombre/contenido)
     const id = params[params.length - 1];
-    const template = localTemplates.find(t => t.id == id);
+    const template = localTemplates.find(t => t.id == id && !t.deleted_at);
     if (template) { template.nombre = params[0]; template.contenido = params[1]; template.actualizado_en = now(); }
     return { rows: template ? [template] : [] };
   }
   if (verb === 'DELETE') {
-    const id = params[0];
-    const idx = localTemplates.findIndex(t => t.id == id);
-    if (idx >= 0) localTemplates.splice(idx, 1);
+    // Hard delete fallback (para reseed u otras operaciones de limpieza)
+    if (text.includes('WHERE id')) {
+      const id = params[0];
+      const idx = localTemplates.findIndex(t => t.id == id);
+      if (idx >= 0) localTemplates.splice(idx, 1);
+    } else {
+      // DELETE FROM Plantilla_Feedback (sin WHERE = borrar todo)
+      localTemplates.length = 0;
+    }
     return { rows: [] };
+  }
+  return { rows: [] };
+}
+
+function handleProfesorMetadata(verb, text, params) {
+  if (verb === 'SELECT') {
+    const profId = params && params[0];
+    const row = localProfesorMetadata.find(m => m.profesor_id == profId);
+    return { rows: row ? [row] : [] };
+  }
+  if (verb === 'INSERT') {
+    const profId = params && params[0];
+    const existing = localProfesorMetadata.find(m => m.profesor_id == profId);
+    if (existing) {
+      // ON CONFLICT → UPDATE
+      existing.has_seeded_templates = true;
+      existing.actualizado_en = now();
+      return { rows: [existing] };
+    }
+    const newRow = { profesor_id: profId, has_seeded_templates: true, actualizado_en: now() };
+    localProfesorMetadata.push(newRow);
+    return { rows: [newRow] };
   }
   return { rows: [] };
 }
@@ -242,6 +335,9 @@ function handleConfiguracionAsignacion(verb, text, params) {
       const courseId = String(params[0]), assignmentId = String(params[1]);
       const row = localAssignmentConfig.find(c => c.canvas_course_id === courseId && c.canvas_assignment_id === assignmentId);
       return { rows: row ? [row] : [] };
+    } else if (text.includes('WHERE canvas_course_id')) {
+      const courseId = String(params[0]);
+      return { rows: localAssignmentConfig.filter(c => c.canvas_course_id === courseId) };
     }
     return { rows: [...localAssignmentConfig] };
   }
@@ -407,6 +503,7 @@ export const localDb = {
       case 'user_lti_mappings': return { rows: verb === 'INSERT' ? [{ id: Date.now(), local_user_id: params[0], canvas_sub: params[1], canvas_uuid: params[2], deployment_id: params[3], issuer: params[4] }] : [] };
       case 'permisos_rol': return handlePermisosRol(verb, text, params);
       case 'canvas_user_tokens': return handleCanvasUserTokens(verb, text, params);
+      case 'profesor_metadata': return handleProfesorMetadata(verb, text, params);
       default: return { rows: [], rowCount: 0 };
     }
   },
@@ -421,6 +518,7 @@ export const localDb = {
       localAssignmentConfig: localAssignmentConfig.map(c => ({ ...c })),
       localAssignmentVariables: localAssignmentVariables.map(v => ({ ...v })),
       localUsers: localUsers.map(u => ({ ...u })),
+      localProfesorMetadata: localProfesorMetadata.map(m => ({ ...m })),
     };
   },
 
@@ -439,6 +537,7 @@ export const localDb = {
     localAssignmentConfig.length = 0; localAssignmentConfig.push(...snap.localAssignmentConfig);
     localAssignmentVariables.length = 0; localAssignmentVariables.push(...snap.localAssignmentVariables);
     localUsers.length = 0; localUsers.push(...snap.localUsers);
+    localProfesorMetadata.length = 0; localProfesorMetadata.push(...snap.localProfesorMetadata);
     this._snapshot = null;
   }
 };

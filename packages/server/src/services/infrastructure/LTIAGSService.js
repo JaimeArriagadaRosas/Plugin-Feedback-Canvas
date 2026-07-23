@@ -50,8 +50,6 @@ export default class LTIAGSService {
         algorithm: 'RS256',
         keyid: process.env.LTI_KEY_ID || 'lti-key-1'
       });
-
-      try {
         const response = await this.canvasClient.rawFetch(this.authUrl, {
           method: 'POST',
           headers: {
@@ -106,8 +104,6 @@ export default class LTIAGSService {
         scoreMaximum: parseFloat(maxScore),
         comment: comment
       };
-
-      try {
         const response = await this.canvasClient.rawFetch(scoresUrl, {
           method: 'POST',
           headers: {

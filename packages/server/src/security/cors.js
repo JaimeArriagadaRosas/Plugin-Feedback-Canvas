@@ -17,6 +17,7 @@
 import cors from 'cors';
 import { getEnv } from '../config/index.js';
 import { isProduction } from './envGuard.js';
+import logger from '../utils/logger.js';
 
 /**
  * Normaliza una URL a su origen (scheme://host[:port]).
@@ -102,13 +103,13 @@ export function getCanvasFrameAncestor() {
  */
 export function corsMiddleware() {
   const allowed = getCorsOrigins();
-  console.info(`[CORS] Orígenes permitidos: ${JSON.stringify(allowed)}`);
+  logger.info(`[CORS] Orígenes permitidos: ${JSON.stringify(allowed)}`);
 
   return cors({
     origin: (origin, cb) => {
       if (origin) {
         const permitido = allowed.includes(origin);
-        console.info(`[CORS] Solicitud con Origin: ${origin} -> ${permitido ? 'PERMITIDO' : 'RECHAZADO'}`);
+        logger.info(`[CORS] Solicitud con Origin: ${origin} -> ${permitido ? 'PERMITIDO' : 'RECHAZADO'}`);
         if (permitido) return cb(null, true);
         return cb(new Error('Origen no permitido por CORS'));
       }

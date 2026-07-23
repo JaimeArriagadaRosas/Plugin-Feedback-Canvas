@@ -9,19 +9,19 @@ export default class FeedbackRepository {
   }
   async save(feedbackData) {
     const {
-      estudianteId, cursoId, tareaId, plantillaId,
+      estudianteId, profesorId, cursoId, tareaId, plantillaId,
       contenidoGenerado, promptUsado,
       notaCanvas, notaChile, aprobado
     } = feedbackData;
 
     const query = `
       INSERT INTO Historial_Feedback_Generado
-        (estudiante_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (estudiante_id, profesor_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
     const res = await db.query(query, [
-      estudianteId, cursoId, tareaId, plantillaId,
+      estudianteId, profesorId, cursoId, tareaId, plantillaId,
       contenidoGenerado, promptUsado,
       notaCanvas ?? null,
       notaChile ?? null,

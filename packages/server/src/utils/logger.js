@@ -22,18 +22,9 @@ if (LOG_TO_FILE && !fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
-const targets = [
-  {
-    target: 'pino-pretty',
-    level: LOG_LEVEL,
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname,service',
-      messageFormat: '{msg}'
-    }
-  }
-];
+import pc from 'picocolors';
+
+const targets = [];
 
 if (LOG_TO_FILE) {
   targets.push({
@@ -49,10 +40,96 @@ if (LOG_TO_FILE) {
   });
 }
 
+const IS_DEV = process.env.NODE_ENV !== 'production';
+
+// Fallback para producción sin archivos: imprimir JSON a stdout
+if (targets.length === 0 && !IS_DEV) {
+  targets.push({ target: 'pino/file', options: { destination: 1 } });
+}
+
 const pinoLogger = pino(
   { level: LOG_LEVEL, redact: { paths: REDACT_PATHS, censor: '[REDACTED]' } },
-  pino.transport({ targets })
+  targets.length > 0 ? pino.transport({ targets }) : undefined
 );
+
+function formatDevLog(level, rawMessage) {
+  const redacted = redactSensitiveStrings(rawMessage);
+  
+  if (redacted.startsWith('-> GET') || redacted.startsWith('-> POST') || redacted.startsWith('-> PUT') || redacted.startsWith('-> DELETE')) {
+    return `${pc.bold(pc.blue('[HTTP]'))} ${redacted}`;
+  }
+
+  const isAuthSubLog = redacted.includes('[LTI-') || 
+                       redacted.includes('[SESSION-') || 
+                       redacted.includes('[LtiOidcRecoveryManager]') || 
+                       redacted.includes('[Auth]') ||
+                       redacted.startsWith('verifyToken:') ||
+                       redacted.startsWith('Audience verificada') ||
+                       redacted.startsWith('INICIO DE SESION EXITOSO') ||
+                       redacted.includes('VerifyToken') ||
+                       redacted.includes('OIDC');
+
+  let cleanMsg = redacted.replace(/^(\s*·\s*|\s*!!\s*|\s*×\s*)+/, '').trim();
+  const match = cleanMsg.match(/^\[([^\]]+)\]\s*(.*)/);
+  
+  let component = '';
+  let finalMessage = cleanMsg;
+  if (match) {
+    component = match[1];
+    finalMessage = match[2];
+  }
+
+  let levelTag = '';
+  if (level === 'info') levelTag = pc.cyan('[INFO]');
+  else if (level === 'warn') levelTag = pc.yellow('[WARN]');
+  else if (level === 'error') levelTag = pc.red('[FAIL]');
+  else if (level === 'debug') levelTag = pc.gray('[DEBUG]');
+  else if (level === 'fatal') levelTag = pc.bgRed(pc.white('[FATAL]'));
+
+  if (/^[=\s-]{20,}$/.test(finalMessage.trim()) || 
+      finalMessage.includes('BACKEND INICIADO') || 
+      finalMessage.includes('Plugin Feedback Adaptativo') || 
+      finalMessage.includes('Puerto interno:') || 
+      finalMessage.includes('Modo de inicio:') || 
+      finalMessage.includes('Base de datos:') || 
+      finalMessage.includes('Sesion local:') || 
+      finalMessage.includes('Interfaz de usuario:') || 
+      finalMessage.includes('Backend:') || 
+      finalMessage.includes('Logs del backend:') || 
+      finalMessage.includes('💡 NOTA:') || 
+      finalMessage.includes('bloquea el Iframe') || 
+      finalMessage.includes('en Canvas, haz clic') || 
+      finalMessage.includes('👉 https://localhost')) {
+    return redacted;
+  }
+
+  if (component) {
+    if (isAuthSubLog) {
+      return `       ${pc.gray('↳')} ${pc.gray(`[${component}]`)} ${finalMessage}`;
+    }
+    const paddedComponent = `[${component}]`.padEnd(14, ' ');
+    return `    ${pc.bold(paddedComponent)} ${finalMessage}`;
+  }
+
+  if (isAuthSubLog) {
+    return `       ${pc.gray('↳')} ${finalMessage}`;
+  }
+
+  return `${levelTag} ${finalMessage}`;
+}
+
+function writeDevLog(level, rawMessage) {
+  if (global.canvasSpinner) global.canvasSpinner.clear();
+  const lines = String(rawMessage).split('\n');
+  for (const line of lines) {
+    const formatted = formatDevLog(level, line);
+    if (process.stdout.isTTY) {
+      process.stdout.write('\r\x1b[K');
+    }
+    process.stdout.write(`${formatted}\n`);
+  }
+  if (global.canvasSpinner) global.canvasSpinner.start();
+}
 
 class Logger {
   constructor(context = {}, internalLogger = null) {
@@ -60,11 +137,26 @@ class Logger {
     this._pino = internalLogger || pinoLogger.child(context);
   }
 
-  debug(message, meta = {}) { this._pino.debug(meta, redactSensitiveStrings(message)); }
-  info(message, meta = {}) { this._pino.info(meta, redactSensitiveStrings(message)); }
-  warn(message, meta = {}) { this._pino.warn(meta, redactSensitiveStrings(message)); }
-  error(message, meta = {}) { this._pino.error(meta, redactSensitiveStrings(message)); }
-  fatal(message, meta = {}) { this._pino.fatal(meta, redactSensitiveStrings(message)); }
+  debug(message, meta = {}) { 
+    if (IS_DEV && LOG_LEVEL === 'debug') writeDevLog('debug', message);
+    this._pino.debug(meta, redactSensitiveStrings(message)); 
+  }
+  info(message, meta = {}) { 
+    if (IS_DEV) writeDevLog('info', message);
+    this._pino.info(meta, redactSensitiveStrings(message)); 
+  }
+  warn(message, meta = {}) { 
+    if (IS_DEV) writeDevLog('warn', message);
+    this._pino.warn(meta, redactSensitiveStrings(message)); 
+  }
+  error(message, meta = {}) { 
+    if (IS_DEV) writeDevLog('error', message);
+    this._pino.error(meta, redactSensitiveStrings(message)); 
+  }
+  fatal(message, meta = {}) { 
+    if (IS_DEV) writeDevLog('fatal', message);
+    this._pino.fatal(meta, redactSensitiveStrings(message)); 
+  }
 
   child(extraContext = {}) {
     return new Logger({ ...this._context, ...extraContext }, this._pino.child(extraContext));
@@ -74,18 +166,27 @@ class Logger {
     const reqId = Math.random().toString(36).substring(2, 8);
     req._logId = reqId;
     req._startTime = Date.now();
-    this.info(`-> ${req.method} ${req.originalUrl}`, {
-      reqId,
-      ip: req.ip || req.socket?.remoteAddress,
-      userAgent: req.headers['user-agent']?.substring(0, 60)
-    });
+    
+    const isHealthCheck = req.originalUrl.includes('/config/startup-mode') || req.originalUrl.includes('/health');
+    if (!isHealthCheck) {
+      this.info(`-> ${req.method} ${req.originalUrl}`, {
+        reqId,
+        ip: req.ip || req.socket?.remoteAddress,
+        userAgent: req.headers['user-agent']?.substring(0, 60)
+      });
+    }
     return reqId;
   }
 
   response(req, res, reqId) {
     const duration = req._startTime ? `${Date.now() - req._startTime}ms` : 'N/A';
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    this._pino[level]({ reqId, duration, statusCode: res.statusCode }, `<- ${req.method} ${req.originalUrl} ${res.statusCode}`);
+    
+    const isHealthCheck = req.originalUrl.includes('/config/startup-mode') || req.originalUrl.includes('/health');
+    // Solo registrar si no es health check, O si fue un error (status >= 400)
+    if (!isHealthCheck || res.statusCode >= 400) {
+      this._pino[level]({ reqId, duration, statusCode: res.statusCode }, `<- ${req.method} ${req.originalUrl} ${res.statusCode}`);
+    }
   }
 
   get logFile() {

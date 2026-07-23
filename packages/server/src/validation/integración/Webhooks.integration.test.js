@@ -12,11 +12,11 @@ describe('Webhooks Integration (RF41)', () => {
     const enc = EncryptionService.encrypt('mocked-token-123');
     await db.query(`
       INSERT INTO canvas_user_tokens (canvas_sub, access_token) 
-      VALUES ('test-teacher', $1)
+      VALUES ('00000000-0000-0000-0002-000000000003', $1)
     `, [enc]);
     await db.query(`
       INSERT INTO configuracion_asignacion (canvas_course_id, canvas_assignment_id, feedback_activo, profesor_id)
-      VALUES ('101', '202', true, 'test-teacher')
+      VALUES ('101', '202', true, '00000000-0000-0000-0002-000000000003')
       ON CONFLICT DO NOTHING
     `);
     await seedTemplate({ id: 1 });

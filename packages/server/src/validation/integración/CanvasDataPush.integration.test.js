@@ -18,14 +18,14 @@ describe('Canvas Data Push (Envío de Feedback a Canvas)', () => {
     const enc = EncryptionService.encrypt('mocked-token-123');
     await db.query(`
       INSERT INTO canvas_user_tokens (canvas_sub, access_token) 
-      VALUES ('local-user-admin', $1)
+      VALUES ('00000000-0000-0000-0000-000000000001', $1)
       ON CONFLICT (canvas_sub) DO UPDATE SET access_token = EXCLUDED.access_token
     `, [enc]);
 
     // Insertar un feedback en estado PENDIENTE
     const fbRes = await db.query(`
-      INSERT INTO Historial_Feedback_Generado (estudiante_id, curso_id, tarea_id, contenido_generado, estado) 
-      VALUES ('303', '101', '202', 'Feedback para aprobar', 'PENDIENTE')
+      INSERT INTO Historial_Feedback_Generado (estudiante_id, profesor_id, curso_id, tarea_id, contenido_generado, estado) 
+      VALUES ('303', '00000000-0000-0000-0001-000000000001', '101', '202', 'Feedback para aprobar', 'PENDIENTE')
       RETURNING id
     `);
     pendingFeedbackId = fbRes.rows[0].id;

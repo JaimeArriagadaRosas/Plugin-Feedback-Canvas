@@ -21,7 +21,13 @@ export default function TemplateEditor({ template, onSave, onClose }) {
 
   const handleSave = useCallback(
     async (e) => {
-      await logSave('TEMPLATE_EDITOR_SAVE', () => onSave?.({ ...template, name: editor.name, content: editor.content, ranges: 3 }))(e);
+      const payload = {
+        ...template,
+        name: editor.name,
+        contenido: JSON.stringify(editor.content),
+        ranges: 3
+      };
+      await logSave('TEMPLATE_EDITOR_SAVE', () => onSave?.(payload))(e);
     },
     [editor.name, editor.content, template, onSave, logSave]
   );
@@ -59,8 +65,6 @@ export default function TemplateEditor({ template, onSave, onClose }) {
             <TemplateForm
               name={editor.name}
               setName={editor.setName}
-              range={editor.range}
-              setRange={editor.setRange}
             />
           </Card>
 
@@ -82,10 +86,24 @@ export default function TemplateEditor({ template, onSave, onClose }) {
               onFormat={editor.applyFormat}
               onClear={() => editor.setContent('')}
             />
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>
+              <button 
+                onClick={() => editor.setCurrentTab('alto')}
+                style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'alto' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'alto' ? 'bold' : 'normal' }}
+              >Rango Alto (6.0-7.0)</button>
+              <button 
+                onClick={() => editor.setCurrentTab('medio')}
+                style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'medio' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'medio' ? 'bold' : 'normal' }}
+              >Rango Medio (4.0-5.9)</button>
+              <button 
+                onClick={() => editor.setCurrentTab('bajo')}
+                style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'bajo' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'bajo' ? 'bold' : 'normal' }}
+              >Rango Bajo (1.0-3.9)</button>
+            </div>
             <textarea
               ref={editor.editorRef}
               className={styles.editor}
-              value={editor.content}
+              value={editor.content[editor.currentTab] || ""}
               onChange={(e) => editor.setContent(e.target.value)}
               placeholder="Escribe tu plantilla aquí..."
             />

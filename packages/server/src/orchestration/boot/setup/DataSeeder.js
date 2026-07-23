@@ -61,8 +61,7 @@ export class DataSeeder {
         if (code === 0) {
           spinner.success({ text: '¡Base de datos poblada exitosamente!' });
           this.boot.info(stdoutStr);
-          this._syncCanvasToken(stdoutStr);
-          resolve(true);
+          this._syncCanvasToken(stdoutStr).then(() => resolve(true)).catch(() => resolve(true));
         } else {
           spinner.error({ text: 'Error al ejecutar el script de semilla.' });
           this.boot.error(`Código de salida ${code}. Salida:\n${stdoutStr}\n${stderrStr}`);
@@ -83,15 +82,12 @@ export class DataSeeder {
     });
   }
 
-  _syncCanvasToken(seedOutput) {
-    const match = seedOutput.match(/CANVAS_API_TOKEN:([^\s\r\n]+)/);
-    if (match && match[1].trim()) {
-      this._writeTokenToEnv(match[1].trim());
-      return;
-    }
-
-    this.boot.warn('No se encontró CANVAS_API_TOKEN en la salida. Intentando leer desde el contenedor...');
-    this._syncTokenFromContainer();
+  async _syncCanvasToken(seedOutput) {
+    // Independientemente de si vimos el token en stdout o no,
+    // necesitamos extraer el JSON completo del contenedor para sincronizar 
+    // TODOS los usuarios (UUIDs de estudiantes) en nuestra base de datos local.
+    this.boot.info('Extrayendo perfiles y tokens completos desde el contenedor de Canvas...');
+    await this._syncTokenFromContainer();
   }
 
   async _syncTokenFromContainer() {
@@ -100,11 +96,30 @@ export class DataSeeder {
     if (success && out.trim()) {
       try {
         const perfiles = JSON.parse(out);
+
+        // Guardar localmente para que el middleware (CanvasOAuthMiddleware) pueda leerlo
+        // y mapear los UUIDs de LTI a los tokens correspondientes en STARTUP_MODE=3
+        const localPath = path.join(this.pluginDir, 'tmp', 'canvas_local_users.json');
+        if (!fs.existsSync(path.dirname(localPath))) {
+          fs.mkdirSync(path.dirname(localPath), { recursive: true });
+        }
+        fs.writeFileSync(localPath, JSON.stringify(perfiles, null, 2));
+        this.boot.info(`Usuarios y tokens exportados a ${localPath}`);
+
         const teacher = perfiles.usuarios?.find(u => u.rol === 'teacher');
         if (teacher && teacher.token) {
           this._writeTokenToEnv(teacher.token);
         } else {
           this.boot.warn('No se encontró token de profesor en perfiles_data.json');
+        }
+
+        // --- SINCRONIZAR BASE DE DATOS LOCAL DEL PLUGIN ---
+        const seedPath = path.join(this.pluginDir, 'db', 'seeds', 'seedLocalUsers.js');
+        const { success: seedSuccess, out: seedOut } = await runCommand('node', [seedPath, localPath], { cwd: this.pluginDir });
+        if (seedSuccess) {
+          this.boot.info('Usuarios locales (estudiantes/profesor) sincronizados con éxito en la BD PostgreSQL del plugin.');
+        } else {
+          this.boot.error('Error al sincronizar usuarios locales en la BD del plugin: ' + seedOut);
         }
       } catch (e) {
         this.boot.warn('Error parseando perfiles_data.json: ' + e.message);

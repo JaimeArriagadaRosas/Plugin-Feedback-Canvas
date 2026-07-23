@@ -1,4 +1,5 @@
 import { ADMIN_COOKIE } from '../setup/testAuth.js';
+import { signOAuthState } from '../../security/crypto.js';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import nock from 'nock';
 import { request, app } from '../setup/app-nock.js';
@@ -47,8 +48,8 @@ describe('Canvas OAuth2 Integration Flow', () => {
         expires_in: 3600
       });
 
-    // Sub state (local-user-admin from setup/mocks or AuthLTI13Handler bypass)
-    const state = Buffer.from(JSON.stringify({ canvasSub: 'local-user-admin' })).toString('base64');
+    // Sub state (00000000-0000-0000-0000-000000000001 from setup/mocks or AuthLTI13Handler bypass)
+    const state = signOAuthState({ canvasSub: '00000000-0000-0000-0000-000000000001' });
 
     // 2. Ejecutar callback
     const resCallback = await request(app)

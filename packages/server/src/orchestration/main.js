@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import dotenv from 'dotenv';
 
 import { boot } from './boot/logger.js';
@@ -20,10 +21,10 @@ const PLUGIN_DIR = path.resolve(__dirname, '..', '..', '..', '..');
 const CANVAS_DIR = path.resolve(__dirname, '..', '..', '..', '..', '..', 'canvas-lms-master');
 
 const CANVAS_ADMIN_EMAIL = process.env.CANVAS_ADMIN_EMAIL || 'admin@canvas.local';
-const CANVAS_ADMIN_PASS = process.env.CANVAS_ADMIN_PASS || 'password123';
-const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_PASS ? process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local' : 'profesor@canvas.local';
-const CANVAS_TEACHER_PASS = process.env.CANVAS_TEACHER_PASS || 'password123';
-const CANVAS_STUDENT_PASS = process.env.CANVAS_STUDENT_PASS || 'password123';
+const CANVAS_ADMIN_PASS = 'password123';
+const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local';
+const CANVAS_TEACHER_PASS = 'password123';
+const CANVAS_STUDENT_PASS = 'password123';
 
 if (!process.env.CANVAS_ADMIN_PASS) {
   boot.info('Usando contraseñas por defecto para cuentas de prueba locales.');
@@ -32,8 +33,8 @@ if (!process.env.CANVAS_ADMIN_PASS) {
 function printCanvasCredentials() {
   boot.withStage('Credenciales de Canvas LMS', () => {
     boot.info(`[Administrador] ${CANVAS_ADMIN_EMAIL} / ${CANVAS_ADMIN_PASS}`);
-    boot.info(`[Profesor]     ${CANVAS_TEACHER_EMAIL} / ${CANVAS_TEACHER_PASS}`);
-    boot.info(`[Estudiantes]  estudiante1@canvas.local … estudiante5@canvas.local / ${CANVAS_STUDENT_PASS}`);
+    boot.info(`[Profesores]    ${CANVAS_TEACHER_EMAIL} … profesor3@canvas.local / ${CANVAS_TEACHER_PASS}`);
+    boot.info(`[Estudiantes]   estudiante1@canvas.local … estudiante5@canvas.local / ${CANVAS_STUDENT_PASS}`);
   });
 }
 
@@ -111,7 +112,7 @@ async function startServices(mode, localOrchestrator) {
       const viteSpinner = (await import('nanospinner')).createSpinner('Iniciando frontend (Vite)...');
       viteSpinner.start();
       spawnVite();
-      viteSpinner.success({ text: 'Frontend iniciado localmente' });
+      viteSpinner.success({ text: 'Frontend iniciado localmente.', mark: '  √' });
     } else {
       boot.info('Modo de Producción: Sirviendo frontend desde /dist (Requiere ejecución previa de npm run build)');
     }
@@ -147,6 +148,12 @@ export async function main() {
       boot.success('Puertos liberados.');
     });
 
+    const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
+    if (fs.existsSync(setupCompletePath)) {
+      process.env.FAST_BOOT = 'true';
+      boot.info('Modo Fast Boot detectado (.setup_complete presente).');
+    }
+
     const mode = await showMainMenu();
     await handleSpecialModes(mode);
 
@@ -163,8 +170,13 @@ export async function main() {
       await localOrchestrator.waitForCanvasAndOpenBrowser();
     }
 
+    if (mode === '3' && !process.env.FAST_BOOT) {
+      fs.writeFileSync(setupCompletePath, '1');
+      boot.info('Archivo .setup_complete generado (Fast Boot habilitado para el próximo arranque).');
+    }
+
     boot.success('Arranque completado. El plugin Feedback está operativo.');
-    boot.info('Mantenga esta consola abierta. Presione Ctrl+C para detener.');
+    boot.info('\nMantenga esta consola abierta. Presione Ctrl+C para detener.');
 
   } catch (e) {
     boot.error(`Error crítico: ${e.message}`);

@@ -13,6 +13,7 @@ import {
   getSecret,
   maskSecret,
 } from '../../config/secrets.js';
+import logger from '../../utils/logger.js';
 
 const SAVED = { ...process.env };
 
@@ -107,7 +108,7 @@ describe('config/secrets.js', () => {
     process.env.DB_PASSWORD = 'realpass';
     process.env.ENCRYPTION_KEY = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@';
     process.env.DEV_TOKEN_SECRET = 'dev_token_secret_123';
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     const problems = validateSecretsOrThrow(SECRET_REGISTRY);
     expect(problems).toContain('WEBHOOK_SECRET');
     expect(warn).toHaveBeenCalled();

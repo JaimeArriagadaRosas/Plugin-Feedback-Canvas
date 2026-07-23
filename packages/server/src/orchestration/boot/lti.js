@@ -70,15 +70,12 @@ export class LtiBootstrap {
     }
 
     // Modo local: instalar si falta y activar siempre.
-    const status = await LtiVerifier.checkLtiStatus();
-    if (status === 'OK') {
-      this.log.success('Herramienta LTI 1.3 ya instalada (formato moderno).');
-    } else {
-      this.log.info('Instalando herramienta LTI 1.3 en Canvas Local...');
+    try {
       const Installer = await this.installerFactory();
       await Installer.verifyAndInstall();
+      return BootResult.ok({ installed: true });
+    } catch (e) {
+      return BootResult.fail(true, 'Fallo crítico en LTI Installer', 'Revise la salida de consola', { error: e.message });
     }
-
-    return BootResult.ok({ installed: true });
   }
 }

@@ -1,0 +1,34 @@
+{
+  "name": "Plugin Feedback Node.js & Postgres",
+  "dockerComposeFile": [
+    "../docker-compose.db.yml"
+  ],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18",
+      "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "true"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install && npm run setup",
+  "forwardPorts": [3000, 5173, 5432],
+  "remoteUser": "node"
+}

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: feedback_plugin_db_local
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      POSTGRES_DB: ${DB_NAME:-feedback_plugin_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - plugin_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-feedback_plugin_db}"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  plugin_db_data:

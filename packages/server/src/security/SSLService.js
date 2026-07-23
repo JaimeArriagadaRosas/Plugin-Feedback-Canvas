@@ -10,7 +10,7 @@ export class SSLService {
   static bustJwksCache() {
     const timestamp = Date.now();
     process.env.LTI_JWKS_CACHE_BUST = String(timestamp);
-    logger.info('[SSLService] JWKS cache bust timestamp set', { timestamp });
+    logger.info('[SSL] JWKS cache bust timestamp set', { timestamp });
   }
 
   /**
@@ -20,29 +20,23 @@ export class SSLService {
    */
   static async initializeSSLContext() {
     const env = SSLConfig.getEnvironment();
-    logger.info('[SSLService] Inicializando contexto SSL de forma inmutable', { httpsRequested: env.httpsRequested });
+    logger.info('[SSL] Inicializando contexto inmutable para certificados.', { httpsRequested: env.httpsRequested });
 
     let isHttps = false;
 
     if (SSLConfig.shouldUseHttps()) {
-      logger.info('[SSLService] HTTPS solicitado. Verificando/generando certificados con mkcert...');
+      logger.info('[SSL] Verificando/generando certificados con mkcert...');
       const certsReady = await SSLCertificateGenerator.ensureCertificates();
       
       if (certsReady) {
         isHttps = true;
         // Mensaje requerido: Configuración de dispositivo / entorno
-        console.info('');
-        console.info('===============================================================');
-        console.info('🛡️  VERIFICACIÓN: Autoconfiguración HTTPS Completada');
-        console.info('   -> El dispositivo está adaptado y chequeado para TLS.');
-        console.info('   -> Esquema activo: HTTPS Seguro (mkcert).');
-        console.info('===============================================================');
-        console.info('');
+        logger.info('[SSL] ✅ Autoconfiguración HTTPS Completada (mkcert local).');
       } else {
-        logger.warn('[SSLService] No se pudieron asegurar los certificados. Fallback a HTTP plano (inseguro para LTI).');
+        logger.warn('[SSL] No se pudieron asegurar los certificados. Fallback a HTTP plano (inseguro para LTI).');
       }
     } else {
-      logger.info('[SSLService] HTTPS no solicitado o es Producción. Usando HTTP.');
+      logger.info('[SSL] HTTPS no solicitado o es Producción. Usando HTTP.');
     }
 
     this.bustJwksCache();

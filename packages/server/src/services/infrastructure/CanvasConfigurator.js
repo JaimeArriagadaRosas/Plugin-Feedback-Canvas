@@ -11,8 +11,10 @@
  * el flujo de arranque y para centralizar futuras configuraciones del backend
  * relacionadas con Canvas.
  */
+import logger from '../../utils/logger.js';
+
 export default class CanvasConfigurator {
   static copyDefaultConfigs() {
-    console.info('[CanvasConfigurator] copyDefaultConfigs: delegado a la capa Python de setup (sin accion en backend).');
+    logger.info('[CONFIG] Copia de configs base delegada a la capa Python de setup.');
   }
 }

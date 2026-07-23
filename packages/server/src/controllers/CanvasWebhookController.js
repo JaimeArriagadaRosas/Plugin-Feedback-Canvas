@@ -104,6 +104,11 @@ export default class CanvasWebhookController {
       return this._jsonError(res, 500, 'No se pudo registrar el evento en DB');
     }
 
+    // Si el evento ya fue procesado (attempts > 1), devolver mensaje de idempotencia
+    if (attempts > 1) {
+      return res.status(202).json({ exito: true, mensaje: 'Evento ya procesado (idempotente)' });
+    }
+
     const MAX_ATTEMPTS = 5;
     if (attempts > MAX_ATTEMPTS) {
       const yaEnDeadLetter = await this._estaEnDeadLetter(eventHash);

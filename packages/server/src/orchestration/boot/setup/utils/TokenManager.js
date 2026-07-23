@@ -60,13 +60,15 @@ export async function pingCanvasAPI() {
   try {
     const response = await fetch(`${CANVAS_LOCAL_URL}${CANVAS_PING_ENDPOINT}`, {
       signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
       headers: { 'Host': 'localhost:8443', 'X-Forwarded-Proto': 'https' }
     });
     // Canvas puede devolver 401 en este endpoint pero al menos está respondiendo.
     return { ready: response.status !== 0 };
   } catch (e) {
-    const isNetworkError = e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET'
-      || e.name === 'AbortError' || e.name === 'TypeError';
+    const isNetworkError = e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET' ||
+      (e.cause && (e.cause.code === 'ECONNREFUSED' || e.cause.code === 'ECONNRESET')) ||
+      e.name === 'AbortError';
     return { ready: false, error: isNetworkError ? 'NETWORK_ERROR' : e.message };
   }
 }
@@ -84,6 +86,7 @@ export async function validateToken(token) {
   try {
     const response = await fetch(`${CANVAS_LOCAL_URL}${CANVAS_VALIDATION_ENDPOINT}`, {
       signal: AbortSignal.timeout(10000),
+      redirect: 'manual',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Host': 'localhost:8443',
@@ -144,9 +147,9 @@ else
 end
 
 past_ids = begin; user.past_lti_ids.map(&:past_lti_id); rescue; []; end
-all_ids = ([user.uuid, user.lti_context_id] + past_ids).compact
+all_ids = ([(user.respond_to?(:lti_id) ? user.lti_id : nil), user.uuid, user.lti_context_id] + past_ids).compact
 uuid_regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-lti_sub = all_ids.find { |id| id.to_s.match?(uuid_regex) } || user.lti_context_id || user.uuid
+lti_sub = all_ids.find { |id| id.to_s.match?(uuid_regex) } || (user.respond_to?(:lti_id) ? user.lti_id : (user.lti_context_id || user.uuid))
 
 result = {
   user_id: user.id,

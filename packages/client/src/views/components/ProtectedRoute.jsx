@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ allowedRoles }) {
-  const { role, isLoading } = useAuth();
+  const { role, rawRoles, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,6 +17,13 @@ export default function ProtectedRoute({ allowedRoles }) {
   if (!role) {
     // Si no hay rol, probablemente la sesión expiró o es inválida
     return <Navigate to="/unauthorized" replace />;
+  }
+
+  const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
+
+  if (allowedRoles.includes('admin') && isTrueAdmin) {
+    // Permitir acceso a verdaderos admins aunque su 'role' de contexto sea otro
+    return <Outlet />;
   }
 
   if (!allowedRoles.includes(role)) {

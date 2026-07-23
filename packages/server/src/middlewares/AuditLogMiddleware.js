@@ -31,14 +31,18 @@ export const auditLogMiddleware = (req, res, next) => {
         });
       } else {
         const ipAddress = req.ip || req.socket?.remoteAddress || null;
-        await db.query(
-          `INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)`,
-          [usuarioId, accion, detalle, ipAddress]
-        );
-        console.debug(`[AUDIT-DB] ${accion} por ${usuarioId} registrado en PostgreSQL`);
+        try {
+          await db.query(
+            `INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)`,
+            [usuarioId, accion, detalle, ipAddress]
+          );
+          console.debug(`[AUDIT-DB] ${accion} por ${usuarioId} registrado en PostgreSQL`);
+        } catch (dbErr) {
+          console.warn(`[AUDIT-FALLBACK] Error crítico al guardar en BD: ${dbErr.message}`);
+          console.warn(`[AUDIT-FALLBACK] Datos no guardados: ${accion} por ${usuarioId} | Detalle: ${detalle.substring(0, 150)}`);
+        }
       }
     } catch (err) {
-      // El error de auditoría no debe afectar la respuesta (ya fue enviada)
       console.warn('Error guardando entrada de auditoría (no crítico):', { error: err.message });
     }
   });

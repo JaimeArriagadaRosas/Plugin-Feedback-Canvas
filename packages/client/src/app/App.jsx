@@ -21,8 +21,10 @@ const StudentFeedbackView = lazy(() => import('../views/feedback/StudentFeedback
  * sesión/rol válido se muestra AccessDenied.
  */
 function AppRouter() {
-  const { role, isLoading, apiError } = useAuth();
+  const { role, rawRoles, isLoading, apiError } = useAuth();
   const { logClick } = useLogger();
+
+  const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
 
   if (isLoading) return <LoadingScreen message="Verificando sesión con el servidor local..." />;
 
@@ -42,7 +44,6 @@ function AppRouter() {
           {/* ── RUTAS ADMIN ──────────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
-              <Route path="/" element={<Navigate to="/admin" replace />} />
               <Route path="/admin/*" element={<AdminPanel onExit={() => (window.location.href = '/teacher/courses')} />} />
             </Route>
           </Route>
@@ -50,18 +51,16 @@ function AppRouter() {
           {/* ── RUTAS SHARED (TEACHER & ADMIN) ───────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'teacher']} />}>
             <Route path="/teacher/*" element={<TeacherLayout isAdminView={role === 'admin'} />} />
-            {role === 'teacher' && <Route path="/" element={<Navigate to="/teacher/courses" replace />} />}
           </Route>
 
           {/* ── RUTAS STUDENT ────────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-            <Route path="/" element={<Navigate to="/student" replace />} />
             <Route path="/student/*" element={<StudentFeedbackView onExit={() => (window.location.href = '/')} />} />
           </Route>
 
           {/* ── CATCH ALL ────────────────────────────────────────────────────── */}
           <Route path="/unauthorized" element={<AccessDenied apiError="Acceso denegado: no tienes permiso para ver esta vista." />} />
-          <Route path="*" element={<Navigate to={role === 'admin' ? '/admin' : role === 'teacher' ? '/teacher/courses' : '/student'} replace />} />
+          <Route path="*" element={<Navigate to={isTrueAdmin ? '/admin' : role === 'teacher' ? '/teacher/courses' : '/student'} replace />} />
         </Routes>
       </Suspense>
     </>

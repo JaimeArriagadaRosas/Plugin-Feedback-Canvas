@@ -1,22 +1,39 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from 'shared/api';
 import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './AssignmentTable.module.css';
 
-export default function AssignmentTable({ assignments, onToggle }) {
+export default function AssignmentTable({ assignments, onToggle, loading }) {
   const logToggle = useButtonLogger();
+  const [selectedTemplates, setSelectedTemplates] = useState({});
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['templates'],
+    queryFn: async () => {
+      const result = await api.get('/templates');
+      if (!result.exito) throw new Error(result.mensaje || 'Error al obtener plantillas');
+      return result.data || [];
+    }
+  });
+
+  const handleTemplateChange = useCallback((assignmentId, value) => {
+    setSelectedTemplates(prev => ({ ...prev, [assignmentId]: value }));
+  }, []);
 
   const handleToggle = useCallback(
     (assignment) => {
-      logToggle(`ASSIGNMENT_TOGGLE_${assignment.active ? 'DEACTIVATE' : 'ACTIVATE'}`, () => onToggle?.(assignment))();
+      const plantilla_id = selectedTemplates[assignment.id] !== undefined ? selectedTemplates[assignment.id] : assignment.template;
+      logToggle(`ASSIGNMENT_TOGGLE_${assignment.active ? 'DEACTIVATE' : 'ACTIVATE'}`, () => onToggle?.({ ...assignment, plantilla_id }))();
     },
-    [onToggle, logToggle]
+    [onToggle, logToggle, selectedTemplates]
   );
 
-  if (assignments.length === 0) {
+  if (!loading && assignments.length === 0) {
     return (
       <div className={styles.empty}>
-        No se encontraron asignaciones para este curso.
+        Aún no hay tareas para este curso.
       </div>
     );
   }
@@ -33,21 +50,40 @@ export default function AssignmentTable({ assignments, onToggle }) {
         </tr>
       </thead>
       <tbody>
-        {assignments.map((item) => (
-          <tr key={item.id}>
+        {loading ? (
+          Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={`skel-${idx}`}>
+              <td><div className={`${styles.skeletonCell} ${styles.skeletonCellLong}`} /></td>
+              <td><div className={`${styles.skeletonCell} ${styles.skeletonCellMedium}`} /></td>
+              <td><div className={`${styles.skeletonCell} ${styles.skeletonCellShort}`} style={{ margin: 'auto' }} /></td>
+              <td><div className={`${styles.skeletonCell} ${styles.skeletonCellLong}`} /></td>
+              <td><div className={`${styles.skeletonCell} ${styles.skeletonCellMedium}`} /></td>
+            </tr>
+          ))
+        ) : (
+          assignments.map((item) => (
+            <tr key={item.id}>
             <td>
               <a href="#" className={styles.link}>{item.name}</a>
             </td>
             <td>{item.due}</td>
             <td style={{ textAlign: 'center' }}>
-              <span className={styles.icon}>✔</span>
+              {item.rubric ? (
+                <span className={styles.icon} style={{ color: 'green' }}>✔</span>
+              ) : (
+                <span className={styles.icon} style={{ color: 'red' }}>❌</span>
+              )}
             </td>
             <td>
-              <select className={styles.select} defaultValue={item.template}>
+              <select 
+                className={styles.select} 
+                value={selectedTemplates[item.id] !== undefined ? selectedTemplates[item.id] : (item.template || '')}
+                onChange={(e) => handleTemplateChange(item.id, e.target.value)}
+              >
                 <option value="">Seleccionar plantilla...</option>
-                <option value="Clase Standard">Clase Estándar</option>
-                <option value="Feedback Detallado">Feedback Detallado</option>
-                <option value="Evaluación Cruzada">Evaluación Cruzada</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
               </select>
             </td>
             <td>
@@ -65,7 +101,7 @@ export default function AssignmentTable({ assignments, onToggle }) {
               </div>
             </td>
           </tr>
-        ))}
+        )))}
       </tbody>
     </table>
   );

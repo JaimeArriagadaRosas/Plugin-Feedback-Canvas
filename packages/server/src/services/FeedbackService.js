@@ -10,10 +10,10 @@ import logger from '../utils/logger.js';
  * delega en servicios especializados para cumplir SRP sin romper dependencias.
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
     this.generation = new FeedbackGenerationService(
       iaProvider, canvasGateway, feedbackRepo, templateRepo,
-      academicHistoryService, validadorAcademico, configRepo
+      academicHistoryService, validadorAcademico, configRepo, iaConfigManager
     );
     this.query = new FeedbackQueryService(
       feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico

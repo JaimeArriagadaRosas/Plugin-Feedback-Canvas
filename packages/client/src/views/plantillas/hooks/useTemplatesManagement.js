@@ -17,7 +17,7 @@ export function useTemplatesManagement() {
         setTemplates(result.data.map(t => ({
           id: t.id,
           name: t.nombre,
-          ranges: 1,
+          ranges: 3,
           contenido: t.contenido
         })));
       }

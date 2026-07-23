@@ -1,32 +1,12 @@
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
-import https from 'https';
 import { AppError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 import LtiOidcRecoveryManager from '../../middlewares/LtiOidcRecoveryManager.js';
-
+import { getJwksClient } from '../auth/CanvasJwksClient.js';
 
 export default class LTITokenService {
   constructor() {
-    const baseUrl = process.env.CANVAS_BASE_URL || 'https://canvas.instructure.com';
-    this.jwksUri = `${baseUrl}/api/lti/security/jwks`;
-    const isLocal = this.jwksUri.includes('localhost') || process.env.STARTUP_MODE === '3';
-    logger.info('[LTI-TOKEN] Cliente JWKS inicializado', { jwksUri: this.jwksUri, isLocal });
-    
-    this.client = jwksClient({
-      jwksUri: this.jwksUri,
-      requestAgent: isLocal ? new https.Agent({ rejectUnauthorized: false }) : undefined,
-      // M8: Caché de 24h para evitar una request HTTP al endpoint JWKS en cada autenticación.
-      cache: true,
-      cacheMaxAge: 86400000,  // 24 horas en ms
-      rateLimit: true,
-      jwksRequestsPerMinute: 10,
-      // Timeout de red: si el JWKS de Canvas no responde, jwks-rsa debe fallar
-      // rápido en vez de colgar la promesa. Aumentado a 20s para entornos Docker lentos.
-      timeout: 20000,
-      requestHeaders: {},
-      getKeysInterceptor: undefined
-    });
+    this.jwksClient = getJwksClient();
     this.allowedDeploymentIds = (process.env.LTI_DEPLOYMENT_IDS || '')
       .split(',')
       .map(s => s.trim())
@@ -41,45 +21,13 @@ export default class LTITokenService {
     }
   }
 
-  async getPublicKey(header) {
-    const maxRetries = 3;
-    let attempt = 0;
-
-    while (attempt < maxRetries) {
-      attempt++;
-      try {
-        return await new Promise((resolve, reject) => {
-          // Timeout de contingencia (ligeramente superior al timeout de jwks-rsa)
-          const timer = setTimeout(() => {
-            reject(new Error(`Timeout esperando clave JWKS para kid=${header?.kid} (${this.jwksUri})`));
-          }, 25000);
-          this.client.getSigningKey(header.kid, (err, key) => {
-            clearTimeout(timer);
-            if (err) reject(err);
-            else resolve(key.getPublicKey());
-          });
-        });
-      } catch (error) {
-        if (attempt >= maxRetries) {
-          logger.error(`[LTI-TOKEN] getPublicKey falló definitivamente tras ${maxRetries} intentos: ${error.message}`);
-          throw error;
-        }
-        logger.warn(`[LTI-TOKEN] Fallo obteniendo JWKS (intento ${attempt}/${maxRetries}): ${error.message}. Reintentando en breve...`);
-        // Backoff: 2s, 4s...
-        await new Promise(r => setTimeout(r, 2000 * attempt));
-      }
-    }
-  }
-
   async verifyToken(token) {
     try {
       const decodedHeader = jwt.decode(token, { complete: true })?.header;
       if (!decodedHeader) throw new AppError('Token mal formado', 401);
 
-      logger.info(`[LTI-TOKEN] verifyToken: header del id_token | alg="${decodedHeader.alg}" kid="${decodedHeader.kid}" jwksUri="${this.jwksUri}"`);
-      logger.info('[LTI-TOKEN] verifyToken: solicitando clave publica a JWKS...');
-      const publicKey = await this.getPublicKey(decodedHeader);
-      logger.info('[LTI-TOKEN] verifyToken: clave publica obtenida del JWKS (OK)');
+      const publicKey = await this.jwksClient.getPublicKey(decodedHeader);
+      logger.info(`[LTI-TOKEN] Token validado con éxito vía JWKS (Canvas) | kid: ${decodedHeader.kid?.substring(0,10)}...`);
       
       const baseUrl = process.env.CANVAS_BASE_URL || 'https://canvas.instructure.com';
       const expectedIssuer = process.env.CANVAS_ISSUER || baseUrl;

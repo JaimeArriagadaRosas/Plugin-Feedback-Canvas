@@ -64,12 +64,13 @@ export const AuthLTI13Handler = async (req, res, next) => {
   const path = req.path;
   const method = req.method;
 
-  logger.info(`[LTI-AUTH] [${reqId}] ${timestamp} -> ${method} ${path}`);
-
   try {
     const isPublic = LTI_PUBLIC_ROUTES.some(pub => path === pub || path.startsWith(pub));
     if (isPublic) {
-      logger.info(`[LTI-AUTH] [${reqId}] Ruta pública, sin requerir token: ${path}`);
+      const isHealthCheck = path.includes('/config/startup-mode') || path.includes('/health');
+      if (!isHealthCheck) {
+        logger.info(`[HTTP] ${method} ${path} -> [LTI-AUTH] Ruta pública (OK)`);
+      }
       return next();
     }
 
@@ -87,8 +88,11 @@ export const AuthLTI13Handler = async (req, res, next) => {
           : role === 'student'
             ? 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
             : 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor';
-        req.ltiContext = { user: `local-user-${role}`, role: [roleURN], courseId: 14852, localRole: role, source: 'test' };
-        req.user = { id: `local-user-${role}` };
+        const localId = role === 'admin' ? '00000000-0000-0000-0000-000000000001' :
+                        role === 'student' ? '00000000-0000-0000-0000-000000000002' :
+                        '00000000-0000-0000-0000-000000000003'; // teacher
+        req.ltiContext = { user: localId, role: [roleURN], courseId: 14852, localRole: role, source: 'test' };
+        req.user = { id: localId };
         return next();
       }
     }
@@ -109,7 +113,7 @@ export const AuthLTI13Handler = async (req, res, next) => {
           };
           req.user = { id: identity.user };
 
-          logger.info(`[LTI-AUTH] [${reqId}] [OK] Sesión establecida por ${provider.name} | Usuario: ${identity.user} | Rol: ${identity.localRole || 'N/A'} | StudentId: ${identity.studentId ?? 'N/A'} | Fuente: ${identity.source}`);
+          logger.info(`[HTTP] ${method} ${path} -> [AUTH] Sesión válida vía ${provider.name} | Usuario: ${identity.user?.substring(0,8)}...`);
           return next();
         }
       } catch (error) {

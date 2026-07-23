@@ -9,7 +9,7 @@ export default class CanvasServiceLocal {
 
   async getCourses(userId) {
     logger.info(`[LOCAL-CANVAS] getCourses llamado con userId: ${userId || 'N/A'}`);
-    return getSharedCourses();
+    return getSharedCourses(userId);
   }
 
   async getAssignments(courseId) {

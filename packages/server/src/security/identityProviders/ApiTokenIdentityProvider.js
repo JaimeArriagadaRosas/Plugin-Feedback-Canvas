@@ -1,5 +1,5 @@
 import CanvasServiceLocal from '../../services/infrastructure/CanvasService_local.js';
-import { toRoleURN } from '../../utils/roles.js';
+import { toRoleURN, classifyRoles } from '../../utils/roles.js';
 import { getCanvasEnv } from '../../config/index.js';
 import CanvasClient from '../../services/infrastructure/CanvasClient.js';
 

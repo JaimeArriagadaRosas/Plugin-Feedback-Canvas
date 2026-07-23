@@ -1,20 +1,47 @@
 import bcrypt from 'bcrypt';
 import db from '../../packages/server/src/data/db.js';
+import fs from 'fs';
+import path from 'path';
 
 const SALT_ROUNDS = 10;
 
-const users = [
+// Usuarios estáticos por defecto (fallback)
+let users = [
   { email: 'admin@canvas.local', nombre: 'Admin Sistema', password: 'password123', rol: 'admin', estudiante_index: null, canvas_user_id: '10000001', canvas_user_uuid: 'a6e2e413-4afb-4b60-90d1-8b0344df3e91' },
-  { email: 'profesor@canvas.local', nombre: 'Dr. Elena Ramirez', password: 'password123', rol: 'teacher', estudiante_index: null, canvas_user_id: '10000002', canvas_user_uuid: 'b7f3f524-5bgc-5c71-91e2-9bce55ef4f02' },
-  { email: 'estudiante1@canvas.local', nombre: 'Juan Perez', password: 'password123', rol: 'student', estudiante_index: 1, canvas_user_id: '10000003', canvas_user_uuid: 'c8g4g635-6chd-6d82-92f3-acf66fg5g13' },
-  { email: 'estudiante2@canvas.local', nombre: 'Maria Garcia', password: 'password123', rol: 'student', estudiante_index: 2, canvas_user_id: '10000004', canvas_user_uuid: 'd9h5h746-7die-7e93-93g4-bdg77hh6h24' },
-  { email: 'estudiante3@canvas.local', nombre: 'Pedro Lopez', password: 'password123', rol: 'student', estudiante_index: 3, canvas_user_id: '10000005', canvas_user_uuid: 'e0i6i857-8ejf-8f04-94h5-ceh88ii7i35' },
-  { email: 'estudiante4@canvas.local', nombre: 'Ana Torres', password: 'password123', rol: 'student', estudiante_index: 4, canvas_user_id: '10000006', canvas_user_uuid: 'f1j7j968-9fkg-9g15-95i6-dfi99jj8j46' },
-  { email: 'estudiante5@canvas.local', nombre: 'Carlos Mendez', password: 'password123', rol: 'student', estudiante_index: 5, canvas_user_id: '10000007', canvas_user_uuid: 'g2k8k079-0ghl-0h26-96j7-egj00kk9k57' },
 ];
 
 async function seed() {
-  console.log('[SEED] Iniciando seed de usuarios locales...');
+  const jsonPath = process.argv[2];
+  
+  if (jsonPath) {
+    const fullPath = path.resolve(jsonPath);
+    if (fs.existsSync(fullPath)) {
+      console.log(`[SEED] Leyendo usuarios desde ${fullPath}`);
+      const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+      
+      let estIndex = 1;
+      users = data.usuarios.map(u => {
+        let eIdx = null;
+        if (u.rol === 'student') {
+          eIdx = estIndex++;
+        }
+        return {
+          email: u.email,
+          nombre: u.nombre,
+          password: 'password123', // Mantenemos la clave local igual por simplicidad
+          rol: u.rol,
+          estudiante_index: eIdx,
+          canvas_user_id: u.id.toString(),
+          canvas_user_uuid: u.uuid || `uuid-fallback-${u.id}`
+        };
+      });
+    } else {
+      console.warn(`[SEED] Archivo JSON no encontrado en ${fullPath}, usando fallback estático.`);
+    }
+  }
+
+  console.log(`[SEED] Iniciando seed de ${users.length} usuarios locales...`);
+  
   for (const user of users) {
     const passwordHash = await bcrypt.hash(user.password, SALT_ROUNDS);
     try {
@@ -32,7 +59,7 @@ async function seed() {
          RETURNING id, email`,
         [user.email, user.nombre, passwordHash, user.rol, user.estudiante_index, user.canvas_user_id, user.canvas_user_uuid]
       );
-      console.log(`[SEED] OK: ${user.email} (${user.rol}) -> id=${res.rows[0].id}`);
+      console.log(`[SEED] OK: ${user.email} (${user.rol}) -> id=${res.rows[0].id} | canvas_id=${user.canvas_user_id}`);
     } catch (error) {
       console.error(`[SEED] ERROR con ${user.email}:`, error.message);
     }

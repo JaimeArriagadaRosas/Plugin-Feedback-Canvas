@@ -25,6 +25,7 @@ async function runMigrations() {
       id SERIAL PRIMARY KEY,
       nombre VARCHAR(255) NOT NULL,
       contenido TEXT NOT NULL,
+      profesor_id VARCHAR(50),
       creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,

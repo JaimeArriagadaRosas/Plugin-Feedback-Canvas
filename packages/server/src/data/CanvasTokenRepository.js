@@ -5,24 +5,6 @@ import path from 'node:path';
 
 export default class CanvasTokenRepository {
   async getToken(canvasSub) {
-    // En modo 3 (Docker Local), el orquestador provee un token auto-sanado.
-    // Según el diseño de bootstrap, debemos confiar en este token global.
-    if (process.env.STARTUP_MODE === '3') {
-      let freshToken = process.env.CANVAS_ACCESS_TOKEN;
-      try {
-        const envContent = fs.readFileSync(path.resolve(process.cwd(), '.env'), 'utf8');
-        const match = envContent.match(/^CANVAS_ACCESS_TOKEN=(.+)$/m);
-        if (match) freshToken = match[1].trim();
-      } catch (e) { /* ignore */ }
-
-      if (freshToken) {
-        return {
-          accessToken: freshToken,
-          refreshToken: null,
-          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365) // Válido por 1 año simulado
-        };
-      }
-    }
 
     const res = await db.query(
       'SELECT access_token, refresh_token, expires_at FROM canvas_user_tokens WHERE canvas_sub = $1',
@@ -40,7 +22,6 @@ export default class CanvasTokenRepository {
   }
 
   async saveToken(canvasSub, accessToken, refreshToken, expiresAt) {
-    if (process.env.STARTUP_MODE === '3') return;
 
     const encAccess = EncryptionService.encrypt(accessToken);
     const encRefresh = refreshToken ? EncryptionService.encrypt(refreshToken) : null;
@@ -58,16 +39,21 @@ export default class CanvasTokenRepository {
     );
   }
 
+  async getExpiringTokens(thresholdDate) {
+    const res = await db.query(
+      'SELECT canvas_sub, refresh_token, expires_at FROM canvas_user_tokens WHERE expires_at IS NOT NULL AND expires_at <= $1',
+      [thresholdDate]
+    );
+
+    return res.rows.map(row => ({
+      canvas_sub: row.canvas_sub,
+      refresh_token: row.refresh_token ? EncryptionService.decrypt(row.refresh_token) : null,
+      expires_at: row.expires_at
+    }));
+  }
+
   async deleteToken(canvasSub) {
-    if (process.env.STARTUP_MODE === '3') {
-      try {
-        const envPath = path.resolve(process.cwd(), '.env');
-        let envContent = fs.readFileSync(envPath, 'utf8');
-        envContent = envContent.replace(/^CANVAS_ACCESS_TOKEN=.*$/m, 'CANVAS_ACCESS_TOKEN=');
-        fs.writeFileSync(envPath, envContent, 'utf8');
-      } catch (e) { /* ignore */ }
-      return;
-    }
+
     await db.query('DELETE FROM canvas_user_tokens WHERE canvas_sub = $1', [canvasSub]);
   }
 }

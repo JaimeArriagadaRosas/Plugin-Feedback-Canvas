@@ -8,8 +8,8 @@ describe('Regresin  Error 5: Deteccin de INSERTs en modo local', () => {
 
   it('detecta INSERT INTO Historial_Feedback_Generado (maysculas)', async () => {
     const res = await db.query(
-      'INSERT INTO Historial_Feedback_Generado (estudiante_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-      [1, 14852, 101, 1, 'contenido', 'prompt', 90, 6.9, true, 'generado']
+      'INSERT INTO Historial_Feedback_Generado (estudiante_id, profesor_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+      [1, '00000000-0000-0000-0001-000000000003', 14852, 101, 1, 'contenido', 'prompt', 90, 6.9, true, 'generado']
     );
 
     expect(res).toBeDefined();
@@ -20,8 +20,8 @@ describe('Regresin  Error 5: Deteccin de INSERTs en modo local', () => {
 
   it('detecta INSERT con nombre de tabla en minsculas', async () => {
     const res = await db.query(
-      'INSERT INTO historial_feedback_generado (estudiante_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-      [2, 14852, 101, 1, 'contenido', 'prompt', 50, 3.4, false, 'generado']
+      'INSERT INTO historial_feedback_generado (estudiante_id, profesor_id, curso_id, tarea_id, plantilla_id, contenido_generado, prompt_usado, nota_canvas, nota_chile, aprobado, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+      [2, '00000000-0000-0000-0001-000000000003', 14852, 101, 1, 'contenido', 'prompt', 50, 3.4, false, 'generado']
     );
 
     expect(res).toBeDefined();

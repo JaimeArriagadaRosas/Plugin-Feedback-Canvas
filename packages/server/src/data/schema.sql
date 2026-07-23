@@ -1,5 +1,5 @@
 -- Esquema de Base de Datos para el Plugin de Feedback (PostgreSQL)
--- Normalizado según estándares PostgreSQL 2024-2025
+-- Normalizado segÃƒÂºn estÃƒÂ¡ndares PostgreSQL 2024-2025
 -- BIGINT GENERATED ALWAYS AS IDENTITY, TIMESTAMPTZ, ENUMs, FKs indexadas, triggers, soft deletes
 
 -- ==============================
@@ -43,6 +43,15 @@ CREATE TRIGGER permisos_rol_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ==============================
+-- 0.5. METADATOS DEL PROFESOR
+-- ==============================
+CREATE TABLE IF NOT EXISTS Profesor_Metadata (
+    profesor_id VARCHAR(50) PRIMARY KEY,
+    has_seeded_templates BOOLEAN DEFAULT FALSE,
+    actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==============================
 -- 1. TABLA DE PLANTILLAS DE FEEDBACK
 -- ==============================
 CREATE TABLE IF NOT EXISTS Plantilla_Feedback (
@@ -50,6 +59,8 @@ CREATE TABLE IF NOT EXISTS Plantilla_Feedback (
     nombre TEXT NOT NULL,
     contenido TEXT NOT NULL,
     activo BOOLEAN DEFAULT TRUE,
+    profesor_id VARCHAR(50),
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
     creado_en TIMESTAMPTZ DEFAULT NOW(),
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
@@ -64,9 +75,10 @@ CREATE TRIGGER plantilla_feedback_updated_at
 CREATE TABLE IF NOT EXISTS Historial_Feedback_Generado (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     estudiante_id VARCHAR(50) NOT NULL,
+    profesor_id TEXT NOT NULL,
     curso_id VARCHAR(50) NOT NULL,
     tarea_id VARCHAR(50) NOT NULL,
-    plantilla_id BIGINT REFERENCES Plantilla_Feedback(id),
+    plantilla_id BIGINT REFERENCES Plantilla_Feedback(id) ON DELETE SET NULL,
     contenido_generado TEXT NOT NULL,
     prompt_usado TEXT,
     nota_canvas INTEGER,
@@ -80,11 +92,12 @@ CREATE TABLE IF NOT EXISTS Historial_Feedback_Generado (
 );
 
 CREATE INDEX idx_historial_estudiante ON Historial_Feedback_Generado(estudiante_id);
+CREATE INDEX idx_historial_profesor ON Historial_Feedback_Generado(profesor_id);
 CREATE INDEX idx_historial_curso ON Historial_Feedback_Generado(curso_id);
 CREATE INDEX idx_historial_plantilla_id ON Historial_Feedback_Generado(plantilla_id);
 
 -- ==============================
--- 3. CONFIGURACIONES POR CURSO Y ASIGNACIÓN
+-- 3. CONFIGURACIONES POR CURSO Y ASIGNACIÃƒâ€œN
 -- ==============================
 CREATE TABLE IF NOT EXISTS Configuracion_Curso_Tarea (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -111,7 +124,7 @@ CREATE TABLE IF NOT EXISTS Llaves_API_IA (
 );
 
 -- ==============================
--- 5. HISTORIAL ACADÉMICO DE ESTUDIANTES (CACHE LOCAL)
+-- 5. HISTORIAL ACADÃƒâ€°MICO DE ESTUDIANTES (CACHE LOCAL)
 -- ==============================
 CREATE TABLE IF NOT EXISTS Historial_Academico_Local (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -123,7 +136,7 @@ CREATE TABLE IF NOT EXISTS Historial_Academico_Local (
 );
 
 -- ==============================
--- 6. LOGS DE AUDITORÍA
+-- 6. LOGS DE AUDITORÃƒÂA
 -- ==============================
 CREATE TABLE IF NOT EXISTS Logs_Auditoria (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -174,7 +187,7 @@ CREATE TABLE IF NOT EXISTS webhook_dead_letter (
 );
 
 -- ==============================
--- 8. CONFIGURACIÓN GLOBAL DE IA
+-- 8. CONFIGURACIÃƒâ€œN GLOBAL DE IA
 -- ==============================
 CREATE TABLE IF NOT EXISTS Configuracion_IA (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -191,15 +204,15 @@ CREATE TRIGGER config_ia_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ==============================
--- 9. CONFIGURACIÓN POR ASIGNACIÓN
+-- 9. CONFIGURACIÃƒâ€œN POR ASIGNACIÃƒâ€œN
 -- ==============================
 CREATE TABLE IF NOT EXISTS configuracion_asignacion (
     id_configuracion BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     canvas_course_id VARCHAR(50) NOT NULL,
     canvas_assignment_id VARCHAR(50) NOT NULL,
     feedback_activo BOOLEAN DEFAULT FALSE,
-    plantilla_id BIGINT REFERENCES Plantilla_Feedback(id),
-    profesor_id VARCHAR(50),
+    plantilla_id BIGINT REFERENCES Plantilla_Feedback(id) ON DELETE SET NULL,
+    profesor_id TEXT NOT NULL,
     fecha_modificacion TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(canvas_course_id, canvas_assignment_id)
 );
@@ -209,7 +222,7 @@ CREATE TRIGGER config_asignacion_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ==============================
--- 10. VARIABLES CONFIGURADAS POR ASIGNACIÓN
+-- 10. VARIABLES CONFIGURADAS POR ASIGNACIÃƒâ€œN
 -- ==============================
 CREATE TABLE IF NOT EXISTS variables_asignacion (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -279,4 +292,19 @@ CREATE TABLE IF NOT EXISTS canvas_user_tokens (
 CREATE TRIGGER canvas_user_tokens_updated_at
   BEFORE UPDATE ON canvas_user_tokens
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ==============================
+-- 13. ROW LEVEL SECURITY (RLS) PARA AISLAMIENTO MULTI-TENANT
+-- ==============================
+ALTER TABLE Historial_Feedback_Generado ENABLE ROW LEVEL SECURITY;
+CREATE POLICY aislar_tenant_feedback ON Historial_Feedback_Generado
+    USING (profesor_id = current_setting('app.current_tenant', true));
+
+ALTER TABLE configuracion_asignacion ENABLE ROW LEVEL SECURITY;
+CREATE POLICY aislar_tenant_configuracion ON configuracion_asignacion
+    USING (profesor_id = current_setting('app.current_tenant', true));
+
+ALTER TABLE canvas_user_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY aislar_tenant_tokens ON canvas_user_tokens
+    USING (canvas_sub = current_setting('app.current_tenant', true));
 

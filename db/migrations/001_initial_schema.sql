@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS Plantilla_Feedback (
     nombre TEXT NOT NULL,
     contenido TEXT NOT NULL,
     activo BOOLEAN DEFAULT TRUE,
+    profesor_id VARCHAR(50),
     creado_en TIMESTAMPTZ DEFAULT NOW(),
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
@@ -194,3 +195,58 @@ CREATE TABLE IF NOT EXISTS user_lti_mappings (
 
 CREATE INDEX idx_user_lti_mappings_canvas_sub ON user_lti_mappings(canvas_sub);
 CREATE INDEX idx_user_lti_mappings_deployment ON user_lti_mappings(deployment_id, issuer);
+
+-- Tabla de permisos por rol (RF52)
+CREATE TABLE IF NOT EXISTS Permisos_Rol (
+    rol usuario_rol PRIMARY KEY,
+    permisos JSONB NOT NULL,
+    actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER permisos_rol_updated_at
+  BEFORE UPDATE ON Permisos_Rol
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+INSERT INTO Permisos_Rol (rol, permisos) VALUES
+('teacher', '{"ver_feedback": true, "editar_feedback": true, "enviar_feedback": true, "configurar_llm": false}'),
+('admin', '{"ver_feedback": true, "editar_feedback": true, "enviar_feedback": true, "configurar_llm": true}'),
+('student', '{"ver_feedback": true, "editar_feedback": false, "enviar_feedback": false, "configurar_llm": false}')
+ON CONFLICT (rol) DO NOTHING;
+
+-- Canvas user tokens (OAuth2)
+CREATE TABLE IF NOT EXISTS canvas_user_tokens (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    canvas_sub TEXT NOT NULL UNIQUE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    expires_at TIMESTAMPTZ,
+    creado_en TIMESTAMPTZ DEFAULT NOW(),
+    actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER canvas_user_tokens_updated_at
+  BEFORE UPDATE ON canvas_user_tokens
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Webhook events (idempotencia)
+CREATE TABLE IF NOT EXISTS webhook_events (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_hash VARCHAR(64) NOT NULL UNIQUE,
+    event_type VARCHAR(50) NOT NULL,
+    attempts INTEGER DEFAULT 1,
+    processed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_webhook_events_hash ON webhook_events(event_hash);
+CREATE INDEX idx_webhook_events_type ON webhook_events(event_type);
+
+-- Dead letter para webhooks fallidos
+CREATE TABLE IF NOT EXISTS webhook_dead_letter (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_hash VARCHAR(64) NOT NULL UNIQUE,
+    event_type VARCHAR(50) NOT NULL,
+    payload JSONB,
+    last_error TEXT,
+    attempts INTEGER,
+    creado_en TIMESTAMPTZ DEFAULT NOW()
+);

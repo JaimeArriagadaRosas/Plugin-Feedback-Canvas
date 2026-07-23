@@ -29,7 +29,7 @@ export function updateEnvVars(pluginDir, variables) {
   }
   
   fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
-  console.log(`[run] Variables de entorno actualizadas en .env`);
+  console.log(`    [run] Variables de entorno actualizadas en .env`);
 }
 
 export function writeEnvOverrides(pluginDir, mode, useLocalData = true, role = 'admin') {
@@ -41,15 +41,15 @@ export function writeEnvOverrides(pluginDir, mode, useLocalData = true, role = '
   if (mode === '1' || mode === '2') {
     lines.push('USE_LOCAL_DATA=false');
     lines.push('VITE_USE_LOCAL_DATA=false');
-    console.log(`[run] Variables de entorno configuradas (modo: ${mode}, local_data: false).`);
+    console.log(`    [run] Variables de entorno configuradas (modo: ${mode}, local_data: false).`);
   } else if (mode === '3') {
     lines.push('USE_LOCAL_DATA=false');
     lines.push('VITE_USE_LOCAL_DATA=false');
-    console.log(`[run] Variables de entorno configuradas (modo: 3, local_data: false).`);
+    console.log(`    [run] Variables de entorno configuradas (modo: 3, local_data: false).`);
   } else {
     lines.push(`USE_LOCAL_DATA=${useLocalData}`);
     lines.push(`VITE_USE_LOCAL_DATA=${useLocalData}`);
-    console.log(`[run] Variables de entorno configuradas (modo: ${mode}, local_data: ${useLocalData}).`);
+    console.log(`    [run] Variables de entorno configuradas (modo: ${mode}, local_data: ${useLocalData}).`);
   }
   fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf8');
 }

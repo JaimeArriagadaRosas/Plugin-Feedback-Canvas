@@ -80,7 +80,7 @@ export default class CanvasClient {
       this.dispatcher = new Agent({
         connect: { ca: caBuffer }
       });
-      logger.info('[CanvasClient] Usando custom dispatcher con certificado mkcert para fetch.');
+      logger.info('[CANVAS-API] Usando custom dispatcher con certificado mkcert para fetch.');
     } else {
       this.dispatcher = undefined;
     }
@@ -114,7 +114,7 @@ export default class CanvasClient {
         const err = new Error('Canvas API temporalmente no disponible (circuito abierto).');
         err.isTransient = true;
         err.isCircuitOpen = true;
-        logger.warn('[CanvasClient] Solicitud bloqueada por circuit breaker.');
+        logger.warn('[CANVAS-API] Solicitud bloqueada por circuit breaker.');
         throw err;
       }
 
@@ -142,25 +142,25 @@ export default class CanvasClient {
 
         if (response.status === 403 && response.headers.get('x-rate-limit-remaining') === '0') {
           const resetTime = parseInt(response.headers.get('x-rate-limit-reset') || '10', 10);
-          logger.warn(`[CanvasClient] Rate limit superado. Reintentando en ${resetTime}s...`);
+          logger.warn(`[CANVAS-API] Rate limit superado. Reintentando en ${resetTime}s...`);
           await new Promise(r => setTimeout(r, Math.min(resetTime * 1000, 10000)));
           attempt++;
           continue;
         }
         
         if (response.status === 401) {
-          logger.warn(`[CanvasClient] Token revocado/inválido o expirado (401) en la URL: ${url}`);
+          logger.warn(`[CANVAS-API] Token revocado/inválido o expirado (401) en la URL: ${url}`);
           throw new AppError('Token de Canvas inválido o revocado', 401, { requireOAuth: true });
         }
 
         if (!response.ok) {
-          if ([502, 503, 504].includes(response.status)) {
+          if ([500, 502, 503, 504].includes(response.status)) {
             const err = new Error(`Canvas API error [${response.status}]: ${response.statusText}`);
             err.isTransient = true;
             canvasCircuitBreaker.recordFailure();
             throw err;
           }
-          canvasCircuitBreaker.recordFailure();
+          // No registramos fallo en el Circuit Breaker para errores del cliente (4xx)
           if (options.returnFullResponse) {
              return response;
           }
@@ -178,7 +178,7 @@ export default class CanvasClient {
       } catch (error) {
         clearTimeout(timer);
         if (error instanceof AppError && error.statusCode === 401) {
-          canvasCircuitBreaker.recordFailure();
+          // No registramos fallo por ser error esperado (sesión expirada o revocado)
           throw error;
         }
         if (error.name === 'AbortError' || error.message.includes('fetch failed') || error.isTransient) {
@@ -189,7 +189,7 @@ export default class CanvasClient {
             throw error;
           }
           const delay = Math.pow(2, attempt) * 2000; 
-          logger.warn(`[CanvasClient] Esperando respuesta de Canvas... el servidor parece estar sobrecargado (Reintento en ${delay/1000}s)`);
+          logger.warn(`[CANVAS-API] Esperando respuesta de Canvas... el servidor parece estar sobrecargado (Reintento en ${delay/1000}s)`);
           await new Promise(r => setTimeout(r, delay));
           continue;
         }

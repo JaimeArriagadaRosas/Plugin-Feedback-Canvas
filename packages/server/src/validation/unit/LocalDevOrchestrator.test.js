@@ -13,7 +13,7 @@ vi.mock('../../orchestration/boot/lti.js', () => ({
     run: vi.fn().mockResolvedValue(BootResult.ok({}))
   }))
 }));
-vi.mock('../../orchestration/browser.js', () => ({
+vi.mock('../../setup/local-dev/browser.js', () => ({
   waitForCanvasReady: vi.fn().mockResolvedValue(true),
   openBrowser: vi.fn().mockResolvedValue(true)
 }));

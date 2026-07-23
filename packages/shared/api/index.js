@@ -134,6 +134,18 @@ async function apiFetch(path, options = {}) {
 
   if (!response.ok) {
     const category = classifyError(response.status, null);
+    if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
+      logApi('warn', `Sesión requiere OAuth. Redirigiendo a ${data.error.oauthUrl}`);
+      try {
+        window.top.location.href = data.error.oauthUrl;
+      } catch (e) {
+        logApi('warn', 'Fallback a redirección interna del iframe por CORS');
+        window.location.href = data.error.oauthUrl;
+      }
+      // Detiene la cadena de promesas
+      return new Promise(() => {});
+    }
+
     const message =
       (data &&
         (data.error?.mensaje ||

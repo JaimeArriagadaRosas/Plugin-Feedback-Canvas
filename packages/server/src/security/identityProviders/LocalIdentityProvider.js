@@ -54,11 +54,16 @@ export class LocalIdentityProvider {
     const tokenUserId = tokenParts.length > 2 ? tokenParts[2] : null;
 
     if (tokenUserId) {
-      userId = `local-user-${baseRole}-${tokenUserId}`;
+      // Derivamos un pseudo UUID constante basado en el ID numérico
+      const paddedId = String(tokenUserId).padStart(12, '0');
+      userId = baseRole === 'student'
+        ? `00000000-0000-0000-0000-${paddedId}`
+        : `00000000-0000-0000-0001-${paddedId}`;
     } else {
-      userId = studentMatch
-        ? `local-user-student-${studentMatch[1]}`
-        : `local-user-${baseRole}`;
+      // Fallback estático
+      userId = baseRole === 'student'
+        ? (studentMatch ? `00000000-0000-0000-0000-${String(studentMatch[1]).padStart(12, '0')}` : '00000000-0000-0000-0000-000000000002')
+        : '00000000-0000-0000-0001-000000000003';
     }
 
     return {

@@ -2,6 +2,7 @@ import { getEnv, getCanvasEnv } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { AppError } from '../utils/errors.js';
 import CanvasClient from '../services/infrastructure/CanvasClient.js';
+import { signOAuthState, verifyOAuthState } from '../security/crypto.js';
 
 export default class CanvasOAuthController {
   constructor(canvasTokenRepo, canvasClient) {
@@ -20,22 +21,43 @@ export default class CanvasOAuthController {
       // La URL de retorno a nuestro backend
       const redirectUri = `${getEnv('BACKEND_URL', `https://localhost:${getEnv('PORT', 3000)}`)}/api/oauth2/canvas/callback`;
       
-      // Si tenemos el sub del usuario en la sesión o cookie LTI, lo pasamos como estado para recuperarlo luego
-      // Nota: En un entorno de producción real, 'state' debería ser firmado o guardado en sesión/DB para evitar CSRF.
-      const canvasSub = req.ltiContext?.user || req.user?.id || req.query.user_id;
+      const canvasSub = req.ltiContext?.user;
       
       if (!canvasSub) {
-        throw new AppError('No se proporcionó identificación de usuario para el inicio de sesión OAuth', 400);
+        throw new AppError('No se proporcionó identificación LTI del usuario para el inicio de sesión OAuth', 400);
       }
       
-      const state = Buffer.from(JSON.stringify({ canvasSub })).toString('base64');
+      const state = signOAuthState({ canvasSub });
       
       const authUrl = new URL('/login/oauth2/auth', canvasBaseUrl);
       authUrl.searchParams.append('client_id', clientId);
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('state', state);
-      // Podemos pedir scopes específicos si es necesario, pero si omitimos, pide los globales del Developer Key
+      
+      const defaultScopes = [
+        'url:GET|/api/v1/users/:id',
+        'url:GET|/api/v1/users/:user_id/profile',
+        'url:GET|/api/v1/users/:user_id/courses',
+        'url:GET|/api/v1/courses',
+        'url:GET|/api/v1/courses/:id',
+        'url:GET|/api/v1/courses/:course_id/users',
+        'url:GET|/api/v1/courses/:course_id/assignments',
+        'url:GET|/api/v1/courses/:course_id/assignments/:id',
+        'url:PUT|/api/v1/courses/:course_id/assignments/:id',
+        'url:POST|/api/v1/courses/:course_id/assignments',
+        'url:GET|/api/v1/courses/:course_id/quizzes',
+        'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
+        'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+        'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+        'url:GET|/api/v1/courses/:course_id/enrollments',
+        'url:POST|/api/v1/conversations'
+      ].join(' ');
+
+      const scopes = getEnv('CANVAS_OAUTH_SCOPES', defaultScopes);
+      if (scopes) {
+        authUrl.searchParams.append('scope', scopes);
+      }
 
       logger.info(`[CanvasOAuth] Iniciando flujo OAuth para el usuario ${canvasSub}, redirigiendo a Canvas.`);
       res.redirect(authUrl.toString());
@@ -60,23 +82,21 @@ export default class CanvasOAuthController {
         throw new AppError('Parámetros inválidos en el callback OAuth', 400);
       }
 
-      let canvasSub;
-      try {
-        const decodedState = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
-        canvasSub = decodedState.canvasSub;
-      } catch (e) {
-        throw new AppError('Estado OAuth inválido', 400);
+      const decodedState = verifyOAuthState(state);
+      if (!decodedState || !decodedState.canvasSub) {
+        throw new AppError('Estado OAuth inválido o manipulado', 400);
       }
+      const canvasSub = decodedState.canvasSub;
 
       const canvasBaseUrl = getCanvasEnv('CANVAS_BASE_URL', 'VITE_CANVAS_BASE_URL') || 'https://canvas.instructure.com';
       const clientId = getEnv('CANVAS_CLIENT_ID', getEnv('LTI_CLIENT_ID', '10000000000001'));
-      const clientSecret = getEnv('CANVAS_CLIENT_SECRET'); // DEBE configurarse en el .env
+      const clientSecret = getEnv('CANVAS_CLIENT_SECRET', getEnv('LTI_CLIENT_SECRET')); // Permitir fallback al secret LTI
       const redirectUri = `${getEnv('BACKEND_URL', `https://localhost:${getEnv('PORT', 3000)}`)}/api/oauth2/canvas/callback`;
 
       if (!clientSecret) {
-        logger.error('[CanvasOAuth] Falla crítica: CANVAS_CLIENT_SECRET no está configurado en el servidor.');
+        logger.error('[CanvasOAuth] Falla crítica: CANVAS_CLIENT_SECRET o LTI_CLIENT_SECRET no están configurados en el servidor.');
         // Si no hay client secret, fallamos
-        throw new AppError('Configuración incompleta: falta CANVAS_CLIENT_SECRET', 500);
+        throw new AppError('Configuración incompleta: falta CANVAS_CLIENT_SECRET / LTI_CLIENT_SECRET', 500);
       }
 
       const response = await this.canvasClient.oauthFetch('/token', {

@@ -1,14 +1,25 @@
 const SHARED_COURSES = [
-  { id: 14852, name: "Ingeniería de Software II (ISWII)", course_code: "ISW2-2026" },
-  { id: 14853, name: "Inteligencia Artificial (IA)", course_code: "IA-2026" },
-  { id: 14854, name: "Sistemas Distribuidos (SD)", course_code: "SD-2026" }
+  { id: 14852, name: "Arquitectura de Software", course_code: "ARQ-101" },
+  { id: 14853, name: "Sistemas Distribuidos", course_code: "SIS-202" },
+  { id: 14854, name: "Ingeniería Web", course_code: "WEB-303" },
+  { id: 14855, name: "Seminario de Título", course_code: "SEM-404" }
 ];
+
+const TEACHER_COURSES_MAP = {
+  // En local_data.rb: teacher1 = id 2, teacher2 = id 3, teacher3 = id 4
+  '2': [14852, 14853],
+  '3': [14854],
+  '4': [14855]
+};
+
 
 const SHARED_ASSIGNMENTS = {
   14852: [
     {
       id: 101,
       name: "Examen Parcial: Arquitectura de Software",
+      due_at: "2026-10-15T23:59:59Z",
+      has_rubric: true,
       points_possible: 100,
       description: "Examen de 10 preguntas de selección múltiple sobre patrones de diseño, arquitectura en capas y documentación.",
       num_questions: 10,
@@ -17,6 +28,8 @@ const SHARED_ASSIGNMENTS = {
     {
       id: 102,
       name: "Proyecto Final: Sistema de Gestión",
+      due_at: "2026-11-20T23:59:59Z",
+      has_rubric: true,
       points_possible: 100,
       description: "Proyecto práctico — evaluación por rúbrica.",
       num_questions: null,
@@ -25,6 +38,7 @@ const SHARED_ASSIGNMENTS = {
     {
       id: 103,
       name: "Control 1: Diagramas de Secuencia",
+      has_rubric: false,
       points_possible: 20,
       description: "Preguntas teóricas sobre UML.",
       num_questions: 5,
@@ -35,6 +49,8 @@ const SHARED_ASSIGNMENTS = {
     {
       id: 201,
       name: "Laboratorio 1: Redes Neuronales",
+      due_at: "2026-09-10T23:59:59Z",
+      has_rubric: false,
       points_possible: 10,
       description: "Laboratorio práctico de redes neuronales.",
       num_questions: null,
@@ -176,8 +192,13 @@ const SHARED_STUDENTS = [
   { id: 5, name: "Carlos Méndez", sortable_name: "Méndez, Carlos" }
 ];
 
-export function getSharedCourses() {
-  return SHARED_COURSES;
+export function getSharedCourses(userId) {
+  if (!userId) return [];
+  const allowedIds = TEACHER_COURSES_MAP[String(userId)];
+  // Si no está en el mapa, es admin o un usuario que no tiene cursos hardcodeados. Retorna vacío.
+  if (!allowedIds) return [];
+  
+  return SHARED_COURSES.filter(c => allowedIds.includes(c.id));
 }
 
 export function getSharedAssignments(courseId) {
@@ -239,6 +260,13 @@ export function buildSharedSubmission(courseId, assignmentId, studentId) {
     total_questions: answeredCount,
     correct_count: correctCount,
     incorrect_count: incorrectCount,
-    accuracy_percent: Math.round((correctCount / answeredCount) * 100)
+    accuracy_percent: Math.round((correctCount / answeredCount) * 100),
+    // Simulamos distintos tipos de entrega para probar el nuevo visualizador
+    ...(studentId === 1 && {
+      attachments: [{ filename: 'entrega_final_grupo5.zip', display_name: 'entrega_final_grupo5.zip', url: 'https://example.com/download.zip' }]
+    }),
+    ...(studentId === 2 && {
+      preview_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+    })
   };
 }

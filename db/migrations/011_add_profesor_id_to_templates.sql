@@ -1,0 +1,1 @@
+ALTER TABLE Plantilla_Feedback ADD COLUMN IF NOT EXISTS profesor_id VARCHAR(50);

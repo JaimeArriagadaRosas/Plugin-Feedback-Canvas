@@ -17,13 +17,13 @@ export function getLocalCaBuffer() {
     const caPath = path.join(caRoot, 'rootCA.pem');
     if (fs.existsSync(caPath)) {
       cachedCaBuffer = fs.readFileSync(caPath);
-      logger.info(`[TLSConfigurator] Se cargó el rootCA de mkcert exitosamente desde ${caPath}.`);
+      logger.info(`[TLS] Se cargó el rootCA de mkcert exitosamente desde AppData.`);
       return cachedCaBuffer;
     } else {
-       logger.warn(`[TLSConfigurator] No se encontró rootCA.pem en ${caRoot}`);
+       logger.warn(`[TLS] No se encontró rootCA.pem en ${caRoot}`);
     }
   } catch (error) {
-    logger.warn(`[TLSConfigurator] No se pudo obtener el rootCA de mkcert. Error: ${error.message}`);
+    logger.warn(`[TLS] No se pudo obtener el rootCA de mkcert. Error: ${error.message}`);
   }
   return null;
 }

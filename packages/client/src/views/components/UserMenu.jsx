@@ -9,12 +9,14 @@ export default function UserMenu({ mode = 'fixed' }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const menuRef = useRef(null);
   
-  const { role } = useAuth();
+  const { role, rawRoles, selectedCourse } = useAuth();
   const { logClick } = useLogger();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Cerrar el menú si se hace clic afuera
+  const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
+
+  // Cerrar el menÃº si se hace clic afuera
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -29,8 +31,8 @@ export default function UserMenu({ mode = 'fixed' }) {
     };
   }, [isOpen]);
 
-  // No mostrar el menú Kebab si estamos en el panel de administración
-  // ni en el SpeedGrader (tiene su propio menú inline)
+  // No mostrar el menÃº Kebab si estamos en el panel de administraciÃ³n
+  // ni en el SpeedGrader (tiene su propio menÃº inline)
   if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher/speedgrader')) {
     return null;
   }
@@ -68,7 +70,7 @@ export default function UserMenu({ mode = 'fixed' }) {
       >
         <button
           onClick={toggleMenu}
-          title="Menú de opciones"
+          title="MenÃº de opciones"
           style={{
             background: '#ffffff',
             color: '#2d3b45',
@@ -106,25 +108,28 @@ export default function UserMenu({ mode = 'fixed' }) {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            {role === 'admin' && (
+            {isTrueAdmin && (
               <button 
                 onClick={handleAdminPanelClick}
                 style={menuItemStyle}
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
-                <span>⚙️</span> Panel de Administración
+                <span>🛡️</span> Panel de Administración
               </button>
             )}
 
-            {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/review') && (
+            {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/review') && location.pathname !== '/teacher/courses' && location.pathname !== '/teacher/courses/' && (
               <button 
-                onClick={() => { setIsOpen(false); navigate('/teacher/review'); }}
+                onClick={() => { setIsOpen(false); navigate('/teacher/review', { state: { course: selectedCourse } }); }}
+                disabled={!selectedCourse}
                 style={{
                   ...menuItemStyle,
-                  borderTop: role === 'admin' ? '1px solid #eee' : 'none'
+                  borderTop: isTrueAdmin ? '1px solid #eee' : 'none',
+                  opacity: selectedCourse ? 1 : 0.5,
+                  cursor: selectedCourse ? 'pointer' : 'not-allowed'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
+                onMouseEnter={e => selectedCourse && (e.currentTarget.style.background = '#f0f4f7')}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
                 <span>📋</span> Revisión de Feedbacks
@@ -136,7 +141,7 @@ export default function UserMenu({ mode = 'fixed' }) {
                 onClick={() => { setIsOpen(false); navigate('/teacher/courses'); }}
                 style={{
                   ...menuItemStyle,
-                  borderTop: role === 'admin' ? '1px solid #eee' : 'none'
+                  borderTop: isTrueAdmin ? '1px solid #eee' : 'none'
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
@@ -149,7 +154,7 @@ export default function UserMenu({ mode = 'fixed' }) {
               onClick={handleTutorialClick}
               style={{
                 ...menuItemStyle,
-                borderTop: (role === 'admin' || role === 'teacher') ? '1px solid #eee' : 'none'
+                borderTop: (isTrueAdmin || role === 'teacher') ? '1px solid #eee' : 'none'
               }}
               onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
               onMouseLeave={e => e.currentTarget.style.background = '#fff'}

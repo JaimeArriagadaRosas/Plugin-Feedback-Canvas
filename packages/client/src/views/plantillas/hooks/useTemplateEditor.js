@@ -1,22 +1,46 @@
-import { useState, useEffect, useRef } from 'react';
-import logger from '../../../utils/logger';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useTemplateEditor(template) {
-  const [name, setName] = useState(template?.name || "Nueva Plantilla de Feedback");
-  const [range, setRange] = useState("Rango Bajo: 0-3.9");
-  const [content, setContent] = useState(
-    template?.content || "Estimado {{nombre_estudiante}},\n\nTu calificación en la actividad ha sido {{calificacion}}.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas..."
-  );
+  const [name, setName] = useState(template?.name || template?.nombre || "Nueva Plantilla de Feedback");
+  
+  let initialContent = {
+    alto: "Estimado {{nombre_estudiante}},\n\n¡Excelente trabajo! Tu calificación ha sido {{calificacion}}.\n\nSigue así.",
+    medio: "Estimado {{nombre_estudiante}},\n\nTu calificación en la actividad ha sido {{calificacion}}.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas...",
+    bajo: "Estimado {{nombre_estudiante}},\n\nTu calificación ha sido {{calificacion}}.\n\nNecesitas mejorar. Te sugerimos tutorías."
+  };
+
+  if (template?.contenido || template?.content) {
+    const rawContent = template.contenido || template.content;
+    try {
+      const parsed = JSON.parse(rawContent);
+      if (parsed.alto && parsed.medio && parsed.bajo) {
+        initialContent = parsed;
+      } else {
+        initialContent.medio = rawContent;
+      }
+    } catch (e) {
+      initialContent.medio = rawContent;
+    }
+  }
+
+  const [content, setContentObj] = useState(initialContent);
+  const [currentTab, setCurrentTab] = useState('medio'); // alto, medio, bajo
+
   const [preview, setPreview] = useState("");
   const editorRef = useRef(null);
 
   useEffect(() => {
-    let text = content
+    const currentText = content[currentTab] || "";
+    let text = currentText
       .replace(/{{nombre_estudiante}}/g, "Juan Pérez")
       .replace(/{{calificacion}}/g, "3.5")
       .replace(/{{promedio_curso}}/g, "5.2");
     setPreview(text);
-  }, [content]);
+  }, [content, currentTab]);
+
+  const setContentString = useCallback((newText) => {
+    setContentObj(prev => ({ ...prev, [currentTab]: newText }));
+  }, [currentTab]);
 
   const insertVariable = useCallback((variable) => {
     const editor = editorRef.current;
@@ -29,13 +53,13 @@ export function useTemplateEditor(template) {
     const after = text.substring(end);
 
     const newContent = before + `{{${variable}}}` + after;
-    setContent(newContent);
+    setContentString(newContent);
 
     setTimeout(() => {
       editor.focus();
       editor.setSelectionRange(start + variable.length + 4, start + variable.length + 4);
     }, 0);
-  }, []);
+  }, [setContentString]);
 
   const applyFormat = useCallback((format) => {
     const editor = editorRef.current;
@@ -57,21 +81,21 @@ export function useTemplateEditor(template) {
 
     const before = editor.value.substring(0, start);
     const after = editor.value.substring(end);
-    setContent(before + replacement + after);
+    setContentString(before + replacement + after);
 
     setTimeout(() => {
       editor.focus();
       editor.setSelectionRange(start + replacement.length, start + replacement.length);
     }, 0);
-  }, []);
+  }, [setContentString]);
 
   return {
     name,
     setName,
-    range,
-    setRange,
     content,
-    setContent,
+    setContent: setContentString,
+    currentTab,
+    setCurrentTab,
     preview,
     editorRef,
     insertVariable,

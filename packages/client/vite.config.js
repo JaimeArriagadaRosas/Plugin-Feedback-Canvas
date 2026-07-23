@@ -18,6 +18,8 @@ export default defineConfig({
   root: resolve(__dirname, '.'),
   plugins: [react()],
   server: {
+    // Escuchar en localhost (IPv4 + IPv6) para que el iframe de Canvas pueda conectar
+    host: 'localhost',
     // Activar HTTPS si los certificados están disponibles
     ...(hasCerts && {
       https: {
@@ -43,11 +45,7 @@ build: {
     emptyOutDir: true,
     target: 'esnext',
     rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom']
-        }
-      },
+      output: {},
       external: ['pino', 'pino-pretty', 'pino-roll']
     }
   }
