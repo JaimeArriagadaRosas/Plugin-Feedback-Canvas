@@ -1,0 +1,46 @@
+version: '3.8'
+
+# Definición base (compartida)
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      POSTGRES_DB: ${DB_NAME:-feedback_plugin_db}
+    volumes:
+      - plugin_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-feedback_plugin_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    command: gotenberg --api-timeout=120s
+    restart: unless-stopped
+
+  app:
+    image: plugin-feedback-app:latest
+    build:
+      context: ./
+      dockerfile: packages/server/Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      - DB_NAME=${DB_NAME:-feedback_plugin_db}
+      - DB_PORT=5432
+      - GOTENBERG_URL=http://gotenberg:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+
+volumes:
+  plugin_db_data:

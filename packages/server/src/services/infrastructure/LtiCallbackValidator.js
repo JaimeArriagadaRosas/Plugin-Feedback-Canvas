@@ -101,8 +101,9 @@ export function buildLtiCookie(token) {
     value: token,
     options: {
       httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSecure ? 'None' : 'Lax',
+      secure: true,
+      sameSite: 'None',
+      partitioned: true,
       maxAge: 3600 * 1000
     }
   };

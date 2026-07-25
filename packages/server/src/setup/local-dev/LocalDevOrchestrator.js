@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { BootResult } from '../../orchestration/boot/result.js';
 import { EnvironmentSetup } from '../../orchestration/boot/setup/EnvironmentSetup.js';
 import { LtiBootstrap } from '../../orchestration/boot/lti.js';
-import { waitForCanvasReady, openBrowser } from './browser.js';
+import { waitForCanvasReady, openBrowser } from '../../local/browser_local.js';
 
 export class LocalDevOrchestrator {
   constructor(boot, pluginDir, canvasDir) {
@@ -33,7 +33,9 @@ export class LocalDevOrchestrator {
         const setup = new EnvironmentSetup(this.boot, this.pluginDir, this.canvasDir);
         await setup.ensureSetup();
         // Reload the environment variables so that spawnBackend() inherits them.
-        dotenv.config({ path: path.join(this.pluginDir, '.env'), override: true });
+        const resEnv = dotenv.config({ path: path.join(this.pluginDir, '.env'), override: true, quiet: true });
+        const cEnv = resEnv.parsed ? Object.keys(resEnv.parsed).length : 0;
+        this.boot.plain(`  · injected env (${cEnv}) from .env // tip: secrets for agents [www.dotenvx.com]`);
         return BootResult.ok({ installed: true });
       } catch (e) {
         this.boot.error(e.message);
@@ -56,30 +58,23 @@ export class LocalDevOrchestrator {
   }
 
   async waitForCanvasAndOpenBrowser() {
-    await this.boot.withStage('Canvas LMS (espera de listo)', async () => {
-      this.boot.info('Inicializando servicios del servidor en segundo plano...');
-      const spinner = (await import('nanospinner')).createSpinner('Canvas LMS inicializándose en segundo plano...');
-      global.canvasSpinner = spinner;
-      spinner.start();
-      try {
-        await waitForCanvasReady();
-        spinner.success({ text: 'Canvas LMS inicializado y proxy habilitado.', mark: '  √' });
-        global.canvasSpinner = null;
-        const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
-        this.boot.info(`Abriendo ${canvasBrowserUrl} ...`);
-        await openBrowser(canvasBrowserUrl);
-      } catch (err) {
-        spinner.error({ text: 'No se pudo detectar que Canvas estuviera listo', mark: '  ×' });
-        global.canvasSpinner = null;
-        this.boot.warn(err.message);
-        this.boot.action('Abra manualmente: https://localhost:8443/');
-      }
-    });
+    try {
+      await waitForCanvasReady();
+      this.boot.plain('');
+      this.boot.plain('  √ Canvas LMS inicializado y proxy habilitado.');
+      const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
+      this.boot.plain(`  · Abriendo ${canvasBrowserUrl} ...`);
+      await openBrowser(canvasBrowserUrl);
+    } catch (err) {
+      this.boot.warn('No se pudo detectar que Canvas estuviera listo');
+      this.boot.warn(err.message);
+      this.boot.action('Abra manualmente: https://localhost:8443/');
+    }
   }
 
   async startTlsProxy() {
     try {
-      const { startTlsProxy } = await import('./tlsProxy.js');
+      const { startTlsProxy } = await import('../../orchestration/tlsProxy.js');
       startTlsProxy();
     } catch (err) {
       this.boot.warn(`No se pudo iniciar el proxy TLS para Canvas: ${err.message}`);
@@ -89,7 +84,7 @@ export class LocalDevOrchestrator {
 
   async stopTlsProxy() {
     try {
-      const { stopTlsProxy } = await import('./tlsProxy.js');
+      const { stopTlsProxy } = await import('../../orchestration/tlsProxy.js');
       stopTlsProxy();
     } catch { /* ignore */ }
   }

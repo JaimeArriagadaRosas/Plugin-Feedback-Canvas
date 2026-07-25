@@ -11,7 +11,7 @@ export default class KeyManager {
    */
   static ensureKeys(pluginDir, log) {
     const EXPECTED_KEY_HEX_LENGTH = 64; // 32 bytes en hex
-    const keysToValidate = ['ENCRYPTION_KEY', 'WEBHOOK_SECRET'];
+    const keysToValidate = ['ENCRYPTION_KEY', 'WEBHOOK_SECRET', 'DEV_TOKEN_SECRET'];
     const keysToUpdate = {};
     let needsUpdate = false;
 

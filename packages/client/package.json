@@ -17,6 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.81.0",
+    "react-pdf": "^10.4.1",
     "react-router-dom": "^7.17.0",
     "react-virtuoso": "^4.18.11",
     "sanitize-html": "^2.17.6",

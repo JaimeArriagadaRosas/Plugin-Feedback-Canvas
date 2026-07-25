@@ -15,3 +15,31 @@ export class AppError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 }
+
+/**
+ * Errores de API, exclusivos para la capa de presentación (controladores/rutas).
+ * Hereda de AppError para mantener consistencia operativa.
+ */
+export class ApiError extends AppError {
+  constructor(message, statusCode) {
+    super(message, statusCode);
+    this.name = 'ApiError';
+  }
+}
+
+export class DatabaseConnectionError extends AppError {
+  constructor(message, originalError = null, attempt = null) {
+    super(message, 500);
+    this.name = 'DatabaseConnectionError';
+    this.originalError = originalError;
+    this.attempt = attempt;
+  }
+}
+
+export class IdempotencyError extends AppError {
+  constructor(message, originalError = null) {
+    super(message, 409); // Conflict
+    this.name = 'IdempotencyError';
+    this.originalError = originalError;
+  }
+}

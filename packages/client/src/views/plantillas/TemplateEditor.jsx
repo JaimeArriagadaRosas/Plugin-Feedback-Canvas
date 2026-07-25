@@ -90,15 +90,15 @@ export default function TemplateEditor({ template, onSave, onClose }) {
               <button 
                 onClick={() => editor.setCurrentTab('alto')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'alto' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'alto' ? 'bold' : 'normal' }}
-              >Rango Alto (6.0-7.0)</button>
+              >Rango Alto</button>
               <button 
                 onClick={() => editor.setCurrentTab('medio')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'medio' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'medio' ? 'bold' : 'normal' }}
-              >Rango Medio (4.0-5.9)</button>
+              >Rango Medio</button>
               <button 
                 onClick={() => editor.setCurrentTab('bajo')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'bajo' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'bajo' ? 'bold' : 'normal' }}
-              >Rango Bajo (1.0-3.9)</button>
+              >Rango Bajo</button>
             </div>
             <textarea
               ref={editor.editorRef}

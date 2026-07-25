@@ -1,42 +1,55 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import inquirer from 'inquirer';
 import dotenv from 'dotenv';
-import chalk from 'chalk';
+import { localEnvSchema } from './env-schema_local.mjs';
+import { ListrInquirerPromptAdapter } from '@listr2/prompt-adapter-inquirer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../');
 const ENV_PATH = path.join(ROOT_DIR, '.env');
-const ENV_EXAMPLE_PATH = path.join(ROOT_DIR, '.env.example');
 
-export async function manageEnv() {
-  if (!fs.existsSync(ENV_EXAMPLE_PATH)) {
-    throw new Error('.env.example file is missing from the root directory.');
-  }
-
-  const exampleEnv = dotenv.parse(fs.readFileSync(ENV_EXAMPLE_PATH));
+export async function manageEnv(task) {
   let currentEnv = {};
+  let envContent = '';
 
   if (fs.existsSync(ENV_PATH)) {
-    currentEnv = dotenv.parse(fs.readFileSync(ENV_PATH));
-  } else {
-    fs.copyFileSync(ENV_EXAMPLE_PATH, ENV_PATH);
+    envContent = fs.readFileSync(ENV_PATH, 'utf-8');
+    currentEnv = dotenv.parse(envContent);
   }
 
-  const missingKeys = Object.keys(exampleEnv).filter(key => !currentEnv[key]);
+  const missingKeys = Object.keys(localEnvSchema).filter(key => !currentEnv[key]);
   
-  if (missingKeys.length > 0) {
-    let envContent = fs.readFileSync(ENV_PATH, 'utf-8');
-    for (const key of missingKeys) {
-      const value = exampleEnv[key];
-      if (envContent.includes(`${key}=`)) {
-        envContent = envContent.replace(new RegExp(`^${key}=.*`, 'm'), `${key}=${value}`);
-      } else {
-        envContent += `\n${key}=${value}`;
-      }
-    }
-    fs.writeFileSync(ENV_PATH, envContent);
+  if (missingKeys.length === 0) {
+    // Idempotencia absoluta: si no falta nada, retornamos inmediatamente.
+    return;
   }
+
+  const newEnvValues = {};
+  for (const key of missingKeys) {
+    const schema = localEnvSchema[key];
+    const answer = await task.prompt(ListrInquirerPromptAdapter, {
+      name: key,
+      type: schema.type,
+      message: schema.message,
+      default: schema.initial
+    });
+    // Si ListrInquirerPromptAdapter retorna un objeto (ej. { PORT: '3000' }), extraer el valor.
+    newEnvValues[key] = typeof answer === 'object' && answer !== null ? answer[key] || Object.values(answer)[0] : answer;
+  }
+
+  for (const key of missingKeys) {
+    const value = newEnvValues[key];
+    if (envContent.includes(`${key}=`)) {
+      envContent = envContent.replace(new RegExp(`^${key}=.*`, 'm'), `${key}=${value}`);
+    } else {
+      if (envContent.length > 0 && !envContent.endsWith('\n')) {
+        envContent += '\n';
+      }
+      envContent += `${key}=${value}\n`;
+    }
+  }
+  
+  fs.writeFileSync(ENV_PATH, envContent);
 }

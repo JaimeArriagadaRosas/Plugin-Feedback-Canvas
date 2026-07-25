@@ -1,76 +1,60 @@
 import logger from '../utils/logger.js';
+import db from '../data/db.js';
 
-const nonces = new Map();
 const NONCE_TTL_MS = 5 * 60 * 1000;
-const CLEANUP_INTERVAL = 10;
 let validationCount = 0;
 
-let mutex = Promise.resolve();
-
-async function withLock(fn) {
-  const prev = mutex;
-  let resolve;
-  const p = new Promise(r => resolve = r);
-  mutex = p.then(() => resolve());
-  try {
-    return await fn();
-  } finally {
-    // prev ya resolvió; mantener la cadena para que nuevas peticiones esperen
-  }
-}
-
-export function storeNonce(nonce) {
+export async function storeNonce(nonce) {
   if (!nonce) return null;
-  nonces.set(nonce, {
-    createdAt: Date.now(),
-    consumed: false
-  });
+  try {
+    await db.query('INSERT INTO lti_nonces (nonce) VALUES ($1) ON CONFLICT DO NOTHING', [nonce]);
+  } catch (error) {
+    logger.error('[LTI-NONCE] Error guardando nonce', { error: error.message });
+  }
   return nonce;
 }
 
 export async function validateAndConsumeNonce(nonce) {
   if (!nonce) return false;
-  return withLock(() => {
+  try {
     validationCount++;
-    if (validationCount % CLEANUP_INTERVAL === 0) {
+    if (validationCount % 10 === 0) {
       cleanupExpired();
     }
-    const entry = nonces.get(nonce);
-    if (!entry || entry.consumed) {
+    const res = await db.query('DELETE FROM lti_nonces WHERE nonce = $1 RETURNING nonce', [nonce]);
+    if (res.rowCount > 0) {
+      logger.info('[LTI-NONCE] Nonce consumido', { nonce: nonce.substring(0, 20) });
+      return true;
+    } else {
       logger.warn('[LTI-NONCE] Nonce inválido o reutilizado', { nonce: nonce.substring(0, 20) });
       return false;
     }
-    entry.consumed = true;
-    entry.consumedAt = Date.now();
-    logger.info('[LTI-NONCE] Nonce consumido', { nonce: nonce.substring(0, 20), age: Date.now() - entry.createdAt });
-    return true;
-  });
+  } catch (error) {
+    logger.error('[LTI-NONCE] Error validando nonce', { error: error.message });
+    return false;
+  }
 }
 
-function cleanupExpired() {
-  const now = Date.now();
-  let removed = 0;
-  for (const [nonce, entry] of nonces) {
-    if (now - entry.createdAt > NONCE_TTL_MS) {
-      nonces.delete(nonce);
-      removed++;
+async function cleanupExpired() {
+  try {
+    const res = await db.query(`DELETE FROM lti_nonces WHERE creado_en < NOW() - INTERVAL '5 minutes'`);
+    if (res.rowCount > 0) {
+      logger.debug(`[LTI-NONCE] Limpiados ${res.rowCount} nonces expirados`);
     }
-  }
-  if (removed > 0) {
-    logger.debug(`[LTI-NONCE] Limpiados ${removed} nonces expirados`);
+  } catch (error) {
+    logger.error('[LTI-NONCE] Error limpiando nonces', { error: error.message });
   }
 }
 
-export function getNonceStats() {
-  let consumed = 0;
-  let pending = 0;
-  for (const entry of nonces.values()) {
-    if (entry.consumed) consumed++;
-    else pending++;
+export async function getNonceStats() {
+  try {
+    const res = await db.query('SELECT COUNT(*) FROM lti_nonces');
+    return {
+      total: parseInt(res.rows[0].count, 10),
+      consumed: 0,
+      pending: parseInt(res.rows[0].count, 10)
+    };
+  } catch (error) {
+    return { total: 0, consumed: 0, pending: 0 };
   }
-  return {
-    total: nonces.size,
-    consumed,
-    pending
-  };
 }

@@ -9,7 +9,7 @@ import pc from 'picocolors';
 
 export async function ensureEnvConfigured(pluginDir, configData) {
   const envPath = path.join(pluginDir, '.env');
-  const envExamplePath = path.join(pluginDir, 'env_example');
+  const envExamplePath = path.join(pluginDir, '.env.example');
 
   let envContent = '';
 
@@ -17,17 +17,43 @@ export async function ensureEnvConfigured(pluginDir, configData) {
     envContent = await fs.readFile(envPath, 'utf8');
     console.log(pc.blue('ℹ️ Archivo .env existente encontrado. Se actualizarán sus valores.'));
   } catch (e) {
-    console.log(pc.blue('ℹ️ No existe .env. Creando a partir de env_example...'));
+    console.log(pc.blue('ℹ️ No existe .env. Intentando usar plantilla...'));
     try {
       envContent = await fs.readFile(envExamplePath, 'utf8');
     } catch (err) {
-      throw new Error('No se encontró el archivo env_example. Asegúrese de que el proyecto esté completo.');
+      console.log(pc.yellow('⚠️ No se encontró .env.example. Usando plantilla de seguridad nativa.'));
+      envContent = `# Plugin Feedback - Autogenerado (Producción)\n
+CANVAS_BASE_URL=
+CANVAS_ISSUER=
+CANVAS_ACCESS_TOKEN=
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=CHANGE_ME_db_password_strong
+DB_NAME=feedback_plugin_db
+DB_PORT=5432
+ENCRYPTION_KEY=
+WEBHOOK_SECRET=
+DEV_TOKEN_SECRET=
+LTI_DEPLOYMENT_IDS=
+GEMINI_API_KEY=YOUR_API_KEY_HERE
+CANVAS_COURSE_ID=1
+CANVAS_API_HOST=canvas.local
+CANVAS_ADMIN_PASS=password123
+CANVAS_TEACHER_PASS=password123
+CANVAS_STUDENT_PASS=password123
+LOCAL_DEV_PASSWORD_HASH=
+LTI_CLIENT_ID=
+LTI_CLIENT_SECRET=
+USE_LOCAL_DATA=false
+VITE_USE_LOCAL_DATA=false
+`;
     }
   }
 
   // Generar secretos si no existen o forzar si estamos en setup nuevo
   const encryptionKey = crypto.randomBytes(32).toString('hex');
   const webhookSecret = crypto.randomBytes(32).toString('hex');
+  const devTokenSecret = crypto.randomBytes(32).toString('hex');
 
   const updates = {
     'CANVAS_BASE_URL': configData.canvasUrl,
@@ -64,6 +90,9 @@ export async function ensureEnvConfigured(pluginDir, configData) {
     }
     if (cleanKey === 'WEBHOOK_SECRET' && (line.includes('your_webhook_secret_here') || line.split('=')[1].trim() === '')) {
       return `WEBHOOK_SECRET=${webhookSecret}`;
+    }
+    if (cleanKey === 'DEV_TOKEN_SECRET' && (line.includes('your_dev_token_secret_here') || line.split('=')[1].trim() === '')) {
+      return `DEV_TOKEN_SECRET=${devTokenSecret}`;
     }
 
     return line;

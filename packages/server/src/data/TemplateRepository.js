@@ -19,20 +19,43 @@ export default class TemplateRepository {
 
   async save(templateData, profesorId) {
     const { nombre, contenido } = templateData;
-    const res = await db.query(
-      'INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id) VALUES ($1, $2, $3) RETURNING *',
-      [nombre, contenido, profesorId]
-    );
-    return res.rows[0];
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const res = await client.query(
+        `INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id) 
+         VALUES ($1, $2, $3) 
+         ON CONFLICT (nombre, profesor_id) DO UPDATE SET contenido = EXCLUDED.contenido 
+         RETURNING *`,
+        [nombre, contenido, profesorId]
+      );
+      await client.query('COMMIT');
+      return res.rows[0];
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 
   async update(id, templateData, profesorId) {
     const { nombre, contenido } = templateData;
-    const res = await db.query(
-      'UPDATE Plantilla_Feedback SET nombre = $1, contenido = $2, actualizado_en = CURRENT_TIMESTAMP WHERE id = $3 AND profesor_id = $4 RETURNING *',
-      [nombre, contenido, id, profesorId]
-    );
-    return res.rows[0];
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const res = await client.query(
+        'UPDATE Plantilla_Feedback SET nombre = $1, contenido = $2, actualizado_en = CURRENT_TIMESTAMP WHERE id = $3 AND profesor_id = $4 RETURNING *',
+        [nombre, contenido, id, profesorId]
+      );
+      await client.query('COMMIT');
+      return res.rows[0];
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 
   async delete(id, profesorId) {

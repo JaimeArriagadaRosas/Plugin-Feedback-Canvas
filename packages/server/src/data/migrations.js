@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import db from '../data/db.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const MIGRATIONS_DIR = path.join(process.cwd(), 'db', 'migrations');
 

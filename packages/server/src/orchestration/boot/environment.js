@@ -24,7 +24,7 @@ export class EnvironmentDetector {
   constructor(pluginDir) {
     this.pluginDir = pluginDir;
     this.envPath = path.resolve(pluginDir, '.env');
-    this.examplePath = path.resolve(pluginDir, 'env_example');
+    this.examplePath = path.resolve(pluginDir, '.env.example');
   }
 
   /** Lee el .env manualmente (sin dotenv) para auditoría. */
@@ -40,19 +40,47 @@ export class EnvironmentDetector {
     return out;
   }
 
-  /** Asegura que .env exista a partir de env_example. Devuelve BootResult. */
+  /** Asegura que .env exista a partir de .env.example o de un fallback nativo. Devuelve BootResult. */
   ensureEnvFile(log) {
     if (fs.existsSync(this.envPath)) {
       log.success('Archivo .env presente.');
       return BootResult.ok({ present: true });
     }
-    if (!fs.existsSync(this.examplePath)) {
-      log.error('No existe .env ni env_example. El entorno no puede arrancar sin variables de entorno.');
-      throw new Error('Faltan archivos de entorno (.env y env_example).');
+    if (fs.existsSync(this.examplePath)) {
+      fs.copyFileSync(this.examplePath, this.envPath);
+      log.auto('Se creó .env a partir de .env.example.');
+      return BootResult.fixed('Archivo .env creado desde .env.example.');
     }
-    fs.copyFileSync(this.examplePath, this.envPath);
-    log.auto('Se creó .env a partir de env_example.');
-    return BootResult.fixed('Archivo .env creado desde env_example.');
+    
+    // Fallback absoluto: Crear archivo base de memoria si no hay nada.
+    const fallbackEnv = `# Plugin Feedback - Autogenerado\n
+CANVAS_BASE_URL=https://localhost:8443
+CANVAS_ISSUER=https://localhost:8443
+CANVAS_ACCESS_TOKEN=
+DB_HOST=127.0.0.1
+DB_USER=postgres
+DB_PASSWORD=CHANGE_ME_db_password_strong
+DB_NAME=feedback_plugin_db
+DB_PORT=5432
+ENCRYPTION_KEY=
+WEBHOOK_SECRET=
+DEV_TOKEN_SECRET=
+LTI_DEPLOYMENT_IDS=
+GEMINI_API_KEY=YOUR_API_KEY_HERE
+CANVAS_COURSE_ID=1
+CANVAS_API_HOST=canvas.local
+CANVAS_ADMIN_PASS=password123
+CANVAS_TEACHER_PASS=password123
+CANVAS_STUDENT_PASS=password123
+LOCAL_DEV_PASSWORD_HASH=
+LTI_CLIENT_ID=
+LTI_CLIENT_SECRET=
+USE_LOCAL_DATA=false
+VITE_USE_LOCAL_DATA=false
+`;
+    fs.writeFileSync(this.envPath, fallbackEnv, 'utf8');
+    log.auto('Se creó .env a partir de plantilla de seguridad (Fallback en memoria).');
+    return BootResult.fixed('Archivo .env creado desde plantilla nativa.');
   }
 
   /** Valida variables críticas según el modo. */

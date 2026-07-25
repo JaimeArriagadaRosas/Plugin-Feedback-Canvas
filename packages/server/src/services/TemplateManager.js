@@ -59,8 +59,15 @@ export default class TemplateManager {
       templates = await this.templateRepo.listByProfesor(profesorId);
     }
     
-    // Retornamos solo las propias del profesor
-    return templates.filter(t => t.profesor_id === profesorId);
+    // Retornamos las propias del profesor (tolerando diferencias de tipo string/number)
+    const owned = templates.filter(t => t.profesor_id != null && String(t.profesor_id) === String(profesorId));
+    
+    // Si no hay plantillas propias (clonación pudo fallar), incluir las globales como fallback
+    if (owned.length === 0) {
+      return templates.filter(t => t.profesor_id == null || String(t.profesor_id) === String(profesorId));
+    }
+    
+    return owned;
   }
 
   /**

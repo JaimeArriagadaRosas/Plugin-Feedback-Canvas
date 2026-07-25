@@ -82,6 +82,14 @@ export default class CourseController {
       const { courseId, assignmentId, studentId } = req.params;
       const teacherId = req.ltiContext?.user;
       const submission = await this.canvasGateway._fetchWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions/${studentId}?include[]=submission_history&include[]=submission_comments`, teacherId);
+      
+      // Diagnóstico: loguear campos críticos de la submission para depuración de renderizado
+      const diagAttachments = submission.attachments?.length || 0;
+      const diagType = submission.submission_type || 'N/A';
+      const diagHasBody = !!submission.body;
+      const diagHasPreview = !!submission.preview_url;
+      console.log(`    [SUBMISSION]    type=${diagType} | attachments=${diagAttachments} | has_body=${diagHasBody} | has_preview_url=${diagHasPreview} | student=${studentId}`);
+      
       res.json({ exito: true, data: submission });
     } catch (error) {
       next(error);
@@ -106,10 +114,15 @@ export default class CourseController {
 
 
 
+      const existing = await this.configRepo.getConfigAsignacion(courseId, assignmentId);
+      const finalPlantillaId = (plantilla_id !== undefined && plantilla_id !== null && plantilla_id !== "")
+        ? plantilla_id
+        : (existing && existing.plantilla_id ? existing.plantilla_id : null);
+
       const configAsig = await this.configRepo.saveConfigAsignacion(
         courseId,
         assignmentId,
-        { feedback_activo: activo, plantilla_id: plantilla_id || null },
+        { feedback_activo: activo, plantilla_id: finalPlantillaId },
         profesorId
       );
 
@@ -125,6 +138,26 @@ export default class CourseController {
         data: fullConfig
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  async resetActiveAssignments(req, res, next) {
+    try {
+      const { courseId } = req.params;
+      const profesorId = req.ltiContext?.user || req.body.profesorId || null;
+      if (!profesorId) {
+        return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
+      }
+
+      if (this.configRepo && typeof this.configRepo.resetActiveByCourse === 'function') {
+        await this.configRepo.resetActiveByCourse(courseId, profesorId);
+      }
+
+      logger.info(`[CourseController] Estado activo de tareas reiniciado a false para curso ${courseId} y profesor ${profesorId}`);
+      res.json({ exito: true, mensaje: 'Sesión iniciada: tareas desactivadas por defecto en esta sesión.' });
+    } catch (error) {
+      logger.error(`[CourseController] Error al reiniciar estado de tareas: ${error.message}`);
       next(error);
     }
   }

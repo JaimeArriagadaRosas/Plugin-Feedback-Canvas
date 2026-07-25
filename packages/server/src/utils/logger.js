@@ -55,21 +55,25 @@ const pinoLogger = pino(
 function formatDevLog(level, rawMessage) {
   const redacted = redactSensitiveStrings(rawMessage);
   
-  if (redacted.startsWith('-> GET') || redacted.startsWith('-> POST') || redacted.startsWith('-> PUT') || redacted.startsWith('-> DELETE')) {
-    return `${pc.bold(pc.blue('[HTTP]'))} ${redacted}`;
+  if (redacted === '' ||
+      /^[=\s-]{20,}$/.test(redacted.trim()) || 
+      redacted.includes('BACKEND INICIADO') || 
+      redacted.includes('Plugin Feedback Adaptativo') || 
+      redacted.includes('Puerto interno') || 
+      redacted.includes('Modo de inicio') || 
+      redacted.includes('Base de datos') || 
+      redacted.includes('Sesión local') || 
+      redacted.includes('Interfaz UI') || 
+      redacted.includes('API Backend') || 
+      redacted.includes('Logs') || 
+      redacted.includes('💡 NOTA:') || 
+      redacted.includes('bloquea el Iframe') || 
+      redacted.includes('en Canvas, haz clic') || 
+      redacted.includes('👉 https://localhost')) {
+    return redacted;
   }
 
-  const isAuthSubLog = redacted.includes('[LTI-') || 
-                       redacted.includes('[SESSION-') || 
-                       redacted.includes('[LtiOidcRecoveryManager]') || 
-                       redacted.includes('[Auth]') ||
-                       redacted.startsWith('verifyToken:') ||
-                       redacted.startsWith('Audience verificada') ||
-                       redacted.startsWith('INICIO DE SESION EXITOSO') ||
-                       redacted.includes('VerifyToken') ||
-                       redacted.includes('OIDC');
-
-  let cleanMsg = redacted.replace(/^(\s*·\s*|\s*!!\s*|\s*×\s*)+/, '').trim();
+  let cleanMsg = redacted.replace(/^(\s*·\s*|\s*!!\s*|\s*×\s*|\s*√\s*|\s*↳\s*)+/, '').trim();
   const match = cleanMsg.match(/^\[([^\]]+)\]\s*(.*)/);
   
   let component = '';
@@ -79,43 +83,87 @@ function formatDevLog(level, rawMessage) {
     finalMessage = match[2];
   }
 
-  let levelTag = '';
-  if (level === 'info') levelTag = pc.cyan('[INFO]');
-  else if (level === 'warn') levelTag = pc.yellow('[WARN]');
-  else if (level === 'error') levelTag = pc.red('[FAIL]');
-  else if (level === 'debug') levelTag = pc.gray('[DEBUG]');
-  else if (level === 'fatal') levelTag = pc.bgRed(pc.white('[FATAL]'));
+  const isHttpRequest = finalMessage.startsWith('-> GET') || finalMessage.startsWith('-> POST') || finalMessage.startsWith('-> PUT') || finalMessage.startsWith('-> DELETE');
+  const isHttpResponse = finalMessage.startsWith('<- GET') || finalMessage.startsWith('<- POST') || finalMessage.startsWith('<- PUT') || finalMessage.startsWith('<- DELETE');
 
-  if (/^[=\s-]{20,}$/.test(finalMessage.trim()) || 
-      finalMessage.includes('BACKEND INICIADO') || 
-      finalMessage.includes('Plugin Feedback Adaptativo') || 
-      finalMessage.includes('Puerto interno:') || 
-      finalMessage.includes('Modo de inicio:') || 
-      finalMessage.includes('Base de datos:') || 
-      finalMessage.includes('Sesion local:') || 
-      finalMessage.includes('Interfaz de usuario:') || 
-      finalMessage.includes('Backend:') || 
-      finalMessage.includes('Logs del backend:') || 
-      finalMessage.includes('💡 NOTA:') || 
-      finalMessage.includes('bloquea el Iframe') || 
-      finalMessage.includes('en Canvas, haz clic') || 
-      finalMessage.includes('👉 https://localhost')) {
-    return redacted;
+  if (isHttpRequest) {
+    const methodPath = finalMessage.replace('-> ', '').trim();
+    const [method, ...rest] = methodPath.split(' ');
+    return `\n  ${pc.cyan('·')} Petición ${pc.bold(method)}: ${rest.join(' ')}`;
   }
 
-  if (component) {
-    if (isAuthSubLog) {
-      return `       ${pc.gray('↳')} ${pc.gray(`[${component}]`)} ${finalMessage}`;
+  if (isHttpResponse) {
+    const parts = finalMessage.split(' ');
+    const status = parts[parts.length - 1];
+    if (status.startsWith('2') || status.startsWith('3')) {
+      return `    ${pc.green('√')} Petición completada (${status})`;
+    } else {
+      return `    ${pc.red('×')} Petición finalizada con error (${status})`;
     }
-    const paddedComponent = `[${component}]`.padEnd(14, ' ');
-    return `    ${pc.bold(paddedComponent)} ${finalMessage}`;
   }
 
-  if (isAuthSubLog) {
-    return `       ${pc.gray('↳')} ${finalMessage}`;
+  const isAuthSubLog = redacted.includes('[LTI-') || 
+                       redacted.includes('[SESSION-') || 
+                       redacted.includes('[LtiOidcRecoveryManager]') || 
+                       redacted.includes('[Auth]') ||
+                       redacted.includes('verifyToken') ||
+                       redacted.includes('VerifyToken') ||
+                       redacted.includes('Audience verificada') ||
+                       redacted.includes('INICIO DE SESION') ||
+                       redacted.includes('OIDC') ||
+                       redacted.includes('Sesión válida') ||
+                       redacted.includes('Rol efectivo') ||
+                       redacted.includes('Estado activo');
+                       
+  const isSubLog = isAuthSubLog || 
+                   ['CORS', 'AUTH', 'AUTHZ', 'CONTROLLER', 'AUDIT-DB', 'SUBMISSION', 'HTTP', 'LTI-AUTH', 'LTI-CALLBACK', 'LTI-TOKEN'].includes(component) ||
+                   (component && component.startsWith('LTI'));
+
+  let icon = pc.cyan('·');
+  if (level === 'warn') icon = pc.yellow('!');
+  if (level === 'error' || level === 'fatal') icon = pc.red('×');
+  
+  const lowerMsg = finalMessage.toLowerCase();
+  if (level === 'info' && (
+      lowerMsg.includes('exitosa') || 
+      lowerMsg.includes('exitosamente') || 
+      lowerMsg.includes('completad') || 
+      lowerMsg.includes('permitido') || 
+      lowerMsg.includes('activo') || 
+      lowerMsg.includes('listo') || 
+      lowerMsg.includes('válid') || 
+      lowerMsg.includes('registrado') || 
+      lowerMsg.includes('ok') || 
+      lowerMsg.includes('generado') ||
+      lowerMsg.includes('éxito')
+  )) {
+    icon = pc.green('√');
   }
 
-  return `${levelTag} ${finalMessage}`;
+  let text = finalMessage;
+  
+  if (component === 'CORS' && text.includes('Solicitud con Origin:')) {
+    text = text.replace('Solicitud con Origin:', 'Origin validado:');
+  }
+  if (component === 'TLS-PROXY' && text.includes('TÚNEL OIDC:')) {
+    text = text.replace('TÚNEL OIDC:', 'Túnel OIDC:');
+    icon = pc.cyan('·');
+    return `\n  ${icon} ${text}`;
+  }
+
+  if (component && !isSubLog) {
+     if (!['SERVER', 'BOOTSTRAP', 'TLS', 'SSL', 'HTTPS', 'FRONTEND', 'DATA', 'JOBS', 'DB', 'CANVAS-API', 'JWKS-CLIENT', 'KeyManager', 'TLS-PROXY'].includes(component)) {
+       text = `${component}: ${text}`;
+     } else if (component === 'DB' && !text.toLowerCase().includes('postgresql') && !text.toLowerCase().includes('base de datos')) {
+       text = `Base de datos: ${text}`;
+     }
+  }
+
+  if (isSubLog) {
+    return `    ${icon} ${text}`;
+  }
+
+  return `  ${icon} ${text}`;
 }
 
 function writeDevLog(level, rawMessage) {
@@ -160,6 +208,19 @@ class Logger {
 
   child(extraContext = {}) {
     return new Logger({ ...this._context, ...extraContext }, this._pino.child(extraContext));
+  }
+
+  progress(message, meta = {}) {
+    if (IS_DEV) {
+      if (process.stdout.isTTY) {
+        if (global.canvasSpinner) global.canvasSpinner.clear();
+        const formatted = formatDevLog('info', message);
+        process.stdout.write(`\r\x1b[K${formatted}`);
+      }
+      // If it's not a TTY, we suppress progress logs to avoid spamming buffered outputs (like child_process)
+    }
+    // Escribimos en debug file, sin saturar log_level info si no es necesario.
+    this._pino.debug(meta, redactSensitiveStrings(message));
   }
 
   request(req) {

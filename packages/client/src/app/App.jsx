@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from '../views/context/AuthContext';
 import ProtectedRoute from '../views/components/ProtectedRoute';
@@ -23,6 +23,7 @@ const StudentFeedbackView = lazy(() => import('../views/feedback/StudentFeedback
 function AppRouter() {
   const { role, rawRoles, isLoading, apiError } = useAuth();
   const { logClick } = useLogger();
+  const navigate = useNavigate();
 
   const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
 
@@ -44,7 +45,7 @@ function AppRouter() {
           {/* ── RUTAS ADMIN ──────────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
-              <Route path="/admin/*" element={<AdminPanel onExit={() => (window.location.href = '/teacher/courses')} />} />
+              <Route path="/admin/*" element={<AdminPanel onExit={() => navigate('/teacher/courses')} />} />
             </Route>
           </Route>
 
@@ -55,7 +56,7 @@ function AppRouter() {
 
           {/* ── RUTAS STUDENT ────────────────────────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-            <Route path="/student/*" element={<StudentFeedbackView onExit={() => (window.location.href = '/')} />} />
+            <Route path="/student/*" element={<StudentFeedbackView onExit={() => navigate('/')} />} />
           </Route>
 
           {/* ── CATCH ALL ────────────────────────────────────────────────────── */}

@@ -160,11 +160,11 @@ volumes:
       });
 
       if (success) {
-        spinner.success({ text: successMsg });
+        spinner.success({ text: successMsg, mark: '  √' });
         return true;
       }
       
-      spinner.error({ text: `${failMsg} Código ${code}` });
+      spinner.error({ text: `${failMsg} Código ${code}`, mark: '  ×' });
       if (attempt < maxRetries) {
         attempt++;
         const backoff = Math.pow(2, attempt) * 1000;

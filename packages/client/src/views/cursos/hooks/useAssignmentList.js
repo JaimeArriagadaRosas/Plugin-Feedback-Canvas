@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from 'shared/api';
+import { assignmentKeys } from 'shared/lib/queryKeys';
 import logger from '../../../utils/logger';
 
 export function useAssignmentList(course) {
@@ -12,7 +13,7 @@ export function useAssignmentList(course) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const { data: assignments = [], isLoading: loading, refetch, isFetching, isError, error } = useQuery({
-    queryKey: ['assignments', course?.id?.toString()],
+    queryKey: assignmentKeys.byCourse(course?.id),
     queryFn: async ({ queryKey }) => {
       const [, id] = queryKey;
       if (!id) return [];
@@ -27,6 +28,8 @@ export function useAssignmentList(course) {
           due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
           rubric: a.use_rubric_for_grading === true || a.has_rubric === true || !!(Array.isArray(a.rubric) && a.rubric.length > 0),
           template: a.template || "",
+          plantilla_id: a.template || null,
+          templateName: a.templateName || "",
           active: Boolean(a.active)
         }));
       }
@@ -34,6 +37,21 @@ export function useAssignmentList(course) {
     },
     enabled: !!course?.id,
   });
+
+  // Task 23: Reseteo inicial por sesión
+  useEffect(() => {
+    if (!course?.id) return;
+    const sessionKey = `plugin_session_init_${course.id}`;
+    if (!sessionStorage.getItem(sessionKey)) {
+      logger.info('AssignmentList', `Primera visita de la sesión para curso ${course.id}. Desactivando tareas por defecto...`);
+      sessionStorage.setItem(sessionKey, 'true');
+      api.post(`/courses/${course.id}/assignments/reset-active`).then(() => {
+        queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+      }).catch(err => {
+        logger.warn('AssignmentList', 'No se pudo reiniciar el estado de la sesión:', err);
+      });
+    }
+  }, [course?.id, queryClient]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status, plantilla_id, variables = [] }) => {
@@ -46,20 +64,74 @@ export function useAssignmentList(course) {
       if (!result.exito) throw new Error(result.mensaje || 'Error updating assignment');
       return result;
     },
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData(['assignments', course?.id?.toString()], (old = []) =>
-        old.map(a => a.id === variables.id ? { ...a, active: variables.status } : a)
+    onMutate: async ({ id, status, plantilla_id }) => {
+      await queryClient.cancelQueries({ queryKey: assignmentKeys.all });
+      const previous = queryClient.getQueryData(assignmentKeys.byCourse(course?.id));
+      queryClient.setQueryData(assignmentKeys.byCourse(course?.id), (old = []) =>
+        old.map(a => a.id === id ? { 
+          ...a, 
+          active: status, 
+          template: plantilla_id !== undefined ? (plantilla_id || "") : a.template, 
+          plantilla_id: plantilla_id !== undefined ? (plantilla_id || null) : a.plantilla_id 
+        } : a)
       );
+      return { previous };
+    },
+    onSuccess: (_, variables) => {
       if (!variables.status) {
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     },
-    onError: (error) => {
-      logger.error('AssignmentList', "Error updating assignment status", { error });
-      setErrorMsg(error.message || "Error al actualizar la tarea");
+    onError: (err, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(assignmentKeys.byCourse(course?.id), context.previous);
+      }
+      logger.error('AssignmentList', "Error updating assignment status", { err });
+      setErrorMsg(err.message || "Error al actualizar la tarea");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
     }
   });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, plantilla_id }) => {
+      if (!course?.id) throw new Error('Missing course id');
+      const currentList = queryClient.getQueryData(assignmentKeys.byCourse(course.id)) || [];
+      const current = currentList.find(a => a.id === id);
+      const status = current ? current.active : false;
+      const result = await api.post(`/courses/${course.id}/assignments/${id}/toggle`, {
+        activo: status,
+        plantilla_id: plantilla_id || null,
+        variables: []
+      });
+      if (!result.exito) throw new Error(result.mensaje || 'Error updating template');
+      return result;
+    },
+    onMutate: async ({ id, plantilla_id }) => {
+      await queryClient.cancelQueries({ queryKey: assignmentKeys.all });
+      const previous = queryClient.getQueryData(assignmentKeys.byCourse(course?.id));
+      queryClient.setQueryData(assignmentKeys.byCourse(course?.id), (old = []) =>
+        old.map(a => a.id === id ? { ...a, template: plantilla_id || "", plantilla_id: plantilla_id || null } : a)
+      );
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(assignmentKeys.byCourse(course?.id), context.previous);
+      }
+      logger.error('AssignmentList', "Error updating assignment template", { err });
+      setErrorMsg(err.message || "Error al asignar la plantilla");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+    }
+  });
+
+  const handleTemplateChange = useCallback((id, plantilla_id) => {
+    updateTemplateMutation.mutate({ id, plantilla_id });
+  }, [updateTemplateMutation]);
 
   const handleToggle = useCallback((assignment) => {
     setSelectedAssignment(assignment);
@@ -99,15 +171,17 @@ export function useAssignmentList(course) {
     showActivateModal,
     selectedAssignment,
     showToast,
+    setShowToast,
     errorMsg,
     setErrorMsg,
     fetchAssignments: refetch,
-    isSyncing: isFetching,
+    isSyncing: isFetching || updateMutation.isPending || updateTemplateMutation.isPending,
     isError,
     queryError: error,
     handleToggle,
     handleCloseModal,
     handleConfirmDeactivate,
     handleConfirmActivate,
+    handleTemplateChange,
   };
 }

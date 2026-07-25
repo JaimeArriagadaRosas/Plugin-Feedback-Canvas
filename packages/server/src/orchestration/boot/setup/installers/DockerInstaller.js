@@ -2,6 +2,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { runCommand } from '../utils/Runner.js';
+import { askConfirm } from '../../../cli.js';
 
 export class DockerInstaller {
   constructor(boot, logFile) {
@@ -12,7 +13,16 @@ export class DockerInstaller {
 
   async isDockerInstalled() {
     const { success } = await runCommand('docker', ['--version']);
-    return success;
+    if (success) return true;
+
+    // Fallback: Check standard paths (False Negative prevention)
+    if (this.platform === 'win32') {
+      const defaultWinPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Docker', 'Docker', 'resources', 'bin', 'docker.exe');
+      if (fs.existsSync(defaultWinPath)) return true;
+    } else if (this.platform === 'darwin') {
+      if (fs.existsSync('/Applications/Docker.app/Contents/Resources/bin/docker')) return true;
+    }
+    return false;
   }
 
   async isDockerDaemonRunning() {
@@ -57,6 +67,23 @@ export class DockerInstaller {
   }
 
   async _installMac() {
+    this.boot.info('');
+    this.boot.warn('Recomendación para macOS: OrbStack es una alternativa a Docker mucho más rápida, que consume menos batería y RAM.');
+    const useOrbstack = await askConfirm('¿Deseas instalar OrbStack en lugar de Docker Desktop?');
+    
+    if (useOrbstack) {
+      this.boot.info('Descargando e instalando OrbStack vía Homebrew (requiere brew)...');
+      const { success, err } = await runCommand('brew', ['install', '--cask', 'orbstack'], { logFile: this.logFile });
+      if (!success) {
+        this.boot.error(`Fallo instalando OrbStack vía brew: ${err}`);
+        this.boot.action('Instálalo manualmente desde https://orbstack.dev/');
+        return false;
+      }
+      this.boot.info('Iniciando OrbStack...');
+      runCommand('open', ['-a', 'OrbStack']);
+      return true;
+    }
+
     this.boot.info('Descargando Docker Desktop para macOS...');
     const url = 'https://desktop.docker.com/mac/main/amd64/Docker.dmg';
     const dest = path.join(os.tmpdir(), 'Docker.dmg');
@@ -100,24 +127,6 @@ export class DockerInstaller {
     return true;
   }
 
-  async openDockerDesktop() {
-    if (this.platform === 'win32') {
-      const candidates = [
-        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Docker', 'Docker', 'Docker Desktop.exe'),
-        path.join(process.env.LOCALAPPDATA || '', 'Docker', 'Docker Desktop.exe')
-      ];
-      
-      for (const exe of candidates) {
-        if (fs.existsSync(exe)) {
-          runCommand('powershell', ['-Command', `Start-Process -FilePath "${exe}"`]);
-          return true;
-        }
-      }
-      return false;
-    }
-    return false;
-  }
-
   async waitForDaemon(timeout = 600, interval = 5) {
     let elapsed = 0;
     const spinner = (await import('nanospinner')).createSpinner('Esperando a que el daemon de Docker esté disponible...').start();
@@ -127,10 +136,24 @@ export class DockerInstaller {
         spinner.success({ text: `Docker daemon disponible (tras ${elapsed}s)` });
         return true;
       }
+
+      let isUpdating = false;
+      if (this.platform === 'win32') {
+        try {
+          const { runCommand } = await import('../utils/Runner.js');
+          const { stdout } = await runCommand('tasklist', ['/fi', 'imagename eq Docker Desktop Installer.exe']);
+          if (stdout && stdout.includes('Docker Desktop Installer.exe')) {
+            isUpdating = true;
+          }
+        } catch (e) { /* ignore */ }
+      }
+
       await new Promise(r => setTimeout(r, interval * 1000));
       elapsed += interval;
       
-      if (elapsed === 30) {
+      if (isUpdating) {
+        spinner.update({ text: `Docker Desktop se está actualizando. Esperando adaptativamente (restan ${Math.floor((timeout - elapsed) / 60)} min)...` });
+      } else if (elapsed === 30) {
         spinner.update({ text: `El daemon de Docker tarda más de 30s en iniciar. Sigo esperando...` });
       }
     }
@@ -139,12 +162,8 @@ export class DockerInstaller {
   }
 
   async handleDockerDaemonDown() {
-    const opened = await this.openDockerDesktop();
-    if (opened) {
-      this.boot.info('Docker Desktop abriendo. Esperando a que el daemon inicie (30s - 2m).');
-    } else {
-      this.boot.warn('No se pudo abrir Docker Desktop automáticamente. Ábralo manualmente.');
-    }
+    this.boot.warn('La aplicación de Docker Desktop (Daemon) está cerrada.');
+    this.boot.action('👉 Por favor, abre tu aplicación de Docker Desktop para continuar con la instalación.');
     return this.waitForDaemon(600, 5);
   }
 }

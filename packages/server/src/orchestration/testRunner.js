@@ -38,21 +38,21 @@ export async function runBlackBoxTests(pluginDir) {
 }
 
 function runVitestLocal(pluginDir) {
-  console.log(pc.blue('\n[run] Ejecutando suite de validacion de caja negra local (Vitest)...'));
+  console.log(pc.blue('\n  · Ejecutando suite de validacion de caja negra local (Vitest)...'));
   try {
     const output = execFileSync('npx', ['vitest', 'run', 'src/validation/'], {
       cwd: pluginDir,
       encoding: 'utf8',
       stdio: 'inherit' // Muestra los colores de vitest
     });
-    console.log(pc.green('\n[run] Suite completada con éxito.'));
+    console.log(pc.green('\n  √ Suite completada con éxito.'));
   } catch (error) {
-    console.error(pc.red('\n[run] La suite de validacion encontro fallos.'));
+    console.error(pc.red('\n  × La suite de validacion encontro fallos.'));
   }
 }
 
 function runSmokeTests(pluginDir) {
-  console.log(pc.blue('\n[run] Ejecutando Smoke Tests de Salud de la API y JWKS...'));
+  console.log(pc.blue('\n  · Ejecutando Smoke Tests de Salud de la API y JWKS...'));
   try {
     execFileSync('node', ['src/e2e/smoke.mjs'], {
       cwd: pluginDir,
@@ -60,12 +60,12 @@ function runSmokeTests(pluginDir) {
       stdio: 'inherit'
     });
   } catch (error) {
-    console.error(pc.red('\n[run] Los Smoke Tests fallaron. Revisa tu red o configuración .env.'));
+    console.error(pc.red('\n  × Los Smoke Tests fallaron. Revisa tu red o configuración .env.'));
   }
 }
 
 function runPlaywrightTests(pluginDir, envType) {
-  console.log(pc.blue(`\n[run] Ejecutando simulación Playwright E2E contra entorno: ${envType.toUpperCase()}...`));
+  console.log(pc.blue(`\n  · Ejecutando simulación Playwright E2E contra entorno: ${envType.toUpperCase()}...`));
   const envVar = envType === 'real' ? 'E2E_TARGET=real' : 'E2E_TARGET=local';
   
   try {
@@ -75,9 +75,9 @@ function runPlaywrightTests(pluginDir, envType) {
       encoding: 'utf8',
       stdio: 'inherit'
     });
-    console.log(pc.green('\n[run] Pruebas E2E completadas. Todo el flujo LTI funcionó correctamente.'));
+    console.log(pc.green('\n  √ Pruebas E2E completadas. Todo el flujo LTI funcionó correctamente.'));
   } catch (error) {
-    console.error(pc.red('\n[run] Las pruebas E2E encontraron fallos o la conexión OIDC falló.'));
-    console.log(pc.yellow('Recuerda ejecutar `npx playwright install` si es la primera vez que usas Playwright.'));
+    console.error(pc.red('\n  × Las pruebas E2E encontraron fallos o la conexión OIDC falló.'));
+    console.log(pc.yellow('  · Guía: Recuerda ejecutar `npx playwright install` si es la primera vez que usas Playwright.'));
   }
 }

@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLogger } from '../../hooks/useLogger';
+import { usePopover } from '../../hooks/usePopover';
 import TutorialModal from './TutorialModal';
 
 export default function UserMenu({ mode = 'fixed' }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const menuRef = useRef(null);
+  const { isOpen, ref: menuRef, toggle: toggleMenuState, close: closeMenu } = usePopover();
   
   const { role, rawRoles, selectedCourse } = useAuth();
   const { logClick } = useLogger();
@@ -16,20 +16,7 @@ export default function UserMenu({ mode = 'fixed' }) {
 
   const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
 
-  // Cerrar el menÃº si se hace clic afuera
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+
 
   // No mostrar el menÃº Kebab si estamos en el panel de administraciÃ³n
   // ni en el SpeedGrader (tiene su propio menÃº inline)
@@ -38,7 +25,7 @@ export default function UserMenu({ mode = 'fixed' }) {
   }
 
   const toggleMenu = () => {
-    setIsOpen(!isOpen);
+    toggleMenuState();
     if (!isOpen) {
       logClick('USER_MENU_OPEN');
     }
@@ -46,13 +33,13 @@ export default function UserMenu({ mode = 'fixed' }) {
 
   const handleTutorialClick = () => {
     logClick('TUTORIAL_OPEN');
-    setIsOpen(false);
+    closeMenu();
     setShowTutorial(true);
   };
 
   const handleAdminPanelClick = () => {
     logClick('ADMIN_PANEL_NAVIGATE');
-    setIsOpen(false);
+    closeMenu();
     navigate('/admin');
   };
 
@@ -121,7 +108,7 @@ export default function UserMenu({ mode = 'fixed' }) {
 
             {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/review') && location.pathname !== '/teacher/courses' && location.pathname !== '/teacher/courses/' && (
               <button 
-                onClick={() => { setIsOpen(false); navigate('/teacher/review', { state: { course: selectedCourse } }); }}
+                onClick={() => { closeMenu(); navigate('/teacher/review', { state: { course: selectedCourse } }); }}
                 disabled={!selectedCourse}
                 style={{
                   ...menuItemStyle,
@@ -138,7 +125,7 @@ export default function UserMenu({ mode = 'fixed' }) {
 
             {location.pathname.startsWith('/teacher/review') && (
               <button 
-                onClick={() => { setIsOpen(false); navigate('/teacher/courses'); }}
+                onClick={() => { closeMenu(); navigate('/teacher/courses'); }}
                 style={{
                   ...menuItemStyle,
                   borderTop: isTrueAdmin ? '1px solid #eee' : 'none'

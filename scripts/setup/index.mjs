@@ -27,12 +27,12 @@ const tasks = new Listr([
   },
   {
     title: 'Configurando Variables de Entorno (.env)',
-    task: async () => await manageEnv()
+    task: async (ctx, task) => await manageEnv(task)
   },
   {
     title: 'Detectando y Arrancando Motor de Contenedores',
     task: async (ctx, task) => {
-      containerCli = await checkAndStartDocker();
+      containerCli = await checkAndStartDocker(task);
       task.title = `Motor de contenedores activo: ${containerCli}`;
     }
   },
@@ -40,8 +40,8 @@ const tasks = new Listr([
     title: 'Levantando Infraestructura Local (Base de Datos)',
     task: async () => {
       // Usar compose-plugin de docker (docker compose) o podman-compose
-      const args = containerCli === 'docker' ? ['compose', 'up', '-d', '--wait'] : ['compose', 'up', '-d'];
-      await execa(containerCli, ['-f', 'docker-compose.db.yml', ...args], { cwd: ROOT_DIR });
+      const args = containerCli === 'docker' ? ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'] : ['compose', '-f', 'docker-compose.db.yml', 'up', '-d'];
+      await execa(containerCli, args, { cwd: ROOT_DIR });
       
       if (containerCli !== 'docker') {
         // Podman no soporta siempre --wait, así que esperamos unos segundos
@@ -72,6 +72,7 @@ try {
    - Servidor Plugin: ${chalk.yellow('3000')} (o el configurado en tu .env)
 `));
 } catch (err) {
-  console.error(chalk.red('\n❌ Ocurrió un error durante la configuración:\n'), err);
+  console.error(chalk.red('\n❌ Ocurrió un error durante la configuración:\n'));
+  console.error(chalk.red(err.message));
   process.exit(1);
 }

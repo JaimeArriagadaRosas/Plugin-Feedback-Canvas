@@ -8,27 +8,21 @@ import { useSpeedGraderActions } from './hooks/useSpeedGraderActions';
 import WizardProgress from '../cursos/WizardProgress';
 import TutorialModal from '../components/TutorialModal';
 import HistoryModal from '../components/HistoryModal';
+import SpeedGraderHeader from './SpeedGraderHeader';
+import AIControls from './AIControls';
+import SpeedGraderRubric from './SpeedGraderRubric';
+import ErrorBoundary from '../../app/ErrorBoundary';
+import RubricModal from '../components/RubricModal';
 import styles from './SpeedGraderPanel.module.css';
 
 export default function SpeedGraderPanel({ onExit }) {
   const navigate = useNavigate();
   const [rating, setRating] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [taskSelectorOpen, setTaskSelectorOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const menuRef = useRef(null);
+  const [showRubricModal, setShowRubricModal] = useState(false);
   const taskSelectorRef = useRef(null);
-
-  // Cierra el menú Opciones al hacer clic fuera
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleOut(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    }
-    document.addEventListener('mousedown', handleOut);
-    return () => document.removeEventListener('mousedown', handleOut);
-  }, [menuOpen]);
 
   // Cierra el selector de tarea al hacer clic fuera
   useEffect(() => {
@@ -100,60 +94,47 @@ export default function SpeedGraderPanel({ onExit }) {
     }
   }, []);
 
-  const maxPoints = activeAssignment?.points || 100;
+  const maxPoints = activeAssignment?.points;
   const percent = maxPoints > 0 ? grade / maxPoints : 0;
   const scaledGrade = percent < 0.6 
     ? 3 * (percent / 0.6) + 1 
     : 3 * ((percent - 0.6) / 0.4) + 4;
     
-  let gradeRange = 'Rango Bajo (1.0 - 3.9)';
-  if (scaledGrade >= 6.0) {
-    gradeRange = 'Rango Alto (6.0 - 7.0)';
+  const hasSubmitted = submission && submission.workflow_state !== 'unsubmitted' && !submission.missing;
+
+  let gradeRange = 'Rango Bajo';
+  if (!hasSubmitted) {
+    gradeRange = '-';
+  } else if (scaledGrade >= 6.0) {
+    gradeRange = 'Rango Alto';
   } else if (scaledGrade >= 4.0) {
-    gradeRange = 'Rango Medio (4.0 - 5.9)';
+    gradeRange = 'Rango Medio';
   }
 
-  const templateName = activeAssignment?.templateName 
-    ? `${activeAssignment.templateName} - ${gradeRange}` 
-    : 'Sin plantilla activada';
+  let templateName = 'Sin plantilla activada';
+  if (!hasSubmitted) {
+    templateName = 'Sin plantilla';
+  } else if (activeAssignment?.templateName) {
+    templateName = `${activeAssignment.templateName} - ${gradeRange}`;
+  }
 
   return (
-    <div className={styles.wrapper}>
+    <ErrorBoundary>
+      <div className={styles.wrapper}>
 
-      <header className={styles.header}>
-        <button className={styles.backButton} onClick={handleBack}>
-          ← Volver
-        </button>
-
-        {/* Botón Opciones con dropdown */}
-        <div ref={menuRef} className={styles.headerMenu}>
-          <button
-            className={styles.backButton}
-            onClick={() => setMenuOpen(o => !o)}
-          >
-            Opciones
-          </button>
-          {menuOpen && (
-            <div className={styles.headerDropdown}>
-              <button
-                className={styles.headerDropdownItem}
-                onClick={() => { setMenuOpen(false); navigate('/teacher/review'); }}
-              >
-                📋 Revisión de Feedbacks
-              </button>
-              <button
-                className={styles.headerDropdownItem}
-                onClick={() => { setMenuOpen(false); setShowTutorial(true); }}
-              >
-                🎥 Tutorial
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+      <SpeedGraderHeader 
+        onBack={handleBack} 
+        onShowTutorial={() => setShowTutorial(true)} 
+      />
 
       {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+      {showRubricModal && (
+        <RubricModal 
+          rubric={activeAssignment?.rubric} 
+          onClose={() => setShowRubricModal(false)} 
+        />
+      )}
 
       <main className={styles.main}>
         <div className={styles.leftColumn}>
@@ -227,9 +208,13 @@ export default function SpeedGraderPanel({ onExit }) {
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Calificación y comentarios</h3>
             <div className={styles.gradeDisplay}>
-              <span className={styles.gradeValue}>{isFetchingSubmission ? '...' : grade}</span>
-              <span className={styles.gradeSeparator}>/</span>
-              <span className={styles.gradeMax}>{activeAssignment.points}</span>
+              <span className={styles.gradeValue}>{isFetchingSubmission ? '...' : grade} pts</span>
+              {maxPoints != null && (
+                <>
+                  <span className={styles.gradeSeparator}>/</span>
+                  <span className={styles.gradeMax}>{maxPoints} pts</span>
+                </>
+              )}
             </div>
           </section>
 
@@ -246,40 +231,17 @@ export default function SpeedGraderPanel({ onExit }) {
           </section>
 
           {/* Botones de acción: Rúbrica, Ver Historial, Simular Trayectoria */}
-          <div className={styles.actionButtons}>
-            <button className={styles.actionBtn}>■ Rúbrica</button>
-            <button className={styles.actionBtn} onClick={() => setShowHistory(true)}>Ver Historial</button>
-            <button className={styles.actionBtn}>
-              Simular Trayectoria: {grade >= 6 ? 'ALTA' : 'BAJA'}
-              <span className={styles.trajectoryBadge}>
-                {grade >= 6 ? '(Regresión)' : '(Mejora)'}
-              </span>
-            </button>
-          </div>
+          <SpeedGraderRubric 
+            onShowHistory={() => setShowHistory(true)} 
+            grade={grade} 
+            hasRubric={!!activeAssignment?.rubric}
+            onShowRubric={() => setShowRubricModal(true)}
+          />
 
-          {/* Panel de feedback adaptativo */}
-          <section className={styles.feedbackAdaptivePanel}>
-            <div className={styles.feedbackAdaptiveHeader}>
-              UNIDA FEEDBACK ADAPTATIVO (IA)
-            </div>
-            <div className={styles.feedbackAdaptiveBody}>
-              {feedback ? (
-                <>
-                  <div className={styles.feedbackTag}>FEEDBACK PARA TRAYECTORIA DE MEJORA</div>
-                  <div className={styles.feedbackAdaptiveText}>{feedback}</div>
-                </>
-              ) : (
-                <div className={styles.feedbackPlaceholder}>
-                  Aquí se visualizará la review del feedback generado para el estudiante.
-                </div>
-              )}
-            </div>
-          </section>
-
-          <FeedbackActions
+          <AIControls
+            feedback={feedback}
             loading={loading}
             generatedFeedbackId={generatedFeedbackId}
-            feedback={feedback}
             rating={rating}
             setRating={setRating}
             handleGenerate={handleGenerate}
@@ -288,6 +250,7 @@ export default function SpeedGraderPanel({ onExit }) {
         </div>
       </main>
 
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

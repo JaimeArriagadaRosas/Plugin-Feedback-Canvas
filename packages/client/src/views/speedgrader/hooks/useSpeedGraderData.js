@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from 'shared/api';
+import { assignmentKeys } from 'shared/lib/queryKeys';
 import logger from '../../../utils/logger';
 
 export function useSpeedGraderData() {
@@ -25,7 +26,7 @@ export function useSpeedGraderData() {
   });
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ['assignments', courseId],
+    queryKey: assignmentKeys.speedgrader(courseId),
     queryFn: async () => {
       if (!courseId) return [];
       const result = await api.get(`/courses/${courseId}/assignments`);
@@ -35,12 +36,18 @@ export function useSpeedGraderData() {
           .map(a => ({
             id: a.id,
             name: a.name,
-            points: a.points_possible || 100,
-            templateName: a.templateName || ""
+            points: a.points_possible,
+            templateName: a.templateName || "",
+            rubric: a.rubric || null
           }));
       }
       return [];
     },
+    retry: (failureCount, error) => {
+      if (error?.status === 401 || error?.status === 403) return false;
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     enabled: !!courseId,
   });
 
@@ -108,7 +115,7 @@ export function useSpeedGraderData() {
 
   const submission = submissionData || null;
 
-  const activeAssignment = assignments.find(a => a.id === currentAssignmentId) || assignments[0] || { name: "", points: 0 };
+  const activeAssignment = assignments.find(a => a.id === currentAssignmentId) || assignments[0] || { name: "", points: null };
 
   return {
     courseId,

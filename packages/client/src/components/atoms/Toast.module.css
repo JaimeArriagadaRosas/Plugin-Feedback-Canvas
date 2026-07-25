@@ -1,6 +1,6 @@
 .toast {
   position: fixed;
-  bottom: var(--space-lg);
+  top: var(--space-lg);
   right: var(--space-lg);
   display: flex;
   align-items: center;

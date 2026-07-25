@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useAssignmentList } from './hooks/useAssignmentList';
 import WizardProgress from './WizardProgress';
@@ -17,6 +17,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
     showActivateModal,
     selectedAssignment,
     showToast,
+    setShowToast,
     errorMsg,
     setErrorMsg,
     fetchAssignments,
@@ -27,7 +28,16 @@ export default function AssignmentList({ course, onBack, onNext }) {
     handleCloseModal,
     handleConfirmDeactivate,
     handleConfirmActivate,
+    handleTemplateChange,
   } = useAssignmentList(course);
+
+  const [hideSyncToast, setHideSyncToast] = useState(false);
+
+  useEffect(() => {
+    if (isSyncing) {
+      setHideSyncToast(false);
+    }
+  }, [isSyncing]);
 
   const displayError = errorMsg || (isError ? queryError?.message || "Error al cargar/sincronizar las tareas" : null);
 
@@ -41,8 +51,15 @@ export default function AssignmentList({ course, onBack, onNext }) {
   );
 
   const handleNext = useCallback(
-    () => logClick('ASSIGNMENT_LIST_NEXT', () => onNext?.(assignments.length ? assignments[0].id : null))(),
-    [logClick, onNext, assignments]
+    () => logClick('ASSIGNMENT_LIST_NEXT', () => {
+      const activeWithoutTemplate = assignments.filter(a => a.active && (!a.plantilla_id && !a.template));
+      if (activeWithoutTemplate.length > 0) {
+        setErrorMsg(`Hay ${activeWithoutTemplate.length} tarea(s) activa(s) sin plantilla asignada. Por favor seleccione una plantilla antes de continuar.`);
+        return;
+      }
+      onNext?.(assignments.length ? assignments[0].id : null);
+    })(),
+    [logClick, onNext, assignments, setErrorMsg]
   );
 
   return (
@@ -58,7 +75,13 @@ export default function AssignmentList({ course, onBack, onNext }) {
         </div>
 
         <div className={styles.tableWrapper}>
-          <AssignmentTable assignments={assignments} onToggle={handleToggle} loading={loading} />
+          <AssignmentTable 
+            assignments={assignments} 
+            onToggle={handleToggle} 
+            onTemplateChange={handleTemplateChange}
+            onError={(msg) => setErrorMsg(msg)}
+            loading={loading} 
+          />
         </div>
       </main>
 
@@ -85,8 +108,8 @@ export default function AssignmentList({ course, onBack, onNext }) {
         onConfirm={handleConfirmActivate}
       />
 
-      {isSyncing && !loading && (
-        <div className={styles.toast} style={{ backgroundColor: '#27ae60', color: 'white' }}>
+      {isSyncing && !loading && !hideSyncToast && (
+        <div className={styles.toast} style={{ backgroundColor: '#27ae60', color: 'white', cursor: 'pointer' }} onClick={() => setHideSyncToast(true)}>
           <span style={{ fontSize: 18 }}>&#x21BB;</span>
           <span>Sincronizando tareas...</span>
         </div>
@@ -100,10 +123,10 @@ export default function AssignmentList({ course, onBack, onNext }) {
       )}
 
       {showToast && (
-        <div className={styles.toast}>
+        <div className={styles.toast} style={{ cursor: 'pointer' }} onClick={() => setShowToast(false)}>
           <span style={{ color: 'var(--color-primary)', fontSize: 18 }}>&#x2139;</span>
           <span>
-            Estado guardado exitosamente. Sincronizando configuración...
+            Sincronizando configuración...
           </span>
         </div>
       )}

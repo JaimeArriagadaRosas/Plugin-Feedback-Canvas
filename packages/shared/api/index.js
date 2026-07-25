@@ -47,6 +47,24 @@ export class ApiError extends Error {
   }
 }
 
+function handleTokenRefresh(response, data) {
+  if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
+    logApi('warn', `Sesión requiere OAuth. Redirigiendo a ${data.error.oauthUrl}`);
+    try {
+      if (typeof window !== 'undefined' && window.top) {
+        window.top.location.href = data.error.oauthUrl;
+      }
+    } catch (e) {
+      logApi('warn', 'Fallback a redirección interna del iframe por CORS');
+      if (typeof window !== 'undefined') {
+        window.location.href = data.error.oauthUrl;
+      }
+    }
+    return new Promise(() => {});
+  }
+  return null;
+}
+
 async function apiFetch(path, options = {}) {
   const url = path.startsWith('http') ? path : `${BASE}${path}`;
   const method = (options.method || 'GET').toUpperCase();
@@ -55,6 +73,7 @@ async function apiFetch(path, options = {}) {
 
   const headers = {
     'Content-Type': 'application/json',
+    'User-Agent': 'PluginFeedbackApp/1.0',
     ...(options.headers || {})
   };
 
@@ -96,31 +115,52 @@ async function apiFetch(path, options = {}) {
     config.body = JSON.stringify(config.body);
   }
 
-  const t0 = Date.now();
   let response;
-  try {
-    response = await fetch(url, config);
-  } catch (networkError) {
-    const duration = Date.now() - t0;
-    const category = classifyError(null, networkError);
-    logApi('error', `${method} ${url} FALLO (${duration}ms)`, {
-      requestId,
-      category,
-      status: networkError.status || null,
-      message: networkError.message,
-      duration
-    });
-    throw new ApiError(
-      `Error de red al llamar a ${url}: ${networkError.message}`,
-      networkError.status || 0,
-      { category, requestId },
-      category
-    );
-  } finally {
-    clearTimeout(timeoutId);
-  }
-
   let data = null;
+  const t0 = Date.now();
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    try {
+      attempts++;
+      response = await fetch(url, config);
+      
+      if (response.status === 429 && attempts < maxAttempts) {
+        const retryAfter = response.headers.get('Retry-After');
+        const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.min(1000 * Math.pow(2, attempts), 8000);
+        logApi('warn', `Rate limit 429 en ${url}. Reintentando en ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      break;
+    } catch (networkError) {
+      if (attempts < maxAttempts && (networkError.name !== 'AbortError')) {
+        const delay = Math.min(1000 * Math.pow(2, attempts), 8000);
+        logApi('warn', `Error de red en ${url}. Reintentando en ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      const duration = Date.now() - t0;
+      const category = classifyError(null, networkError);
+      logApi('error', `${method} ${url} FALLO (${duration}ms)`, {
+        requestId,
+        category,
+        status: networkError.status || null,
+        message: networkError.message,
+        duration
+      });
+      clearTimeout(timeoutId);
+      throw new ApiError(
+        `Error de red al llamar a ${url}: ${networkError.message}`,
+        networkError.status || 0,
+        { category, requestId },
+        category
+      );
+    }
+  }
+  clearTimeout(timeoutId);
+
   const text = await response.text();
   if (text) {
     try {
@@ -134,17 +174,9 @@ async function apiFetch(path, options = {}) {
 
   if (!response.ok) {
     const category = classifyError(response.status, null);
-    if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
-      logApi('warn', `Sesión requiere OAuth. Redirigiendo a ${data.error.oauthUrl}`);
-      try {
-        window.top.location.href = data.error.oauthUrl;
-      } catch (e) {
-        logApi('warn', 'Fallback a redirección interna del iframe por CORS');
-        window.location.href = data.error.oauthUrl;
-      }
-      // Detiene la cadena de promesas
-      return new Promise(() => {});
-    }
+    
+    const refreshResult = handleTokenRefresh(response, data);
+    if (refreshResult) return refreshResult;
 
     const message =
       (data &&

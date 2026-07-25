@@ -27,7 +27,7 @@ router.post('/session', asyncSafe(async (req, res) => {
     entry: getEntryFromClaims(decoded),
   };
 
-  const sessionToken = signSessionToken(claims);
+  const sessionToken = await signSessionToken(claims);
   const sessionTokenExpiryMs = parseInt(process.env.SESSION_TOKEN_EXPIRY_MS || '28800000', 10);
   const exp = Math.floor(Date.now() / 1000) + Math.floor(sessionTokenExpiryMs / 1000);
 

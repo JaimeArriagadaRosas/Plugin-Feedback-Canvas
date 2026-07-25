@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { authReducer, initialState } from './authReducer';
+import { ApiError } from '../../utils/ApiError';
 import { api } from "shared/api";
 import { logout as logoutToken } from "shared/lib/authToken";
+import { authKeys } from "shared/lib/queryKeys";
 import logger from "../../utils/logger";
 
 const AuthContext = createContext(null);
@@ -16,29 +19,34 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
-  const [role, setRole] = useState(null);
-  const [rawRoles, setRawRoles] = useState([]);
-  const [user, setUser] = useState(null);
-  const [courseId, setCourseId] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiError, setApiError] = useState(null);
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  const { role, rawRoles, user, courseId, selectedCourse, isLoading, apiError } = state;
 
   const { data, error, refetch } = useQuery({
-    queryKey: ['auth', 'me'],
+    queryKey: authKeys.me(),
     queryFn: async () => {
       logger.debug('Auth', 'Consultando /api/config/me vía React Query...');
-      const data = await api.get('/config/me');
-      if (!data.exito || !data.role) {
-        throw new Error(data.error?.mensaje || 'No autorizado');
+      try {
+        const data = await api.get('/config/me');
+        if (!data.exito || !data.role) {
+          throw new ApiError(data.error?.mensaje || 'No autorizado', 401);
+        }
+        return data;
+      } catch (err) {
+        if (err instanceof ApiError) {
+          throw err;
+        }
+        // If it's a generic error with a status, convert it.
+        throw new ApiError(err.message || 'Error', err.status || 500);
       }
-      return data;
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: (failureCount, err) => {
       const status = err?.status;
-      if (status === 401 || status === 403) return false;
+      // En entorno de iframes LTI (Safari/Chrome ITP), permitimos 1 reintento ante 401 para revalidar cookies/storage
+      if (status === 400 || status === 403) return false;
+      if (status === 401) return failureCount < 1;
       return failureCount < 2;
     }
   });
@@ -70,19 +78,10 @@ export const AuthProvider = ({ children }) => {
         logger.info('Auth', 'Todo correcto: sesión autenticada contra Canvas LMS vía LTI 1.3.');
       }
 
-      setRole(data.role);
-      setRawRoles(data.roles || []);
-      setUser(data.user);
-      setCourseId(data.courseId);
-      setApiError(null);
-      setIsLoading(false);
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
     } else if (error) {
       logger.warn('Auth', "No se pudo verificar la sesión:", { message: error.message });
-      setApiError(error.message);
-      setRole(null);
-      setUser(null);
-      setCourseId(null);
-      setIsLoading(false);
+      dispatch({ type: 'LOGIN_ERROR', payload: error.message });
     }
   }, [data, error]);
 
@@ -93,13 +92,10 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       logger.warn('Auth', 'Logout backend falló, limpiando localmente:', { error: e?.message });
     } finally {
-      queryClient.invalidateQueries(['auth']);
-      setRole(null);
-      setRawRoles([]);
-      setUser(null);
-      setCourseId(null);
-      setApiError(null);
-      setIsLoading(false);
+      sessionStorage.clear();
+      localStorage.removeItem('lti-token');
+      queryClient.clear();
+      dispatch({ type: 'LOGOUT' });
       window.location.href = '/';
     }
   }, [logoutToken, queryClient]);
@@ -110,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     user,
     courseId,
     selectedCourse,
-    setSelectedCourse,
+    setSelectedCourse: (course) => dispatch({ type: 'SET_SELECTED_COURSE', payload: course }),
     isLoading,
     apiError,
     refetchRole: refetch,

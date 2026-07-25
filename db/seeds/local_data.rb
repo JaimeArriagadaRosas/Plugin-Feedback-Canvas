@@ -81,9 +81,12 @@ def create_submission_with_logic(assignment, student_user, teacher, type_index)
 
   sub = assignment.submissions.find_or_create_by!(user_id: student_user.id)
   
+  max_pts = assignment.points_possible || 100
+  min_pts = (max_pts * 0.4).to_i
+
   if type_index == 0
     # QUIZ (Auto-graded)
-    score = rand(40..100)
+    score = rand(min_pts..max_pts)
     sub.update!(
       submission_type: 'online_text_entry',
       body: "Resultados automáticos: El alumno obtuvo #{score}/100 en el control de alternativas.",
@@ -101,10 +104,10 @@ def create_submission_with_logic(assignment, student_user, teacher, type_index)
     filename = "#{student_user.name.gsub(' ', '_').downcase}_entrega#{chosen_ext}"
     
     begin
-      # Inyectar archivo real desde mock_files
+      # Inyectar archivo real desde mock_files (previamente copiado a /tmp por DataSeeder.js)
       mock_ext = chosen_ext
       mock_ext = '.zip' if chosen_ext == '.rar' # Usar dummy.zip para entregas de tipo .rar
-      file_path = File.join(__dir__, 'mock_files', "dummy#{mock_ext}")
+      file_path = File.join('/tmp', 'mock_files', "dummy#{mock_ext}")
       
       mime_types = {
         '.pdf' => 'application/pdf',
@@ -145,7 +148,7 @@ def create_submission_with_logic(assignment, student_user, teacher, type_index)
     end
 
     is_graded = rand > 0.5
-    score = is_graded ? rand(40..100) : nil
+    score = is_graded ? rand(min_pts..max_pts) : nil
     
     sub.update!(
       submission_type: 'online_upload',
@@ -168,7 +171,7 @@ def create_submission_with_logic(assignment, student_user, teacher, type_index)
   elsif type_index == 2
     # TEXT ENTRY
     is_graded = rand > 0.7 # 30% graded, 70% pending
-    score = is_graded ? rand(40..100) : nil
+    score = is_graded ? rand(min_pts..max_pts) : nil
     
     sub.update!(
       submission_type: 'online_text_entry',
@@ -194,15 +197,55 @@ cursos_creados.each do |c|
   
   # 1. Tarea tipo Quiz
   t1 = c.assignments.where(title: "Control de Conceptos: #{c.name}").first_or_create!
-  t1.update!(points_possible: 100, workflow_state: 'published', submission_types: 'online_text_entry')
+  t1.update!(points_possible: 100, workflow_state: 'published', submission_types: 'online_text_entry', due_at: 7.days.from_now)
   
   # 2. Tarea tipo Documento
   t2 = c.assignments.where(title: "Ensayo de Investigación: #{c.name}").first_or_create!
-  t2.update!(points_possible: 100, workflow_state: 'published', submission_types: 'online_upload')
+  t2.update!(points_possible: 50, workflow_state: 'published', submission_types: 'online_upload', due_at: 10.days.from_now)
   
   # 3. Tarea tipo Desarrollo
   t3 = c.assignments.where(title: "Desarrollo Práctico: #{c.name}").first_or_create!
-  t3.update!(points_possible: 100, workflow_state: 'published', submission_types: 'online_text_entry')
+  t3.update!(points_possible: nil, workflow_state: 'published', submission_types: 'online_text_entry', due_at: 14.days.from_now)
+
+  rubric_data = [
+    {
+      id: "crit1",
+      description: "Comprensión y Contenido",
+      long_description: "Evalúa si el estudiante domina los conceptos clave.",
+      points: 50,
+      ratings: [
+        { description: "Excelente", points: 50, id: "rat1" },
+        { description: "Suficiente", points: 25, id: "rat2" },
+        { description: "Insuficiente", points: 0, id: "rat3" }
+      ]
+    },
+    {
+      id: "crit2",
+      description: "Desarrollo y Estructura",
+      long_description: "Evalúa la claridad y el formato de la entrega.",
+      points: 50,
+      ratings: [
+        { description: "Excelente", points: 50, id: "rat4" },
+        { description: "Insuficiente", points: 0, id: "rat5" }
+      ]
+    }
+  ]
+
+  rubric = Rubric.create!(
+    context: c,
+    title: "Rúbrica General - #{c.name}",
+    data: rubric_data
+  )
+
+  [t1, t2, t3].each do |assignment|
+    RubricAssociation.create!(
+      rubric: rubric,
+      association_object: assignment,
+      context: c,
+      purpose: 'grading',
+      use_for_grading: true
+    )
+  end
 
   students.each do |s_data|
     student_user = User.find(s_data[:id])
@@ -212,25 +255,39 @@ cursos_creados.each do |c|
   end
 end
 
+def regenerate_dev_token(user)
+  user.access_tokens.where(purpose: 'Local Dev Token').destroy_all
+  user.access_tokens.create!(purpose: 'Local Dev Token').full_token
+end
+
+admin_token = regenerate_dev_token(admin)
+teacher1_token = regenerate_dev_token(teacher1)
+teacher2_token = regenerate_dev_token(teacher2)
+teacher3_token = regenerate_dev_token(teacher3)
+
+students_with_tokens = students.map do |s|
+  u = User.find_by(id: s[:id])
+  token = regenerate_dev_token(u)
+  s.merge({ token: token, uuid: u.uuid })
+end
+
 puts "=== CANVAS DATA ==="
 puts "COURSE_ID:#{cursos_creados[0].id}"
 puts "TEACHER_EMAIL:profesor@canvas.local"
-puts "CANVAS_API_TOKEN:#{teacher1.access_tokens.where(purpose: 'Local Dev Token').first_or_create!.full_token}"
-students.each do |s|
-  u = User.find_by(id: s[:id])
-  token = u.access_tokens.where(purpose: 'Local Dev Token').first_or_create!.full_token
+puts "CANVAS_API_TOKEN:#{teacher1_token}"
+students_with_tokens.each do |s|
   puts "STUDENT_EMAIL:#{s[:email]}"
-  puts "STUDENT_TOKEN_#{s[:id]}:#{token}"
+  puts "STUDENT_TOKEN_#{s[:id]}:#{s[:token]}"
 end
 puts "========================="
 
 perfiles = {
   "usuarios" => [
-    { "id" => admin.id, "uuid" => admin.uuid, "nombre" => admin.name, "email" => "admin@canvas.local", "rol" => "admin", "token" => admin.access_tokens.where(purpose: "Local Dev Token").first_or_create!.full_token },
-    { "id" => teacher1.id, "uuid" => teacher1.uuid, "nombre" => teacher1.name, "email" => "profesor@canvas.local", "rol" => "teacher", "token" => teacher1.access_tokens.where(purpose: "Local Dev Token").first_or_create!.full_token },
-    { "id" => teacher2.id, "uuid" => teacher2.uuid, "nombre" => teacher2.name, "email" => "profesor2@canvas.local", "rol" => "teacher", "token" => teacher2.access_tokens.where(purpose: "Local Dev Token").first_or_create!.full_token },
-    { "id" => teacher3.id, "uuid" => teacher3.uuid, "nombre" => teacher3.name, "email" => "profesor3@canvas.local", "rol" => "teacher", "token" => teacher3.access_tokens.where(purpose: "Local Dev Token").first_or_create!.full_token }
-  ] + students.map { |s| u = User.find_by(id: s[:id]); { "id" => s[:id], "uuid" => u.uuid, "nombre" => s[:name], "email" => s[:email], "rol" => "student", "token" => u.access_tokens.where(purpose: "Local Dev Token").first_or_create!.full_token } }
+    { "id" => admin.id, "uuid" => admin.uuid, "nombre" => admin.name, "email" => "admin@canvas.local", "rol" => "admin", "token" => admin_token },
+    { "id" => teacher1.id, "uuid" => teacher1.uuid, "nombre" => teacher1.name, "email" => "profesor@canvas.local", "rol" => "teacher", "token" => teacher1_token },
+    { "id" => teacher2.id, "uuid" => teacher2.uuid, "nombre" => teacher2.name, "email" => "profesor2@canvas.local", "rol" => "teacher", "token" => teacher2_token },
+    { "id" => teacher3.id, "uuid" => teacher3.uuid, "nombre" => teacher3.name, "email" => "profesor3@canvas.local", "rol" => "teacher", "token" => teacher3_token }
+  ] + students_with_tokens.map { |s| { "id" => s[:id], "uuid" => s[:uuid], "nombre" => s[:name], "email" => s[:email], "rol" => "student", "token" => s[:token] } }
 }
 File.write("/usr/src/app/tmp/perfiles_data.json", JSON.generate(perfiles))
 puts "Perfiles escritos en tmp/perfiles_data.json"

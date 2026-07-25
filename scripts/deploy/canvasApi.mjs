@@ -36,19 +36,22 @@ export class CanvasApi {
 
   /** Crea una LTI 1.3 Developer Key Tool Configuration */
   async createDeveloperKey(accountId, toolConfigJson) {
-    console.log(pc.gray(`➤ Creando Developer Key LTI 1.3 en la cuenta ID: ${accountId}...`));
-    const endpoint = `/api/v1/accounts/${accountId}/developer_keys/tool_configuration`;
+    console.log(pc.gray(`➤ Creando o reciclando Developer Key LTI 1.3 en la cuenta ID: ${accountId}...`));
     
-    // Canvas espera el body en { developer_key: { ... }, tool_configuration: { ... } }
-    // Sin embargo, si mandamos directo el JSON de la tool, Canvas puede aceptarlo.
-    // La documentación LTI dice que el endpoint POST espera el JSON de la herramienta directamente o envuelto.
-    // Referencia Canvas API: POST /api/v1/accounts/:account_id/developer_keys/tool_configuration
-    // Body: developer_key[name]=..., tool_configuration[settings]=...
-    // Para simplificar, Canvas acepta un POST JSON estructurado así:
+    // Validacion previa (GET)
+    const existingKeys = await this._request(`/api/v1/accounts/${accountId}/developer_keys`);
+    const toolName = toolConfigJson.title || 'Unida Feedback LTI';
+    const existingKey = existingKeys.find(k => k.name === toolName);
+    if (existingKey) {
+        console.log(pc.green(`✔ Developer Key ya existe con ID: ${existingKey.id}. Reciclando...`));
+        return existingKey.id;
+    }
+
+    const endpoint = `/api/v1/accounts/${accountId}/developer_keys/tool_configuration`;
     const payload = {
       developer_key: {
-        name: toolConfigJson.title || 'Unida Feedback LTI',
-        email: 'admin@unab.cl', // Opcional
+        name: toolName,
+        email: 'admin@unab.cl',
         notes: 'Generado automáticamente por el script de despliegue.',
         visible: true
       },
@@ -90,6 +93,15 @@ export class CanvasApi {
   /** Instala la External Tool (App) en la cuenta usando el Client ID */
   async installExternalTool(accountId, clientId) {
     console.log(pc.gray(`➤ Instalando herramienta en la cuenta ${accountId}...`));
+    
+    // Validacion previa (GET)
+    const existingTools = await this._request(`/api/v1/accounts/${accountId}/external_tools?include_parents=true`);
+    const existingTool = existingTools.find(t => t.client_id === clientId);
+    if (existingTool) {
+        console.log(pc.green(`✔ Herramienta ya instalada previamente con Tool ID: ${existingTool.id}. Omitiendo duplicado.`));
+        return existingTool.id;
+    }
+
     const endpoint = `/api/v1/accounts/${accountId}/external_tools`;
     const payload = {
       client_id: clientId

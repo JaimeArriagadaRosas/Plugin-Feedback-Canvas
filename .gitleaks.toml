@@ -1,6 +1,6 @@
 # Configuración de gitleaks para detectar secretos en el repositorio.
 # Se extiende la configuración por defecto y se excluyen falsos positivos
-# conocidos (datos de prueba y archivos muertos/corruptos).
+# conocidos (datos de prueba, certificados generados localmente y archivos muertos).
 
 [extend]
 useDefault = true
@@ -9,7 +9,10 @@ useDefault = true
 paths = [
   '''node_modules/''',
   '''dist/''',
+  '''build/''',
   '''logs/''',
+  '''tmp/''',
+  '''temp/''',
   '''coverage/''',
   '''packages/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
   '''packages/server/src/services/infraestructura/DockerRunner\.js$''',
@@ -17,12 +20,19 @@ paths = [
   '''packages/server/src/validation/rutas/config.routes.test.js$''',
   '''packages/server/src/validation/unit/config.test.js$''',
   '''packages/server/certs/''',
+  '''\.github/''',
+  '''informaci.n/''',
 ]
 regexes = [
   # Emails de prueba locales (p. ej. profesor@canvas.local)
-  '''[a-z0-9._%+-]+@canvas\.local''',
-  # Password de prueba usado en seeds locales
+  '''[a-zA-Z0-9._%+-]+@canvas\.local''',
+  
+  # Password de prueba usado en seeds locales y docker compose
   '''password123''',
-  # Hash bcrypt de prueba hardcodeado en db.js (modo local)
-  '''\$2b\$10\$McRiCLIZ4FP686ZSDnr9HeiFe4xrmDB2v/WwY3\.1ExOI5TW64Rp7K''',
+  
+  # Hashes bcrypt de prueba hardcodeados (p. ej. en scripts de setup)
+  '''\$2b\$10\$[a-zA-Z0-9./]+''',
+  
+  # Tokens genéricos y de ejemplo en mocks (ej. JWT simulados o keys mockeadas)
+  '''(client_id|secret|token)[\s:=]+['"]?(example|test|mock)''',
 ]

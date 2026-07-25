@@ -7,6 +7,7 @@ import { CanvasCloner } from './installers/CanvasCloner.js';
 import { AssetBuilder } from './installers/AssetBuilder.js';
 import { CanvasBringup } from './CanvasBringup.js';
 import { PostflightSetup } from './PostflightSetup.js';
+import { askConfirm } from '../../cli.js';
 
 export class EnvironmentSetup {
   constructor(boot, pluginDir, canvasDir) {
@@ -17,29 +18,45 @@ export class EnvironmentSetup {
   }
 
   async ensureSetup() {
+    if (process.env.FAST_BOOT === 'true' && !fs.existsSync(this.canvasDir)) {
+      this.boot.warn('Directorio de Canvas LMS no encontrado. Invocando recuperación automática...');
+      const setupCompletePath = path.join(this.pluginDir, '.setup_complete');
+      if (fs.existsSync(setupCompletePath)) {
+        fs.unlinkSync(setupCompletePath);
+        this.boot.info('Archivo .setup_complete eliminado (Fast Boot abortado).');
+      }
+      process.env.FAST_BOOT = 'false';
+    }
+
     if (process.env.FAST_BOOT === 'true') {
       this.boot.info('Modo Fast Boot detectado: Saltando orquestación pesada...');
-      try {
-        this.boot.info('Asegurando contenedores de Canvas LMS en segundo plano...');
-        await execa('docker', ['compose', 'up', '-d'], { cwd: this.canvasDir });
-        
-        const { stdout } = await execa('docker', ['compose', 'ps', '--format', 'json'], { cwd: this.canvasDir });
-        if (!stdout || stdout.includes('"State": "exited"') || stdout.trim() === '[]' || stdout.trim() === '') {
-          throw new Error('Algunos contenedores fallaron al iniciar o están inactivos.');
+      
+      const dockerInstaller = new DockerInstaller(this.boot, this.logFile);
+      if (!(await dockerInstaller.isDockerDaemonRunning())) {
+        this.boot.warn('Demonio de Docker no disponible al iniciar Fast Boot.');
+        if (!(await dockerInstaller.handleDockerDaemonDown())) {
+          this.boot.error('No se pudo establecer conexión con Docker en el tiempo límite.');
+          this.boot.error('Por favor, verifique Docker Desktop y vuelva a ejecutar npm start.');
+          process.exit(1);
         }
-        
-        this.boot.info('Contenedores activos. Fast Boot completado exitosamente.');
-        return true;
-      } catch (e) {
-        const setupCompletePath = path.join(this.pluginDir, '.setup_complete');
-        if (fs.existsSync(setupCompletePath)) {
-          fs.unlinkSync(setupCompletePath);
-        }
-        this.boot.error('El entorno Fast Boot parece estar inestable o roto: ' + e.message);
-        this.boot.error('Se ha eliminado el archivo .setup_complete. Re-evaluando entorno completo en el próximo inicio...');
-        this.boot.error('Por favor, vuelva a ejecutar npm start para restaurar el entorno.');
+      }
+
+      this.boot.info('Asegurando contenedores de Canvas LMS en segundo plano...');
+      const bringup = new CanvasBringup(this.boot, this.canvasDir);
+      if (!(await bringup.startStack())) {
+        this.boot.error('No se pudieron iniciar los contenedores de Canvas LMS con Docker Compose.');
+        this.boot.error('El archivo .setup_complete se ha conservado para reintentar el arranque rápido tras solucionar el problema en Docker.');
         process.exit(1);
       }
+      
+      if (!(await bringup.waitForReady())) {
+        this.boot.error('Los contenedores de Canvas LMS tardaron demasiado o fallaron al reportarse operativos.');
+        this.boot.error('El archivo .setup_complete se ha conservado para reintentar el arranque rápido tras solucionar el problema.');
+        process.exit(1);
+      }
+      
+      this.boot.info('Contenedores activos. Fast Boot completado exitosamente.');
+      return true;
     }
 
     this.boot.info('Iniciando verificación de entorno para Canvas LMS local (Node.js Native Installer)');
@@ -53,12 +70,32 @@ export class EnvironmentSetup {
     if (!allOk) {
       this.boot.warn('Componentes faltantes detectados. Iniciando instalación automática...');
       
-      // Auto Installer Logic
       if (missing.missing_docker || missing.docker_daemon_down) {
         const dockerInstaller = new DockerInstaller(this.boot, this.logFile);
         if (missing.missing_docker) {
+          const physicallyInstalled = await dockerInstaller.isDockerInstalled();
+          if (physicallyInstalled) {
+            this.boot.error('Docker está instalado físicamente en tu sistema, pero el comando "docker" falló.');
+            this.boot.action('Por favor, agrégalo a tu variable de entorno PATH, o abre Docker Desktop para configurarlo, y vuelve a intentar.');
+            process.exit(1);
+          }
+          
+          this.boot.warn('Docker no está instalado en tu sistema.');
+          const pathInfo = dockerInstaller.platform === 'win32' ? 'C:\\Program Files\\Docker\\Docker' : '/Applications';
+          const wantsInstall = await askConfirm(`¿Deseas que intente descargarlo e instalarlo automáticamente en la ruta por defecto (${pathInfo})?`);
+          
+          if (!wantsInstall) {
+            this.boot.action('Instala Docker Desktop manualmente desde https://docs.docker.com/desktop/ y vuelve a correr npm start.');
+            process.exit(1);
+          }
+
           if (!(await dockerInstaller.installDocker())) throw new Error('Fallo en la instalación automática de Docker');
         } else if (missing.docker_daemon_down) {
+          if (process.env.DOCKER_HOST) {
+            this.boot.error(`No pudimos conectar con el daemon remoto en DOCKER_HOST (${process.env.DOCKER_HOST}).`);
+            this.boot.action('Revisa tu conexión VPN, firewall o configuración de red. El script se detendrá.');
+            process.exit(1);
+          }
           if (!(await dockerInstaller.handleDockerDaemonDown())) throw new Error('Fallo al intentar arrancar el demonio de Docker');
         }
       }
