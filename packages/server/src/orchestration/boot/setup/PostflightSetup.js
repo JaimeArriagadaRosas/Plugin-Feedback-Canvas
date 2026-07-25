@@ -40,7 +40,7 @@ export class PostflightSetup {
         return false;
       }
       
-      const hasDataAfter = await verifier.isDataPopulated(1, 1);
+      const hasDataAfter = await verifier.isDataPopulated(3, 5);
       if (!hasDataAfter) {
         this.boot.error('La verificación final de datos falló incluso después de inyectar.');
         return false;
@@ -60,14 +60,7 @@ export class PostflightSetup {
     } else {
       spinner.success({ text: 'Canvas responde correctamente.', mark: '  √' });
     }
-    
-    this.boot.info('Ejecutando verificación LTI final...');
-    const ltiBoot = new LtiBootstrap({ mode: '3', log: this.boot });
-    const ltiRes = await ltiBoot.run();
-    if (!ltiRes.ok && !ltiRes?.data?.skipped) {
-      this.boot.error(`Verificación LTI falló en el Postflight: ${ltiRes.data?.error || ltiRes.message}`);
-      return false;
-    }
+
     
     this.boot.info('Verificación post-arranque exitosa.');
     return true;

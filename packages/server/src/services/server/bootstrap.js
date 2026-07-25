@@ -39,8 +39,8 @@ import { registerRoutes } from './routes.js';
 import { SSLService } from '../../security/SSLService.js';
 import { isHttpsEnabled, getSslCertPaths } from '../../security/envGuard.js';
 import { runMigrations } from '../../data/migrations.js';
-import { seedLocalUsers } from '../../validation/setup/seedLocalUsers.js';
-import { seedLocalTemplates } from '../../validation/setup/seedLocalTemplates.js';
+// import { seedLocalUsers } from '../../validation/setup/seedLocalUsers.js';
+// import { seedLocalTemplates } from '../../validation/setup/seedLocalTemplates.js';
 import { isLocalModeAllowed } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 
@@ -49,14 +49,14 @@ if (!isLocalModeAllowed()) {
     logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos...');
     await runMigrations();
     logger.info('[BOOTSTRAP] Migraciones completadas.');
-    await seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas (postgres) skipped:', err.message));
+    // await seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas (postgres) skipped:', err.message));
   } catch (err) {
     logger.error('[BOOTSTRAP] Fallo critico en migraciones:', err.message);
     process.exit(1);
   }
 } else {
-  seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed usuarios skipped:', err.message));
-  seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas skipped:', err.message));
+  // seedLocalUsers().catch(err => logger.warn('[BOOTSTRAP] Seed usuarios skipped:', err.message));
+  // seedLocalTemplates().catch(err => logger.warn('[BOOTSTRAP] Seed plantillas skipped:', err.message));
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -227,9 +227,7 @@ export async function startServer(app, PORT) {
   const repos = initializeDataLayer();
   const services = initializeServiceLayer(env, repos);
 
-  if (services.tokenRotationJob) {
-    services.tokenRotationJob.start();
-  }
+  // Moved tokenRotationJob.start() to the listen callback
 
   registerRoutes(app, services, ltiPublicJwk);
 
@@ -310,6 +308,7 @@ export async function startServer(app, PORT) {
       server.keepAliveTimeout = 60000;
       if (services.tokenRotationJob) {
         server.tokenRotationJob = services.tokenRotationJob;
+        services.tokenRotationJob.start();
       }
       logger.info('[SERVER] Timeouts configurados: timeout=300s, headers=120s, keepAlive=60s');
 

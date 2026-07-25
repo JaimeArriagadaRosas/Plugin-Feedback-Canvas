@@ -8,6 +8,8 @@
     "./tokens/theme.css": "./tokens/theme.css",
     "./api": "./api/index.js",
     "./lib/authToken": "./lib/authToken.js",
+    "./lib/queryKeys": "./lib/queryKeys.js",
+    ".": "./index.js",
     "./*": "./*.js"
   }
 }

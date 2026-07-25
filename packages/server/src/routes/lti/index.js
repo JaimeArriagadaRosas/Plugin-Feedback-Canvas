@@ -6,10 +6,11 @@ import { isHttpsEnabled } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 import { handleLtiError } from '../../middlewares/LtiErrorHandler.js';
 import { signSessionToken } from '../../services/infrastructure/SessionTokenService.js';
+import { storeLtiState, consumeLtiState } from '../../security/stateStore.js';
 
 const router = Router();
 
-const loginHandler = (req, res) => {
+const loginHandler = async (req, res) => {
   const bodyData = (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { iss, login_hint, target_link_uri, lti_message_hint } = bodyData;
   const reqId = Math.random().toString(36).substring(2, 8);
@@ -31,21 +32,12 @@ const loginHandler = (req, res) => {
 
   const state = secureState();
   const nonce = secureNonce();
-  storeNonce(nonce);
+  await storeNonce(nonce);
 
-  const isProd = process.env.NODE_ENV === 'production';
-  const cookieSecure = isProd || isHttpsEnabled();
-  const cookieSameSite = cookieSecure ? 'None' : 'Lax';
-  
   const targetUrl = req.headers.referer || target_link_uri;
   
   const launchData = { nonce, targetUrl };
-  res.cookie(`lti_${state}`, JSON.stringify(launchData), { 
-    httpOnly: true, 
-    secure: cookieSecure, 
-    sameSite: cookieSameSite, 
-    maxAge: 15 * 60 * 1000 
-  });
+  storeLtiState(res, state, launchData);
 
   const canvasBaseUrl = (process.env.CANVAS_BASE_URL || 'https://localhost:8443').replace(/\/$/, '');
   const canvasAuthUrl = process.env.CANVAS_OIDC_URL || `${canvasBaseUrl}/api/lti/authorize_redirect`;
@@ -164,13 +156,9 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   
   if (req.body?.state || req.query?.state) {
     const state = req.body?.state || req.query?.state;
-    const launchCookieStr = req.cookies?.[`lti_${state}`];
-    if (launchCookieStr) {
-      try {
-        const launchCookie = JSON.parse(launchCookieStr);
-        if (launchCookie.targetUrl) savedReferer = launchCookie.targetUrl;
-        res.clearCookie(`lti_${state}`);
-      } catch(e) {}
+    const launchCookie = consumeLtiState(req, res, state);
+    if (launchCookie && launchCookie.targetUrl) {
+      savedReferer = launchCookie.targetUrl;
     }
   }
 
@@ -194,7 +182,7 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
   const shortRoles = [...new Set((claims.roles || []).map(r => r.split('#').pop().split('/').pop()))];
   logger.info(`[LTI-AUTH] Usuario: ${claims.sub?.substring(0,8)}... | Roles: ${shortRoles.join(', ')}`);
 
-  const sessionToken = signSessionToken({
+  const sessionToken = await signSessionToken({
     sub: claims.sub,
     azp: claims.azp,
     deploymentId: claims.deploymentId,

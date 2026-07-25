@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS plugin_sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    user_id UUID,
+    jwt_token TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

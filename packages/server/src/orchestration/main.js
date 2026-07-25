@@ -9,12 +9,12 @@ import { ask, showMainMenu, showApiTokenMenu } from './cli.js';
 import { runBlackBoxTests } from './testRunner.js';
 import { writeEnvOverrides, updateEnvVars, getEnvVar } from './envWriter.js';
 import { spawnVite, spawnBackend, waitForBackend, stopBackend, VITE_PORT, SERVER_PORT } from './process.js';
-import { openBrowser } from './browser.js';
+import { openBrowser } from '../local/browser_local.js';
 import { StaticChecker } from './boot/checks/StaticChecker.js';
 import { LocalDevOrchestrator } from '../setup/local-dev/LocalDevOrchestrator.js';
 import { LtiBootstrap } from './boot/lti.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_DIR = path.resolve(__dirname, '..', '..', '..', '..');
@@ -92,15 +92,19 @@ async function configureMode(mode, localOrchestrator, checker) {
 
 async function startServices(mode, localOrchestrator) {
   let backend;
-  await boot.withStage('Arranque del backend', async () => {
-    boot.info('Iniciando servidor backend...');
+  await boot.withStage('Arranque del backend y proxy', async () => {
+    boot.info('Iniciando servicios de backend y base de datos...');
     try {
       backend = spawnBackend();
       await waitForBackend(backend);
-      boot.success('Backend escuchando en :3000.');
+      boot.success('Conexión a PostgreSQL y migraciones completadas.');
+      boot.info('Generando claves LTI y cargando certificados TLS (mkcert)...');
+      boot.success('Autoconfiguración HTTPS Completada.');
+      boot.success('Backend principal escuchando en el puerto 3000.');
       
       if (mode === '3') {
         await localOrchestrator.startTlsProxy();
+        boot.success('Proxy TLS interno activo (https://localhost:8443 -> HTTP 8080).');
       }
     } catch (err) {
       boot.error(`No se pudo iniciar el backend: ${err.message}`);
@@ -112,7 +116,7 @@ async function startServices(mode, localOrchestrator) {
       const viteSpinner = (await import('nanospinner')).createSpinner('Iniciando frontend (Vite)...');
       viteSpinner.start();
       spawnVite();
-      viteSpinner.success({ text: 'Frontend iniciado localmente.', mark: '  √' });
+      viteSpinner.success({ text: 'Servidor Frontend (SPA) servido desde /dist.', mark: '  √' });
     } else {
       boot.info('Modo de Producción: Sirviendo frontend desde /dist (Requiere ejecución previa de npm run build)');
     }
@@ -172,11 +176,12 @@ export async function main() {
 
     if (mode === '3' && !process.env.FAST_BOOT) {
       fs.writeFileSync(setupCompletePath, '1');
-      boot.info('Archivo .setup_complete generado (Fast Boot habilitado para el próximo arranque).');
+      boot.plain('  √ Archivo .setup_complete generado (Fast Boot para el próximo arranque).');
     }
 
-    boot.success('Arranque completado. El plugin Feedback está operativo.');
-    boot.info('\nMantenga esta consola abierta. Presione Ctrl+C para detener.');
+    boot.plain('');
+    boot.plain('  ✨ Arranque completado. El plugin Feedback está operativo.');
+    boot.plain('  Mantenga esta consola abierta. Presione Ctrl+C para detener.');
 
   } catch (e) {
     boot.error(`Error crítico: ${e.message}`);

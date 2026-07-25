@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: feedback_plugin_db_prod
+    # No exponemos puertos a la red host en producción
+    expose:
+      - "5432"
+
+  gotenberg:
+    container_name: feedback_plugin_gotenberg_prod
+    expose:
+      - "3000"
+
+  app:
+    container_name: feedback_plugin_app_prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    # Configuración de reinicio agresiva para producción
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G

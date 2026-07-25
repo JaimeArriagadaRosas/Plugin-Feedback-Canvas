@@ -6,55 +6,8 @@ const DEV_ROLE_COOKIE = 'dev-role';
 const REFRESH_THRESHOLD_MS = 15 * 60 * 1000;
 
 export function extractLtiToken(req) {
-  const authHeader = req.headers.authorization;
-  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-  const cookieToken = req.cookies?.[LTI_TOKEN_COOKIE] || null;
-
-  return bearerToken || cookieToken || null;
-}
-
-export function extractDevRole(req) {
-  if (!isLocalModeAllowed()) return null;
-  const signedCookieRole = req.cookies?.[DEV_ROLE_COOKIE] || null;
-  if (signedCookieRole) {
-    // extractDevRoleFromSigned verifica la firma y devuelve el ROL (string) o
-    // null. Antes se usaba verifyDevRole, que devuelve un boolean, provocando
-    // que extractDevRole retornara `true` y que resolvedRole.match(...) lanzara
-    // "resolvedRole.match is not a function" (500) en LocalIdentityProvider.
-    const role = extractDevRoleFromSigned(signedCookieRole);
-    if (role) return role;
-  }
-  return process.env.LOCAL_USER_ROLE || null;
-}
-
-import { verifyDevToken, verifyDevRole, extractDevRoleFromSigned } from './crypto.js';
-
-export function isDevToken(token) {
-  return verifyDevToken(token);
-}
-
-export function resolveLtiUserIdentity(req, explicitRole = null, explicitUserId = null) {
-  const token = extractLtiToken(req);
-
-  if (isDevToken(token) && isLocalModeAllowed()) {
-    const role = explicitRole || extractDevRole(req) || 'teacher';
-    const studentMatch = role.match(/^student-(\d+)$/);
-    const baseRole = studentMatch ? 'student' : role;
-    const studentIndex = studentMatch ? parseInt(studentMatch[1], 10) : null;
-    const userId = explicitUserId || (studentMatch ? `local-user-student-${studentMatch[1]}` : `local-user-${baseRole}`);
-    const courseId = process.env.CANVAS_COURSE_ID || process.env.VITE_CANVAS_COURSE_ID || '1';
-
-    return {
-      user: userId,
-      role: baseRole,
-      studentIndex,
-      courseId,
-      isLocalSession: true,
-      source: 'dev-token'
-    };
-  }
-
-  return null;
+  // LTI 1.3 token strictly relies on cookies, not Bearer tokens (which are used for Sessions)
+  return req.cookies?.[LTI_TOKEN_COOKIE] || null;
 }
 
 export function getLtiTokenExpiry(req) {
@@ -77,8 +30,6 @@ export function shouldRefreshLtiCookie(req) {
 }
 
 export function refreshLtiCookieOptions(req, res) {
-  const isProd = isProduction();
-  const cookieSecure = isProd || isHttpsEnabled();
   const expiry = getLtiTokenExpiry(req);
   const token = extractLtiToken(req);
   if (!token || !expiry) return null;
@@ -91,8 +42,9 @@ export function refreshLtiCookieOptions(req, res) {
     value: token,
     options: {
       httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSecure ? 'None' : 'Lax',
+      secure: true,
+      sameSite: 'None',
+      partitioned: true,
       maxAge
     }
   };

@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: feedback_plugin_db_local
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+
+  gotenberg:
+    container_name: feedback_plugin_gotenberg_local
+    command: gotenberg --api-timeout=120s
+    ports:
+      - "3001:3000"
+
+  app:
+    container_name: feedback_plugin_app_local
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./packages/server:/app/packages/server
+      - ./packages/client:/app/packages/client
+    command: npm run dev

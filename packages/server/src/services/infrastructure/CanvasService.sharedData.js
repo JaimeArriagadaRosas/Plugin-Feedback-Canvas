@@ -266,7 +266,10 @@ export function buildSharedSubmission(courseId, assignmentId, studentId) {
       attachments: [{ filename: 'entrega_final_grupo5.zip', display_name: 'entrega_final_grupo5.zip', url: 'https://example.com/download.zip' }]
     }),
     ...(studentId === 2 && {
-      preview_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+      attachments: [{ filename: 'dummy.pdf', display_name: 'dummy.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }]
+    }),
+    ...(studentId === 3 && {
+      attachments: [{ filename: 'documento.docx', display_name: 'documento.docx', url: 'https://calibre-ebook.com/downloads/demos/demo.docx' }]
     })
   };
 }

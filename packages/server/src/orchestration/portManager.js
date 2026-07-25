@@ -26,7 +26,7 @@ export function killProcessOnPort(port) {
             const parts = line.trim().split(/\s+/);
             const pid = parts[parts.length - 1];
             if (pid && pid !== '0') {
-              console.log(`[run] Terminando proceso PID ${pid} en puerto ${port}`);
+              console.log(`  · Terminando proceso PID ${pid} en puerto ${port}`);
               execFileSync('taskkill', ['/F', '/PID', pid], { encoding: 'utf8' });
             }
           }
@@ -37,19 +37,19 @@ export function killProcessOnPort(port) {
         const stdout = execFileSync('lsof', [`-ti:${port}`], { encoding: 'utf8' });
         const pids = stdout.trim().split('\n').filter(Boolean);
         for (const pid of pids) {
-          console.log(`[run] Terminando proceso PID ${pid} en puerto ${port}`);
+          console.log(`  · Terminando proceso PID ${pid} en puerto ${port}`);
           process.kill(parseInt(pid, 10), 'SIGTERM');
         }
       } catch { /* puerto libre */ }
     }
   } catch (e) {
-    console.error(`[run] No se pudo liberar puerto ${port}: ${e.message}`);
+    console.error(`  × No se pudo liberar puerto ${port}: ${e.message}`);
   }
 }
 
 export async function clearPorts(vitePort, serverPort) {
-  console.log(`[run] Limpiando procesos previos en puertos ${vitePort} y ${serverPort}...`);
+  console.log(`  · Limpiando procesos previos en puertos ${vitePort} y ${serverPort}...`);
   if (await isPortInUse(vitePort)) killProcessOnPort(vitePort);
   if (await isPortInUse(serverPort)) killProcessOnPort(serverPort);
-  console.log('[run] Puertos liberados.');
+  console.log('  √ Puertos liberados.');
 }

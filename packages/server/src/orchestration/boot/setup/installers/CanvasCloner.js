@@ -13,16 +13,14 @@ export class CanvasCloner {
     this.boot.info(`Clonando repositorio Canvas LMS en: ${this.canvasDir}`);
     
     const composeFile = path.join(this.canvasDir, 'docker-compose.yml');
-    const vendorDir = path.join(this.canvasDir, 'vendor');
-
-    if (fs.existsSync(composeFile) && fs.existsSync(vendorDir)) {
-      this.boot.info('La carpeta canvas-lms-master ya tiene el código completo. Se omitirá la clonación.');
+    if (fs.existsSync(composeFile)) {
+      this.boot.info('La carpeta canvas-lms-master ya tiene el código base. Se omitirá la clonación.');
       this._configureBasicEnv();
       this._configureDockerOverride();
       this._fixCRLF();
       return true;
-    } else if (fs.existsSync(composeFile)) {
-      this.boot.warn('La carpeta canvas-lms-master parece estar incompleta (se interrumpió la descarga). Limpiando y volviendo a clonar...');
+    } else if (fs.existsSync(this.canvasDir)) {
+      this.boot.warn('La carpeta canvas-lms-master existe pero está incompleta o corrupta. Limpiando y volviendo a clonar...');
       fs.rmSync(this.canvasDir, { recursive: true, force: true });
     }
 

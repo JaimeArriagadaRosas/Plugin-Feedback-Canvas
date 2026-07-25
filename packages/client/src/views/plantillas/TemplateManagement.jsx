@@ -42,9 +42,14 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
       setErrorMsg("Por favor, cree al menos una plantilla para continuar.");
       return;
     }
-    const hasActiveAssignments = assignments.some(a => Boolean(a.active) === true);
-    if (!hasActiveAssignments) {
+    const activeAssignments = assignments.filter(a => Boolean(a.active) === true);
+    if (activeAssignments.length === 0) {
       setErrorMsg("Debe activar el plugin al menos en una tarea para continuar.");
+      return;
+    }
+    const orphaned = activeAssignments.filter(a => !a.plantilla_id && !a.template);
+    if (orphaned.length > 0) {
+      setErrorMsg(`Hay ${orphaned.length} tarea(s) activa(s) sin una plantilla configurada en el Paso 1. Por favor regrese al Paso 1 y seleccione una plantilla.`);
       return;
     }
     if (onNext) onNext();

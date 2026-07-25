@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { getSecret } from '../../config/secrets.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const ALGORITHM = 'aes-256-gcm';
 // B6 FIX: NIST SP 800-38D recomienda IV de 12 bytes (96 bits) para AES-GCM.

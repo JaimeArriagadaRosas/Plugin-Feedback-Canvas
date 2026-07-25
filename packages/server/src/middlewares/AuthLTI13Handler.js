@@ -22,7 +22,7 @@ class SessionTokenIdentityProvider {
     if (!bearerToken || !bearerToken.startsWith('eyJ')) return null;
 
     try {
-      const decoded = verifySessionToken(bearerToken);
+      const decoded = await verifySessionToken(bearerToken);
       const ltiRoles = getRolesFromClaims(decoded);
       return {
         user: decoded.sub,
@@ -74,29 +74,6 @@ export const AuthLTI13Handler = async (req, res, next) => {
       return next();
     }
 
-    // Bypass de prueba: solo si un test token firmado explícitamente está
-    // habilitado. Antes se aceptaba `lti-token=admin-token` en NODE_ENV=test
-    // sin ninguna verificación, lo que era un bypass de autenticación si el
-    // entorno test coincidía con otro contexto. Ahora exige una cookie firmada
-    // vía DEV_TOKEN_SECRET y el flag explícito ENABLE_TEST_AUTH_BYPASS.
-    if (process.env.ENABLE_TEST_AUTH_BYPASS === 'true' && req.cookies) {
-      const testToken = req.cookies['lti-token'];
-      if (testToken && testToken.startsWith('dev-token') && verifyDevToken(testToken)) {
-        const role = testToken.split(':')[1] || 'admin';
-        const roleURN = role === 'admin'
-          ? 'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator'
-          : role === 'student'
-            ? 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
-            : 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor';
-        const localId = role === 'admin' ? '00000000-0000-0000-0000-000000000001' :
-                        role === 'student' ? '00000000-0000-0000-0000-000000000002' :
-                        '00000000-0000-0000-0000-000000000003'; // teacher
-        req.ltiContext = { user: localId, role: [roleURN], courseId: 14852, localRole: role, source: 'test' };
-        req.user = { id: localId };
-        return next();
-      }
-    }
-
     for (const provider of providers) {
       try {
         const identity = await provider.authenticate(req);
@@ -117,12 +94,12 @@ export const AuthLTI13Handler = async (req, res, next) => {
           return next();
         }
       } catch (error) {
-        // Si el provider lanza un error de autenticación definitivo (ej. deployment no permitido),
-        // detenemos la cadena y no intentamos el siguiente esquema.
-        if (error instanceof AppError && [401, 403].includes(error.statusCode)) {
+        // Si el provider lanza un error definitivo como 403 (deployment no permitido),
+        // detenemos la cadena.
+        // Si es 401 (token LTI inválido o expirado), permitimos que otro provider (ej. ApiToken) intente.
+        if (error instanceof AppError && error.statusCode === 403) {
           throw error;
         }
-        // Para errores transitorios o de formato, continuar con el siguiente provider
       }
     }
 

@@ -9,15 +9,22 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_db_password_strong}
       POSTGRES_DB: ${DB_NAME:-feedback_plugin_db}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - plugin_db_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-feedback_plugin_db}"]
-      interval: 2s
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 15s
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: feedback_plugin_gotenberg_local
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
 
 volumes:
   plugin_db_data:

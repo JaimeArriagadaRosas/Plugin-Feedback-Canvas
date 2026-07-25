@@ -13,6 +13,31 @@ import { AppError } from '../utils/errors.js';
 class LtiOidcRecoveryManager {
   
   static mappingCache = new Map();
+  static telemetryMetrics = {
+    totalRecoveries: 0,
+    itpCookieBlocks: 0,
+    audienceRecoveries: 0,
+    unrecoverableErrors: 0,
+    history: []
+  };
+
+  static recordTelemetry(type, details = {}) {
+    const timestamp = new Date().toISOString();
+    if (type === 'AUDIENCE_RECOVERY') this.telemetryMetrics.audienceRecoveries++;
+    if (type === 'ITP_COOKIE_BLOCK') this.telemetryMetrics.itpCookieBlocks++;
+    if (type === 'UNRECOVERABLE_ERROR') this.telemetryMetrics.unrecoverableErrors++;
+    this.telemetryMetrics.totalRecoveries++;
+
+    const event = { type, timestamp, ...details };
+    this.telemetryMetrics.history.unshift(event);
+    if (this.telemetryMetrics.history.length > 100) this.telemetryMetrics.history.pop();
+
+    logger.info(`[OIDC_RECOVERY_AUDIT] [${type}] Evento de recuperación o fallo auditable registrado`, event);
+  }
+
+  static getTelemetryMetrics() {
+    return { ...this.telemetryMetrics };
+  }
 
   static isValidCanvasId(receivedId, expectedClientId) {
     const targetClientId = String(expectedClientId);
@@ -30,6 +55,7 @@ class LtiOidcRecoveryManager {
       if (audNum >= 10000000000000n && audNum % 10000000000000n === targetNum) {
         logger.info(`[LtiOidcRecoveryManager] Detectado Canvas Global ID. Mapeando ${rId} -> ${targetClientId} (Cacheado)`);
         this.mappingCache.set(cacheKey, true);
+        this.recordTelemetry('AUDIENCE_RECOVERY', { receivedId: rId, expectedClientId: targetClientId });
         return true;
       }
     } catch (err) {
@@ -51,6 +77,7 @@ class LtiOidcRecoveryManager {
   static validateAndRecoverAudience(decoded, expectedClientId) {
     if (!decoded || !decoded.aud) {
       logger.warn('[LtiOidcRecoveryManager] Token JWT sin claim "aud". Fallo OIDC.', { expectedClientId });
+      this.recordTelemetry('UNRECOVERABLE_ERROR', { reason: 'missing_aud', expectedClientId });
       throw new AppError(`El token LTI no contiene audiencia (aud)`, 401);
     }
 
@@ -68,6 +95,7 @@ class LtiOidcRecoveryManager {
         expected: targetClientId,
         iss: decoded.iss
       });
+      this.recordTelemetry('UNRECOVERABLE_ERROR', { received: receivedAudience, expected: targetClientId });
       throw new AppError(`jwt audience invalid. expected: ${targetClientId} but got: ${receivedAudience.join(',')}`, 401);
     }
     
@@ -85,11 +113,13 @@ class LtiOidcRecoveryManager {
     const isCookieIssue = error.message.toLowerCase().includes('state') || error.message.toLowerCase().includes('nonce');
     
     if (isCookieIssue) {
+      this.recordTelemetry('ITP_COOKIE_BLOCK', { error: error.message, ...context });
       logger.error('[LtiOidcRecoveryManager] [ITP_COOKIE_BLOCK_DETECTED] Posible bloqueo de cookies 3rd-party detectado.', {
         error: error.message,
         ...context
       });
     } else {
+      this.recordTelemetry('UNRECOVERABLE_ERROR', { error: error.message, ...context });
       logger.error('[LtiOidcRecoveryManager] OIDC Validation Exception', {
         error: error.message,
         stack: error.stack,

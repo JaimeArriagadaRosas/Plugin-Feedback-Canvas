@@ -6,28 +6,44 @@
 *.new
 *.fixed
 *.placeholder-fix
+*.orig
 
 # Dependencias y builds
 node_modules/
 dist/
 build/
+.npm/
+.yarn/
+*.tgz
 
-# Variables de entorno
+# Variables de entorno y secretos (Critico para LTI)
 .env
-.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+packages/server/certs/
 
-# Logs
+# Logs y persistencia local
 *.log
 logs/
+*.sqlite
+*.sqlite3
+db/data/
 
 # Sistema
 .DS_Store
 Thumbs.db
+*.swp
 
-# Editores
+# Editores y Herramientas
 .vscode/
 .idea/
-packages/server/certs/  
-
-# Archivos temporales locales (JSON extraído del setup, etc.)
+.fleet/
 tmp/
+temp/
+coverage/
+.nyc_output/
+.eslintcache

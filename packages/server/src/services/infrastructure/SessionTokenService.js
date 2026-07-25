@@ -10,8 +10,11 @@ export function getSessionPublicKeyPem() {
   return publicKeyPem;
 }
 
-export function signSessionToken(claims) {
+import db from '../../data/db.js';
+
+export async function signSessionToken(claims) {
   const { privateKeyPem } = keyManagerService.ensureKeys();
+  const expTimestamp = Math.floor(Date.now() / 1000) + Math.floor(SESSION_TOKEN_EXPIRY_MS / 1000);
   const payload = {
     sub: claims.sub,
     iss: 'plugin-session',
@@ -23,12 +26,21 @@ export function signSessionToken(claims) {
     'https://purl.imsglobal.org/spec/lti/claim/roles': claims.roles,
     'https://purl.imsglobal.org/spec/lti/claim/custom': { unida_entry: claims.entry },
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + Math.floor(SESSION_TOKEN_EXPIRY_MS / 1000),
+    exp: expTimestamp,
   };
-  return jwt.sign(payload, privateKeyPem, { algorithm: 'RS256' });
+  const token = jwt.sign(payload, privateKeyPem, { algorithm: 'RS256' });
+  const sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+  
+  // Guardar en BD para cumplir persistencia
+  await db.query(
+    'INSERT INTO plugin_sessions (session_id, user_id, jwt_token, expires_at) VALUES ($1, $2, $3, to_timestamp($4)) ON CONFLICT DO NOTHING',
+    [sessionId, claims.sub, token, expTimestamp]
+  );
+  
+  return token;
 }
 
-export function verifySessionToken(token) {
+export async function verifySessionToken(token) {
   const { publicKeyPem } = keyManagerService.ensureKeys();
   const decoded = jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] });
   if (decoded.iss !== 'plugin-session') {
@@ -37,5 +49,12 @@ export function verifySessionToken(token) {
   if (decoded.aud !== 'plugin') {
     throw new Error('Audience inválida para session_token');
   }
+
+  // Verificar si existe en BD y no ha expirado
+  const res = await db.query('SELECT session_id FROM plugin_sessions WHERE jwt_token = $1 AND expires_at > NOW()', [token]);
+  if (res.rowCount === 0) {
+    throw new Error('Sesión expirada o no encontrada en BD (Persistencia requerida)');
+  }
+
   return decoded;
 }

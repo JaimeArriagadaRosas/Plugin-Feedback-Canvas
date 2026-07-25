@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS Plantilla_Feedback (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS plantilla_feedback_updated_at ON Plantilla_Feedback;
 CREATE TRIGGER plantilla_feedback_updated_at
   BEFORE UPDATE ON Plantilla_Feedback
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -57,9 +58,9 @@ CREATE TABLE IF NOT EXISTS Historial_Feedback_Generado (
     fecha_generacion TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_historial_estudiante ON Historial_Feedback_Generado(estudiante_id);
-CREATE INDEX idx_historial_curso ON Historial_Feedback_Generado(curso_id);
-CREATE INDEX idx_historial_plantilla_id ON Historial_Feedback_Generado(plantilla_id);
+CREATE INDEX IF NOT EXISTS idx_historial_estudiante ON Historial_Feedback_Generado(estudiante_id);
+CREATE INDEX IF NOT EXISTS idx_historial_curso ON Historial_Feedback_Generado(curso_id);
+CREATE INDEX IF NOT EXISTS idx_historial_plantilla_id ON Historial_Feedback_Generado(plantilla_id);
 
 -- Configuraciones por curso y asignación
 CREATE TABLE IF NOT EXISTS Configuracion_Curso_Tarea (
@@ -71,6 +72,7 @@ CREATE TABLE IF NOT EXISTS Configuracion_Curso_Tarea (
     UNIQUE(contexto_tipo, contexto_id)
 );
 
+DROP TRIGGER IF EXISTS config_curso_tarea_updated_at ON Configuracion_Curso_Tarea;
 CREATE TRIGGER config_curso_tarea_updated_at
   BEFORE UPDATE ON Configuracion_Curso_Tarea
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -104,8 +106,8 @@ CREATE TABLE IF NOT EXISTS Logs_Auditoria (
     fecha TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_logs_usuario ON Logs_Auditoria(usuario_id);
-CREATE INDEX idx_logs_fecha ON Logs_Auditoria(fecha);
+CREATE INDEX IF NOT EXISTS idx_logs_usuario ON Logs_Auditoria(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_logs_fecha ON Logs_Auditoria(fecha);
 
 -- Notificaciones
 CREATE TABLE IF NOT EXISTS Notificaciones_Feedback (
@@ -117,7 +119,7 @@ CREATE TABLE IF NOT EXISTS Notificaciones_Feedback (
     enviado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_notificaciones_feedback ON Notificaciones_Feedback(feedback_id);
+CREATE INDEX IF NOT EXISTS idx_notificaciones_feedback ON Notificaciones_Feedback(feedback_id);
 
 -- Configuración IA
 CREATE TABLE IF NOT EXISTS Configuracion_IA (
@@ -127,6 +129,7 @@ CREATE TABLE IF NOT EXISTS Configuracion_IA (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS config_ia_updated_at ON Configuracion_IA;
 CREATE TRIGGER config_ia_updated_at
   BEFORE UPDATE ON Configuracion_IA
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -143,6 +146,7 @@ CREATE TABLE IF NOT EXISTS configuracion_asignacion (
     UNIQUE(canvas_course_id, canvas_assignment_id)
 );
 
+DROP TRIGGER IF EXISTS config_asignacion_updated_at ON configuracion_asignacion;
 CREATE TRIGGER config_asignacion_updated_at
   BEFORE UPDATE ON configuracion_asignacion
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -156,7 +160,7 @@ CREATE TABLE IF NOT EXISTS variables_asignacion (
     ponderacion NUMERIC
 );
 
-CREATE INDEX idx_variables_asignacion_config ON variables_asignacion(configuracion_id);
+CREATE INDEX IF NOT EXISTS idx_variables_asignacion_config ON variables_asignacion(configuracion_id);
 
 -- Tabla de usuarios locales (modo desarrollo)
 CREATE TABLE IF NOT EXISTS usuarios_local (
@@ -173,10 +177,11 @@ CREATE TABLE IF NOT EXISTS usuarios_local (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_usuarios_local_email ON usuarios_local(email);
-CREATE INDEX idx_usuarios_local_rol ON usuarios_local(rol);
-CREATE INDEX idx_usuarios_local_canvas_user_id ON usuarios_local(canvas_user_id);
+CREATE INDEX IF NOT EXISTS idx_usuarios_local_email ON usuarios_local(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_local_rol ON usuarios_local(rol);
+CREATE INDEX IF NOT EXISTS idx_usuarios_local_canvas_user_id ON usuarios_local(canvas_user_id);
 
+DROP TRIGGER IF EXISTS usuarios_local_updated_at ON usuarios_local;
 CREATE TRIGGER usuarios_local_updated_at
   BEFORE UPDATE ON usuarios_local
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -193,8 +198,8 @@ CREATE TABLE IF NOT EXISTS user_lti_mappings (
     UNIQUE(local_user_id, deployment_id, issuer)
 );
 
-CREATE INDEX idx_user_lti_mappings_canvas_sub ON user_lti_mappings(canvas_sub);
-CREATE INDEX idx_user_lti_mappings_deployment ON user_lti_mappings(deployment_id, issuer);
+CREATE INDEX IF NOT EXISTS idx_user_lti_mappings_canvas_sub ON user_lti_mappings(canvas_sub);
+CREATE INDEX IF NOT EXISTS idx_user_lti_mappings_deployment ON user_lti_mappings(deployment_id, issuer);
 
 -- Tabla de permisos por rol (RF52)
 CREATE TABLE IF NOT EXISTS Permisos_Rol (
@@ -203,6 +208,7 @@ CREATE TABLE IF NOT EXISTS Permisos_Rol (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS permisos_rol_updated_at ON Permisos_Rol;
 CREATE TRIGGER permisos_rol_updated_at
   BEFORE UPDATE ON Permisos_Rol
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -224,6 +230,7 @@ CREATE TABLE IF NOT EXISTS canvas_user_tokens (
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS canvas_user_tokens_updated_at ON canvas_user_tokens;
 CREATE TRIGGER canvas_user_tokens_updated_at
   BEFORE UPDATE ON canvas_user_tokens
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -237,8 +244,8 @@ CREATE TABLE IF NOT EXISTS webhook_events (
     processed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_webhook_events_hash ON webhook_events(event_hash);
-CREATE INDEX idx_webhook_events_type ON webhook_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_hash ON webhook_events(event_hash);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_type ON webhook_events(event_type);
 
 -- Dead letter para webhooks fallidos
 CREATE TABLE IF NOT EXISTS webhook_dead_letter (

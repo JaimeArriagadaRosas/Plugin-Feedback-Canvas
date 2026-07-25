@@ -42,8 +42,33 @@ export default function AccessDenied({ apiError }) {
           Acceso LTI Restringido
         </h2>
         <p style={{ color: '#2d3b45', fontSize: '15px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
-          No se detectó una sesión LTI válida. Inicie sesión para continuar.
+          No se detectó una sesión LTI válida o hubo un problema temporal de conexión.
         </p>
+
+        <div style={{ marginBottom: '25px' }}>
+          <button
+            onClick={() => {
+              log.info('Usuario solicitó reintento de conexión LTI');
+              window.location.reload();
+            }}
+            style={{
+              background: '#0770a3',
+              color: '#ffffff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '4px',
+              fontSize: '15px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.15)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            🔄 Reintentar Conexión LTI / Refrescar Sesión
+          </button>
+        </div>
 
         {/* Panel de información de depuración */}
         <div style={{ padding: '12px 16px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', textAlign: 'left', marginBottom: '20px', fontFamily: 'monospace' }}>

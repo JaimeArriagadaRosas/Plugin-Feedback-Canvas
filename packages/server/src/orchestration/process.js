@@ -20,8 +20,22 @@ export function spawnVite() {
 export function spawnBackend() {
   const child = spawn('node', ['packages/server/src/server.js'], {
     cwd: PLUGIN_DIR,
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+
+  const writeWithSpinner = (stream, data) => {
+    if (global.canvasSpinner) global.canvasSpinner.clear();
+    stream.write(data);
+    if (global.canvasSpinner) global.canvasSpinner.start();
+  };
+
+  if (child.stdout) {
+    child.stdout.on('data', (data) => writeWithSpinner(process.stdout, data));
+  }
+  if (child.stderr) {
+    child.stderr.on('data', (data) => writeWithSpinner(process.stderr, data));
+  }
+
   return child;
 }
 

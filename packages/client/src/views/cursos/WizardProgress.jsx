@@ -1,4 +1,7 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
+import { assignmentKeys } from 'shared/lib/queryKeys';
 
 const styles = {
   wizard: {
@@ -52,14 +55,32 @@ const styles = {
   wizardLineActive: {
     background: "#0770a3",
   },
+  badgeWarning: {
+    background: "#f39c12",
+    color: "#fff",
+    padding: "2px 6px",
+    borderRadius: "10px",
+    fontSize: "10px",
+    fontWeight: "bold",
+    marginLeft: "4px"
+  }
 };
 
 export default function WizardProgress({ currentStep = 0 }) {
+  const auth = useAuth() || {};
+  const selectedCourse = auth.selectedCourse || null;
+  const { data: assignments = [] } = useQuery({
+    queryKey: assignmentKeys.byCourse(selectedCourse?.id),
+    enabled: !!selectedCourse?.id,
+  });
+
+  const orphanedCount = assignments.filter(a => Boolean(a.active) === true && (!a.plantilla_id && !a.template)).length;
+
   const steps = [
-    { id: 0, label: "SELECCIÓN DE CURSO" },
-    { id: 1, label: "LISTADO DE TAREAS" },
-    { id: 2, label: "GESTIÓN PLANTILLAS" },
-    { id: 3, label: "CONFIGURAR FEEDBACK" },
+    { id: 0, label: "SELECCIÓN DE CURSO", warning: false },
+    { id: 1, label: "LISTADO DE TAREAS", warning: orphanedCount > 0 },
+    { id: 2, label: "GESTIÓN PLANTILLAS", warning: orphanedCount > 0 },
+    { id: 3, label: "CONFIGURAR FEEDBACK", warning: false },
   ];
 
   return (
@@ -77,6 +98,11 @@ export default function WizardProgress({ currentStep = 0 }) {
               {step.id}
             </div>
             {step.label} {currentStep === step.id ? "[activo]" : (currentStep > step.id ? "[completado]" : "")}
+            {step.warning && (
+              <span style={styles.badgeWarning} title="Existen tareas activas sin plantilla asignada">
+                ⚠️ Sin Plantilla
+              </span>
+            )}
           </div>
           {index < steps.length - 1 && (
             <div style={{ 

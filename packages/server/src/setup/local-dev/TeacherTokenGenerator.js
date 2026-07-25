@@ -37,15 +37,15 @@ export class TeacherTokenGenerator {
   static async generate(spinner) {
     const log = (msg) => {
       if (spinner) spinner.clear();
-      console.log(`    ${pc.blue('[TEACHER-TOKEN]')} ${msg}`);
+      console.log(`  · ${msg}`);
     };
     const warn = (msg) => {
       if (spinner) spinner.clear();
-      console.log(`    ${pc.yellow('[TEACHER-TOKEN]')} ${msg}`);
+      console.log(`  ! ${msg}`);
     };
     const error = (msg) => {
       if (spinner) spinner.clear();
-      console.log(`    ${pc.red('[TEACHER-TOKEN]')} ${msg}`);
+      console.log(`  × ${msg}`);
     };
 
     try {
@@ -138,20 +138,15 @@ export class TeacherTokenGenerator {
             log(`Token sincronizado en PostgreSQL (canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
 
             if (spinner) {
-              spinner.success({
-                text: `Token del profesor listo (canvas_user_id=${userId}, ${wasRegenerated ? 'regenerado' : 'reutilizado'}). Sincronizado en PostgreSQL.`,
-                mark: '  √'
-              });
+              spinner.success({ text: `Token sincronizado en PostgreSQL (canvas_user_id=${userId}).` });
             } else {
-              console.log(`    ${pc.green('[TEACHER-TOKEN]')} Token del profesor listo (canvas_user_id=${userId}). Sincronizado en PostgreSQL.`);
+              console.log(`  √ Token sincronizado en PostgreSQL (canvas_user_id=${userId}).`);
             }
           } else {
-            warn(`No se pudo obtener canvas_sub. Token listo pero NO sincronizado en DB.`);
-            if (spinner) spinner.warn({ text: `Token listo pero sin sincronización en DB (canvas_sub no disponible).`, mark: '  !' });
+            warn(`No se pudo extraer canvas_sub para sincronizar en BD.`);
           }
-        } catch (dbErr) {
-          warn(`No se pudo sincronizar el token en PostgreSQL: ${dbErr.message}`);
-          if (spinner) spinner.warn({ text: `Token listo, pero falló la sincronización en DB: ${dbErr.message}`, mark: '  !' });
+        } catch (e) {
+          warn(`Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
         }
       } else if (tokenData.networkError) {
         // Canvas no respondió — advertencia pero no falla el arranque
@@ -163,7 +158,7 @@ export class TeacherTokenGenerator {
       if (spinner) {
         spinner.warn({ text: `Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`, mark: '  !' });
       } else {
-        console.log(`    ${pc.yellow('[TEACHER-TOKEN]')} Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
+        console.log(`  ! Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
       }
     }
   }

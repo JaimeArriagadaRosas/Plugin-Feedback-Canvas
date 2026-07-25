@@ -14,13 +14,8 @@
 import db from '../../src/datos/db.js';
 import logger from '../../src/utils/logger.js';
 
-async function runMigrations() {
-  if (db.isLocalMode && db.isLocalMode()) {
-    logger.info('Modo local activo: saltando migraciones de PostgreSQL.');
-    process.exit(0);
-  }
-
-  const migrations = [
+function readSqlFiles() {
+  return [
     `CREATE TABLE IF NOT EXISTS Plantilla_Feedback (
       id SERIAL PRIMARY KEY,
       nombre VARCHAR(255) NOT NULL,
@@ -115,7 +110,9 @@ async function runMigrations() {
       ponderacion INTEGER DEFAULT 100
     )`
   ];
+}
 
+async function executeSqlBatch(migrations) {
   logger.info('Ejecutando migraciones de PostgreSQL...');
   try {
     for (const sql of migrations) {
@@ -127,6 +124,15 @@ async function runMigrations() {
     logger.error('Error en migraciones', { error: error.message });
     process.exit(1);
   }
+}
+
+async function runMigrations() {
+  if (db.isLocalMode && db.isLocalMode()) {
+    logger.info('Modo local activo: saltando migraciones de PostgreSQL.');
+    process.exit(0);
+  }
+  const migrations = readSqlFiles();
+  await executeSqlBatch(migrations);
 }
 
 runMigrations();

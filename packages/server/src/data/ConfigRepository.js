@@ -48,6 +48,15 @@ export default class ConfigRepository {
     return res.rows[0];
   }
 
+  async resetActiveByCourse(courseId, profesorId) {
+    await db.query(
+      `UPDATE configuracion_asignacion 
+       SET feedback_activo = false, fecha_modificacion = CURRENT_TIMESTAMP
+       WHERE canvas_course_id = $1 AND ($2::varchar IS NULL OR profesor_id = $2)`,
+      [String(courseId), profesorId ? String(profesorId) : null]
+    );
+  }
+
   async saveVariablesAsignacion(configuracionId, variables) {
     // Replace old variables
     await db.query(`DELETE FROM variables_asignacion WHERE configuracion_id = $1`, [configuracionId]);

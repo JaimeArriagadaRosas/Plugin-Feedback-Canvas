@@ -1,5 +1,6 @@
 import { getLTITokenService } from '../../services/infrastructure/LTITokenService.js';
-import { extractLtiToken, isDevToken } from '../ltiCookie.js';
+import { extractLtiToken } from '../ltiCookie.js';
+import { isDevToken } from '../ltiCookie_local.js';
 import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
 import { AppError } from '../../utils/errors.js';
 
@@ -39,7 +40,10 @@ export class LtiIdentityProvider {
           entry: getEntryFromClaims(decoded)
         };
       } catch (e) {
-        if (e instanceof AppError && [401, 403].includes(e.statusCode)) {
+        // En lugar de lanzar 401 y abortar la autenticación (Error Shadowing), 
+        // silenciamos el error para probar el siguiente Identity Provider.
+        // Si el error es 403 (Deployment ID bloqueado), sí debemos abortar.
+        if (e instanceof AppError && e.statusCode === 403) {
           throw e;
         }
       }

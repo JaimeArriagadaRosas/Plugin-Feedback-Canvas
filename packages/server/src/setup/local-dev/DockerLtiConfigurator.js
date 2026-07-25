@@ -86,7 +86,7 @@ export class DockerLtiConfigurator {
         updates.LTI_CLIENT_SECRET = process.env.LTI_CLIENT_SECRET;
       }
       
-      const pluginDir = path.resolve(__dirname, '../../../../');
+      const pluginDir = path.resolve(__dirname, '../../../../../');
       const { updateEnvVars } = await import('../../orchestration/envWriter.js');
       if (spinner) spinner.clear();
       updateEnvVars(pluginDir, updates);

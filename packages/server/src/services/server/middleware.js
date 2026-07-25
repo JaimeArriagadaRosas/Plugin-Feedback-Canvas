@@ -10,7 +10,7 @@ import { corsMiddleware } from '../../security/cors.js';
 import { getEnv } from '../../config/index.js';
 import logger from '../../utils/logger.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 export function createApp() {
   const app = express();
@@ -18,10 +18,7 @@ export function createApp() {
 
   // Trust proxy: necesario para rate limiting por IP real y secure cookies
   // cuando se está detrás de un reverse proxy / load balancer (nginx, ALB...).
-  const trustProxy = getEnv('TRUST_PROXY');
-  if (trustProxy) {
-    app.set('trust proxy', trustProxy === 'true' ? 1 : trustProxy);
-  }
+  app.set('trust proxy', 1);
 
   app.disable('x-powered-by');
   app.use(helmetMiddleware());

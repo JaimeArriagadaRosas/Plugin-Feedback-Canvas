@@ -11,6 +11,7 @@ import StatsController from '../controllers/StatsController.js';
 import PermissionsController from '../controllers/PermissionsController.js';
 import AuditLogController from '../controllers/AuditLogController.js';
 import CanvasOAuthController from '../controllers/CanvasOAuthController.js';
+import FileController from '../controllers/FileController.js';
 import { requireCanvasOAuth } from '../middlewares/CanvasOAuthMiddleware.js';
 import { authorizeRole } from '../authz/authorizeRole.js';
 import { auditLogMiddleware } from '../middlewares/AuditLogMiddleware.js';
@@ -44,6 +45,7 @@ export default class GestorRutasAPI {
     this.auditLogCtrl    = new AuditLogController();
     this.webhookCtrl    = this.deps.webhookController;
     this.canvasOAuthCtrl = new CanvasOAuthController(this.deps.canvasTokenRepo, this.deps.canvasClient);
+    this.fileCtrl        = new FileController(this.deps.canvasService);
     logger.debug('Controladores de API inicializados');
   }
 
@@ -92,7 +94,11 @@ export default class GestorRutasAPI {
     this.router.get('/courses/:courseId/assignments', authorizeRole(['teacher']), ...validateCourseId, handleValidationErrors, (req, res, next) => { logger.debug('GET /courses/:id/assignments', { courseId: req.params.courseId }); this.courseCtrl.getAssignments(req, res, next); });
     this.router.get('/courses/:courseId/students', authorizeRole(['teacher']), ...validateCourseId, handleValidationErrors, (req, res, next) => this.courseCtrl.getStudents(req, res, next));
     this.router.get('/courses/:courseId/assignments/:assignmentId/submissions/:studentId', authorizeRole(['teacher']), ...validateCourseId, ...validateAssignmentId, ...validateStudentId, handleValidationErrors, (req, res, next) => this.courseCtrl.getSubmission(req, res, next));
+    this.router.post('/courses/:courseId/assignments/reset-active', authorizeRole(['teacher']), ...validateCourseId, handleValidationErrors, (req, res, next) => this.courseCtrl.resetActiveAssignments(req, res, next));
     this.router.post('/courses/:courseId/assignments/:assignmentId/toggle', authorizeRole(['teacher']), ...validateCourseId, ...validateAssignmentId, handleValidationErrors, (req, res, next) => this.courseCtrl.togglePlugin(req, res, next));
+    
+    // Ruta proxy para conversiones de archivos y vista previa
+    this.router.get('/file/preview', authorizeRole(['teacher']), handleValidationErrors, (req, res, next) => this.fileCtrl.preview(req, res, next));
   }
 
   _configurarRutasPlantillas() {

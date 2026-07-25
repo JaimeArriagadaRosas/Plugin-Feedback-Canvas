@@ -13,9 +13,8 @@ export class DataSeeder {
   }
 
   async seedData() {
-    this.boot.info('=========================================================');
-    this.boot.info('   INICIALIZANDO DATOS DE PRUEBA EN CANVAS LMS');
-    this.boot.info('=========================================================');
+    this.boot.plain('');
+    this.boot.plain('── ▶ Inicializando datos de prueba en Canvas LMS ───────────');
 
     if (!fs.existsSync(this.seedFile)) {
       this.boot.error(`No se encontró el script de semilla: ${this.seedFile}`);
@@ -31,12 +30,22 @@ export class DataSeeder {
     }
 
     this.boot.info('Inyectando usuarios y cursos de prueba en Canvas...');
-    const spinner = createSpinner('Inyectando datos de prueba (esto tomará un par de minutos)...').start();
 
     // spawn needs to feed stdin
     // We can use a trick with cross-spawn or just child_process directly since we need to write to stdin
-    const { spawn } = await import('node:child_process');
+    const { spawn, execSync } = await import('node:child_process');
     
+    try {
+      this.boot.info('Copiando archivos de prueba al contenedor Canvas...');
+      const mockFilesDir = path.join(this.pluginDir, 'db', 'seeds', 'mock_files');
+      // Copiar la carpeta mock_files entera al directorio temporal del contenedor web
+      execSync(`docker compose cp "${mockFilesDir}" web:/tmp/`, { cwd: this.canvasDir, stdio: 'ignore' });
+    } catch (e) {
+      this.boot.warn(`No se pudieron copiar los mock_files al contenedor: ${e.message}. Las entregas no tendrán archivos adjuntos.`);
+    }
+
+    const spinner = createSpinner('Inyectando datos de prueba (esto tomará un par de minutos)...').start();
+
     return new Promise((resolve) => {
       const child = spawn('docker', ['compose', 'exec', '-i', 'web', 'bundle', 'exec', 'rails', 'runner', '-'], {
         cwd: this.canvasDir,
@@ -59,11 +68,10 @@ export class DataSeeder {
       child.on('close', (code) => {
         clearTimeout(timeoutId);
         if (code === 0) {
-          spinner.success({ text: '¡Base de datos poblada exitosamente!' });
-          this.boot.info(stdoutStr);
+          spinner.success({ text: '¡Base de datos poblada exitosamente!', mark: '  √' });
           this._syncCanvasToken(stdoutStr).then(() => resolve(true)).catch(() => resolve(true));
         } else {
-          spinner.error({ text: 'Error al ejecutar el script de semilla.' });
+          spinner.error({ text: 'Error al ejecutar el script de semilla.', mark: '  ×' });
           this.boot.error(`Código de salida ${code}. Salida:\n${stdoutStr}\n${stderrStr}`);
           resolve(false);
         }
@@ -119,7 +127,9 @@ export class DataSeeder {
         if (seedSuccess) {
           this.boot.info('Usuarios locales (estudiantes/profesor) sincronizados con éxito en la BD PostgreSQL del plugin.');
         } else {
-          this.boot.error('Error al sincronizar usuarios locales en la BD del plugin: ' + seedOut);
+          // Limpiar el spam extrayendo solo el error relevante (últimas lineas)
+          const cleanOut = seedOut.split('\n').filter(l => l.trim().length > 0).slice(-3).join('\n    ');
+          this.boot.error('Error al sincronizar usuarios locales en la BD del plugin:\n    ' + cleanOut);
         }
       } catch (e) {
         this.boot.warn('Error parseando perfiles_data.json: ' + e.message);

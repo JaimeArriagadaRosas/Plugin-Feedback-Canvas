@@ -5,12 +5,12 @@ import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './AssignmentTable.module.css';
 
-export default function AssignmentTable({ assignments, onToggle, loading }) {
+export default function AssignmentTable({ assignments, onToggle, onTemplateChange, onError, loading }) {
   const logToggle = useButtonLogger();
   const [selectedTemplates, setSelectedTemplates] = useState({});
 
   const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
+    queryKey: ['templates-raw'],
     queryFn: async () => {
       const result = await api.get('/templates');
       if (!result.exito) throw new Error(result.mensaje || 'Error al obtener plantillas');
@@ -20,14 +20,23 @@ export default function AssignmentTable({ assignments, onToggle, loading }) {
 
   const handleTemplateChange = useCallback((assignmentId, value) => {
     setSelectedTemplates(prev => ({ ...prev, [assignmentId]: value }));
-  }, []);
+    onTemplateChange?.(assignmentId, value);
+  }, [onTemplateChange]);
 
   const handleToggle = useCallback(
     (assignment) => {
-      const plantilla_id = selectedTemplates[assignment.id] !== undefined ? selectedTemplates[assignment.id] : assignment.template;
+      const plantilla_id = selectedTemplates[assignment.id] !== undefined ? selectedTemplates[assignment.id] : (assignment.plantilla_id || assignment.template);
+      if (!assignment.active && (!plantilla_id || plantilla_id === "")) {
+        if (onError) {
+          onError("Debe seleccionar una plantilla para esta tarea antes de activar el plugin IA.");
+        } else {
+          alert("Debe seleccionar una plantilla para esta tarea antes de activar el plugin IA.");
+        }
+        return;
+      }
       logToggle(`ASSIGNMENT_TOGGLE_${assignment.active ? 'DEACTIVATE' : 'ACTIVATE'}`, () => onToggle?.({ ...assignment, plantilla_id }))();
     },
-    [onToggle, logToggle, selectedTemplates]
+    [onToggle, logToggle, selectedTemplates, onError]
   );
 
   if (!loading && assignments.length === 0) {
@@ -77,7 +86,7 @@ export default function AssignmentTable({ assignments, onToggle, loading }) {
             <td>
               <select 
                 className={styles.select} 
-                value={selectedTemplates[item.id] !== undefined ? selectedTemplates[item.id] : (item.template || '')}
+                value={selectedTemplates[item.id] !== undefined ? selectedTemplates[item.id] : (item.plantilla_id || item.template || '')}
                 onChange={(e) => handleTemplateChange(item.id, e.target.value)}
               >
                 <option value="">Seleccionar plantilla...</option>

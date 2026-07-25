@@ -15,7 +15,7 @@
  */
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-
+import ErrorBoundary from '../../app/ErrorBoundary';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -25,17 +25,15 @@ export default function AdminLayout() {
   const esVistaAdmin   = location.pathname.startsWith('/admin') || location.pathname === '/';
 
   return (
-    <div className="admin-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', fontFamily: "'Lato', sans-serif" }}>
-      <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+    <ErrorBoundary>
+      <div className="admin-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', fontFamily: "'Lato', sans-serif" }}>
+        <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
 
-
-
-
-
-      {/* Contenido principal — <Outlet /> renderiza la ruta activa */}
-      <main id="main-content" style={{ flex: 1 }}>
-        <Outlet />
-      </main>
-    </div>
+        {/* Contenido principal — <Outlet /> renderiza la ruta activa */}
+        <main id="main-content" style={{ flex: 1 }}>
+          <Outlet />
+        </main>
+      </div>
+    </ErrorBoundary>
   );
 }

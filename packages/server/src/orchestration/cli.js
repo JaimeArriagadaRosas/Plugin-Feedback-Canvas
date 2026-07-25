@@ -1,10 +1,10 @@
 import * as readline from 'node:readline';
 import dotenv from 'dotenv';
 import pc from 'picocolors';
-import { input, password } from '@inquirer/prompts';
+import { input, password, confirm } from '@inquirer/prompts';
 
 // Cargar .env para que NON_INTERACTIVE/STARTUP_MODE estén disponibles
-dotenv.config();
+dotenv.config({ quiet: true });
 
 export function ask(question, defaultValue) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -93,4 +93,15 @@ export async function showApiTokenMenu(defaultUrl, defaultToken, defaultCourseId
   const courseId = await ask(`ID del Curso (actual: ${defaultCourseId || '1'})`, defaultCourseId || '1');
   
   return { baseUrl, token, courseId };
+}
+
+export async function askConfirm(message, defaultVal = false) {
+  try {
+    return await confirm({
+      message: message,
+      default: defaultVal
+    });
+  } catch {
+    return defaultVal;
+  }
 }

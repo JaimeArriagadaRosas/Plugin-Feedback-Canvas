@@ -1,7 +1,7 @@
 import logger from '../../utils/logger.js';
 import { AppError } from '../../utils/errors.js';
 import { Agent } from 'undici';
-import { getLocalCaBuffer } from '../../orchestration/TLSConfigurator_local.js';
+import { getLocalCaBuffer } from '../../local/TLSConfigurator_local.js';
 import { getCanvasEnv } from '../../config/index.js';
 
 class CircuitBreaker {
@@ -154,6 +154,12 @@ export default class CanvasClient {
         }
 
         if (!response.ok) {
+          if (response.status === 429) {
+            const err = new Error(`Canvas API rate limit (429) excedido`);
+            err.isTransient = true;
+            canvasCircuitBreaker.recordFailure();
+            throw err;
+          }
           if ([500, 502, 503, 504].includes(response.status)) {
             const err = new Error(`Canvas API error [${response.status}]: ${response.statusText}`);
             err.isTransient = true;

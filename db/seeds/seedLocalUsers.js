@@ -32,7 +32,7 @@ async function seed() {
           rol: u.rol,
           estudiante_index: eIdx,
           canvas_user_id: u.id.toString(),
-          canvas_user_uuid: u.uuid || `uuid-fallback-${u.id}`
+          canvas_user_uuid: u.uuid || `00000000-0000-0000-0000-${u.id.toString().padStart(12, '0')}`
         };
       });
     } else {
