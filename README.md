@@ -88,11 +88,11 @@ Proyecto Plugin feedback/
 ### Paso 1: Entrar a la carpeta del plugin mediante consola
 Antes de poder instalar dependencias o ejecutar el proyecto, debes asegurarte de que tu consola esté posicionada dentro de la carpeta del plugin. Para ello, utiliza el comando `cd` (cambiar de directorio):
 
-*   **Si abres la consola de manera general, navega escribiendo la ruta completa:**
+*   **Si abres la consola de manera general, navega escribiendo la ruta completa hasta donde hayas guardado el proyecto:**
     ```bash
-    cd "d:\Descargas\Proyecto Plugin feedback\Plugin Feedback"
+    cd "ruta/a/tu/Proyecto Plugin feedback/Plugin Feedback"
     ```
-*   **Si ya te encuentras en la carpeta contenedora principal (`Proyecto Plugin feedback`), entra al plugin con:**
+*   **Si ya te encuentras en la carpeta contenedora principal, entra al plugin con:**
     ```bash
     cd "Plugin Feedback"
     ```
@@ -138,11 +138,11 @@ Cuando ejecutas `npm install`, el sistema realiza las siguientes tareas de forma
 **¿Cómo se ve tu carpeta tras la instalación?**
 ```text
 Plugin Feedback/
+├── config/
 ├── db/
-├── node_modules/         <-- ¡NUEVA CARPETA CREADA! Contiene miles de subcarpetas
-├── src/
+├── node_modules/         <-- ¡NUEVA CARPETA CREADA! Contiene dependencias
+├── packages/             <-- Contiene el backend (server) y frontend (client)
 ├── package.json
-├── package-lock.json
 └── ... (otros archivos)
 ```
 > [!NOTE]
@@ -153,16 +153,14 @@ Plugin Feedback/
 
 ## Configuración de Variables de Entorno (.env)
 
-El archivo `.env` guarda información de configuración confidencial.
-1.  Copia el archivo `.env.example` a `.env` en la raíz de la carpeta `Plugin Feedback`.
-    *   *En consola (Windows PowerShell):* `Copy-Item .env.example .env`
-    *   *En consola (macOS/Linux):* `cp .env.example .env`
-3.  Abre el archivo `.env` con cualquier editor de texto.
-4.  Si solo quieres hacer pruebas rápidas locales sin montar Docker ni base de datos, mantén la siguiente variable en `true`:
+El archivo `.env` guarda información de configuración confidencial. El sistema lo genera de forma automática con los valores por defecto durante la instalación interactiva, pero puedes crearlo o modificarlo manualmente si necesitas personalizar algún dato.
+
+1.  Crea o abre el archivo `.env` en la raíz de la carpeta `Plugin Feedback` con cualquier editor de texto.
+2.  Si solo quieres hacer pruebas rápidas locales sin montar Docker ni base de datos, asegúrate de tener la siguiente variable:
     ```env
     VITE_USE_LOCAL_DATA=true
     ```
-5.  Si deseas probar la integración de Inteligencia Artificial, agrega tu API Key de IA en la variable correspondiente (por ejemplo: `GEMINI_API_KEY=tu_clave_aqui`).
+3.  Si deseas probar la integración de Inteligencia Artificial, agrega tu API Key de IA en la variable correspondiente (por ejemplo: `GEMINI_API_KEY=tu_clave_aqui`).
 
 ---
 
@@ -172,11 +170,11 @@ El proyecto ofrece un script interactivo en consola para administrar el inicio y
 
 ### Ejecución Interactiva (Recomendado)
 
-En la terminal dentro de `Plugin Feedback`, ejecuta el siguiente comando:
+En la terminal dentro de `Plugin Feedback`, ejecuta el comando principal:
 ```bash
-node src/index.js
+npm start
 ```
-*(O también puedes usar el comando alternativo: `npm start`)*
+*(Este comando llamará a la lógica interna de orquestación ubicada en los paquetes del servidor).*
 
 Este comando abrirá un menú interactivo en la terminal con tres opciones.
 
