@@ -1,0 +1,85 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.tableHead {
+  background-color: #f7f9fb;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.thLeft {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.thCenter {
+  text-align: center;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  width: 100px;
+}
+
+.thRight {
+  text-align: right;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  width: 120px;
+}
+
+.trBody {
+  border-bottom: 1px solid #f0f4f7;
+}
+
+.trBodyEven {
+  background-color: #fff;
+}
+
+.trBodyOdd {
+  background-color: #fafbfc;
+}
+
+.tdLeft {
+  padding: 10px 12px;
+  color: var(--color-text);
+}
+
+.tdCenter {
+  text-align: center;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.tdRight {
+  text-align: right;
+  padding: 10px 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.scoreHigh {
+  color: #155724;
+}
+
+.scoreMedium {
+  color: #856404;
+}
+
+.scoreLow {
+  color: #721c24;
+}

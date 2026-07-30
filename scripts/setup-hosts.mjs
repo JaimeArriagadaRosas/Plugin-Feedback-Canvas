@@ -10,6 +10,7 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { platform } from "node:os";
+import logger from '../apps/server/src/utils/logger.js';
 
 const HOST_ENTRY = "127.0.0.1\tcanvas.docker";
 const HOSTS_PATH =
@@ -23,7 +24,7 @@ function readHosts() {
   try {
     return readFileSync(HOSTS_PATH, "utf8");
   } catch (err) {
-    console.error(`No se pudo leer ${HOSTS_PATH}: ${err.message}`);
+    logger.error(`No se pudo leer ${HOSTS_PATH}:`, { error: err.message });
     process.exit(1);
   }
 }
@@ -32,8 +33,8 @@ function writeHosts(content) {
   try {
     writeFileSync(HOSTS_PATH, content, "utf8");
   } catch (err) {
-    console.error(
-      `No se pudo escribir ${HOSTS_PATH} (¿ejecutaste como administrador/root?): ${err.message}`
+    logger.error(
+      `No se pudo escribir ${HOSTS_PATH} (¿ejecutaste como administrador/root?):`, { error: err.message }
     );
     process.exit(1);
   }
@@ -49,7 +50,7 @@ const current = readHosts();
 
 if (remove) {
   if (!entryExists(current)) {
-    console.log("La entrada canvas.docker no está presente. Nada que hacer.");
+    logger.info("La entrada canvas.docker no está presente. Nada que hacer.");
     process.exit(0);
   }
   const next = current
@@ -57,16 +58,16 @@ if (remove) {
     .filter((line) => line.trim() !== HOST_ENTRY)
     .join("\n");
   writeHosts(next);
-  console.log("Entrada canvas.docker eliminada de hosts.");
+  logger.info("Entrada canvas.docker eliminada de hosts.");
   process.exit(0);
 }
 
 if (entryExists(current)) {
-  console.log("canvas.docker ya está mapeado a 127.0.0.1 en hosts.");
+  logger.info("canvas.docker ya está mapeado a 127.0.0.1 en hosts.");
   process.exit(0);
 }
 
 appendFileSync(HOSTS_PATH, `\n${HOST_ENTRY}\n`, "utf8");
-console.log(
+logger.info(
   "Añadido: 127.0.0.1 canvas.docker\nAhora Canvas (localhost:8080) responde también en https://canvas.docker"
 );

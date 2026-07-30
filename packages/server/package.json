@@ -1,6 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "cross-spawn": "^7.0.6"
-  }
-}

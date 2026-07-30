@@ -14,4 +14,4 @@ CREATE TRIGGER canvas_user_tokens_updated_at
   BEFORE UPDATE ON canvas_user_tokens
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE INDEX idx_canvas_user_tokens_sub ON canvas_user_tokens(canvas_sub);
+CREATE INDEX IF NOT EXISTS idx_canvas_user_tokens_sub ON canvas_user_tokens(canvas_sub);

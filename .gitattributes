@@ -1,0 +1,25 @@
+# Configuración de finales de línea
+# Forzamos LF para todos los archivos de texto, muy importante para Docker y bash scripts.
+* text=auto eol=lf
+
+# Excepciones binarias donde no debe haber conversión de saltos de línea
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Tratamiento específico para archivos de scripts
+*.sh text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf

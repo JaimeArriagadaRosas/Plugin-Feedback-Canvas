@@ -88,14 +88,12 @@ async function runDiagnosis() {
   section('Estructura de Archivos');
 
   const requiredFiles = [
-    ['src/main.jsx', 'Entrada del frontend React'],
-    ['src/server.js', 'Servidor Express'],
-    ['src/middlewares/AuthLTI13Handler.js', 'Autenticación LTI'],
-    ['src/rutas/GestorRutasAPI.js', 'Rutas de la API'],
-    ['src/utils/logger.js', 'Logger estructurado'],
-    ['src/datos/db.js', 'Módulo de base de datos'],
-    ['src/servicios/infraestructura/CanvasService.local.js', 'Datos locales de Canvas'],
-    ['vite.config.js', 'Configuración de Vite'],
+    ['apps/client/src/main.jsx', 'Entrada del frontend React'],
+    ['apps/server/src/server.js', 'Servidor Express'],
+    ['apps/server/src/middlewares/AuthLTI13Handler.js', 'Autenticación LTI'],
+    ['apps/server/src/routes/GestorRutasAPI.js', 'Rutas de la API'],
+    ['apps/server/src/utils/logger.js', 'Logger estructurado'],
+    ['apps/client/vite.config.js', 'Configuración de Vite'],
     ['.env', 'Variables de entorno'],
   ];
 

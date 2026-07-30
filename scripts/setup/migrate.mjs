@@ -8,7 +8,7 @@ const { Client } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../');
-const SCHEMA_PATH = path.join(ROOT_DIR, 'packages/server/src/data/schema.sql');
+const SCHEMA_PATH = path.join(ROOT_DIR, 'apps/server/src/data/schema.sql');
 
 export async function runMigrations() {
   dotenv.config({ path: path.join(ROOT_DIR, '.env') });

@@ -26,6 +26,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import logger from '../apps/server/src/utils/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -35,11 +36,11 @@ const DEVELOPER_KEY_ID = process.env.DEVELOPER_KEY_ID;
 
 async function main() {
   if (!CANVAS_ACCESS_TOKEN) {
-    console.error('❌ Falta CANVAS_ACCESS_TOKEN (token con permiso de admin de developer keys).');
+    logger.error('❌ Falta CANVAS_ACCESS_TOKEN (token con permiso de admin de developer keys).');
     process.exit(1);
   }
   if (!DEVELOPER_KEY_ID) {
-    console.error('❌ Falta DEVELOPER_KEY_ID (id de la Developer Key "unida-feedback").');
+    logger.error('❌ Falta DEVELOPER_KEY_ID (id de la Developer Key "unida-feedback").');
     process.exit(1);
   }
 
@@ -50,11 +51,11 @@ async function main() {
   const placements = toolConfig.extensions?.[0]?.settings?.placements || [];
   const hasGlobalNav = placements.some(p => p.placement === 'global_navigation');
   if (hasGlobalNav) {
-    console.log('ℹ️ El JSON contiene global_navigation. Se aplicará este placement a nivel de cuenta/usuario.');
+    logger.info('ℹ️ El JSON contiene global_navigation. Se aplicará este placement a nivel de cuenta/usuario.');
   }
 
   const url = `${CANVAS_BASE_URL}/api/v1/developer_keys/${DEVELOPER_KEY_ID}`;
-  console.log(`→ PUT ${url}`);
+  logger.info(`→ PUT ${url}`);
 
   const res = await fetch(url, {
     method: 'PUT',
@@ -67,18 +68,17 @@ async function main() {
 
   const text = await res.text();
   if (!res.ok) {
-    console.error(`❌ Canvas respondió ${res.status}:`);
-    console.error(text);
+    logger.error(`❌ Canvas respondió ${res.status}:`, { text });
     process.exit(1);
   }
 
-  console.log('✅ Developer Key actualizada con los placements correctos.');
-  console.log('   • course_navigation  → visibility:"admins" (oculto a estudiantes)');
-  console.log('   • account_navigation → solo account-admins (Panel de Administración)');
-  console.log('   • global_navigation  → eliminado');
+  logger.info('✅ Developer Key actualizada con los placements correctos.\n' +
+    '   • course_navigation  → visibility:"admins" (oculto a estudiantes)\n' +
+    '   • account_navigation → solo account-admins (Panel de Administración)\n' +
+    '   • global_navigation  → eliminado');
 }
 
 main().catch(err => {
-  console.error('Error inesperado:', err);
+  logger.error('Error inesperado:', { error: err.message, stack: err.stack });
   process.exit(1);
 });

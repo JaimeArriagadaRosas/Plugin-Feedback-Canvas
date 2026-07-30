@@ -24,7 +24,7 @@
             "message_type": "LtiResourceLinkRequest",
             "target_link_uri": "https://localhost:3000/api/lti/callback",
             "default": "enabled",
-            "visibility": "admins",
+            "visibility": "public",
             "windowTarget": "_self",
             "canvas_icon_class": "icon-feedback"
           }
@@ -35,5 +35,9 @@
   "public_jwk_url": "https://localhost:3000/api/lti/jwks",
   "description": "Herramienta Unida para Canvas",
   "target_link_uri": "https://localhost:3000/api/lti/callback",
-  "oidc_initiation_url": "https://localhost:3000/api/lti/login"
+  "oidc_initiation_url": "https://localhost:3000/api/lti/login",
+  "custom_fields": {
+    "canvas_user_id": "$Canvas.user.id",
+    "canvas_course_id": "$Canvas.course.id"
+  }
 }

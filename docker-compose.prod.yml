@@ -2,26 +2,77 @@ version: '3.8'
 
 services:
   db:
+    image: postgres:15-alpine
     container_name: feedback_plugin_db_prod
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      POSTGRES_DB: ${DB_NAME:-feedback_plugin_db}
     # No exponemos puertos a la red host en producción
     expose:
       - "5432"
-
-  gotenberg:
-    container_name: feedback_plugin_gotenberg_prod
-    expose:
-      - "3000"
-
-  app:
-    container_name: feedback_plugin_app_prod
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-    # Configuración de reinicio agresiva para producción
+    volumes:
+      - plugin_db_data:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-feedback_plugin_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 1G
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    command: gotenberg --api-timeout=120s
+    container_name: feedback_plugin_gotenberg_prod
+    expose:
+      - "3000"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  app:
+    image: plugin-feedback-app:latest
+    build:
+      context: ./
+      dockerfile: apps/server/Dockerfile
+    container_name: feedback_plugin_app_prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      - DB_NAME=${DB_NAME:-feedback_plugin_db}
+      - DB_PORT=5432
+      - GOTENBERG_URL=http://gotenberg:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    # Configuración de reinicio agresiva para producción
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+volumes:
+  plugin_db_data:

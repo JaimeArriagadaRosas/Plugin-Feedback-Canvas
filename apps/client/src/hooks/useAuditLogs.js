@@ -1,0 +1,50 @@
+import { useState, useEffect, useCallback } from 'react';
+import apiClient from '../api/apiClient';
+import logger from '../utils/logger';
+
+export function useAuditLogs(limit = 50) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchLogs = useCallback(async () => {
+    let retries = 3;
+    let delay = 1000;
+
+    setLoading(true);
+    setError(null);
+
+    while (retries > 0) {
+      try {
+        const response = await apiClient.get(`/audit/logs?limit=${limit}`);
+        if (response.data?.exito) {
+          setLogs(response.data.data?.logs || []);
+          setLoading(false);
+          break;
+        } else {
+          throw new Error(response.data?.error?.mensaje || 'Error desconocido');
+        }
+      } catch (err) {
+        if (err.response?.status === 429 && retries > 1) {
+          const retryAfter = parseInt(err.response.headers?.['retry-after'] || '0', 10);
+          const waitMs = retryAfter > 0 ? retryAfter * 1000 : delay;
+          logger.warn('useAuditLogs', `Rate limit excedido (429). Reintentando en ${waitMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitMs));
+          if (!retryAfter) delay *= 2;
+          retries--;
+        } else {
+          logger.error('useAuditLogs', 'Error fetching audit logs', { error: err });
+          setError('No se pudieron cargar los logs de auditoría.');
+          setLoading(false);
+          break;
+        }
+      }
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  return { logs, loading, error, fetchLogs };
+}
