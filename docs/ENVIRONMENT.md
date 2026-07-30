@@ -1,39 +1,39 @@
-# Entorno de EjecuciÛn (Estado Estable)
+# Entorno de Ejecuci√≥n (Estado Estable)
 
 > [!WARNING]
 > **ESTADO CONGELADO (FROZEN)**
-> Este proyecto ha sido configurado deliberadamente para usar versiones exactas y fijas de todas sus dependencias y componentes externos. El objetivo es garantizar que siempre funcione exactamente igual, sin importar cu·ndo o dÛnde se instale en el futuro. **No actualices** ninguna librerÌa sin realizar pruebas exhaustivas previas, ya que podrÌas romper la compatibilidad de la integraciÛn LTI o del LMS local.
+> Este proyecto ha sido configurado deliberadamente para usar versiones exactas y fijas de todas sus dependencias y componentes externos. El objetivo es garantizar que siempre funcione exactamente igual, sin importar cu√°ndo o d√≥nde se instale en el futuro. **No actualices** ninguna librer√≠a sin realizar pruebas exhaustivas previas, ya que podr√≠as romper la compatibilidad de la integraci√≥n LTI o del LMS local.
 
 ## Requisitos Base del Sistema
 Para garantizar la estabilidad del proyecto, necesitas:
-*   **Node.js:** v18.x.x *(Imprescindible, versiones mayores pueden romper la compatibilidad con algunos paquetes antiguos).*
+*   **Node.js:** v22.x.x *(Imprescindible, versiones antiguas como la v18 causan problemas de compatibilidad con dependencias recientes).*
 *   **Docker Desktop:** Configurado con al menos 8GB de RAM para soportar Canvas LMS.
 
 ## Versiones Ancladas (Hardcoded)
 
 ### 1. Canvas LMS
-La plataforma base ya no apunta a la inestable rama \prod\, sino a un tag especÌfico de versiÛn validado:
-*   **VersiÛn:** \elease/2026-05-20.143\
-*   *Nota:* Si utilizas el script de instalaciÛn autom·tica (OpciÛn 3), este se encargar· de descargar y clonar esta versiÛn exacta directamente desde el repositorio oficial de Instructure.
+La plataforma base ya no apunta a la inestable rama \prod\, sino a un tag espec√≠fico de versi√≥n validado:
+*   **Versi√≥n:** \elease/2026-05-20.143\
+*   *Nota:* Si utilizas el script de instalaci√≥n autom√°tica (Opci√≥n 3), este se encargar√° de descargar y clonar esta versi√≥n exacta directamente desde el repositorio oficial de Instructure.
 
 ### 2. Ecosistema Node (Plugin Feedback)
 El archivo \package.json\ (y todos los paquetes del monorepo en \pps\ y \packages\) han sido modificados para usar versiones exactas. Se eliminaron los prefijos \^\ y \~\.
 
-Dependencias crÌticas (versiones exactas):
+Dependencias cr√≠ticas (versiones exactas):
 *   **React:** \18.2.0\
 *   **Vite:** \8.1.5\ (en \devDependencies\)
 *   **Zod:** \3.23.0\
 *   **React Router Dom:** \7.17.0\
 *   **TanStack Query:** \5.101.2\
 
-## Instrucciones para una InstalaciÛn Segura
+## Instrucciones para una Instalaci√≥n Segura
 
-Para instalar el proyecto asegur·ndote de no descargar ninguna sub-dependencia m·s nueva de lo debido, **no uses \
-pm install\**. Debes utilizar el comando de integraciÛn continua:
+Para instalar el proyecto asegur√°ndote de no descargar ninguna sub-dependencia m√°s nueva de lo debido, **no uses \
+pm install\**. Debes utilizar el comando de integraci√≥n continua:
 
 `ash
 npm ci
 `
 
-Este comando ignorar· cualquier intento de actualizaciÛn e instalar· exactamente las versiones fotografiadas en el archivo \package-lock.json\.
+Este comando ignorar√° cualquier intento de actualizaci√≥n e instalar√° exactamente las versiones fotografiadas en el archivo \package-lock.json\.
 

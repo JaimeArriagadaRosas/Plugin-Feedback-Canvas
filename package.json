@@ -12,7 +12,7 @@
     "server": "node apps/server/src/server.js",
     "build": "vite build --config apps/client/vite.config.js",
     "preview": "vite preview --config apps/client/vite.config.js",
-    "start": "node apps/server/src/index.js",
+    "start": "node apps/server/src/preboot.js",
     "deploy:lti": "node scripts/deploy/index.mjs",
     "diagnose": "node scripts/diagnose.mjs",
     "verify:https": "node scripts/verify-https.mjs",
