@@ -64,6 +64,12 @@ export class SSLCertificateGenerator {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (fs.existsSync(CERT_KEY)) fs.unlinkSync(CERT_KEY);
 
+      const path = await import('node:path');
+      const certsDir = path.dirname(CERT_PEM);
+      if (!fs.existsSync(certsDir)) {
+        fs.mkdirSync(certsDir, { recursive: true });
+      }
+
       logger.info('[SSL] ⏳ Ejecutando mkcert (Presta atención, Windows podría pedirte permisos de Administrador para confiar en la Autoridad Raíz)...');
       execSync('mkcert -install', { stdio: 'inherit' });
       execSync(`mkcert -key-file "${CERT_KEY}" -cert-file "${CERT_PEM}" localhost 127.0.0.1 host.docker.internal`, {

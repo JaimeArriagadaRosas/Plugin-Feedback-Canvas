@@ -15,7 +15,8 @@
     "jwks-rsa": "4.0.1",
     "pdfkit": "0.19.1",
     "pg": "8.20.0",
-    "pino-roll": "4.0.0"
+    "pino-roll": "4.0.0",
+    "date-fns": "^3.6.0"
   },
   "devDependencies": {
     "autocannon": "^8.0.0"

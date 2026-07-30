@@ -129,7 +129,7 @@ export async function main() {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
     if (fs.existsSync(setupCompletePath)) {
       process.env.FAST_BOOT = 'true';
-      boot.info('Modo Fast Boot detectado (.setup_complete presente).');
+      boot.plain('  · Modo Fast Boot detectado (.setup_complete presente).');
     }
 
     const mode = await showMainMenu();
