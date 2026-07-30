@@ -1,0 +1,55 @@
+.container {
+  width: 100%;
+}
+
+.courseTitle {
+  margin: '0 0 20px 0';
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.assignmentName {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--color-text-light);
+}
+
+.emptyTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+}
+
+.emptyText {
+  font-size: 16px;
+  color: var(--color-text-light);
+  margin: 0;
+}

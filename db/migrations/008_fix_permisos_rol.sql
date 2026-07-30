@@ -20,7 +20,7 @@ CREATE TRIGGER permisos_rol_updated_at
 
 -- Paso 3: Migrar datos legacy (si existían)
 INSERT INTO Permisos_Rol (rol, permisos, actualizado_en)
-SELECT rol, permisos, actualizado_en
+SELECT rol::usuario_rol, permisos, actualizado_en
 FROM Permisos_Rol_legacy
 ON CONFLICT (rol) DO NOTHING;
 

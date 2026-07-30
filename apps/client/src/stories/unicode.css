@@ -1,0 +1,31 @@
+.unicode-test {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.controls {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ccc;
+}
+
+.result-card {
+  background: white;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.text-box {
+  padding: 10px;
+  background: #f0f4f8;
+  border-left: 4px solid #007bff;
+  margin-bottom: 15px;
+  font-size: 24px; /* Grande para ver los emojis bien */
+  word-break: break-all;
+}

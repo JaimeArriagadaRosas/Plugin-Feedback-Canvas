@@ -1,0 +1,24 @@
+.ratingSection {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.ratingLabel {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #2d3b45;
+}
+
+.ratingStars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ratingSaved {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #2e7d32;
+  font-weight: 500;
+}

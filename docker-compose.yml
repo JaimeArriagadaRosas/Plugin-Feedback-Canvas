@@ -27,7 +27,7 @@ services:
     image: plugin-feedback-app:latest
     build:
       context: ./
-      dockerfile: packages/server/Dockerfile
+      dockerfile: apps/server/Dockerfile
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - DB_HOST=db

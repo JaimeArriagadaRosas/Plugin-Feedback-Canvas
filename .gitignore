@@ -24,7 +24,13 @@ build/
 *.key
 *.cert
 *.crt
-packages/server/certs/
+apps/server/certs/
+
+# Entornos Locales y Overrides
+# (Comentado porque en este proyecto se usa el sufijo .local.js para archivos clave del código fuente)
+# *.local.js
+# *.local.ts
+# *.local.json
 
 # Logs y persistencia local
 *.log
@@ -47,3 +53,13 @@ temp/
 coverage/
 .nyc_output/
 .eslintcache
+playwright-report/
+test-results/
+blob-report/
+
+# Estado y Orquestación de Setup
+.setup_complete
+.assets_built
+canvas-lms-master/
+*storybook.log
+storybook-static

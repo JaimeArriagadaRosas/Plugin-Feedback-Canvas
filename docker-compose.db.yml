@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   db:
@@ -17,8 +16,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-feedback_plugin_db}"]
       interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 120s
   gotenberg:
     image: gotenberg/gotenberg:8
     container_name: feedback_plugin_gotenberg_local

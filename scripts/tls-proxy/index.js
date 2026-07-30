@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
-const CERTS_DIR = path.join(PLUGIN_ROOT, 'packages', 'server', 'certs');
+const CERTS_DIR = path.join(PLUGIN_ROOT, 'apps', 'server', 'certs');
 
 const TLS_LISTEN_PORT = parseInt(process.env.TLS_LISTEN_PORT || '8443', 10);
 const CANVAS_HTTP_HOST = process.env.CANVAS_HTTP_HOST || '127.0.0.1';
@@ -63,9 +63,9 @@ function createCanvasProxy() {
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
         const clientId = urlObj.searchParams.get('client_id') || 'N/A';
         const redirectUri = urlObj.searchParams.get('redirect_uri') || 'N/A';
-        console.log(`[TLS-PROXY] ⚡ TÚNEL OIDC: ${req.method} ${urlObj.pathname} | Client: ${clientId} | Redirige a: ${redirectUri}`);
+        console.log(`    \x1b[36m·\x1b[0m [TLS-PROXY] Túnel OIDC: ${req.method} ${urlObj.pathname} | Client: ${clientId}`);
       } catch (e) {
-        console.log(`[TLS-PROXY] ⚡ TÚNEL OIDC: ${req.method} ${req.url} (Host: ${req.headers.host})`);
+        console.log(`    \x1b[36m·\x1b[0m [TLS-PROXY] Túnel OIDC: ${req.method} ${req.url} (Host: ${req.headers.host})`);
       }
     }
 
@@ -75,7 +75,7 @@ function createCanvasProxy() {
         headers.location = headers.location.replace(`http://${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`, `https://localhost:${TLS_LISTEN_PORT}`);
         headers.location = headers.location.replace(`https://${CANVAS_HTTP_HOST}:${CANVAS_HTTP_PORT}`, `https://localhost:${TLS_LISTEN_PORT}`);
         if (req.url.includes('/api/lti/')) {
-          console.log(`[TLS-PROXY] [$] TÚNEL OIDC: Reescribiendo Location -> ${headers.location}`);
+          console.log(`    \x1b[36m·\x1b[0m [TLS-PROXY] Túnel OIDC: Reescribiendo Location -> ${headers.location}`);
         }
       }
       res.writeHead(proxyRes.statusCode || 502, headers);
@@ -160,7 +160,6 @@ export function stopTlsProxy() {
   if (serverInstance) {
     serverInstance.close();
     serverInstance = null;
-    console.info('[TLS-PROXY] Proxy TLS detenido.');
   }
 }
 

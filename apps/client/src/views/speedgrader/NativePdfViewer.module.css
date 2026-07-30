@@ -1,0 +1,139 @@
+.pdfContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #323232;
+  color: #fff;
+  gap: 12px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.separator {
+  width: 1px;
+  height: 24px;
+  background-color: #555;
+  margin: 0 8px;
+}
+
+.iconBtn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background-color: #444;
+}
+
+.iconBtn:disabled {
+  color: #777;
+  cursor: not-allowed;
+}
+
+.pageGroup, .zoomGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.pageInput {
+  background-color: #1e1e1e;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.pageTotal, .zoomText {
+  color: #ccc;
+}
+
+.documentWrapper {
+  flex: 1;
+  overflow: auto;
+  text-align: center;
+  padding: 20px;
+}
+
+.pageContent {
+  display: inline-block;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin: 0 auto 20px auto;
+}
+
+.skeletonContainer {
+  width: 100%;
+  max-width: 800px;
+  height: 800px; /* Placeholder height */
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-top: 20px;
+}
+
+.skeletonContainer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+  100% {
+    left: 200%;
+  }
+}
+
+.loadingText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #666;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  color: #d32f2f;
+  background-color: #ffebee;
+  border-radius: 8px;
+  font-weight: 500;
+}

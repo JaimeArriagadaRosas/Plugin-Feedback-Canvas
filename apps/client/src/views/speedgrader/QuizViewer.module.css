@@ -1,0 +1,134 @@
+.wrapper {
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: var(--font-family-sans, 'Inter', sans-serif);
+}
+
+.fallbackCard {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  color: #666;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #eaeaea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.scoreInfo {
+  font-weight: 600;
+  color: #2b3990;
+  background: #f0f2f5;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin: 0;
+}
+
+.questionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.questionCard {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 25px;
+  border: 1px solid #eaeaea;
+  border-left: 5px solid #ccc;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.statusCorrect {
+  border-left-color: #10b981;
+}
+
+.statusIncorrect {
+  border-left-color: #ef4444;
+}
+
+.statusPartial {
+  border-left-color: #f59e0b;
+}
+
+.questionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.questionTitle {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.questionPoints {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.questionText {
+  font-size: 1rem;
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.answersList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 10px;
+}
+
+.answerItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #f9fafb;
+  border: 1px solid transparent;
+}
+
+.answerSelected {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.answerCorrectHighlight {
+  border-left: 3px solid #10b981;
+}
+
+.answerMarker {
+  font-size: 1.2rem;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.answerSelected .answerMarker {
+  color: #2b3990;
+}
+
+.answerText {
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.5;
+}

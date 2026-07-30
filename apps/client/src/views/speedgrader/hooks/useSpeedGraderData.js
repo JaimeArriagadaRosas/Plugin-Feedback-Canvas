@@ -1,0 +1,172 @@
+import { useState, useCallback, useEffect } from 'react';
+import sanitizeHtml from 'sanitize-html';
+import { useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from 'shared/api';
+import { assignmentKeys } from 'shared/lib/queryKeys';
+import logger from '../../../utils/logger';
+
+export function useSpeedGraderData() {
+  const { courseId } = useParams();
+  const queryClient = useQueryClient();
+  const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [grade, setGrade] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [generatedFeedbackId, setGeneratedFeedbackId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("Cargando datos desde Canvas...");
+
+  const { data: meData } = useQuery({
+    queryKey: ['config', 'me'],
+    queryFn: async () => {
+      const result = await api.get('/config/me');
+      if (result.exito) return result;
+      throw new Error(result.mensaje || 'Error loading config');
+    },
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: assignmentKeys.speedgrader(courseId),
+    queryFn: async () => {
+      if (!courseId) return [];
+      const result = await api.get(`/courses/${courseId}/assignments`);
+      if (result.exito && result.data) {
+        return result.data
+          .filter(a => Boolean(a.active) === true)
+          .map(a => ({
+            id: a.id,
+            name: a.name,
+            points: a.points_possible,
+            templateName: a.templateName || "",
+            rubric: a.rubric || null
+          }));
+      }
+      return [];
+    },
+
+    enabled: !!courseId,
+  });
+
+  // Inicializar la tarea si no hay ninguna seleccionada
+  useEffect(() => {
+    if (assignments.length > 0 && !currentAssignmentId) {
+      setCurrentAssignmentId(assignments[0].id);
+    }
+  }, [assignments, currentAssignmentId]);
+
+  const { data: students = [] } = useQuery({
+    queryKey: ['students', courseId],
+    queryFn: async () => {
+      if (!courseId) return [];
+      const result = await api.get(`/courses/${courseId}/students`);
+      if (result.exito && result.data) {
+        return result.data.map(s => ({ id: s.id, name: s.name || s.short_name }));
+      }
+      return [];
+    },
+    enabled: !!courseId,
+  });
+
+  const currentStudent = students[currentIndex] || { id: 0, name: "Sin Estudiante" };
+
+  const { data: submissionData, error: submissionError, isFetching: isFetchingSubmissionQuery, isPending: isSubmissionPending } = useQuery({
+    queryKey: ['submission', courseId, currentAssignmentId, currentStudent.id],
+    queryFn: async () => {
+      if (!courseId || !currentAssignmentId || !currentStudent.id) return null;
+      // Usamos quiz-details porque devuelve la entrega y, si es un cuestionario, las preguntas
+      const result = await api.get(`/courses/${courseId}/assignments/${currentAssignmentId}/quiz-details/${currentStudent.id}`);
+      if (result.exito && result.data) {
+        return result.data; // { submission, questions, latestAttempt }
+      }
+      return null;
+    },
+    enabled: !!courseId && !!currentAssignmentId && !!currentStudent.id && students.length > 0,
+  });
+
+  const isFetchingSubmission = isFetchingSubmissionQuery || isSubmissionPending;
+
+  // Limpiar estado cuando se cambia la tarea o el estudiante
+  useEffect(() => {
+    setGrade(0);
+    setFeedback("");
+    setGeneratedFeedbackId(null);
+    setStatusMsg("Cargando datos desde Canvas...");
+  }, [currentAssignmentId, currentStudent.id]);
+
+  const { data: feedbackDetail } = useQuery({
+    queryKey: ['feedbackDetail', courseId, currentStudent.id],
+    queryFn: async () => {
+      if (!courseId || !currentStudent.id) return null;
+      const result = await api.get(`/feedback/detail?studentId=${currentStudent.id}&courseId=${courseId}`);
+      if (result.exito && result.data && Array.isArray(result.data)) {
+        // Return the first feedback for the current assignment, regardless of status
+        return result.data.find(fb => fb.assignmentId == currentAssignmentId) || null;
+      }
+      return null;
+    },
+    enabled: !!courseId && !!currentAssignmentId && !!currentStudent.id,
+  });
+
+  const submission = submissionData?.submission || null;
+  const quizDetails = submissionData ? {
+    questions: submissionData.questions || [],
+    latestAttempt: submissionData.latestAttempt || null
+  } : null;
+
+  useEffect(() => {
+    if (submission) {
+      const body = submission.body || submission.preview_url || "Sin contenido de entrega.";
+      queryClient.setQueryData(['submissions', courseId, currentAssignmentId], (old = {}) => ({
+        ...old,
+        [currentStudent.id]: sanitizeHtml(body, { allowedTags: [], allowedAttributes: {} })
+      }));
+      setGrade(submission.score || 0);
+      setStatusMsg("Listo para generar feedback.");
+    }
+  }, [submission, courseId, currentAssignmentId, currentStudent.id, queryClient]);
+
+  // Si hay feedback pendiente en la base de datos para este estudiante/tarea, lo inyectamos
+  useEffect(() => {
+    if (feedbackDetail) {
+      setFeedback(feedbackDetail.feedback || "");
+      setGeneratedFeedbackId(feedbackDetail.id);
+    }
+  }, [feedbackDetail]);
+
+  useEffect(() => {
+    if (submissionError) {
+      logger.error('SpeedGrader', "Error cargando entrega", { error: submissionError });
+      setStatusMsg("Error cargando entrega.");
+    }
+  }, [submissionError]);
+
+  const isFeedbackApproved = feedbackDetail?.status === 'APROBADO';
+  const activeAssignment = assignments.find(a => a.id === currentAssignmentId) || assignments[0] || { name: "", points: null };
+
+  return {
+    courseId,
+    assignments,
+    students,
+    currentAssignmentId,
+    setCurrentAssignmentId,
+    currentIndex,
+    setCurrentIndex,
+    grade,
+    setGrade,
+    loading,
+    setLoading,
+    statusMsg,
+    setStatusMsg,
+    currentStudent,
+    submission,
+    quizDetails,
+    activeAssignment,
+    feedback,
+    setFeedback,
+    generatedFeedbackId,
+    setGeneratedFeedbackId,
+    isFeedbackApproved,
+    isFetchingSubmission,
+  };
+}

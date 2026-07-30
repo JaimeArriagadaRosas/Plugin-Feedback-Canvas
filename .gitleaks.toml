@@ -14,24 +14,20 @@ paths = [
   '''tmp/''',
   '''temp/''',
   '''coverage/''',
-  '''packages/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
-  '''packages/server/src/services/infraestructura/DockerRunner\.js$''',
+  '''apps/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
+  '''apps/server/src/services/infraestructura/DockerRunner\.js$''',
   '''env_example$''',
-  '''packages/server/src/validation/rutas/config.routes.test.js$''',
-  '''packages/server/src/validation/unit/config.test.js$''',
-  '''packages/server/certs/''',
+  '''apps/server/src/validation/rutas/config.routes.test.js$''',
+  '''apps/server/src/validation/unit/config.test.js$''',
+  '''apps/server/certs/''',
   '''\.github/''',
   '''informaci.n/''',
+  '''db/seeds/.*''',
+  '''apps/server/src/orchestration/main\.js$'''
 ]
 regexes = [
   # Emails de prueba locales (p. ej. profesor@canvas.local)
   '''[a-zA-Z0-9._%+-]+@canvas\.local''',
-  
-  # Password de prueba usado en seeds locales y docker compose
-  '''password123''',
-  
-  # Hashes bcrypt de prueba hardcodeados (p. ej. en scripts de setup)
-  '''\$2b\$10\$[a-zA-Z0-9./]+''',
   
   # Tokens genéricos y de ejemplo en mocks (ej. JWT simulados o keys mockeadas)
   '''(client_id|secret|token)[\s:=]+['"]?(example|test|mock)''',

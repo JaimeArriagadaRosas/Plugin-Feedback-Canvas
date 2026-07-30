@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { localEnvSchema } from './env-schema_local.mjs';
+import { localEnvSchema } from './env-schema.local.mjs';
 import { ListrInquirerPromptAdapter } from '@listr2/prompt-adapter-inquirer';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -19,6 +19,8 @@
 //   CANVAS_ACCOUNT_ID    id de cuenta (def. 1 = root account)
 //   DRY_RUN              si="true", solo reporta, no modifica
 // ─────────────────────────────────────────────────────────────────────────────
+import logger from '../apps/server/src/utils/logger.js';
+
 const CANVAS_BASE_URL = process.env.CANVAS_BASE_URL || 'https://canvas.instructure.com';
 const CANVAS_ACCESS_TOKEN = process.env.CANVAS_ACCESS_TOKEN;
 const ACCOUNT_ID = process.env.CANVAS_ACCOUNT_ID || '1';
@@ -57,7 +59,7 @@ async function clearThemeJs() {
 
 async function main() {
   if (!CANVAS_ACCESS_TOKEN) {
-    console.error('❌ Falta CANVAS_ACCESS_TOKEN (token admin de cuenta).');
+    logger.error('❌ Falta CANVAS_ACCESS_TOKEN (token admin de cuenta).');
     process.exit(1);
   }
 
@@ -66,22 +68,22 @@ async function main() {
   const contieneFix = currentJs.includes(snippet);
 
   if (!contieneFix) {
-    console.log(`✅ No se encontró "${snippet}" en el JS del Theme de la cuenta ${ACCOUNT_ID}. Nada que hacer.`);
+    logger.info(`✅ No se encontró "${snippet}" en el JS del Theme de la cuenta ${ACCOUNT_ID}. Nada que hacer.`);
     return;
   }
 
-  console.warn(`⚠️  Se detectó "${snippet}" en el Theme de la cuenta ${ACCOUNT_ID}.`);
+  logger.warn(`⚠️  Se detectó "${snippet}" en el Theme de la cuenta ${ACCOUNT_ID}.`);
   if (DRY_RUN) {
-    console.log('🔍 DRY_RUN=true: no se modificó nada. Ejecuta sin DRY_RUN para limpiar el Theme.');
+    logger.info('🔍 DRY_RUN=true: no se modificó nada. Ejecuta sin DRY_RUN para limpiar el Theme.');
     return;
   }
 
   await clearThemeJs();
-  console.log('✅ JS del Theme vaciado. El script unida_nav_fix.js ya no se inyecta.');
-  console.log('   La visibilidad del botón ahora la controla Canvas vía placements.');
+  logger.info('✅ JS del Theme vaciado. El script unida_nav_fix.js ya no se inyecta.\n' + 
+              '   La visibilidad del botón ahora la controla Canvas vía placements.');
 }
 
 main().catch(err => {
-  console.error('Error inesperado:', err.message);
+  logger.error('Error inesperado:', { error: err.message });
   process.exit(1);
 });
