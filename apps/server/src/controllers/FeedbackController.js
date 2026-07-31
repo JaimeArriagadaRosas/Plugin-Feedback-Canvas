@@ -29,9 +29,7 @@ export default class FeedbackController {
   }
 
   async listAll(req, res) {
-    // En modo local (req.user), el ID del usuario es numérico (ej: 2), pero los feedbacks 
-    // guardan el canvas_sub/uuid de Canvas. Extraemos primero los identificadores de Canvas.
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
     const courseId = req.query.courseId;
     const data = await this.feedbackService.getListAll(courseId, teacherId);
     res.json({ exito: true, data });
@@ -56,7 +54,7 @@ export default class FeedbackController {
         throw new ApiError('La calificación debe ser un número entre 0 y 100', 400);
       }
     }
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
     const metadata = { courseName, assignmentName, studentName, isRegenerate };
     const result = await this.feedbackService.generateFeedback(courseId, assignmentId, studentId, templateId, grade, teacherId, metadata);
     res.json(result);
@@ -64,7 +62,7 @@ export default class FeedbackController {
 
   async generateMassive(req, res) {
     const { courseId, activeAssignments, students, isRegenerate = false } = req.body;
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
     
     // Responder inmediatamente (procesamiento en segundo plano)
     res.json({ exito: true, mensaje: 'Generación masiva iniciada en segundo plano' });
@@ -81,8 +79,9 @@ export default class FeedbackController {
   }
 
   async approveAndSend(req, res) {
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
-    const result = await this.feedbackService.approveAndSend(req.body, req.ltiContext, teacherId);
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
+    // Se pasa req.appIdentity al servicio en lugar de ltiContext
+    const result = await this.feedbackService.approveAndSend(req.body, req.appIdentity, teacherId);
     res.json({ exito: true, mensaje: 'Feedback aprobado y enviado a Canvas SpeedGrader. Notificación enviada.', data: result });
   }
 
@@ -91,14 +90,14 @@ export default class FeedbackController {
   async rateByTeacher(req, res) {
     const { id } = req.params;
     const { rating } = req.body;
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
     const result = await this.feedbackService.rateByTeacher(id, rating, teacherId);
     res.json({ exito: true, mensaje: 'Valoración guardada correctamente', data: result });
   }
 
   async getHistory(req, res) {
     const { courseId, studentId } = req.params;
-    const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    const teacherId = req.appIdentity?.canonicalUserId || 'system';
     
     // We delegate directly to AcademicHistoryService
     // Since feedbackService has it or we can inject it. Wait, FeedbackService doesn't have it directly exposed if we didn't inject it.

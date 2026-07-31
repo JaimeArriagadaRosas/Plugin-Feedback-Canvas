@@ -14,7 +14,7 @@ export default class CourseController {
 
   async getCourses(req, res, next) {
     try {
-      const userId = req.ltiContext?.user;
+      const userId = req.appIdentity?.canonicalUserId;
       if (!userId) {
         throw new AppError('No se pudo determinar el usuario (sub) desde el contexto LTI', 401);
       }
@@ -31,7 +31,7 @@ export default class CourseController {
   async getAssignments(req, res, next) {
     try {
       const { courseId } = req.params;
-      const teacherId = req.ltiContext?.user;
+      const teacherId = req.appIdentity?.canonicalUserId;
       let assignments = await this.canvasGateway.getAssignments(courseId, teacherId);
 
       const localConfigs = await this.configRepo.getConfigsByCourse(courseId);
@@ -71,7 +71,7 @@ export default class CourseController {
   async getStudents(req, res, next) {
     try {
       const { courseId } = req.params;
-      const teacherId = req.ltiContext?.user;
+      const teacherId = req.appIdentity?.canonicalUserId;
       const students = await this.canvasGateway.getStudents(courseId, teacherId);
       res.json({ exito: true, data: students });
     } catch (error) {
@@ -83,7 +83,7 @@ export default class CourseController {
   async getSubmission(req, res, next) {
     try {
       const { courseId, assignmentId, studentId } = req.params;
-      const teacherId = req.ltiContext?.user;
+      const teacherId = req.appIdentity?.canonicalUserId;
       const submission = await this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId);
       
       // Diagnóstico: loguear campos críticos de la submission para depuración de renderizado
@@ -103,7 +103,7 @@ export default class CourseController {
   async getQuizDetails(req, res, next) {
     try {
       const { courseId, assignmentId, studentId } = req.params;
-      const teacherId = req.ltiContext?.user;
+      const teacherId = req.appIdentity?.canonicalUserId;
       
       // Obtener la entrega del estudiante (para saber la versión del quiz_submission)
       const submission = await this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId);
@@ -141,7 +141,7 @@ export default class CourseController {
 
       // Identidad real del usuario LTI en lugar de un ID fijo.
       // En modo local ltiContext.user es "local-user-<rol>"; en LTI real es el sub de Canvas.
-      const profesorId = req.ltiContext?.user || req.body.profesorId || null;
+      const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || null;
       if (!profesorId) {
         return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
       }
@@ -166,7 +166,7 @@ export default class CourseController {
   async resetActiveAssignments(req, res, next) {
     try {
       const { courseId } = req.params;
-      const profesorId = req.ltiContext?.user || req.body.profesorId || null;
+      const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || null;
       if (!profesorId) {
         return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
       }

@@ -21,10 +21,10 @@ const refreshLocks = new Map();
 export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
   return async (req, res, next) => {
     try {
-      // req.ltiContext es poblado por AuthLTI13Handler.
-      // En modo LTI, req.ltiContext.user es el Canvas UUID o sub.
+      // req.appIdentity es poblado por AuthLTI13Handler.
+      // En modo LTI, ltiUserId es el Canvas UUID o sub.
       // req.user.id también apunta a este valor.
-      const canvasSub = req.ltiContext?.user || req.user?.id;
+      const canvasSub = req.appIdentity?.ltiUserId || req.user?.id;
 
       if (isLocalModeAllowed()) {
         // En modo local los datos vienen de CanvasServiceLocal y no requieren
@@ -77,7 +77,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
       next();
     } catch (err) {
       if (err.name === 'AppError' && err.statusCode === 401 && err.metadata?.requireOAuth) {
-        logger.info(`[CanvasOAuthMiddleware] Token inválido o expirado sin refresco para sub ${req.ltiContext?.user || req.user?.id}. Requiriendo OAuth.`);
+        logger.info(`[CanvasOAuthMiddleware] Token inválido o expirado sin refresco para sub ${req.appIdentity?.ltiUserId || req.user?.id}. Requiriendo OAuth.`);
         return res.status(401).json({
           exito: false,
           error: {

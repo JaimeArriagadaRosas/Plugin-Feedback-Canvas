@@ -68,36 +68,45 @@ export default class SystemConfigController {
   }
 
   getMe(req, res) {
-    if (req.ltiContext) {
-      let userRoles = req.ltiContext.role || [];
-      if (!Array.isArray(userRoles)) userRoles = [userRoles];
-
+    const identity = req.appIdentity;
+    if (identity) {
       const role = resolveViewRole({
-        isLocalSession: req.ltiContext.isLocalSession,
-        localRole: req.ltiContext.localRole,
-        roles: userRoles,
-        entry: req.ltiContext.entry,
-        courseId: req.ltiContext.courseId
+        isLocalSession: identity.isLocalSession,
+        localRole: identity.entry,
+        roles: identity.roles,
+        entry: identity.entry,
+        courseId: identity.courseId
       });
 
-      if (req.ltiContext.isLocalSession) {
-        logger.info(`[AUTH] Sesión activa (Modo Local) | Usuario: ${req.ltiContext.user?.substring(0,8)}... | Rol: ${role}`);
+      if (identity.isLocalSession) {
+        logger.info(`[AUTH] Sesión activa (Modo Local) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       } else {
-        const sourceStr = req.ltiContext.source === 'session-token' ? 'Session Token' : 'LTI Recuperada';
-        logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${req.ltiContext.user?.substring(0,8)}... | Rol: ${role}`);
+        const sourceStr = identity.source === 'session-token' ? 'Session Token' : 'LTI Recuperada';
+        logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       }
+
+      console.log('[DIAG-CHAIN] SystemConfigController.getMe', JSON.stringify({
+        ltiUserId: identity.ltiUserId,
+        numericUserId: identity.numericUserId,
+        canonicalUserId: identity.canonicalUserId,
+        courseId: identity.courseId,
+        numericCourseId: identity.numericCourseId,
+        canonicalCourseId: identity.canonicalCourseId,
+        source: identity.source
+      }));
 
       return res.json({
         exito: true,
-        user: req.ltiContext.user,
-        userName: req.ltiContext.name || req.ltiContext.user,
+        user: identity.ltiUserId, // Mantenemos el LTI UUID como identificador primario para el frontend (legacy)
+        userName: identity.name || identity.ltiUserId,
         role,
-        roles: userRoles,
-        courseId: req.ltiContext.courseId,
-        courseName: req.ltiContext.courseName,
-        studentId: req.ltiContext.studentId ?? null,
-        isLocalSession: req.ltiContext.isLocalSession ?? false,
-        source: req.ltiContext.source ?? null
+        roles: identity.roles,
+        courseId: identity.canonicalCourseId || identity.courseId,
+        courseName: identity.courseName,
+        studentId: identity.canonicalUserId || identity.numericUserId || null, // El ID numérico para queries específicas
+        isLocalSession: identity.isLocalSession ?? false,
+        source: identity.source ?? null,
+        canonicalUserId: identity.canonicalUserId
       });
     }
 

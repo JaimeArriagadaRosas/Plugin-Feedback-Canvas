@@ -35,7 +35,7 @@ export default class FileController {
       }
 
       // Obtener token de Canvas si existe el contexto LTI
-      const teacherId = req.ltiContext?.user;
+      const teacherId = req.appIdentity?.canonicalUserId;
       const headers = {};
       if (teacherId && this.canvasService && this.canvasService.tokenManager) {
         try {

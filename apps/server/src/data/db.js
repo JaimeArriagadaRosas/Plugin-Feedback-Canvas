@@ -149,6 +149,21 @@ async function initializePostgres() {
     });
 
     logger.info('[DB] Conexión inicial a PostgreSQL exitosa.');
+
+    // Aplicar fix de RLS automáticamente
+    try {
+      if (pool) {
+        await pool.query(`
+          DROP POLICY IF EXISTS aislar_tenant_feedback ON Historial_Feedback_Generado;
+          CREATE POLICY aislar_tenant_feedback ON Historial_Feedback_Generado
+          USING (profesor_id = current_setting('app.current_tenant', true) OR estudiante_id = current_setting('app.current_tenant', true));
+        `);
+        logger.info('[DB] Migración RLS de Historial_Feedback_Generado aplicada correctamente.');
+      }
+    } catch (migErr) {
+      logger.error('[DB] Error aplicando migración RLS:', { error: migErr.message });
+    }
+    
   } catch (error) {
     pool = null;
     const details = error.originalError ? error.originalError.message : error.message;

@@ -9,7 +9,7 @@ export function createCourseRoutes(courseCtrl, fileCtrl, canvasOAuth) {
   router.use(canvasOAuth); // Canvas OAuth es requerido para estas rutas
 
   router.get('/', authorizeRole(['teacher']), handleValidationErrors, (req, res, next) => {
-    logger.debug('GET /courses', { user: req.ltiContext?.user });
+    logger.debug('GET /courses', { user: req.appIdentity?.canonicalUserId });
     courseCtrl.getCourses(req, res, next);
   });
 

@@ -34,8 +34,10 @@ export default function AssignmentList({ course, onBack, onNext }) {
   const displayError = errorMsg || (isError ? queryError?.message || "Error al cargar/sincronizar las tareas" : null);
 
   const handleSync = useCallback(() => {
+    setShowToast(true);
     logClick('ASSIGNMENT_LIST_SYNC', fetchAssignments)();
-  }, [logClick, fetchAssignments]);
+    setTimeout(() => setShowToast(false), 3000);
+  }, [logClick, fetchAssignments, setShowToast]);
 
   const handleBack = useCallback(
     () => logClick('ASSIGNMENT_LIST_BACK', onBack)(),

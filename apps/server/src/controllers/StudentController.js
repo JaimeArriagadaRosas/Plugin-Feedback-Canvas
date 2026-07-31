@@ -22,8 +22,14 @@ export default class StudentController {
 
     const courseId = req.query.courseId ? String(req.query.courseId) : undefined;
     
-    // Aquí el req.user o ltiContext será del propio estudiante
-    const currentUserId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+    // Aquí el req.appIdentity será del propio estudiante
+    const currentUserId = req.appIdentity?.canonicalUserId || 'system';
+
+    console.log('[DIAG-E2E] StudentController.getStudentView', {
+      paramStudentId: studentId,
+      queryCourseId: courseId,
+      canonicalUserId: currentUserId
+    });
     
     // Se delega al servicio
     const data = await this.feedbackService.getStudentView(studentId, courseId, currentUserId);
@@ -33,8 +39,8 @@ export default class StudentController {
   async rateByStudent(req, res) {
     const { id, rating } = req.body;
     
-    // El servicio deberá usar el ltiContext para saber que es el estudiante calificando
-    await this.feedbackService.rateByStudent(id, rating, req.ltiContext);
+    // El servicio deberá usar el appIdentity para saber que es el estudiante calificando
+    await this.feedbackService.rateByStudent(id, rating, req.appIdentity);
     res.json({ exito: true, mensaje: 'Calificación de utilidad guardada correctamente' });
   }
 }

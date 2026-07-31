@@ -13,6 +13,19 @@ export const AuthLTI13Handler_local = (req, res, next) => {
       const localId = role === 'admin' ? '00000000-0000-0000-0000-000000000001' :
                       role === 'student' ? '00000000-0000-0000-0000-000000000002' :
                       '00000000-0000-0000-0000-000000000003'; // teacher
+      const ltiUserId = `00000000-0000-0000-0000-${String(localId).padStart(12, '0')}`;
+      req.appIdentity = {
+        ltiUserId,
+        numericUserId: localId,
+        canonicalUserId: String(localId),
+        roles: [roleURN],
+        courseId: 14852,
+        entry: role,
+        source: 'test',
+        isLocalSession: true,
+        isStudent: () => role === 'student'
+      };
+      // Retrocompatibilidad
       req.ltiContext = { user: localId, role: [roleURN], courseId: 14852, localRole: role, source: 'test' };
       req.user = { id: localId };
       return next();

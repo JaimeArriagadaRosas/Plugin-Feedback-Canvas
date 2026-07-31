@@ -45,9 +45,8 @@ export class ReportsService {
 
   async exportToPdf(courseId = null) {
     try {
-      const stats = await this.getGlobalStats(courseId);
-      const ratings = await this.getGlobalRatings(courseId);
-      return await this.pdfExport.generateReport(stats, ratings);
+      const data = await this.feedbackRepo.listAll(5000, courseId);
+      return await this.pdfExport.generateReport(data);
     } catch (err) {
       logger.error('[ReportsService] Error exportToPdf', { error: err });
       throw new ApiError('Error al generar reporte PDF', 500);

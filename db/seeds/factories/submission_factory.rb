@@ -152,7 +152,7 @@ module SubmissionFactory
       
       begin
         master_path = File.join('/tmp', 'seeds', 'masters', "dummy#{chosen_ext}")
-        generated_dir = File.join('/tmp', 'seeds', 'generated')
+        generated_dir = File.join('/tmp', 'generated_mock_files')
         FileUtils.mkdir_p(generated_dir)
         
         file_path = File.join(generated_dir, filename)
@@ -218,7 +218,7 @@ module SubmissionFactory
     elsif type_index == 2
       # TEXT ENTRY
       sub = assignment.submissions.find_or_create_by!(user_id: student_user.id)
-      is_graded = rand > 0.7 
+      is_graded = rand > 0.3 
       score = is_graded ? rand(min_pts..max_pts) : nil
       
       detailed_text = "Para la implementación del desarrollo práctico solicitado, he considerado los siguientes puntos clave:<br/><br/>1. Diseño de Arquitectura: Se utilizó un enfoque basado en microservicios, asegurando la escalabilidad horizontal. Se incluyó un API Gateway para centralizar el enrutamiento y la autenticación.<br/><br/>2. Base de Datos: Se optó por una arquitectura políglota, utilizando PostgreSQL para datos transaccionales y MongoDB para el catálogo de productos no estructurado.<br/><br/>3. Seguridad: Se implementaron tokens JWT con rotación asimétrica (RSA-256) y validación de scopes por rol. Todas las comunicaciones internas están cifradas mediante mTLS.<br/><br/>El repositorio con el código fuente se encuentra alojado en GitHub y los pipelines de CI/CD están configurados usando GitHub Actions. A continuación presento los fragmentos principales del modelo de dominio..."

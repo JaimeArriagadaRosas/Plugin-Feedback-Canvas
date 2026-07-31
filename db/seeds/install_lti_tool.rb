@@ -88,6 +88,7 @@ begin
   tool_config.placements.each do |p|
     tool.settings[p["placement"].to_sym] = p
   end
+  tool.custom_fields = tool_config.custom_fields
   tool.save!
   puts "ContextExternalTool instalado correctamente."
 

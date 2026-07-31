@@ -21,7 +21,11 @@ export default function AIControls({
         <div className={styles.feedbackAdaptiveBody}>
           {feedback ? (
             <>
-              <div className={styles.feedbackAdaptiveText}>{feedback}</div>
+              <div className={styles.feedbackAdaptiveText}>
+                {typeof feedback === 'string' && (feedback.includes('API key not valid') || feedback.includes('API_KEY_INVALID') || feedback.includes('GoogleGenerativeAI Error'))
+                  ? 'Por favor, comunícate con tu administrador para configurar una clave o modelo de IA válido en el sistema.'
+                  : feedback}
+              </div>
             </>
           ) : (
             <div className={styles.feedbackPlaceholder}>

@@ -25,7 +25,7 @@ export const auditLogMiddleware = (req, res, next) => {
 
     const url = req.originalUrl;
     const statusCode = res.statusCode;
-    const usuarioId = req.ltiContext?.user || (req.headers['authorization'] ? 'LTI_USER' : 'ANON');
+    const usuarioId = req.appIdentity?.canonicalUserId || (req.headers['authorization'] ? 'LTI_USER' : 'ANON');
     const accion = `${method} ${url}`;
     const detalle = `Status: ${statusCode} | Body: ${redactBody(req.body || {}, 300)}`;
     const ipAddress = req.ip || req.socket?.remoteAddress || null;

@@ -3,6 +3,7 @@ import { extractDevRole } from '../ltiCookie.local.js';
 import { verifyDevToken } from '../crypto.js';
 import { toRoleURN } from '../../utils/roles.js';
 import logger from '../../utils/logger.js';
+import { IdentityFactory } from '../../domain/identity/IdentityFactory.js';
 
 export class IdentityProviderLocal {
   name = 'local';
@@ -66,14 +67,6 @@ export class IdentityProviderLocal {
         : '00000000-0000-0000-0001-000000000003';
     }
 
-    return {
-      user: userId,
-      role: ltiRoles,
-      courseId,
-      studentId: studentIndex,
-      isLocalSession: true,
-      localRole: baseRole,
-      source: 'dev-token'
-    };
+    return IdentityFactory.fromLocalUser(userId, baseRole, courseId);
   }
 }
