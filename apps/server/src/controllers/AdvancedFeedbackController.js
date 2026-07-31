@@ -47,15 +47,13 @@ export default class AdvancedFeedbackController {
         return next(new AppError('Máximo 100 feedbackIds por solicitud', 400));
       }
 
-      const teacherId = req.ltiContext?.user || req.user?.canvas_user_uuid || req.user?.canvas_user_id || req.user?.id || 'system';
+      const teacherId = req.appIdentity?.canonicalUserId || 'system';
 
-      this.workflowService.bulkApproveAndSend(feedbackIds, teacherId).catch(err => {
-        // En caso de que la fase A (BD) falle totalmente, no bloqueará al usuario.
-        // Pero idealmente solo la fase B debería fallar.
-        logger.error('Error en aprobación masiva (segundo plano):', { error: err.message, stack: err.stack, feedbackIds });
-      });
+      // Esperamos a que termine la Fase A (actualización en BD a APROBADO).
+      // La Fase B (envío a Canvas) seguirá corriendo en segundo plano dentro del servicio.
+      await this.workflowService.bulkApproveAndSend(feedbackIds, teacherId);
       
-      res.status(202).json({ exito: true, mensaje: 'Proceso de aprobación masiva iniciado en segundo plano' });
+      res.status(200).json({ exito: true, mensaje: 'Feedbacks aprobados. El envío a Canvas se está procesando en segundo plano.' });
     } catch (error) {
       next(error);
     }

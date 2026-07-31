@@ -21,7 +21,7 @@ export default class CanvasOAuthController {
       // La URL de retorno a nuestro backend
       const redirectUri = `${getEnv('BACKEND_URL', `https://localhost:${getEnv('PORT', 3000)}`)}/api/oauth2/canvas/callback`;
       
-      const canvasSub = req.ltiContext?.user;
+      const canvasSub = req.appIdentity?.ltiUserId;
       
       if (!canvasSub) {
         throw new AppError('No se proporcionó identificación LTI del usuario para el inicio de sesión OAuth', 400);

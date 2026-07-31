@@ -3,6 +3,7 @@ import { extractLtiToken } from '../ltiCookie.js';
 import { isDevToken } from '../ltiCookie.local.js';
 import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
 import { AppError } from '../../utils/errors.js';
+import { IdentityFactory } from '../../domain/identity/IdentityFactory.js';
 
 const ltiService = getLTITokenService();
 
@@ -30,19 +31,7 @@ export class LtiIdentityProvider {
           throw new AppError('Deployment ID no permitido', 403);
         }
 
-        const ltiRoles = getRolesFromClaims(decoded);
-        const customClaims = decoded['https://purl.imsglobal.org/spec/lti/claim/custom'] || {};
-        return {
-          user: decoded.sub,
-          name: decoded.name || decoded.given_name || decoded.family_name || 'Usuario LTI',
-          role: ltiRoles,
-          courseId: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.id,
-          courseName: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.title,
-          studentId: customClaims.canvas_user_id || customClaims.user_id || null,
-          deploymentId,
-          isLocalSession: false,
-          entry: getEntryFromClaims(decoded)
-        };
+        return IdentityFactory.fromLtiClaims(decoded);
       } catch (e) {
         // En lugar de lanzar 401 y abortar la autenticación (Error Shadowing), 
         // silenciamos el error para probar el siguiente Identity Provider.

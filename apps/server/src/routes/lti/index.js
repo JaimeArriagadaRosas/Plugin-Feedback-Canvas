@@ -191,6 +191,7 @@ router.post('/callback', asyncSafe(async (req, res, next) => {
     roles: claims.roles,
     entry: claims.entry,
     studentId: claims.studentId,
+    name: claims.personName,
   });
 
   const frontendUrl = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || 'https://localhost:5173';

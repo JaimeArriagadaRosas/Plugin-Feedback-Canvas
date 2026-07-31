@@ -27,7 +27,8 @@ export async function signSessionToken(claims) {
     'https://purl.imsglobal.org/spec/lti/claim/roles': claims.roles,
     'https://purl.imsglobal.org/spec/lti/claim/custom': { 
       unida_entry: claims.entry,
-      canvas_user_id: claims.studentId 
+      canvas_user_id: claims.studentId,
+      canvas_course_id: claims.numericCourseId
     },
     iat: Math.floor(Date.now() / 1000),
     exp: expTimestamp,

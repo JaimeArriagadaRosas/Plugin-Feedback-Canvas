@@ -15,7 +15,7 @@ export default class TemplateController {
   }
 
   async getAll(req, res) {
-    const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+    const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     const templates = await this.templateManager.getTemplatesForProfesor(profesorId);
     res.json({ exito: true, data: templates });
   }
@@ -27,20 +27,20 @@ export default class TemplateController {
   }
 
   async create(req, res) {
-    const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+    const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     const newTemplate = await this.templateManager.createTemplate(req.body, profesorId);
     res.status(201).json({ exito: true, data: newTemplate });
   }
 
   async update(req, res) {
-    const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+    const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     const updated = await this.templateManager.updateTemplate(req.params.id, req.body, profesorId);
     if (!updated) throw new ApiError('Plantilla no encontrada o sin permisos', 404);
     res.json({ exito: true, data: updated });
   }
 
   async delete(req, res) {
-    const profesorId = req.ltiContext?.user || req.body.profesorId || req.user?.id || 'system';
+    const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     await this.templateManager.deleteTemplate(req.params.id, profesorId);
     res.json({ exito: true, mensaje: 'Plantilla eliminada correctamente' });
   }

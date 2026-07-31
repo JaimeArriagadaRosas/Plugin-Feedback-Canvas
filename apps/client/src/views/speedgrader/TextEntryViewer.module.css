@@ -1,0 +1,50 @@
+.wrapper {
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: var(--font-family-sans, 'Inter', sans-serif);
+}
+
+.header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #eaeaea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.scoreInfo {
+  font-weight: 600;
+  color: #2b3990;
+  background: #f0f2f5;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin: 0;
+}
+
+.contentCard {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 40px;
+  border: 1px solid #eaeaea;
+  border-top: 5px solid #2b3990;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: left;
+}
+
+.bodyText {
+  font-size: 1.05rem;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.bodyText p {
+  margin-bottom: 1em;
+}

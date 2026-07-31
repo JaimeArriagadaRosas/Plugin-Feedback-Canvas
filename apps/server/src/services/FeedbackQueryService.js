@@ -1,4 +1,5 @@
 import { AppError } from '../utils/errors.js';
+import CourseIdResolver from './CourseIdResolver.js';
 
 /**
  * FeedbackQueryService - Responsabilidad única: consultas y mapeo de DTOs.
@@ -13,24 +14,23 @@ export default class FeedbackQueryService {
     this.validadorAcademico = validadorAcademico;
   }
 
-  async rateByStudent(feedbackId, rating, ltiContext = null) {
-    // BOLA prevention (OWASP API1:2023): un estudiante solo puede calificar su propio feedback.
-    if (ltiContext?.studentId != null) {
-      const existing = await this.feedbackRepo.getById(feedbackId);
-      if (!existing) {
-        throw new AppError('Feedback no encontrado', 404);
-      }
-      if (String(existing.estudiante_id) !== String(ltiContext.studentId)) {
-        throw new AppError('Acceso denegado: no puedes calificar el feedback de otro estudiante.', 403);
-      }
-    }
-    await this.feedbackRepo.updateEstudianteRating(feedbackId, rating);
-  }
+  // El método rateByStudent ha sido movido a FeedbackMutationService
 
   async getStudentView(studentId, courseId, teacherId) {
     const inferredCourseId = await this._resolveCourseId(courseId, studentId);
+    
+    console.log('[DIAG-E2E] FeedbackQueryService.getStudentView', {
+      studentId,
+      courseId,
+      inferredCourseId,
+      teacherId
+    });
+
     const approved = await this._getApprovedFeedbacks(studentId, inferredCourseId);
-    const assignments = await this._buildAssignmentsWithFeedback(inferredCourseId, approved, teacherId);
+    
+    // FIX H8: We use 'system' instead of the student's ID (passed as teacherId by mistake)
+    // so the CanvasGateway uses the system token to fetch assignments, not the student's token.
+    const assignments = await this._buildAssignmentsWithFeedback(inferredCourseId, approved, 'system');
     return assignments;
   }
 
@@ -72,8 +72,8 @@ export default class FeedbackQueryService {
         assignmentName: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
         templateId: fb.plantilla_id,
         grade: fb.nota_chile || null,
-        profile: 'AVERAGE',
-        trend: 'STABLE',
+        profile: 'PROMEDIO',
+        trend: 'Estable',
         status: fb.estado || 'PENDIENTE',
         feedback: fb.contenido_generado
       };
@@ -98,35 +98,32 @@ export default class FeedbackQueryService {
       assignmentId: fb.tarea_id,
       templateId: fb.plantilla_id,
       grade: fb.nota_chile || null,
-      profile: 'AVERAGE',
-      trend: 'STABLE',
+      profile: 'PROMEDIO',
+      trend: 'Estable',
       status: fb.estado || 'PENDIENTE',
       feedback: fb.contenido_generado
     };
   }
 
   async _resolveCourseId(courseId, studentId) {
-    if (!courseId) {
-      // DESIGN-05: findByStudent requiere courseId. Si no viene en la request,
-      // usamos la variable de entorno del canal configurado. Si tampoco existe,
-      // retornamos null para que la capa superior maneje el error correctamente.
-      const envCourseId = process.env.CANVAS_COURSE_ID || process.env.VITE_CANVAS_COURSE_ID;
-      if (!envCourseId) {
-        return null;
-      }
-      return envCourseId;
-    }
-    return courseId;
+    return CourseIdResolver.resolve(courseId, studentId);
   }
 
   async _getApprovedFeedbacks(studentId, courseId) {
+    console.log('[DIAG-E2E] FeedbackQueryService._getApprovedFeedbacks', {
+      studentId,
+      courseId,
+      query: 'SELECT * FROM HFG WHERE estudiante_id = $1 AND curso_id = $2'
+    });
     const history = await this.feedbackRepo.findByStudent(studentId, courseId);
+    console.log('[DIAG-E2E] FeedbackRepository.findByStudent results count:', history.length);
     return history.filter(fb => fb.estado === 'APROBADO' || fb.estado === 'ENVIADO');
   }
 
   async _buildAssignmentsWithFeedback(courseId, approved, teacherId) {
     let assignments = [];
     try {
+      console.log('[DIAG-E2E] FeedbackQueryService._buildAssignmentsWithFeedback Fetching Canvas API with teacherId:', teacherId);
       const raw = await this.canvasGateway.getAssignments(courseId, teacherId);
       assignments = raw.map(a => ({
         id: a.id,
@@ -183,8 +180,8 @@ export default class FeedbackQueryService {
       assignmentId: fb.tarea_id,
       templateId: fb.plantilla_id,
       grade: fb.nota_chile || null,
-      profile: profile.level || 'AVERAGE',
-      trend: profile.trend || 'STABLE',
+      profile: this._translateProfile(profile.level || 'AVERAGE'),
+      trend: this._translateTrend(profile.trend || 'STABLE'),
       status: fb.estado || 'PENDIENTE',
       feedback: fb.contenido_generado
     };
@@ -214,5 +211,27 @@ export default class FeedbackQueryService {
       }
       return { level: 'AVERAGE', trend: 'STABLE', average: null };
     }
+  }
+
+  _translateProfile(level) {
+    const map = {
+      'OUTSTANDING': 'SOBRESALIENTE',
+      'EXCELLENT': 'DESTACADO',
+      'AVERAGE': 'PROMEDIO',
+      'NEEDS_SUPPORT': 'REQUIERE APOYO',
+      'AT_RISK': 'EN RIESGO'
+    };
+    return map[level] || 'PROMEDIO';
+  }
+
+  _translateTrend(trend) {
+    const map = {
+      'IMPROVING': 'Mejorando',
+      'UP': 'Mejorando',
+      'WORSENING': 'Bajando',
+      'DOWN': 'Bajando',
+      'STABLE': 'Estable'
+    };
+    return map[trend] || 'Estable';
   }
 }

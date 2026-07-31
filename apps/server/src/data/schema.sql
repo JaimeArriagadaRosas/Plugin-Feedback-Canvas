@@ -311,7 +311,7 @@ CREATE TRIGGER canvas_user_tokens_updated_at
 ALTER TABLE Historial_Feedback_Generado ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS aislar_tenant_feedback ON Historial_Feedback_Generado;
 CREATE POLICY aislar_tenant_feedback ON Historial_Feedback_Generado
-    USING (profesor_id = current_setting('app.current_tenant', true));
+    USING (profesor_id = current_setting('app.current_tenant', true) OR estudiante_id = current_setting('app.current_tenant', true));
 
 ALTER TABLE configuracion_asignacion ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS aislar_tenant_configuracion ON configuracion_asignacion;

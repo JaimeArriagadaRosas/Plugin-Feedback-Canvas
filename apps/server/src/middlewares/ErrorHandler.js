@@ -28,7 +28,7 @@ export const ErrorHandler = (err, req, res, next) => {
   if (statusCode === 401 || statusCode === 403) {
     import('../data/db.js').then(({ default: db }) => {
       const ipAddress = req.ip || req.socket?.remoteAddress || null;
-      const usuarioId = req.ltiContext?.user || req.user?.id || 'ANON';
+      const usuarioId = req.appIdentity?.canonicalUserId || req.user?.id || 'ANON';
       const accion = `DENIED ${req.method} ${req.originalUrl}`;
       const detalle = `Status: ${statusCode} | Mensaje: ${err.message}`;
       db.query(

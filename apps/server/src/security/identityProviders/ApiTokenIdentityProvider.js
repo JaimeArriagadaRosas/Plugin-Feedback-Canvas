@@ -1,6 +1,7 @@
 import { toRoleURN, classifyRoles } from '../../utils/roles.js';
 import { getCanvasEnv } from '../../config/index.js';
 import CanvasClient from '../../services/infrastructure/CanvasClient.js';
+import { AppIdentity } from '../../domain/identity/AppIdentity.js';
 
 export class ApiTokenIdentityProvider {
   name = 'api-token';
@@ -40,14 +41,16 @@ export class ApiTokenIdentityProvider {
       else if (classification.isLearner) role = 'student';
       const ltiRoles = [toRoleURN(role)];
 
-      return {
-        user: user.id || user.canvas_user_id,
-        role: ltiRoles,
+      const userId = user.id || user.canvas_user_id;
+      return new AppIdentity({
+        ltiUserId: userId,
+        numericUserId: userId,
+        roles: ltiRoles,
         courseId: user.course_id || process.env.CANVAS_COURSE_ID || '1',
-        isLocalSession: false,
-        localRole: role,
-        source: 'api-token'
-      };
+        source: 'api-token',
+        entry: role,
+        isLocalSession: false
+      });
     } catch (e) {
       return null;
     }

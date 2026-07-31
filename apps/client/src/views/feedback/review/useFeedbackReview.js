@@ -29,13 +29,11 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
   const [pendingBulkApproval, setPendingBulkApproval] = useState(null);
 
   const { data: feedbacks = [], isLoading: loading } = useQuery({
-    queryKey: ['feedback-list', selectedCourse],
+    queryKey: ['feedback-list'],
     queryFn: async () => {
-      let url = '/feedback/list';
-      if (selectedCourse && selectedCourse !== "Todos") {
-        url += `?courseId=${selectedCourse}`;
-      }
-      const result = await api.get(url);
+      // Obtenemos todos los feedbacks del profesor para que los filtros
+      // (coursesList, assignmentsList) siempre tengan todas las opciones disponibles.
+      const result = await api.get('/feedback/list');
       if (result.exito && result.data) {
         return result.data;
       }
@@ -149,11 +147,19 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     ];
   }, [feedbacks, selectedCourse]);
 
-  const filteredFeedbacks = feedbacks.filter(fb => {
-    const matchCourse = selectedCourse === "Todos" || String(fb.courseId) === String(selectedCourse);
-    const matchAssignment = selectedAssignment === "Todas" || String(fb.assignmentId) === String(selectedAssignment);
-    return matchCourse && matchAssignment;
-  });
+  const filteredFeedbacks = useMemo(() => {
+    const filtered = feedbacks.filter(fb => {
+      const matchCourse = selectedCourse === "Todos" || String(fb.courseId) === String(selectedCourse);
+      const matchAssignment = selectedAssignment === "Todas" || String(fb.assignmentId) === String(selectedAssignment);
+      return matchCourse && matchAssignment;
+    });
+
+    return filtered.sort((a, b) => {
+      if (a.status === 'PENDIENTE' && b.status !== 'PENDIENTE') return -1;
+      if (a.status !== 'PENDIENTE' && b.status === 'PENDIENTE') return 1;
+      return 0;
+    });
+  }, [feedbacks, selectedCourse, selectedAssignment]);
 
   const handleApprove = useCallback((rating) => {
     if (!activeFeedback) return;

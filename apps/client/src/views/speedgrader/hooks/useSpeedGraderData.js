@@ -39,7 +39,8 @@ export function useSpeedGraderData() {
             name: a.name,
             points: a.points_possible,
             templateName: a.templateName || "",
-            rubric: a.rubric || null
+            rubric: a.rubric || null,
+            active: Boolean(a.active)
           }));
       }
       return [];
@@ -89,24 +90,23 @@ export function useSpeedGraderData() {
   // Limpiar estado cuando se cambia la tarea o el estudiante
   useEffect(() => {
     setGrade(0);
-    setFeedback("");
-    setGeneratedFeedbackId(null);
     setStatusMsg("Cargando datos desde Canvas...");
   }, [currentAssignmentId, currentStudent.id]);
 
-  const { data: feedbackDetail } = useQuery({
+  const { data: feedbackDetailList } = useQuery({
     queryKey: ['feedbackDetail', courseId, currentStudent.id],
     queryFn: async () => {
       if (!courseId || !currentStudent.id) return null;
       const result = await api.get(`/feedback/detail?studentId=${currentStudent.id}&courseId=${courseId}`);
       if (result.exito && result.data && Array.isArray(result.data)) {
-        // Return the first feedback for the current assignment, regardless of status
-        return result.data.find(fb => fb.assignmentId == currentAssignmentId) || null;
+        return result.data;
       }
       return null;
     },
-    enabled: !!courseId && !!currentAssignmentId && !!currentStudent.id,
+    enabled: !!courseId && !!currentStudent.id,
   });
+
+  const feedbackDetail = feedbackDetailList?.find(fb => fb.assignmentId == currentAssignmentId) || null;
 
   const submission = submissionData?.submission || null;
   const quizDetails = submissionData ? {
@@ -131,8 +131,11 @@ export function useSpeedGraderData() {
     if (feedbackDetail) {
       setFeedback(feedbackDetail.feedback || "");
       setGeneratedFeedbackId(feedbackDetail.id);
+    } else {
+      setFeedback("");
+      setGeneratedFeedbackId(null);
     }
-  }, [feedbackDetail]);
+  }, [feedbackDetail, currentAssignmentId, currentStudent.id]);
 
   useEffect(() => {
     if (submissionError) {

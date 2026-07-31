@@ -118,6 +118,10 @@ export function generateLtiRubyScript({ ltiJson, pluginUrl, internalPluginUrl, c
     tool.use_1_3 = true
     tool.url = "#{plugin_url}/api/lti/callback"
 
+    if lti_config['custom_fields']
+      tool.custom_fields = lti_config['custom_fields']
+    end
+
     tool_config.placements.each do |p|
       ext = p['placement'].to_sym
       p_sym = p.each_with_object({}) { |(k, v), memo| memo[k.to_sym] = v }

@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { assignmentKeys } from 'shared/lib/queryKeys';
+import { api } from 'shared/api';
 
 const styles = {
   wizard: {
@@ -71,6 +72,24 @@ export default function WizardProgress({ currentStep = 0 }) {
   const selectedCourse = auth.selectedCourse || null;
   const { data: assignments = [] } = useQuery({
     queryKey: assignmentKeys.byCourse(selectedCourse?.id),
+    queryFn: async ({ queryKey }) => {
+      const [, id] = queryKey;
+      if (!id) return [];
+      const result = await api.get(`/courses/${id}/assignments`);
+      if (result.exito && result.data) {
+        return result.data.map(a => ({
+          id: a.id,
+          name: a.name,
+          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
+          rubric: a.use_rubric_for_grading === true || a.has_rubric === true || !!(Array.isArray(a.rubric) && a.rubric.length > 0),
+          template: a.template || "",
+          plantilla_id: a.template || null,
+          templateName: a.templateName || "",
+          active: Boolean(a.active)
+        }));
+      }
+      return [];
+    },
     enabled: !!selectedCourse?.id,
   });
 

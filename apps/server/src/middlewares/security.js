@@ -12,7 +12,7 @@ function getUserRateLimitKey(req) {
   if (token && !token.startsWith('dev-token')) {
     return `user:${token.substring(0, 16)}`;
   }
-  const localUser = req.ltiContext?.user;
+  const localUser = req.appIdentity?.canonicalUserId;
   if (localUser) {
     return `user:${localUser}`;
   }
@@ -86,7 +86,7 @@ export const validateId = (field = 'id') => [
 ];
 
 export const validateCourseId = [
-  param('courseId').isInt({ min: 1 }).withMessage('courseId debe ser un entero positivo')
+  param('courseId').isString().notEmpty().withMessage('courseId debe ser provisto')
 ];
 
 export const validateAssignmentId = [
@@ -94,10 +94,10 @@ export const validateAssignmentId = [
 ];
 
 export const validateStudentId = [
-  param('studentId').isInt({ min: 1 }).withMessage('studentId debe ser un entero positivo')
+  param('studentId').isString().notEmpty().withMessage('studentId debe ser provisto')
 ];
 
 export const validateFeedbackDetailQuery = [
-  query('studentId').isInt({ min: 1 }).withMessage('studentId debe ser un entero positivo'),
-  query('courseId').isInt({ min: 1 }).withMessage('courseId debe ser un entero positivo')
+  query('studentId').isString().notEmpty().withMessage('studentId debe ser provisto'),
+  query('courseId').isString().notEmpty().withMessage('courseId debe ser provisto')
 ];

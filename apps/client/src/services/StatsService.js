@@ -24,7 +24,8 @@ export const StatsService = {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = response instanceof Blob ? response : new Blob([response]);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `reporte_feedback.${format === 'excel' ? 'xlsx' : 'pdf'}`);

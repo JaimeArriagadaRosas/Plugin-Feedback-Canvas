@@ -113,6 +113,7 @@ export function registerRoutes(app, services, ltiPublicJwk) {
     statsService: services.statsService,
     permissionsService: services.permissionsService,
     canvasTokenRepo: services.canvasTokenRepo,
+    courseService: services.courseService,
     ltiPublicJwk
   };
   app.use('/api', idempotencyManager.middleware());

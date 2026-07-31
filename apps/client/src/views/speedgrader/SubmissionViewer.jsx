@@ -4,6 +4,7 @@ import { isSupportedForPreview } from '../../utils/fileViewer';
 import NativePdfViewer from './NativePdfViewer';
 import pdfStyles from './NativePdfViewer.module.css';
 import QuizViewer from './QuizViewer';
+import TextEntryViewer from './TextEntryViewer';
 import logger from '../../utils/logger';
 
 const IFRAME_TIMEOUT_MS = 15000; // 15 segundos antes de declarar fallo del iframe
@@ -179,7 +180,15 @@ export default function SubmissionViewer({
 
     // 3. PRIORIDAD: Contenido de texto/HTML de la entrega (online_text_entry)
     if (hasBody) {
-      return renderTextCard(textBody);
+      return (
+        <div className={styles.scrollableWrapper}>
+          <TextEntryViewer 
+            submission={submission} 
+            studentName={studentName} 
+            assignmentName={assignmentName} 
+          />
+        </div>
+      );
     }
 
     // 4. Último recurso: iframe de preview_url (Canvadocs/DocViewer)

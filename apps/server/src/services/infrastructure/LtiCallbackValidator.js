@@ -81,7 +81,7 @@ export async function validateLtiCallback(req) {
   }
 
   const customClaims = decoded['https://purl.imsglobal.org/spec/lti/claim/custom'] || {};
-
+  
   return {
     sub: decoded.sub,
     iss: decoded.iss,
@@ -90,7 +90,7 @@ export async function validateLtiCallback(req) {
     deploymentId: decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
     roles: getRolesFromClaims(decoded),
     entry: getEntryFromClaims(decoded),
-    courseId: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.id,
+    courseId: customClaims.canvas_course_id || decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.id,
     courseName: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.title,
     studentId: customClaims.canvas_user_id || customClaims.user_id || null,
     personName: decoded['https://purl.imsglobal.org/spec/lti/claim/lis']?.person_name || 'N/A',

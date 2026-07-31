@@ -4,12 +4,12 @@ import logger from '../utils/logger.js';
 
 export const authorizeRole = (requiredRoles) => {
   return (req, res, next) => {
-    const userRoles = req.ltiContext?.role || [];
+    const userRoles = req.appIdentity?.roles || [];
     const classification = classifyRoles(userRoles);
     const effective = resolveEffectiveRole(classification);
 
     let authorized = false;
-    const isExplicitTeacherEntry = req.ltiContext?.entry === 'teacher';
+    const isExplicitTeacherEntry = req.appIdentity?.entry === 'teacher';
 
     if (requiredRoles.includes('teacher') && (classification.isInstructor || classification.isTA || classification.isDesigner || classification.isAccountAdmin)) {
       authorized = true;
@@ -31,7 +31,7 @@ export const authorizeRole = (requiredRoles) => {
 
     if (classification.isLearner) {
       const requestedStudentId = req.params?.studentId;
-      const authenticatedStudentId = req.ltiContext?.studentId;
+      const authenticatedStudentId = req.appIdentity?.numericUserId;
       if (requestedStudentId && authenticatedStudentId !== undefined && authenticatedStudentId !== null) {
         const reqId = Number(requestedStudentId);
         const authId = Number(authenticatedStudentId);

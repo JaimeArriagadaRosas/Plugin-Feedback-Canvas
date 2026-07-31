@@ -12,6 +12,7 @@ import { shouldRefreshLtiCookie, refreshLtiCookieOptions } from '../security/lti
 import { verifyDevToken } from '../security/crypto.js';
 import { verifySessionToken } from '../services/infrastructure/SessionTokenService.js';
 import { getRolesFromClaims, getEntryFromClaims } from '../utils/roles.js';
+import { IdentityFactory } from '../domain/identity/IdentityFactory.js';
 
 class SessionTokenIdentityProvider {
   name = 'session-token';
@@ -23,20 +24,7 @@ class SessionTokenIdentityProvider {
 
     try {
       const decoded = await verifySessionToken(bearerToken);
-      const ltiRoles = getRolesFromClaims(decoded);
-      const customClaims = decoded['https://purl.imsglobal.org/spec/lti/claim/custom'] || {};
-      return {
-        user: decoded.sub,
-        name: decoded.name || 'Usuario',
-        role: ltiRoles,
-        courseId: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.id,
-        courseName: decoded['https://purl.imsglobal.org/spec/lti/claim/context']?.title,
-        deploymentId: decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-        studentId: customClaims.canvas_user_id || customClaims.user_id || null,
-        isLocalSession: false,
-        entry: getEntryFromClaims(decoded),
-        source: 'session-token'
-      };
+      return IdentityFactory.fromSessionToken(decoded);
     } catch (e) {
       logger.debug(`[SESSION-AUTH] Token rechazado: ${e.message}`);
       return null;
@@ -82,21 +70,25 @@ export const AuthLTI13Handler = async (req, res, next) => {
       try {
         const identity = await provider.authenticate(req);
         if (identity) {
+          req.appIdentity = identity;
+          
+          // Mantenemos req.ltiContext por retrocompatibilidad temporal, 
+          // pero delegamos las propiedades a req.appIdentity.
           req.ltiContext = {
-            user: identity.user,
+            user: identity.ltiUserId,
             name: identity.name,
-            role: identity.role,
+            role: identity.roles,
             courseId: identity.courseId,
             courseName: identity.courseName,
-            studentId: identity.studentId,
+            studentId: identity.numericUserId,
             isLocalSession: identity.isLocalSession,
-            localRole: identity.localRole,
+            localRole: identity.entry,
             source: identity.source,
             entry: identity.entry
           };
-          req.user = { id: identity.user };
+          req.user = { id: identity.ltiUserId };
 
-          logger.info(`[HTTP] ${method} ${path} -> [AUTH] Sesión válida vía ${provider.name} | Usuario: ${identity.user?.substring(0,8)}...`);
+          logger.info(`[HTTP] ${method} ${path} -> [AUTH] Sesión válida vía ${provider.name} | Usuario: ${identity.ltiUserId?.substring(0,8)}...`);
           return next();
         }
       } catch (error) {

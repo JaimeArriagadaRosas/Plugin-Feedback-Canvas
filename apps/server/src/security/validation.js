@@ -124,9 +124,18 @@ export function validateBody(schema, allowedFields) {
 }
 
 export function requireDeploymentId(req, res, next) {
-  const deploymentId = req.ltiContext?.deploymentId;
-  const isLocal = req.ltiContext?.isLocalSession;
+  const deploymentId = req.appIdentity?.deploymentId || null; // fallback
+  const isLocal = req.appIdentity?.isLocalSession;
+
+  console.log('[DIAG-H7] requireDeploymentId check:', {
+    deploymentId: req.appIdentity?.deploymentId,
+    isLocal: req.appIdentity?.isLocalSession,
+    source: req.appIdentity?.source,
+    allIdentityKeys: req.appIdentity ? Object.keys(req.appIdentity) : 'no identity'
+  });
+
   if (!isLocal && !deploymentId) {
+    console.log('[DIAG-H7] requireDeploymentId BLOCKING request with 403!');
     return res.status(403).json({
       exito: false,
       error: {
