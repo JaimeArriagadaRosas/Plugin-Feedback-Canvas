@@ -25,6 +25,7 @@ export default class NotificationDiagnosticsLocal {
     logger.info(`[DIAGNOSTICS] Registrando resumen de lote aprobado (${summary.totalProcessed} feedbacks)`);
     
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.appendFileSync(this.logFilePath, message);
     } catch (err) {
       logger.error('Error escribiendo log de diagnóstico local:', err);

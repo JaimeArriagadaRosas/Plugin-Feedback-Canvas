@@ -15,6 +15,7 @@ export default class EmailServiceLocal {
     
     // Guardar en archivo local
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.appendFileSync(this.logFilePath, message);
     } catch (err) {
       logger.error('Error escribiendo log de email local:', err);
