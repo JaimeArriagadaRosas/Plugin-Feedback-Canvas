@@ -27,6 +27,9 @@ import CanvasWebhookController from '../../controllers/CanvasWebhookController.j
 import StatsService from '../../services/StatsService.js';
 import PermissionsManager from '../../modules/permissions/PermissionsManager.js';
 import PermissionsManagerLocal from '../../modules/permissions/PermissionsManager.local.js';
+import PreferencesService from '../../modules/preferences/PreferencesService.js';
+import EmailServiceLocal from '../../modules/notifications/EmailService.local.js';
+import NotificationDiagnosticsLocal from '../../modules/notifications/NotificationDiagnostics.local.js';
 import TokenRotationJob from '../auth/TokenRotationJob.js';
 import WebhookService from '../../services/WebhookService.js';
 import CourseService from '../../services/CourseService.js';
@@ -140,6 +143,10 @@ export async function initializeServiceLayer(env, repos) {
   const templateManager = new TemplateManager(templateRepo);
 
   const iaConfigManager = new IAConfigManager(tokenRepo, configRepo);
+  
+  const preferencesService = new PreferencesService();
+  const emailServiceLocal = new EmailServiceLocal();
+  const diagnosticsService = process.env.NODE_ENV !== 'production' ? new NotificationDiagnosticsLocal() : null;
 
   const feedbackService = new FeedbackService(
     iaProvider,
@@ -149,12 +156,14 @@ export async function initializeServiceLayer(env, repos) {
     academicHistoryService,
     ValidadorAcademico,
     configRepo,
-    iaConfigManager
+    iaConfigManager,
+    preferencesService,
+    emailServiceLocal
   );
 
   const llmConfigService = new LLMConfigurationService();
   const variableConfigManager = new VariableConfigManager();
-  const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway);
+  const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway, preferencesService, emailServiceLocal, diagnosticsService);
   const templateValidatorService = new TemplateValidatorService();
   const webhookService = new WebhookService();
   const courseService = new CourseService(configRepo);

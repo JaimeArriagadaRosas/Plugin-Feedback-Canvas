@@ -1,0 +1,23 @@
+import logger from '../../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
+
+export default class EmailServiceLocal {
+  constructor() {
+    this.logFilePath = path.join(process.cwd(), 'local-emails.log');
+  }
+
+  async sendNotification(estudianteId, courseId, asunto) {
+    const message = `[MOCK EMAIL] To: Estudiante ${estudianteId} | Course: ${courseId} | Asunto: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
+    
+    // Loguear en consola
+    logger.info(message.trim());
+    
+    // Guardar en archivo local
+    try {
+      fs.appendFileSync(this.logFilePath, message);
+    } catch (err) {
+      logger.error('Error escribiendo log de email local:', err);
+    }
+  }
+}

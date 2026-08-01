@@ -47,7 +47,7 @@ export default class AdvancedFeedbackController {
         return next(new AppError('Máximo 100 feedbackIds por solicitud', 400));
       }
 
-      const teacherId = req.appIdentity?.canonicalUserId || 'system';
+      const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
 
       // Esperamos a que termine la Fase A (actualización en BD a APROBADO).
       // La Fase B (envío a Canvas) seguirá corriendo en segundo plano dentro del servicio.

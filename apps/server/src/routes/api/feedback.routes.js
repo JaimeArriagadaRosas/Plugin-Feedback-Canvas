@@ -20,6 +20,7 @@ export function createFeedbackRoutes(feedbackCtrl, advancedFbCtrl, manualFbCtrl)
 
   router.get('/list', authorizeRole(['teacher']), (req, res, next) => feedbackCtrl.listAll(req, res, next));
   router.get('/pending', authorizeRole(['teacher']), (req, res, next) => feedbackCtrl.listPending(req, res, next));
+  router.get('/pending/summary', authorizeRole(['teacher']), (req, res, next) => feedbackCtrl.getPendingSummary(req, res, next));
   router.get('/detail', authorizeRole(['teacher']), ...validateFeedbackDetailQuery, handleValidationErrors, (req, res, next) => feedbackCtrl.getDetail(req, res, next));
   router.get('/history/:courseId/:studentId', authorizeRole(['teacher']), ...validateCourseId, ...validateStudentId, handleValidationErrors, (req, res, next) => feedbackCtrl.getHistory(req, res, next));
   router.post('/generate', authorizeRole(['teacher']), validateBody(schemas.feedbackGenerate), ensureIdempotencyKey, idempotencyManager.middleware(), (req, res, next) => feedbackCtrl.generate(req, res, next));

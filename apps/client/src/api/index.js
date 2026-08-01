@@ -53,15 +53,8 @@ export class ApiError extends Error {
 function handleTokenRefresh(response, data) {
   if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
     logApi('warn', `Sesión requiere OAuth. Redirigiendo a ${data.error.oauthUrl}`);
-    try {
-      if (typeof window !== 'undefined' && window.top) {
-        window.top.location.href = data.error.oauthUrl;
-      }
-    } catch (e) {
-      logApi('warn', 'Fallback a redirección interna del iframe por CORS');
-      if (typeof window !== 'undefined') {
-        window.location.href = data.error.oauthUrl;
-      }
+    if (typeof window !== 'undefined') {
+      window.location.href = data.error.oauthUrl;
     }
     return new Promise(() => {});
   }

@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useAdminConfig } from './hooks/useAdminConfig';
+import { api } from '../../api';
 import ConfigHeader from './organisms/ConfigHeader';
 import ConfigFooter from './organisms/ConfigFooter';
 import ModelConfigTab from './tabs/ModelConfigTab';
@@ -15,6 +16,11 @@ export default function AdminPanel({ onExit }) {
   const config = useAdminConfig();
   const logSave = useButtonLogger();
   const logDiscard = useButtonLogger();
+
+  useEffect(() => {
+    // Ping proactivo para asegurar que el admin tenga token OAuth
+    api.get('/courses').catch(() => { /* ignorar otros errores */ });
+  }, []);
 
   const handleSave = useCallback(
     async (e) => {

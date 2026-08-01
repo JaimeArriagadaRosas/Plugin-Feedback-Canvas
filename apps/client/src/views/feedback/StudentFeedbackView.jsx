@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudentFeedback } from './hooks/useStudentFeedback';
 import Button from '../../components/atoms/Button';
 import StudentFeedbackHistory from './student/StudentFeedbackHistory';
 import StudentRecentFeedback from './student/StudentRecentFeedback';
+import NotificationPreferencesForm from '../../modules/preferences/components/NotificationPreferencesForm';
 import styles from './StudentFeedbackView.module.css';
 
 export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
@@ -11,6 +12,8 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
   
   // Si studentId explícito de Canvas existe, lo usamos. Si no, fallback al user (UUID) o al inicial.
   const studentId = contextStudentId || (user && user !== 'system' ? user : initialStudentId);
+
+  const [showPreferences, setShowPreferences] = useState(false);
 
   const {
     assignments,
@@ -35,6 +38,23 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
             <Button variant="secondary" onClick={handleBackToList}>
               Volver a Calificaciones
             </Button>
+          )}
+          {viewMode === 'list' && (
+            <>
+              <button 
+                className={styles.bellButton} 
+                onClick={() => setShowPreferences(!showPreferences)}
+                title="Preferencias de notificación"
+              >
+                🔔
+              </button>
+              
+              {showPreferences && (
+                <div className={styles.preferencesPopover}>
+                  <NotificationPreferencesForm onClose={() => setShowPreferences(false)} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </header>

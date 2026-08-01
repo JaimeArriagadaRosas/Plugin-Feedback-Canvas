@@ -39,6 +39,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       }
       return [];
     },
+    refetchInterval: 10000, // Carga dinámica periódica cada 10s
   });
 
   const approveMutation = useMutation({

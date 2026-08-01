@@ -14,6 +14,8 @@ import AuditLogControllerLocal from '../controllers/AuditLogController_local.js'
 import CanvasOAuthController from '../controllers/CanvasOAuthController.js';
 import StudentController from '../controllers/StudentController.js';
 import FileController from '../controllers/FileController.js';
+import PreferencesController from '../modules/preferences/PreferencesController.js';
+import PreferencesService from '../modules/preferences/PreferencesService.js';
 import { initializeReportsModule } from '../modules/reports/index.js';
 import { requireCanvasOAuth } from '../middlewares/CanvasOAuthMiddleware.js';
 import { authorizeRole } from '../authz/authorizeRole.js';
@@ -30,6 +32,7 @@ import { createTemplateRoutes } from './api/template.routes.js';
 import { createFeedbackRoutes, createStudentFeedbackRoutes } from './api/feedback.routes.js';
 import { createStatsRoutes, createAuditRoutes } from './api/stats.routes.js';
 import { createConfigRoutes } from './api/config.routes.js';
+import { createPreferencesRoutes } from './api/preferences.routes.js';
 
 export default class GestorRutasAPI {
   constructor(dependencias) {
@@ -52,6 +55,11 @@ export default class GestorRutasAPI {
     this.manualFbCtrl   = new ManualFeedbackController(this.deps.feedbackService);
     this.statsCtrl      = new StatsController(this.deps.statsService);
     this.permissionsCtrl = new PermissionsController(this.deps.permissionsService);
+    
+    // Instanciar dependencias de preferencias
+    const prefService = new PreferencesService();
+    this.preferencesCtrl = new PreferencesController(prefService);
+
     
     // Inyección condicional del controlador de auditoría según entorno
     if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
@@ -104,6 +112,7 @@ export default class GestorRutasAPI {
     this.router.use('/audit', createAuditRoutes(this.auditLogCtrl));
     this.router.use('/student', createStudentFeedbackRoutes(this.studentCtrl));
     this.router.use('/config', createConfigRoutes(this.configCtrl, this.iaConfigCtrl, this.permissionsCtrl, this.variableCtrl));
+    this.router.use('/preferences', createPreferencesRoutes(this.preferencesCtrl));
     
     // Doble montaje eliminado (Phase 4.1)
 
