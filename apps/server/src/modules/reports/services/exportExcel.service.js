@@ -5,9 +5,10 @@ export class ExcelExportService {
   /**
    * Genera un buffer de Excel a partir de los datos proporcionados.
    * @param {Array} data - Lista de feedbacks generados.
+   * @param {Array} auditLogs - Lista de logs críticos de auditoría.
    * @returns {Promise<Buffer>} - Archivo XLSX en memoria.
    */
-  async generateExcel(data) {
+  async generateExcel(data, auditLogs = []) {
     try {
       const workbook = new ExcelJS.Workbook();
       
@@ -157,6 +158,36 @@ export class ExcelExportService {
         });
       });
       styleHeader(sheet3);
+
+      // ============================================
+      // HOJA 4: AUDITORÍA (CRÍTICOS)
+      // ============================================
+      const sheet4 = workbook.addWorksheet('Auditoría (Críticos)');
+      sheet4.columns = [
+        { header: 'Fecha', key: 'fecha', width: 25 },
+        { header: 'Usuario ID', key: 'usuario', width: 20 },
+        { header: 'Acción / Tipo de Evento', key: 'accion', width: 45 },
+        { header: 'Detalle e IP', key: 'detalle', width: 60 }
+      ];
+
+      if (auditLogs && auditLogs.length > 0) {
+        auditLogs.forEach(log => {
+          sheet4.addRow({
+            fecha: log.fecha ? new Date(log.fecha).toLocaleString() : 'N/A',
+            usuario: log.usuario_id || 'SISTEMA',
+            accion: log.accion,
+            detalle: `${log.detalle || 'Sin detalle'} | IP: ${log.ip_address || 'N/A'}`
+          });
+        });
+      } else {
+        sheet4.addRow({
+          fecha: 'N/A',
+          usuario: 'N/A',
+          accion: 'No se detectaron incidentes de seguridad en este periodo.',
+          detalle: '---'
+        });
+      }
+      styleHeader(sheet4);
 
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;

@@ -31,23 +31,27 @@ export function useStudentFeedback(initialStudentId = 1, courseId) {
       return result;
     },
     onMutate: async ({ feedbackId, rating }) => {
+      const prevRating = studentRating;
       setStudentRating(rating);
-      await queryClient.cancelQueries({ queryKey: ['student-feedback', studentId] });
-      const previous = queryClient.getQueryData(['student-feedback', studentId]);
-      queryClient.setQueryData(['student-feedback', studentId], (old = []) =>
+      await queryClient.cancelQueries({ queryKey: ['student-feedback', studentId, courseId] });
+      const previous = queryClient.getQueryData(['student-feedback', studentId, courseId]);
+      queryClient.setQueryData(['student-feedback', studentId, courseId], (old = []) =>
         old.map(a => {
-          if (a.id === feedbackId && a.feedback) {
+          if (a.feedback && a.feedback.id === feedbackId) {
             return { ...a, feedback: { ...a.feedback, calificacion_estudiante: rating } };
           }
           return a;
         })
       );
       setRatingSaved(true);
-      return { previous };
+      return { previous, prevRating };
     },
     onError: (err, _, context) => {
+      if (context?.prevRating !== undefined) {
+        setStudentRating(context.prevRating);
+      }
       if (context?.previous) {
-        queryClient.setQueryData(['student-feedback', studentId], context.previous);
+        queryClient.setQueryData(['student-feedback', studentId, courseId], context.previous);
       }
       logger.error('StudentFeedback', 'Error saving rating', { error: err });
     },
@@ -61,9 +65,8 @@ export function useStudentFeedback(initialStudentId = 1, courseId) {
   }, []);
 
   const handleRateFeedback = useCallback((feedbackId, rating) => {
-    if (ratingSaved) return;
     rateMutation.mutate({ feedbackId, rating });
-  }, [ratingSaved, rateMutation]);
+  }, [rateMutation]);
 
   const handleBackToList = useCallback(() => {
     setViewMode('list');

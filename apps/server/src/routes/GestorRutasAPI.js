@@ -54,7 +54,7 @@ export default class GestorRutasAPI {
     this.permissionsCtrl = new PermissionsController(this.deps.permissionsService);
     
     // Inyección condicional del controlador de auditoría según entorno
-    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
+    if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
       this.auditLogCtrl = new AuditLogControllerLocal();
     } else {
       this.auditLogCtrl = new AuditLogController();

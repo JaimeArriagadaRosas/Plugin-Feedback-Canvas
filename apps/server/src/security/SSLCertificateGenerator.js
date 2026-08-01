@@ -66,7 +66,9 @@ export class SSLCertificateGenerator {
 
       const path = await import('node:path');
       const certsDir = path.dirname(CERT_PEM);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (!fs.existsSync(certsDir)) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         fs.mkdirSync(certsDir, { recursive: true });
       }
 

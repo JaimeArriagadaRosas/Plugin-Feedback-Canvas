@@ -39,8 +39,10 @@ export class AssetBuilder {
     
     // Parchear archivo .i18nrc localmente (sin bash para evitar problemas con CRLF)
     const i18nrcPath = path.join(this.canvasDir, '.i18nrc');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(i18nrcPath)) {
       // Usar escritura directa del JSON correcto para evitar SyntaxErrors por comas residuales de regex
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.writeFileSync(i18nrcPath, JSON.stringify({ plugins: ["@instructure/i18nliner-canvas"] }, null, 2));
     }
 

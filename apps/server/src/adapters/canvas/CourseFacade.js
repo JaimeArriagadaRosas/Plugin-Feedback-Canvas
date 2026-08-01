@@ -10,4 +10,8 @@ export default class CourseFacade {
   async getStudents(courseId, teacherId) {
     return this.adapter._fetchAllWithToken(`/courses/${courseId}/users?enrollment_type[]=student&per_page=50`, teacherId);
   }
+
+  async getTeachers(courseId, teacherId) {
+    return this.adapter._fetchAllWithToken(`/courses/${courseId}/users?enrollment_type[]=teacher&per_page=50`, teacherId);
+  }
 }

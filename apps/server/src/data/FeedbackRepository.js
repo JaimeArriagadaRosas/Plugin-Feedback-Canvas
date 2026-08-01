@@ -173,7 +173,7 @@ export default class FeedbackRepository {
     let res = await db.query(
       `UPDATE Historial_Feedback_Generado 
        SET calificacion_estudiante = $1 
-       WHERE id = $2 AND calificacion_estudiante IS NULL 
+       WHERE id = $2 
        RETURNING *`,
       [rating, id]
     );

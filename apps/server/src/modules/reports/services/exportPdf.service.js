@@ -5,7 +5,7 @@ export class PDFExportService {
   /**
    * Genera un buffer de PDF a partir de los datos estadísticos globales.
    */
-  async generateReport(data) {
+  async generateReport(data, auditLogs = []) {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -46,6 +46,7 @@ export class PDFExportService {
             const star = Number(row.calificacion_estudiante);
             sumaValoracionEstudiante += star;
             countValoracionEstudiante++;
+            // eslint-disable-next-line security/detect-object-injection
             if (estrellasEstudiante[star] !== undefined) estrellasEstudiante[star]++;
           }
 
@@ -124,6 +125,7 @@ export class PDFExportService {
         const maxStars = Math.max(...Object.values(estrellasEstudiante), 1);
         const chartY = doc.y;
         [5, 4, 3, 2, 1].forEach((star, i) => {
+          // eslint-disable-next-line security/detect-object-injection
           const count = estrellasEstudiante[star];
           const yPos = chartY + (i * 25);
           
@@ -168,6 +170,55 @@ export class PDFExportService {
           doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#E0E0E0');
           doc.y += 5;
         });
+
+        // ============================================
+        // 3. ANEXO: AUDITORÍA DE SEGURIDAD (CRÍTICOS)
+        // ============================================
+        doc.addPage();
+        
+        doc.rect(0, 0, doc.page.width, 100).fill(canvasBlue);
+        doc.fillColor('white').fontSize(24).text('Anexo: Alertas de Seguridad', 0, 35, { align: 'center' });
+        doc.fontSize(12).text(`Incidentes Críticos Recientes`, 0, 65, { align: 'center' });
+        
+        doc.y = 120;
+        doc.fillColor(canvasBlue).fontSize(16).text('Resumen de Alertas de Seguridad', 50, doc.y);
+        doc.moveTo(50, doc.y + 5).lineTo(545, doc.y + 5).stroke(canvasBlue);
+        doc.y += 20;
+
+        if (!auditLogs || auditLogs.length === 0) {
+          doc.fillColor('#137333').fontSize(12).text('✅ No se detectaron incidentes de seguridad críticos en el periodo reportado.', 50, doc.y);
+        } else {
+          doc.fillColor('#d32f2f').fontSize(12).text(`⚠️ Se detectaron ${auditLogs.length} incidentes críticos/fallidos en los registros recientes.`, 50, doc.y);
+          doc.y += 20;
+
+          // Mostrar los últimos 15 incidentes
+          const topLogs = auditLogs.slice(0, 15);
+          
+          doc.fillColor('#777777').fontSize(9);
+          doc.text('FECHA', 50, doc.y, { width: 100 });
+          doc.text('USUARIO', 150, doc.y, { width: 80 });
+          doc.text('ACCIÓN', 230, doc.y, { width: 120 });
+          doc.text('DETALLE / IP', 350, doc.y, { width: 195 });
+          doc.y += 15;
+
+          topLogs.forEach(log => {
+            doc.fillColor(textColor).fontSize(9);
+            const rawFecha = log.fecha ? new Date(log.fecha).toLocaleString() : 'N/A';
+            const rawUsuario = log.usuario_id || 'SISTEMA';
+            const rawAccion = log.accion || 'N/A';
+            const rawDetalle = `${log.detalle || ''} | IP: ${log.ip_address || 'N/A'}`;
+            
+            const startY = doc.y;
+            doc.text(rawFecha, 50, startY, { width: 90 });
+            doc.text(rawUsuario, 150, startY, { width: 70 });
+            doc.text(rawAccion.substring(0, 40), 230, startY, { width: 110 });
+            doc.text(rawDetalle.substring(0, 60), 350, startY, { width: 195 });
+            
+            doc.y = Math.max(doc.y, startY + 15);
+            doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#EEEEEE');
+            doc.y += 5;
+          });
+        }
 
         doc.end();
       } catch (error) {

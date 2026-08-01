@@ -1,5 +1,4 @@
 import logger from '../utils/logger.js';
-import { isLocalModeAllowed } from '../security/envGuard.js';
 
 // Mutex en memoria para evitar Thundering Herd en refrescos de token LTI
 const refreshLocks = new Map();
@@ -25,12 +24,6 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
       // En modo LTI, ltiUserId es el Canvas UUID o sub.
       // req.user.id también apunta a este valor.
       const canvasSub = req.appIdentity?.ltiUserId || req.user?.id;
-
-      if (isLocalModeAllowed()) {
-        // En modo local los datos vienen de CanvasServiceLocal y no requieren
-        // un Canvas API Token (OAuth2) real. Se omite la verificación.
-        return next();
-      }
 
       if (!canvasSub) {
          logger.warn('[CanvasOAuthMiddleware] No se pudo determinar canvasSub desde ltiContext. Se procederá sin token.');

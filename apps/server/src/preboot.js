@@ -36,7 +36,9 @@ function isFastCheckPassing() {
       path.join(rootDir, 'apps', 'client', 'package.json')
     ];
     for (const p of pkgs) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (!fs.existsSync(p)) continue;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const json = JSON.parse(fs.readFileSync(p, 'utf8'));
       if (json.dependencies) {
         for (const dep of Object.keys(json.dependencies)) {

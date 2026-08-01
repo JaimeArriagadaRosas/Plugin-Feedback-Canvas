@@ -2,6 +2,7 @@ import { HistogramService } from './histogram.service.js';
 import { ExcelExportService } from './exportExcel.service.js';
 import { PDFExportService } from './exportPdf.service.js';
 import StatsService from '../../../services/StatsService.js';
+import AuditManager from '../../audit/AuditManager.js';
 import { ApiError } from '../../../utils/errors.js';
 import logger from '../../../utils/logger.js';
 
@@ -36,7 +37,8 @@ export class ReportsService {
   async exportToExcel(courseId = null) {
     try {
       const data = await this.feedbackRepo.listAll(5000, courseId);
-      return await this.excelExport.generateExcel(data);
+      const auditData = await AuditManager.getCriticalLogs(200);
+      return await this.excelExport.generateExcel(data, auditData.logs);
     } catch (err) {
       logger.error('[ReportsService] Error exportToExcel', { error: err });
       throw new ApiError('Error al generar archivo Excel', 500);
@@ -46,7 +48,8 @@ export class ReportsService {
   async exportToPdf(courseId = null) {
     try {
       const data = await this.feedbackRepo.listAll(5000, courseId);
-      return await this.pdfExport.generateReport(data);
+      const auditData = await AuditManager.getCriticalLogs(200);
+      return await this.pdfExport.generateReport(data, auditData.logs);
     } catch (err) {
       logger.error('[ReportsService] Error exportToPdf', { error: err });
       throw new ApiError('Error al generar reporte PDF', 500);

@@ -5,8 +5,12 @@ import { schemas, validateBody, requireDeploymentId } from '../../security/valid
 import { idempotencyManager } from '../../middlewares/IdempotencyKeyManager.js';
 
 const ensureIdempotencyKey = (req, res, next) => {
-  if (!req.headers['idempotency-key'] && req.body && req.body.courseId && req.body.assignmentId && req.body.studentId) {
-    req.headers['idempotency-key'] = `concurrent-lock-${req.body.courseId}-${req.body.assignmentId}-${req.body.studentId}`;
+  if (!req.headers['idempotency-key']) {
+    if (req.body && req.body.courseId && req.body.assignmentId && req.body.studentId) {
+      req.headers['idempotency-key'] = `concurrent-lock-${req.body.courseId}-${req.body.assignmentId}-${req.body.studentId}`;
+    } else if (req.body && req.body.id && req.body.rating) {
+      req.headers['idempotency-key'] = `concurrent-lock-rate-${req.body.id}`;
+    }
   }
   next();
 };
