@@ -14,6 +14,7 @@ paths = [
   '''tmp/''',
   '''temp/''',
   '''coverage/''',
+  '''package-lock\.json$''',
   '''apps/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
   '''apps/server/src/services/infraestructura/DockerRunner\.js$''',
   '''env_example$''',
