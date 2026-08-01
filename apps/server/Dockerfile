@@ -1,5 +1,5 @@
 # Etapa de construcción
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/logger/package.json ./packages/logger/
 
 # Instalar todas las dependencias (incluyendo devDependencies para compilar)
-RUN npm ci
+RUN npm install
 
 # Copiar el resto del código
 COPY . .
@@ -25,7 +25,7 @@ COPY . .
 RUN npm prune --production
 
 # Etapa de producción
-FROM node:18-alpine AS production
+FROM node:24-alpine AS production
 
 WORKDIR /app
 
