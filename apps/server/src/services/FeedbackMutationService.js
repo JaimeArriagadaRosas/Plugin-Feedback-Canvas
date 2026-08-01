@@ -3,9 +3,11 @@ import logger from '../utils/logger.js';
 import { FeedbackStateMachine } from '../domain/feedback/FeedbackStateMachine.js';
 
 export default class FeedbackMutationService {
-  constructor(feedbackRepo, canvasGateway) {
+  constructor(feedbackRepo, canvasGateway, preferencesService, emailService) {
     this.feedbackRepo = feedbackRepo;
     this.canvasGateway = canvasGateway;
+    this.preferencesService = preferencesService;
+    this.emailService = emailService;
   }
 
   async editFeedback(id, nuevoContenido) {
@@ -84,13 +86,55 @@ export default class FeedbackMutationService {
     }
 
     if (feedbackId) {
-      await this.feedbackRepo.saveNotification(studentId, feedbackId, `Tienes un nuevo feedback aprobado en el curso ${courseId}`);
-      if (teacherId) {
+      // Obtener preferencia (RF43)
+      let metodo = 'canvas_inapp';
+      if (this.preferencesService) {
+        const prefs = await this.preferencesService.getStudentPreference(studentId);
+        metodo = prefs.metodo;
+      }
+
+      let notificationSuccess = false;
+
+      // Enviar notificación (RF42)
+      const sendInApp = metodo === 'canvas_inapp' || metodo === 'both';
+      const sendEmail = metodo === 'email' || metodo === 'both';
+      
+      let inAppSuccess = false;
+      let emailSuccess = false;
+
+      if (sendInApp && teacherId) {
         try {
           await this.canvasGateway.pushInAppMessage(courseId, studentId, teacherId, 'Nuevo Feedback Disponible', 'Se ha publicado un nuevo feedback para tu entrega.');
+          inAppSuccess = true;
         } catch (msgErr) {
           logger.warn('[FeedbackMutation] Error al enviar mensaje in-app', { error: msgErr.message });
         }
+      }
+      
+      if (sendEmail) {
+        try {
+          if (this.emailService) {
+            await this.emailService.sendNotification(studentId, courseId, 'Nuevo Feedback Disponible');
+          } else {
+            logger.info(`[Email] Simulando envío de correo al estudiante ${studentId}`);
+          }
+          emailSuccess = true;
+        } catch (e) {
+          logger.warn('[FeedbackMutation] Error al enviar correo', { error: e.message });
+        }
+      }
+
+      // Registrar notificación (RF44)
+      if (metodo !== 'none') {
+        let metodoUsado = metodo;
+        if (metodo === 'both') {
+          metodoUsado = (inAppSuccess && emailSuccess) ? 'both' : (inAppSuccess ? 'canvas_inapp' : (emailSuccess ? 'email' : 'error_both'));
+        } else if (metodo === 'canvas_inapp') {
+          metodoUsado = inAppSuccess ? 'canvas_inapp' : 'error_canvas_inapp';
+        } else if (metodo === 'email') {
+          metodoUsado = emailSuccess ? 'email' : 'error_email';
+        }
+        await this.feedbackRepo.saveNotification(studentId, feedbackId, `Tienes un nuevo feedback aprobado en el curso ${courseId}`, metodoUsado);
       }
     }
     return { feedbackId, studentId };

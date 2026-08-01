@@ -192,7 +192,7 @@ export default class FeedbackRepository {
     return res.rows[0];
   }
 
-  async saveNotification(estudianteId, feedbackId, mensaje, metodo = 'email') {
+  async saveNotification(estudianteId, feedbackId, mensaje, metodo) {
     const res = await db.query(
       `INSERT INTO Notificaciones_Feedback (estudiante_id, feedback_id, mensaje, metodo) VALUES ($1, $2, $3, $4) RETURNING *`,
       [estudianteId, feedbackId, mensaje, metodo]

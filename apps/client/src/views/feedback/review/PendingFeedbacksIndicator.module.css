@@ -1,0 +1,86 @@
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+.bellButton {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bellButton:hover {
+  background-color: #f5f5f5;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 250px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 1000;
+  padding: 10px;
+}
+
+.popoverHeader {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.popoverHeader h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.popoverBody {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.studentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.studentList li {
+  padding: 5px 0;
+  border-bottom: 1px solid #f9f9f9;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.studentList li:last-child {
+  border-bottom: none;
+}
+
+.noPendingMsg {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #777;
+}

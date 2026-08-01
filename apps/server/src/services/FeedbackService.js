@@ -11,7 +11,7 @@ import logger from '../utils/logger.js';
  * delega en servicios especializados para cumplir SRP sin romper dependencias.
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager, preferencesService = null, emailService = null) {
     this.generation = new FeedbackGenerationService(
       iaProvider, canvasGateway, feedbackRepo, templateRepo,
       academicHistoryService, validadorAcademico, configRepo, iaConfigManager
@@ -20,7 +20,7 @@ export default class FeedbackService {
       feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico
     );
     this.mutation = new FeedbackMutationService(
-      feedbackRepo, canvasGateway
+      feedbackRepo, canvasGateway, preferencesService, emailService
     );
     this.academicHistoryService = academicHistoryService;
     this.feedbackRepo = feedbackRepo;
@@ -53,6 +53,10 @@ export default class FeedbackService {
 
   getListAll(courseId, teacherId) {
     return this.query.getListAll(courseId, teacherId);
+  }
+
+  getPendingSummary(courseId, teacherId) {
+    return this.query.getPendingSummary(courseId, teacherId);
   }
 
   findByStudent(...args) {

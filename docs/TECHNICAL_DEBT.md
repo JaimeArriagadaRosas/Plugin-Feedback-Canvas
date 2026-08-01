@@ -43,3 +43,23 @@ Actualmente, no se ha contado con una *Developer Key* de Canvas LMS que permita 
 - Obtener una *Developer Key* válida.
 - Ejecutar pruebas exhaustivas de despliegue y lanzamiento LTI 1.3 en un entorno de producción real o *staging* de Canvas.
 - Validar que el comportamiento simulado en el entorno local coincida con el comportamiento real de producción y refactorizar/eliminar los *bypasses* locales en el código destinado a producción.
+
+---
+
+## 3. Servicio de Envío de Correos Institucionales (EmailService) Incompleto para Producción
+
+### Descripción
+El sistema permite a los estudiantes configurar sus preferencias de notificación ("Ambos métodos" o "Correo Institucional") y ejecuta la lógica para procesar esas notificaciones al aprobar feedbacks, pero actualmente **no envía correos electrónicos reales**. En su lugar, simula el envío escribiendo un registro local (`local-emails.log`).
+
+### Contexto y Justificación
+Durante el desarrollo del MVP, el entorno local no se conectó a un proveedor SMTP real (ej. SendGrid, AWS SES o servidor de correo de la universidad) para evitar configuraciones complejas, manejo de credenciales y costos asociados al envío de correos durante la fase de pruebas. La arquitectura está diseñada para delegar esta tarea a un `EmailService`, pero su implementación para producción aún no se ha desarrollado.
+
+### Estado Actual
+- El módulo `EmailService.local.js` captura correctamente la orden de envío y registra en disco un *Mock Email*.
+- No existe una integración funcional con un servidor de correo saliente.
+- No existen plantillas HTML (formato, logos, colores institucionales); solo se genera un texto plano en el log para efectos de depuración.
+
+### Acción Requerida (Futuro)
+- Desarrollar e implementar un adaptador real para `EmailService` (ej. usando `nodemailer` o el SDK de un proveedor de correos) que se active cuando el plugin esté en un entorno de producción.
+- Diseñar e integrar plantillas formales de correo institucional (formato HTML, logos de la institución).
+- Configurar las credenciales seguras (variables de entorno) del proveedor SMTP en la infraestructura de producción.

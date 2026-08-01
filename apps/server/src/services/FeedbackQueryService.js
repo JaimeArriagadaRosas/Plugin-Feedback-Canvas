@@ -85,6 +85,15 @@ export default class FeedbackQueryService {
     }).filter(Boolean);
   }
 
+  async getPendingSummary(courseId, teacherId) {
+    const list = await this.getListAll(courseId, teacherId);
+    const pendingList = list.filter(fb => fb.status === 'PENDIENTE' || fb.status === 'EDITADO');
+    return {
+      count: pendingList.length,
+      students: pendingList.map(fb => fb.student)
+    };
+  }
+
   async getStats(courseId = null, assignmentId = null) {
     return this.feedbackRepo.getStats(courseId, assignmentId);
   }

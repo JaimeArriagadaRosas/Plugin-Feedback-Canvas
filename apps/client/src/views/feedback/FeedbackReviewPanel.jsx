@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFeedbackReview } from './review/useFeedbackReview';
 import Toast from '../../components/atoms/Toast';
 import ConfirmDialog from '../../components/molecules/ConfirmDialog';
+import PendingFeedbacksIndicator from './review/PendingFeedbacksIndicator';
 import styles from './FeedbackReviewPanel.module.css';
 
 export default function FeedbackReviewPanel() {
@@ -70,7 +71,10 @@ export default function FeedbackReviewPanel() {
   return (
     <div className={styles.panel}>
       <header className={styles.header}>
-        <h1 className={styles.title}>REVISIÓN DE FEEDBACKS</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <PendingFeedbacksIndicator courseId={selectedCourse} />
+          <h1 className={styles.title}>REVISIÓN DE FEEDBACKS</h1>
+        </div>
         <div className={styles.actions}>
           <button
             type="button"

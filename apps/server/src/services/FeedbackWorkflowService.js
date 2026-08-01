@@ -1,10 +1,13 @@
 import logger from '../utils/logger.js';
 
 export default class FeedbackWorkflowService {
-  constructor(feedbackRepo, feedbackService, canvasService) {
+  constructor(feedbackRepo, feedbackService, canvasService, preferencesService, emailService, diagnosticsService = null) {
     this.feedbackRepo = feedbackRepo;
     this.feedbackService = feedbackService;
     this.canvasService = canvasService;
+    this.preferencesService = preferencesService;
+    this.emailService = emailService;
+    this.diagnosticsService = diagnosticsService;
   }
 
   /**
@@ -65,6 +68,9 @@ export default class FeedbackWorkflowService {
 
     // 2. Fase B: Asíncrona - Subida a Canvas
     if (feedbacksToProcess.length > 0) {
+      if (this.diagnosticsService) {
+        this.diagnosticsService.logBulkApproval(feedbacksToProcess, currentTeacherId);
+      }
       this._processCanvasUploadsInBackground(feedbacksToProcess, currentTeacherId)
         .catch(err => logger.error('[Workflow] Error fatal en proceso de fondo Canvas:', { error: err.message }));
     }
@@ -83,23 +89,64 @@ export default class FeedbackWorkflowService {
             await this.canvasService.updateGrade(fb.curso_id, fb.tarea_id, fb.estudiante_id, teacherToUse, fb.nota_canvas);
          }
 
-         // Notifications
-         await this.feedbackRepo.saveNotification(
-           fb.estudiante_id, 
-           fb.id, 
-           `Tienes un nuevo feedback aprobado en el curso ${fb.curso_id}`
-         );
+         // Obtener preferencia (RF43)
+         let metodo = 'canvas_inapp';
+         if (this.preferencesService) {
+            const prefs = await this.preferencesService.getStudentPreference(fb.estudiante_id);
+            metodo = prefs.metodo;
+         }
+
+         let notificationSuccess = false;
+
+         // Enviar notificación (RF42)
+         const sendInApp = metodo === 'canvas_inapp' || metodo === 'both';
+         const sendEmail = metodo === 'email' || metodo === 'both';
          
-         if (teacherToUse) {
+         let inAppSuccess = false;
+         let emailSuccess = false;
+
+         if (sendInApp && teacherToUse) {
             try {
               await this.canvasService.pushInAppMessage(
                 fb.curso_id, fb.estudiante_id, teacherToUse,
                 'Nuevo Feedback Disponible',
                 'Se ha publicado un nuevo feedback para tu entrega.'
               );
+              inAppSuccess = true;
             } catch (msgErr) {
               logger.warn(`[Workflow] Error enviando In-App Msg para feedback ${fb.id}`, { error: msgErr.message });
             }
+         }
+         
+         if (sendEmail) {
+            try {
+               if (this.emailService) {
+                  await this.emailService.sendNotification(fb.estudiante_id, fb.curso_id, 'Nuevo Feedback Disponible');
+               } else {
+                  logger.info(`[Email] Simulando envío de correo al estudiante ${fb.estudiante_id}`);
+               }
+               emailSuccess = true;
+            } catch (e) {
+               logger.warn(`[Workflow] Error enviando correo para feedback ${fb.id}`, { error: e.message });
+            }
+         }
+
+         // Registrar notificación (RF44)
+         if (metodo !== 'none') {
+            let metodoUsado = metodo;
+            if (metodo === 'both') {
+               metodoUsado = (inAppSuccess && emailSuccess) ? 'both' : (inAppSuccess ? 'canvas_inapp' : (emailSuccess ? 'email' : 'error_both'));
+            } else if (metodo === 'canvas_inapp') {
+               metodoUsado = inAppSuccess ? 'canvas_inapp' : 'error_canvas_inapp';
+            } else if (metodo === 'email') {
+               metodoUsado = emailSuccess ? 'email' : 'error_email';
+            }
+            await this.feedbackRepo.saveNotification(
+              fb.estudiante_id, 
+              fb.id, 
+              `Tienes un nuevo feedback aprobado en el curso ${fb.curso_id}`,
+              metodoUsado
+            );
          }
        } catch (error) {
          logger.error(`[Workflow] Error subiendo a Canvas feedback ${fb.id}. Revirtiendo a PENDIENTE...`, { error: error.message });

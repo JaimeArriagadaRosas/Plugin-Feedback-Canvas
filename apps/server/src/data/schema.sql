@@ -172,6 +172,21 @@ CREATE TABLE IF NOT EXISTS Notificaciones_Feedback (
 
 CREATE INDEX IF NOT EXISTS idx_notificaciones_feedback ON Notificaciones_Feedback(feedback_id);
 
+-- ==============================
+-- 7.5 PREFERENCIAS DE NOTIFICACION (ESTUDIANTES)
+-- ==============================
+CREATE TABLE IF NOT EXISTS Preferencias_Notificacion_Estudiante (
+    estudiante_id VARCHAR(50) PRIMARY KEY,
+    metodo VARCHAR(20) DEFAULT 'canvas_inapp', -- Opciones: 'canvas_inapp', 'email', 'none'
+    frecuencia VARCHAR(20) DEFAULT 'inmediata', -- Opciones: 'inmediata', 'diario'
+    actualizado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS pref_notif_estud_updated_at ON Preferencias_Notificacion_Estudiante;
+CREATE TRIGGER pref_notif_estud_updated_at
+  BEFORE UPDATE ON Preferencias_Notificacion_Estudiante
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 -- Tabla de idempotencia de webhooks de Canvas
 CREATE TABLE IF NOT EXISTS webhook_events (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

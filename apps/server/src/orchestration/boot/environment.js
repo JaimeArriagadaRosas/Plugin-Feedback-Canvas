@@ -100,8 +100,13 @@ VITE_USE_LOCAL_DATA=false
 
     for (const { key, desc } of REQUIRED_FOR_LTI) {
       // eslint-disable-next-line security/detect-object-injection
-      // eslint-disable-next-line security/detect-object-injection
-      if (!env[key] || !env[key].trim()) missing.push(`${key} (${desc})`);
+      if (!env[key] || !env[key].trim()) {
+        if (mode === '3' && key === 'LTI_CLIENT_ID') {
+          log.info(`Falta variable: LTI_CLIENT_ID (Se generará e inyectará automáticamente en breve)`);
+        } else {
+          missing.push(`${key} (${desc})`);
+        }
+      }
     }
 
     // STARTUP_MODE es definido por el orquestador, pero es bueno que exista en .env

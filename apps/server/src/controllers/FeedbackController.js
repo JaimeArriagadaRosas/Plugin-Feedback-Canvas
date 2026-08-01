@@ -21,10 +21,18 @@ export default class FeedbackController {
     this.rateByTeacher = asyncHandler(this.rateByTeacher.bind(this));
     this.getHistory = asyncHandler(this.getHistory.bind(this));
     this.generateMassive = asyncHandler(this.generateMassive.bind(this));
+    this.getPendingSummary = asyncHandler(this.getPendingSummary.bind(this));
   }
 
   async listPending(req, res) {
     const data = await this.feedbackService.getStats();
+    res.json({ exito: true, data });
+  }
+
+  async getPendingSummary(req, res) {
+    const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
+    const courseId = req.query.courseId;
+    const data = await this.feedbackService.getPendingSummary(courseId, teacherId);
     res.json({ exito: true, data });
   }
 
