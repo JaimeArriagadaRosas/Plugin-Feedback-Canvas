@@ -128,8 +128,9 @@ export class TeacherTokenGenerator {
       if (canvasSub) {
         const repo = new CanvasTokenRepository();
         const expiresAt = new Date(Date.now() + LOCAL_TOKEN_EXPIRY_MS);
-        await repo.saveToken(canvasSub, tokenData.token, null, expiresAt);
-        log(`Token sincronizado en PostgreSQL (canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
+        const tokenKey = userId ? String(userId) : canvasSub;
+        await repo.saveToken(tokenKey, tokenData.token, null, expiresAt);
+        log(`Token sincronizado en PostgreSQL (token_key: ${tokenKey}, canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
 
         if (!spinner) {
           console.log(`  √ Token sincronizado en PostgreSQL (canvas_user_id=${userId}).`);

@@ -106,6 +106,10 @@ export default class CanvasLmsAdapter {
     return this.courseApi.getStudents(courseId, teacherId);
   }
 
+  async getTeachers(courseId, teacherId) {
+    return this.courseApi.getTeachers(courseId, teacherId);
+  }
+
   async getAssignments(courseId, teacherId) {
     return this.assignmentApi.getAssignments(courseId, teacherId);
   }

@@ -22,9 +22,18 @@ export default function AuditLogTab() {
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
         <button 
           onClick={fetchLogs}
-          style={{ padding: '8px 16px', background: '#f5f5f5', border: '1px solid #c7cdd1', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          disabled={loading}
+          style={{ 
+            padding: '8px 16px', 
+            background: loading ? '#e0e0e0' : '#f5f5f5', 
+            border: '1px solid #c7cdd1', 
+            borderRadius: '4px', 
+            cursor: loading ? 'not-allowed' : 'pointer', 
+            fontWeight: 'bold',
+            transition: 'background 0.2s ease'
+          }}
         >
-          🔄 Refrescar
+          {loading ? '⏳ Refrescando...' : '🔄 Refrescar'}
         </button>
       </div>
 
@@ -52,8 +61,19 @@ export default function AuditLogTab() {
                       {log.usuario_id || 'SISTEMA'}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px', fontWeight: '500' }}>
-                    {log.accion}
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{ 
+                      background: log.accion.includes('FALLIDA') || log.accion.includes('DENEGADO') ? '#ffebee' : '#e1f5fe', 
+                      color: log.accion.includes('FALLIDA') || log.accion.includes('DENEGADO') ? '#d32f2f' : '#0277bd', 
+                      padding: '4px 8px', 
+                      borderRadius: '6px', 
+                      fontSize: '12px', 
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}>
+                      {log.accion.includes('FALLIDA') || log.accion.includes('DENEGADO') ? '⚠️ ' : '🛡️ '} 
+                      {log.accion}
+                    </span>
                   </td>
                   <td style={{ padding: '12px 16px', color: '#666' }}>
                     <div>{log.detalle}</div>

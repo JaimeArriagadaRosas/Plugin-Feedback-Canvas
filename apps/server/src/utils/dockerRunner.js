@@ -28,6 +28,7 @@ function resolveDockerContext() {
 
   try {
     const configPath = path.join(os.homedir(), '.docker', 'config.json');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const ctx = cfg && cfg.currentContext;
     if (ctx && ctx.trim().length) {

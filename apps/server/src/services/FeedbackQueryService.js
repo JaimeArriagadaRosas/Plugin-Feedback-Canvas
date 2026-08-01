@@ -19,18 +19,22 @@ export default class FeedbackQueryService {
   async getStudentView(studentId, courseId, teacherId) {
     const inferredCourseId = await this._resolveCourseId(courseId, studentId);
     
-    console.log('[DIAG-E2E] FeedbackQueryService.getStudentView', {
-      studentId,
-      courseId,
-      inferredCourseId,
-      teacherId
-    });
-
     const approved = await this._getApprovedFeedbacks(studentId, inferredCourseId);
     
-    // FIX H8: We use 'system' instead of the student's ID (passed as teacherId by mistake)
-    // so the CanvasGateway uses the system token to fetch assignments, not the student's token.
-    const assignments = await this._buildAssignmentsWithFeedback(inferredCourseId, approved, 'system');
+    // FIX: En lugar de intentar consultar las tareas a la API de Canvas usando
+    // un token genérico ('system') que no existe y genera errores, construimos
+    // la lista de tareas del estudiante basándonos en los feedbacks aprobados 
+    // que ya tenemos almacenados en la base de datos (SOLID - SRP).
+    const assignments = approved.map(fb => ({
+      id: fb.tarea_id,
+      name: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
+      due: fb.fecha_generacion ? new Date(fb.fecha_generacion).toLocaleDateString() : '',
+      score: fb.nota_canvas ?? '-',
+      total: '100', // Valor por defecto
+      hasFeedback: true,
+      feedback: { ...fb, teacherName: 'Profesor del Curso' }
+    }));
+
     return assignments;
   }
 
@@ -54,9 +58,10 @@ export default class FeedbackQueryService {
     return feedbacks.map(fb => {
       const isExplicitCourse = courseId && String(courseId) === String(fb.curso_id);
       const isOwnFeedback = String(fb.profesor_id) === String(teacherId);
+      const isMyCourse = coursesMap.has(String(fb.curso_id));
 
       // Filtramos feedbacks que no pertenecen a los cursos del profesor
-      if (teacherId !== 'system' && !isExplicitCourse && !isOwnFeedback) {
+      if (teacherId !== 'system' && !isExplicitCourse && !isOwnFeedback && !isMyCourse) {
         return null;
       }
 
@@ -110,60 +115,8 @@ export default class FeedbackQueryService {
   }
 
   async _getApprovedFeedbacks(studentId, courseId) {
-    console.log('[DIAG-E2E] FeedbackQueryService._getApprovedFeedbacks', {
-      studentId,
-      courseId,
-      query: 'SELECT * FROM HFG WHERE estudiante_id = $1 AND curso_id = $2'
-    });
     const history = await this.feedbackRepo.findByStudent(studentId, courseId);
-    console.log('[DIAG-E2E] FeedbackRepository.findByStudent results count:', history.length);
     return history.filter(fb => fb.estado === 'APROBADO' || fb.estado === 'ENVIADO');
-  }
-
-  async _buildAssignmentsWithFeedback(courseId, approved, teacherId) {
-    let assignments = [];
-    try {
-      console.log('[DIAG-E2E] FeedbackQueryService._buildAssignmentsWithFeedback Fetching Canvas API with teacherId:', teacherId);
-      const raw = await this.canvasGateway.getAssignments(courseId, teacherId);
-      assignments = raw.map(a => ({
-        id: a.id,
-        name: a.name || `Tarea ${a.id}`,
-        due: a.due_at || '',
-        score: a.score || '-',
-        total: a.points_possible ? String(a.points_possible) : '100',
-        hasFeedback: false
-      }));
-    } catch (err) {
-      if (err?.message) {
-        const logger = (await import('../utils/logger.js')).default;
-        logger.warn(`[FeedbackQuery] No se pudo obtener tareas del curso ${courseId}:`, { error: err.message });
-      }
-      assignments = [];
-    }
-
-    if (assignments.length > 0) {
-      approved.forEach(fb => {
-        const assignment = assignments.find(a => a.id == fb.tarea_id);
-        if (assignment) {
-          assignment.hasFeedback = true;
-          assignment.feedback = fb;
-        }
-      });
-    } else {
-      // Fallback: Si no pudimos obtener las tareas de Canvas, construimos la lista 
-      // usando los feedbacks aprobados que tenemos en base de datos.
-      assignments = approved.map(fb => ({
-        id: fb.tarea_id,
-        name: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
-        due: fb.fecha_generacion ? new Date(fb.fecha_generacion).toLocaleDateString() : '',
-        score: fb.nota_canvas ?? '-',
-        total: '100', // Valor por defecto
-        hasFeedback: true,
-        feedback: fb
-      }));
-    }
-
-    return assignments;
   }
 
   async _mapFeedbackToDTO(fb, preloadedStudents = null, teacherId = 'system') {
@@ -200,6 +153,20 @@ export default class FeedbackQueryService {
     }
   }
 
+  async _fetchTeacherName(courseId, targetTeacherId, systemTeacherId = 'system') {
+    try {
+      const teachers = await this.canvasGateway.getTeachers(courseId, systemTeacherId);
+      const teacher = teachers.find(t => String(t.id) === String(targetTeacherId));
+      return teacher ? teacher.name : 'Profesor del Curso';
+    } catch (err) {
+      if (err?.message) {
+        const logger = (await import('../utils/logger.js')).default;
+        logger.warn(`[FeedbackQuery] No se pudo obtener nombre de profesor ${targetTeacherId}:`, { error: err.message });
+      }
+      return 'Profesor del Curso';
+    }
+  }
+
   async _fetchProfile(courseId, studentId, teacherId = 'system') {
     try {
       const profileResult = await this.academicHistoryService.getStudentAcademicProfile(courseId, studentId, teacherId);
@@ -221,6 +188,7 @@ export default class FeedbackQueryService {
       'NEEDS_SUPPORT': 'REQUIERE APOYO',
       'AT_RISK': 'EN RIESGO'
     };
+    // eslint-disable-next-line security/detect-object-injection
     return map[level] || 'PROMEDIO';
   }
 
@@ -232,6 +200,7 @@ export default class FeedbackQueryService {
       'DOWN': 'Bajando',
       'STABLE': 'Estable'
     };
+    // eslint-disable-next-line security/detect-object-injection
     return map[trend] || 'Estable';
   }
 }

@@ -25,12 +25,6 @@ export default class StudentController {
     // Aquí el req.appIdentity será del propio estudiante
     const currentUserId = req.appIdentity?.canonicalUserId || 'system';
 
-    console.log('[DIAG-E2E] StudentController.getStudentView', {
-      paramStudentId: studentId,
-      queryCourseId: courseId,
-      canonicalUserId: currentUserId
-    });
-    
     // Se delega al servicio
     const data = await this.feedbackService.getStudentView(studentId, courseId, currentUserId);
     res.json({ exito: true, data });

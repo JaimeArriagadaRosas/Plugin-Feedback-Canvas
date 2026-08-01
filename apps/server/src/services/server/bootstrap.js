@@ -132,15 +132,8 @@ export async function initializeServiceLayer(env, repos) {
   const canvasClient = new CanvasClient(env.canvasBaseUrl, env.canvasApiHost);
   const canvasTokenManager = new CanvasTokenManager(canvasTokenRepo, env, canvasClient);
 
-  let canvasGateway;
-  if (env.useLocalData || process.env.STARTUP_MODE === '3') {
-    const CanvasLmsAdapterLocal = (await import('../../adapters/canvas/CanvasLmsAdapter.local.js')).default;
-    canvasGateway = new CanvasLmsAdapterLocal(canvasClient, canvasTokenManager, env);
-    logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapterLocal (Modo Desarrollo)`);
-  } else {
-    canvasGateway = new CanvasLmsAdapter(canvasClient, canvasTokenManager, env);
-    logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapter (Modo Producción)`);
-  }
+  const canvasGateway = new CanvasLmsAdapter(canvasClient, canvasTokenManager, env);
+  logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapter (Paridad Producción)`);
 
   const iaProvider = new GeminiProvider(getSecret('GEMINI_API_KEY'));
   const academicHistoryService = new AcademicHistoryService(canvasGateway, repos.studentRepo);

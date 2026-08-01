@@ -41,7 +41,7 @@ export const globalLimiter = process.env.DISABLE_RATE_LIMIT === 'true' ? (req, r
 
 export const authLimiter = process.env.DISABLE_RATE_LIMIT === 'true' ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getUserRateLimitKey,

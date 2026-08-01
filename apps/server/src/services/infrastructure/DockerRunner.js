@@ -1,1 +1,145 @@
-浩潰瑲笠猠慰湷硥捥祓据素映潲挧楨摬灟潲散獳㬧椊灭牯⁴慰桴映潲瀧瑡❨਻浩潰瑲笠映汩啥䱒潔慐桴素映潲甧汲㬧椊灭牯⁴獦映潲昧❳਻浩潰瑲氠杯敧⁲牦浯✠⸮ⸯ⼮瑵汩⽳潬杧牥樮❳਻ਊ潣獮⁴彟楦敬慮敭㴠映汩啥䱒潔慐桴椨灭牯⹴敭慴甮汲㬩挊湯瑳张摟物慮敭㴠瀠瑡⹨楤湲浡⡥彟楦敬慮敭㬩ਊ硥潰瑲挠湯瑳䌠乁䅖当䅐䡔㴠瀠瑡⹨敲潳癬⡥彟楤湲浡ⱥ✠⸮ⸯ⼮⸮ⸯ⼮慣癮獡氭獭洭獡整❲㬩ਊ潣獮⁴佌升䑟剉㴠瀠瑡⹨敲潳癬⡥彟楤湲浡ⱥ✠⸮ⸯ⼮潬獧⤧਻晩⠠昡⹳硥獩獴祓据䰨䝏当䥄⥒ ੻†獦洮摫物祓据䰨䝏当䥄ⱒ笠爠捥牵楳敶›牴敵素㬩紊挊湯瑳䐠䍏䕋归佌彇䥆䕌㴠瀠瑡⹨潪湩䰨䝏当䥄ⱒ✠潤正牥损湡慶⹳潬❧㬩ਊ硥潰瑲映湵瑣潩⁮牷瑩䑥捯敫䱲杯瀨敲楦ⱸ搠瑡⥡笠 挠湯瑳琠硥⁴‽慤慴琮卯牴湩⡧㬩 挠湯瑳琠浩獥慴灭㴠渠睥䐠瑡⡥⸩潴卉协牴湩⡧㬩 映⹳灡数摮楆敬祓据䐨䍏䕋归佌彇䥆䕌孠笤楴敭瑳浡絰⁝笤牰晥硩㩽␠瑻硥絴⥠਻੽攊灸牯⁴畦据楴湯猠慴瑲灓湩敮⡲慬敢⥬笠 挠湯瑳椠坳湩潤獷㴠瀠潲散獳瀮慬晴牯㴽‽眧湩㈳㬧 挠湯瑳映慲敭⁳‽獩楗摮睯⁳ †㼠嬠ⴧⰧ✠屜Ⱗ✠❼⼧崧ਠ††›❛ꃢ➋馠Ⱗ✠ꃢ➹뢠Ⱗ✠ꃢ➼뒠Ⱗ✠ꃢ➦ꞠⰧ✠ꃢ➇辠崧਻†敬⁴⁸‽㬰 挠湯瑳椠瑮牥慶⁬‽敳䥴瑮牥慶⡬⤨㴠‾੻††牰捯獥⹳瑳潤瑵眮楲整怨牜†뎏⁝笤慬敢絬⠠獥潴瀠敵敤琠牡慤⁲湵獯洠湩瑵獯 笤牦浡獥硛絝⥠਻††⁸‽砨⬠ㄠ ‥牦浡獥氮湥瑧㭨 素〱⤰਻†敲畴湲笠 †猠潴㩰⠠ 㸽笠 ††挠敬牡湉整癲污椨瑮牥慶⥬਻†††牰捯獥⹳瑳潤瑵眮楲整✨牜⸧慰䕤摮㠨ⰰ✠✠ ‫尧❲㬩 †素 素਻੽挊慬獳䐠捯敫割湵敮⁲੻†瑳瑡捩挠敨正潄正牥⤨笠 †琠祲笠 ††攠數卣湹⡣搧捯敫⁲湩潦Ⱗ笠猠摴潩›椧湧牯❥素㬩 ††爠瑥牵⁮牴敵਻††⁽慣捴⁨攨牲牯 ੻†††敲畴湲映污敳਻††੽†੽ 猠慴楴⁣瑳牡䍴湡慶⡳ ੻††敲畴湲渠睥倠潲業敳⠨敲潳癬ⱥ爠橥捥⥴㴠‾੻†††潣獮汯⹥潬⡧嬧潄正牥畒湮牥⁝敖楲楦慣摮⁯潄正牥䐠獥瑫灯⸮✮㬩 ††椠⁦ℨ桴獩挮敨正潄正牥⤨ ੻††††潣獮汯⹥牥潲⡲嬧潄正牥畒湮牥⁝剅佒㩒䐠捯敫⁲潮攠瑳ꇃ攠⁮橥捥捵썩溳✮㬩 †††挠湯潳敬攮牲牯✨潐⁲慦潶Ⱳ愠敳썧犺瑡⁥敤椠楮楣牡∠潄正牥䐠獥瑫灯•⁹敤焠敵圠䱓′獥썴₩捡楴潶愠瑮獥搠⁥潣瑮湩慵⹲⤧਻††††敲畴湲爠橥捥⡴敮⁷牅潲⡲䐧捯敫⁲潮攠瑳ꇃ攠⁮橥捥捵썩溳✮⤩਻†††੽ ††挠湯潳敬氮杯怨䑛捯敫割湵敮嵲䰠癥湡慴摮⁯潣瑮湥摥牯獥䌠湡慶⁳湥猠来湵潤瀠慬潮潌⁳敤慴汬獥猠⁥畧牡慤⁮湥氠杯⽳潤正牥损湡慶⹳潬⹧⸮⥠਻††† ††挠湯瑳搠捯敫偲潲散獳㴠猠慰湷✨潤正牥Ⱗ嬠挧浯潰敳Ⱗ✠灵Ⱗ✠搭崧੻††††督㩤䌠乁䅖当䅐䡔 ††素㬩ਊ†††潤正牥牐捯獥⹳瑳潤瑵漮⡮搧瑡❡搨瑡⥡㴠‾牷瑩䑥捯敫䱲杯✨䑛捯敫⵲瑓潤瑵❝慤慴⤩਻†††潤正牥牐捯獥⹳瑳敤牲漮⡮搧瑡❡搨瑡⥡㴠‾牷瑩䑥捯敫䱲杯✨䑛捯敫⵲瑓敤牲❝慤慴⤩਻ ††搠捯敫偲潲散獳漮⡮挧潬敳Ⱗ⠠潣敤 㸽笠 †††椠⁦挨摯⁥㴽‽⤰笠 ††††挠湯潳敬氮杯✨䑛捯敫割湵敮嵲䌠浯湡潤搠捯敫⁲潣灭獯⁥灵ⴠ⁤橥捥瑵摡⁯潣⁮꧃楸潴✮㬩 ††††爠獥汯敶琨畲⥥਻††††⁽汥敳笠 ††††挠湯潳敬攮牲牯怨䑛捯敫割湵敮嵲䔠⁬牰捯獥⁯敤䐠捯敫⁲整浲湩돃挠湯挠돃楤潧搠⁥牥潲⁲笤潣敤⹽⥠਻†††††敲敪瑣渨睥䔠牲牯怨潤正牥挠浯潰敳映污썬₳潣⁮썣撳杩⁯笤潣敤恽⤩਻††††੽†††⥽਻ ††搠捯敫偲潲散獳漮⡮攧牲牯Ⱗ⠠牥⥲㴠‾੻††††潣獮汯⹥牥潲⡲嬧潄正牥畒湮牥⁝牅潲⁲污椠瑮湥慴⁲湩捩慩⁲潤正牥挠浯潰敳✺牥⹲敭獳条⥥਻††††敲敪瑣攨牲㬩 ††素㬩 †素㬩 素ਊ†瑳瑡捩爠湵潄正牥潃浭湡⡤牡獧慬敢⥬笠 †爠瑥牵⁮敮⁷牐浯獩⡥爨獥汯敶敲敪瑣 㸽笠 ††挠湯潳敬氮杯怨湜䑛捯敫割湵敮嵲倠敲慰慲摮㩯␠汻扡汥⹽⸮⠠潌獧攠⁮潬獧搯捯敫彲慣癮獡氮杯怩㬩 ††ਠ†††潣獮⁴潤正牥牐捯獥⁳‽灳睡⡮搧捯敫❲牡獧੻††††督㩤䌠乁䅖当䅐䡔 ††素㬩ਊ†††潣獮⁴灳湩敮⁲‽瑳牡却楰湮牥怨橅捥瑵湡潤␠汻扡汥恽㬩ਊ†††潤正牥牐捯獥⹳瑳潤瑵漮⡮搧瑡❡搨瑡⥡㴠‾牷瑩䑥捯敫䱲杯怨⑛汻扡汥⵽瑓潤瑵恝慤慴⤩਻†††潤正牥牐捯獥⹳瑳敤牲漮⡮搧瑡❡搨瑡⥡㴠‾牷瑩䑥捯敫䱲杯怨⑛汻扡汥⵽瑓敤牲恝慤慴⤩਻ ††搠捯敫偲潲散獳漮⡮挧潬敳Ⱗ⠠潣敤 㸽笠 †††猠楰湮牥献潴⡰㬩 †††椠⁦挨摯⁥㴽‽⤰笠 ††††挠湯潳敬氮杯怨䑛捯敫割湵敮嵲薜쌠碉瑩㩯␠汻扡汥⁽潣灭敬慴潤怮㬩 ††††爠獥汯敶琨畲⥥਻††††⁽汥敳笠 ††††挠湯潳敬攮牲牯怨䑛捯敫割湵敮嵲貝䔠牲牯›笤慬敢絬映污썬₳潣⁮썣撳杩⁯笤潣敤⹽⥠਻†††††敲敪瑣渨睥䔠牲牯怨笤慬敢絬映污썬悳⤩਻††††੽†††⥽਻ ††搠捯敫偲潲散獳漮⡮攧牲牯Ⱗ⠠牥⥲㴠‾੻††††灳湩敮⹲瑳灯⤨਻††††潣獮汯⹥牥潲⡲孠潄正牥畒湮牥⁝鷢₌牅潲⁲橥捥瑵湡潤␠汻扡汥㩽Ⱡ攠牲洮獥慳敧㬩 †††爠橥捥⡴牥⥲਻†††⥽਻††⥽਻†੽ 猠慴楴⁣獩慃癮獡畒湮湩⡧ ੻††牴⁹੻†††潣獮⁴畯灴瑵㴠攠數卣湹⡣搧捯敫⁲潣灭獯⁥獰ⴠ猭牥楶散⁳ⴭ楦瑬牥∠瑳瑡獵爽湵楮杮✢⁻督㩤䌠乁䅖当䅐䡔湥潣楤杮›甧晴✸素㬩 ††爠瑥牵⁮畯灴瑵椮据畬敤⡳眧扥⤧਻††⁽慣捴⁨攨 ੻†††敲畴湲映污敳਻††੽†੽ 猠慴楴⁣獩慃癮獡湉瑩慩楬敺⡤ ੻††牴⁹੻†††潣獮⁴畯灴瑵㴠攠數卣湹⡣ †††怠潤正牥挠浯潰敳攠數⁣吭瀠獯杴敲⁳獰汱ⴠ⁕慣癮獡ⴠ⁤慣癮獡摟癥汥灯敭瑮ⴠ䅴⁣匢䱅䍅⁔塅卉協匨䱅䍅⁔‱剆䵏搠癥汥灯牥歟祥⁳䡗剅⁅慮敭✽汐杵湩䘠敥扤捡⁫呌❉㬩怢ਬ††††⁻督㩤䌠乁䅖当䅐䡔湥潣楤杮›甧晴✸瑳楤㩯嬠椧湧牯❥瀧灩❥椧湧牯❥ⱝ琠浩潥瑵›〱〰‰੽†††㬩 ††爠瑥牵⁮畯灴瑵琮楲⡭ 㴽‽琧㬧 †素挠瑡档⠠⥥笠 ††爠瑥牵⁮慦獬㭥 †素 素紊ਊ硥潰瑲搠晥畡瑬䐠捯敫割湵敮㭲
+import { spawn, execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import logger from '../../utils/logger.js';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export const CANVAS_PATH = path.resolve(__dirname, '../../../../canvas-lms-master');
+
+const LOGS_DIR = path.resolve(__dirname, '../../logs');
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+if (!fs.existsSync(LOGS_DIR)) {
+  fs.mkdirSync(LOGS_DIR, { recursive: true });
+}
+const DOCKER_LOG_FILE = path.join(LOGS_DIR, 'docker_canvas.log');
+
+export function writeDockerLog(prefix, data) {
+  const text = data.toString();
+  const timestamp = new Date().toISOString();
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  fs.appendFileSync(DOCKER_LOG_FILE, `[${timestamp}] ${prefix}: ${text}`);
+}
+
+export function startSpinner(label) {
+  const isWindows = process.platform === 'win32';
+  const frames = isWindows 
+    ? ['-', '\\', '|', '/'] 
+    : ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let x = 0;
+  const interval = setInterval(() => {
+    // eslint-disable-next-line security/detect-object-injection
+    process.stdout.write(`\r  [⏳] ${label} (esto puede tardar unos minutos) ${frames[x]}`);
+    x = (x + 1) % frames.length;
+  }, 100);
+  return {
+    stop: () => {
+      clearInterval(interval);
+      process.stdout.write('\r'.padEnd(80, ' ') + '\r');
+    }
+  };
+}
+
+class DockerRunner {
+  static checkDocker() {
+    try {
+      execSync('docker info', { stdio: 'ignore' });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  static startCanvas() {
+    return new Promise((resolve, reject) => {
+      console.log('[DockerRunner] Verificando Docker Desktop...');
+      if (!this.checkDocker()) {
+        console.error('[DockerRunner] ERROR: Docker no está en ejecución.');
+        console.error('Por favor, asegúrate de iniciar "Docker Desktop" y de que WSL2 esté activo antes de continuar.');
+        return reject(new Error('Docker no está en ejecución.'));
+      }
+
+      console.log(`[DockerRunner] Levantando contenedores Canvas en segundo plano. Los detalles se guardan en logs/docker_canvas.log...`);
+      
+      const dockerProcess = spawn('docker', ['compose', 'up', '-d'], {
+        cwd: CANVAS_PATH
+      });
+
+      dockerProcess.stdout.on('data', (data) => writeDockerLog('[Docker-Stdout]', data));
+      dockerProcess.stderr.on('data', (data) => writeDockerLog('[Docker-Stderr]', data));
+
+      dockerProcess.on('close', (code) => {
+        if (code === 0) {
+          console.log('[DockerRunner] Comando docker compose up -d ejecutado con éxito.');
+          resolve(true);
+        } else {
+          console.error(`[DockerRunner] El proceso de Docker terminó con código de error ${code}.`);
+          reject(new Error(`docker compose falló con código ${code}`));
+        }
+      });
+
+      dockerProcess.on('error', (err) => {
+        console.error('[DockerRunner] Error al intentar iniciar docker compose:', err.message);
+        reject(err);
+      });
+    });
+  }
+
+  static runDockerCommand(args, label) {
+    return new Promise((resolve, reject) => {
+      console.log(`\n[DockerRunner] Preparando: ${label}... (Logs en logs/docker_canvas.log)`);
+      
+      const dockerProcess = spawn('docker', args, {
+        cwd: CANVAS_PATH
+      });
+
+      const spinner = startSpinner(`Ejecutando ${label}`);
+
+      dockerProcess.stdout.on('data', (data) => writeDockerLog(`[${label}-Stdout]`, data));
+      dockerProcess.stderr.on('data', (data) => writeDockerLog(`[${label}-Stderr]`, data));
+
+      dockerProcess.on('close', (code) => {
+        spinner.stop();
+        if (code === 0) {
+          console.log(`[DockerRunner] ✅ Éxito: ${label} completado.`);
+          resolve(true);
+        } else {
+          console.error(`[DockerRunner] ❌ Error: ${label} falló con código ${code}.`);
+          reject(new Error(`${label} falló`));
+        }
+      });
+
+      dockerProcess.on('error', (err) => {
+        spinner.stop();
+        console.error(`[DockerRunner] ❌ Error ejecutando ${label}:`, err.message);
+        reject(err);
+      });
+    });
+  }
+
+  static isCanvasRunning() {
+    try {
+      const output = execSync('docker compose ps --services --filter "status=running"', { cwd: CANVAS_PATH, encoding: 'utf8' });
+      return output.includes('web');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static isCanvasInitialized() {
+    try {
+      const output = execSync(
+        `docker compose exec -T postgres psql -U canvas -d canvas_development -tAc "SELECT EXISTS(SELECT 1 FROM developer_keys WHERE name='Plugin Feedback LTI');"`,
+        { cwd: CANVAS_PATH, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 10000 }
+      );
+      return output.trim() === 't';
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+export default DockerRunner;

@@ -160,6 +160,7 @@ export async function main() {
     boot.plain('');
     boot.plain('  ✨ Arranque completado. El plugin Feedback está operativo.');
     boot.plain('  Mantenga esta consola abierta. Presione Ctrl+C para detener.');
+    boot.plain('');
 
   } catch (e) {
     boot.error(`Error crítico: ${e.message}`);

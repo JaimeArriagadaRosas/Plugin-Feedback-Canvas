@@ -74,6 +74,38 @@ class AuditManager {
       throw new ApiError('Error al recuperar los logs de auditoría de la base de datos', 500);
     }
   }
+
+  /**
+   * Obtiene únicamente los logs críticos o fallidos (para producción y exportación).
+   * @param {number} limit - Límite de logs a recuperar (por defecto 200).
+   */
+  async getCriticalLogs(limit = 200) {
+    try {
+      const logsRes = await db.query(`
+        SELECT * FROM Logs_Auditoria 
+        WHERE accion LIKE '%DENEGADO%' 
+           OR accion LIKE '%FALLIDA%' 
+           OR accion LIKE '%ERROR%' 
+           OR accion LIKE '%ALTERADA%' 
+           OR accion LIKE '%EXCEDIDO%'
+           OR accion LIKE '%DENIED%'
+        ORDER BY fecha DESC 
+        LIMIT $1
+      `, [limit]);
+
+      return {
+        logs: logsRes.rows,
+        pagination: {
+          total: logsRes.rows.length,
+          page: 1,
+          limit,
+          pages: 1
+        }
+      };
+    } catch (error) {
+      throw new ApiError('Error al recuperar los logs críticos de auditoría', 500);
+    }
+  }
 }
 
 export default new AuditManager();

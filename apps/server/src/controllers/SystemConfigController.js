@@ -85,16 +85,6 @@ export default class SystemConfigController {
         logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       }
 
-      console.log('[DIAG-CHAIN] SystemConfigController.getMe', JSON.stringify({
-        ltiUserId: identity.ltiUserId,
-        numericUserId: identity.numericUserId,
-        canonicalUserId: identity.canonicalUserId,
-        courseId: identity.courseId,
-        numericCourseId: identity.numericCourseId,
-        canonicalCourseId: identity.canonicalCourseId,
-        source: identity.source
-      }));
-
       return res.json({
         exito: true,
         user: identity.ltiUserId, // Mantenemos el LTI UUID como identificador primario para el frontend (legacy)

@@ -17,12 +17,12 @@ export function useAuditLogs(limit = 50) {
     while (retries > 0) {
       try {
         const response = await apiClient.get(`/audit/logs?limit=${limit}`);
-        if (response.data?.exito) {
-          setLogs(response.data.data?.logs || []);
+        if (response.exito) {
+          setLogs(response.data?.logs || []);
           setLoading(false);
           break;
         } else {
-          throw new Error(response.data?.error?.mensaje || 'Error desconocido');
+          throw new Error(response.error?.mensaje || 'Error desconocido');
         }
       } catch (err) {
         if (err.response?.status === 429 && retries > 1) {

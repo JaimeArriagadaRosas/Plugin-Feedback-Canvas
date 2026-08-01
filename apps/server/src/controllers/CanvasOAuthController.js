@@ -27,7 +27,8 @@ export default class CanvasOAuthController {
         throw new AppError('No se proporcionó identificación LTI del usuario para el inicio de sesión OAuth', 400);
       }
       
-      const state = signOAuthState({ canvasSub });
+      const canonicalUserId = req.appIdentity?.canonicalUserId || canvasSub;
+      const state = signOAuthState({ canvasSub, canonicalUserId });
       
       const authUrl = new URL('/login/oauth2/auth', canvasBaseUrl);
       authUrl.searchParams.append('client_id', clientId);
@@ -88,6 +89,7 @@ export default class CanvasOAuthController {
         throw new AppError('Estado OAuth inválido o manipulado', 400);
       }
       const canvasSub = decodedState.canvasSub;
+      const canonicalUserId = decodedState.canonicalUserId || canvasSub;
 
       const canvasBaseUrl = getCanvasEnv('CANVAS_BASE_URL', 'VITE_CANVAS_BASE_URL') || 'https://canvas.instructure.com';
       const clientId = getEnv('CANVAS_CLIENT_ID', getEnv('LTI_CLIENT_ID', '10000000000001'));
@@ -123,11 +125,11 @@ export default class CanvasOAuthController {
 
       const data = await response.json();
       
-      // Guardar el token en la BD
+      // Guardar el token en la BD usando canvasSub (UUID de LTI)
       const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
       await this.canvasTokenRepo.saveToken(canvasSub, data.access_token, data.refresh_token, expiresAt);
 
-      logger.info(`[CanvasOAuth] Token OAuth guardado exitosamente para el usuario ${canvasSub}`);
+      logger.info(`[CanvasOAuth] Token OAuth guardado exitosamente para el usuario (sub) ${canvasSub}`);
 
       // Redirigir de vuelta a la app frontend
       res.redirect(`${getEnv('FRONTEND_URL', 'https://localhost:5173')}/`);

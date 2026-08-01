@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
+import React from 'react';
 import Avatar from '../../../components/atoms/Avatar';
-import StudentUtilityRating from './StudentUtilityRating';
+import StarRating from '../../../components/molecules/StarRating';
 import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './StudentRecentFeedback.module.css';
@@ -31,63 +32,58 @@ export default function StudentRecentFeedback({
   );
 
   return (
-    <div className={styles.splitView}>
-      <section className={styles.viewer}>
-        <div className={styles.meta}>
-          <span>Entregado el: <strong>14 de mayo de 2026, 10:00 AM</strong></span>
-          <span>Intento: <strong>1 de 1</strong></span>
-        </div>
-        <div className={styles.paper}>
-          <h2 className={styles.title}>Entrega: {assignment.name}</h2>
-          <p className={styles.student}>Estudiante: <strong>{studentId}</strong></p>
-          <hr className={styles.divider} />
-          <p className={styles.text}>
-            (El documento del estudiante aparece aquí en el visor de Canvas...)<br /><br />
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
-          </p>
-        </div>
-      </section>
-
-      <section className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <div className={styles.sidebarTitle}>Detalles de la Entrega</div>
-          <div className={styles.sidebarScore}>
-            Calificación: <strong>{assignment.score} / {assignment.total}</strong>
+    <div className={styles.container}>
+      <div className={styles.unifiedCard}>
+        <header className={styles.metaHeader}>
+          <div className={styles.metaMain}>
+            <h1 className={styles.assignmentTitle}>{assignment.name}</h1>
           </div>
-        </div>
+          <div className={styles.scoreContainer}>
+            <div className={styles.scoreCircle}>
+              <span className={styles.scoreNumber}>{assignment.score}</span>
+              <span className={styles.scoreTotal}>/ {assignment.total}</span>
+            </div>
+          </div>
+        </header>
 
-        <div className={styles.commentsHeader}>Comentarios de la Tarea</div>
+        {assignment.feedback ? (
+          <div className={styles.feedbackBody}>
+            <div className={styles.feedbackSplit}>
+              <div className={styles.feedbackMain}>
+                <div className={styles.teacherHeader}>
+                  <Avatar name={assignment.feedback.teacherName || "Profesor del Curso"} size="md" />
+                  <div className={styles.teacherInfo}>
+                    <div className={styles.teacherName}>{assignment.feedback.teacherName || "Profesor del Curso"}</div>
+                    <div className={styles.teacherDate}>
+                      {new Date(assignment.feedback.fecha_generacion).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
 
-        {assignment.feedback && (
-          <div className={styles.bubble}>
-            <div className={styles.studentHeader}>
-              <Avatar name="Profesor del Curso" size="sm" />
-              <div>
-                <div className={styles.teacherName}>Profesor del Curso</div>
-                <div className={styles.teacherDate}>
-                  {new Date(assignment.feedback.fecha_generacion).toLocaleString()}
+                <div className={styles.feedbackContent}>
+                  {assignment.feedback.contenido_generado}
+                </div>
+              </div>
+
+              <div className={styles.ratingAreaSide}>
+                <h3 className={styles.ratingTitle}>¿Qué tan útil te resultó este feedback?</h3>
+                <div className={styles.ratingControls}>
+                  <StarRating 
+                    value={studentRating} 
+                    onChange={handleRate} 
+                    readonly={false} 
+                  />
+                  {ratingSaved && <span className={styles.ratingSavedMsg}>✓ ¡Gracias por tu valoración!</span>}
                 </div>
               </div>
             </div>
-
-            <div className={styles.feedbackText}>
-              {assignment.feedback.contenido_generado}
-            </div>
-
-            <StudentUtilityRating 
-              rating={studentRating} 
-              onRate={handleRate} 
-              readonly={ratingSaved} 
-            />
+          </div>
+        ) : (
+          <div className={styles.noFeedback}>
+            No hay comentarios disponibles para esta tarea.
           </div>
         )}
-
-        <div className={styles.sidebarActions}>
-          <Button variant="secondary" onClick={handleBack}>
-            Volver a Calificaciones
-          </Button>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

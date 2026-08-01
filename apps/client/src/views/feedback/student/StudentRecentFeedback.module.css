@@ -1,189 +1,208 @@
-.splitView {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  background-color: var(--color-bg);
-}
-
-.viewer {
-  flex: 1;
-  background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+.container {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  background-color: var(--color-bg);
+  min-height: 100%;
+  padding: 30px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.meta {
+.unifiedCard {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.metaHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
-  background-color: var(--color-surface-alt);
+  background: linear-gradient(to right, var(--color-surface), #f8f9fa);
   border-bottom: 1px solid var(--color-border-light);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  border-left: 5px solid var(--color-primary);
+  padding: 25px 30px;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
-.paper {
-  flex: 1;
-  padding: 40px;
-  overflow: auto;
-  display: flex;
-  justify-content: center;
-}
-
-.paperInner {
-  width: 100%;
-  max-width: 600px;
-  background-color: var(--color-surface);
-  box-shadow: var(--shadow-md);
-  padding: 50px;
-  min-height: 800px;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 10px 0;
-}
-
-.student {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 0 0 20px 0;
-}
-
-.divider {
-  border: 0.5px solid #eee;
-  margin: 20px 0;
-}
-
-.text {
-  margin-top: 30px;
-  line-height: 1.8;
-  border: 1px solid #eee;
-  padding: 20px;
-  background-color: #fafafa;
-}
-
-.sidebar {
-  width: 350px;
-  background-color: var(--color-surface);
+.metaMain {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 12px;
 }
 
-.sidebarHeader {
-  padding: 20px;
-  border-bottom: 1px solid var(--color-border);
+.assignmentTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
 }
 
-.sidebarTitle {
-  font-size: 18px;
+
+.scoreContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scoreCircle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.scoreNumber {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.scoreTotal {
+  font-size: 13px;
   font-weight: 700;
-  margin-bottom: 5px;
+  opacity: 0.8;
+  margin-top: 2px;
 }
 
-.sidebarScore {
-  font-size: 14px;
-  color: var(--color-text-muted);
+.feedbackBody {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
 }
 
-.commentsHeader {
-  padding: 15px 20px;
-  font-weight: 700;
-  border-bottom: 1px solid var(--color-border-light);
-  font-size: var(--font-size-sm);
-}
-
-.bubble {
-  margin: 15px;
-  padding: 15px;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.studentHeader {
+.teacherHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 15px;
   border-bottom: 1px solid var(--color-border-light);
-  padding-bottom: 10px;
+  padding-bottom: 20px;
+}
+
+.teacherInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .teacherName {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
+  color: var(--color-text);
 }
 
 .teacherDate {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
-.feedbackText {
-  font-size: 14px;
-  line-height: 1.6;
+.feedbackSplit {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.feedbackMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feedbackContent {
+  font-size: 15px;
+  line-height: 1.7;
   color: var(--color-text);
   white-space: pre-wrap;
+  padding-bottom: 20px;
 }
 
-.ratingSection {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px dashed var(--color-border);
-  text-align: center;
-}
-
-.ratingLabel {
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 5px;
-  color: var(--color-primary);
-}
-
-.ratingStars {
+.ratingAreaSide {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--color-surface-alt);
+  padding: 25px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
   display: flex;
-  gap: 5px;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 15px;
 }
 
-.ratingSaved {
-  font-size: 11px;
+.ratingTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.ratingControls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.ratingSavedMsg {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-success);
-  margin-top: 5px;
+  animation: fadeIn 0.5s ease-in;
 }
 
-.sidebarActions {
-  padding: 20px;
-  border-top: 1px solid var(--color-border-light);
-  margin-top: auto;
+.noFeedback {
+  background-color: var(--color-surface-alt);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
-  .splitView {
+  .container {
+    padding: 20px;
+  }
+  
+  .metaHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .scoreBadge {
+    align-self: flex-start;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .feedbackSplit {
     flex-direction: column;
   }
 
-  .viewer {
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .sidebar {
+  .ratingAreaSide {
     width: 100%;
-  }
-
-  .paper {
-    padding: 20px;
-  }
-
-  .paperInner {
-    padding: 24px;
-    min-height: auto;
   }
 }

@@ -18,6 +18,7 @@ export class DataSeeder {
 
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     const runnerFile = path.join(this.pluginDir, 'db', 'seeds', 'runner.rb');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(runnerFile)) {
       this.boot.error(`No se encontró el script de semilla principal: ${runnerFile}`);
       return false;

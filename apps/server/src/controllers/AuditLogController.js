@@ -7,7 +7,8 @@ export default class AuditLogController {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 50;
 
-      const data = await AuditManager.getPaginatedLogs(page, limit);
+      // En producción, solo devolvemos los últimos 200 logs críticos para no saturar
+      const data = await AuditManager.getCriticalLogs(200);
 
       res.json({
         exito: true,
