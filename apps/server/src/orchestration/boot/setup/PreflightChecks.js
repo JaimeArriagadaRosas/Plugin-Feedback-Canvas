@@ -1,8 +1,6 @@
-import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { runCommand } from './utils/Runner.js';
-import { createSpinner } from 'nanospinner';
 
 export class PreflightChecks {
   constructor(boot, canvasDir, pluginDir) {

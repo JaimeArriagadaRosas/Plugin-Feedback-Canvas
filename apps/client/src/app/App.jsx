@@ -7,6 +7,7 @@ import LoadingScreen from './LoadingScreen';
 import AccessDenied from './AccessDenied';
 import { useLogger } from '../hooks/useLogger';
 import logger from '../utils/logger';
+import GlobalSystemErrorNotifier from '../components/atoms/GlobalSystemErrorNotifier';
 
 // ── Lazy imports — Layouts y vistas principales ──────────────────────────────
 const AdminLayout = lazy(() => import('../views/layouts/AdminLayout'));
@@ -76,6 +77,7 @@ export default function App() {
     <React.StrictMode>
       <BrowserRouter>
         <AuthProvider>
+          <GlobalSystemErrorNotifier />
           <AppRouter />
         </AuthProvider>
       </BrowserRouter>

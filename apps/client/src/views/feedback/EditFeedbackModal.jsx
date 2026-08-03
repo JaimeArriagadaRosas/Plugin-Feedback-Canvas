@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import TextToolbar from "../../components/molecules/TextToolbar";
+import LivePreview from "../plantillas/editor/LivePreview";
 
 const styles = {
   overlay: {
@@ -80,6 +82,35 @@ const styles = {
 
 export default function EditFeedbackModal({ feedback, onSave, onClose, isOpen }) {
   const [content, setContent] = useState("");
+  const editorRef = useRef(null);
+
+  const applyFormat = useCallback((format) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selection = editor.value.substring(start, end);
+    let replacement = "";
+
+    switch (format) {
+      case "bold": replacement = `**${selection}**`; break;
+      case "italic": replacement = `*${selection}*`; break;
+      case "underline": replacement = `<u>${selection}</u>`; break;
+      case "list": replacement = `\n- ${selection}`; break;
+      case "numlist": replacement = `\n1. ${selection}`; break;
+      default: replacement = selection;
+    }
+
+    const before = editor.value.substring(0, start);
+    const after = editor.value.substring(end);
+    setContent(before + replacement + after);
+
+    setTimeout(() => {
+      editor.focus();
+      editor.setSelectionRange(start + replacement.length, start + replacement.length);
+    }, 0);
+  }, []);
 
   useEffect(() => {
     if (feedback) {
@@ -106,12 +137,25 @@ export default function EditFeedbackModal({ feedback, onSave, onClose, isOpen })
             <strong>Perfil (IA):</strong> {feedback?.profile}
           </div>
 
-          <textarea 
-            style={styles.textarea}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Escribe el feedback aquí..."
-          />
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <TextToolbar
+                onFormat={applyFormat}
+                onClear={() => setContent('')}
+              />
+              <textarea 
+                ref={editorRef}
+                style={styles.textarea}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Escribe el feedback aquí..."
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={styles.sectionTitle}>VISTA PREVIA</div>
+              <LivePreview text={content} />
+            </div>
+          </div>
         </div>
 
         <div style={styles.footer}>

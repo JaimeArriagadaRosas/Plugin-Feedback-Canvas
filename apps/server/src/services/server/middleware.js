@@ -1,9 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import path from 'node:path';
 
-import { ErrorHandler } from '../../middlewares/ErrorHandler.js';
 import { globalLimiter } from '../../middlewares/security.js';
 import { helmetMiddleware } from '../../security/headers.js';
 import { corsMiddleware } from '../../security/cors.js';

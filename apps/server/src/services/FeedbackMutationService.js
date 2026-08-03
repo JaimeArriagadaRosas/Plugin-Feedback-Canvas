@@ -1,13 +1,15 @@
 import { AppError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 import { FeedbackStateMachine } from '../domain/feedback/FeedbackStateMachine.js';
+import { RichTextProcessor } from '../modules/formatting/RichTextProcessor.js';
 
 export default class FeedbackMutationService {
-  constructor(feedbackRepo, canvasGateway, preferencesService, emailService) {
+  constructor(feedbackRepo, canvasGateway, preferencesService, emailService, systemNotificationService) {
     this.feedbackRepo = feedbackRepo;
     this.canvasGateway = canvasGateway;
     this.preferencesService = preferencesService;
     this.emailService = emailService;
+    this.systemNotificationService = systemNotificationService;
   }
 
   async editFeedback(id, nuevoContenido) {
@@ -27,7 +29,7 @@ export default class FeedbackMutationService {
     return { feedbackId, rating };
   }
 
-  async rateByStudent(feedbackId, rating, ltiContext = null) {
+  async rateByStudent(feedbackId, rating, esUtil, ltiContext = null) {
     // BOLA prevention: un estudiante solo puede calificar su propio feedback.
     if (ltiContext?.studentId != null) {
       const existing = await this.feedbackRepo.getById(feedbackId);
@@ -38,7 +40,7 @@ export default class FeedbackMutationService {
         throw new AppError('Acceso denegado: no puedes calificar el feedback de otro estudiante.', 403);
       }
     }
-    await this.feedbackRepo.updateEstudianteRating(feedbackId, rating);
+    await this.feedbackRepo.updateEstudianteRating(feedbackId, rating, esUtil);
   }
 
   async approveAndSend({ feedbackId, courseId, assignmentId, studentId, content, rating, grade, rubricData }, ltiContext = null, providedTeacherId = null) {
@@ -70,7 +72,8 @@ export default class FeedbackMutationService {
       if (rubricData) {
         await this.canvasGateway.pushRubricAssessment(courseId, assignmentId, studentId, teacherId, rubricData);
       } else {
-        await this.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, content);
+        const formattedContent = RichTextProcessor.process(content);
+        await this.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, formattedContent);
       }
       if (grade) {
         await this.canvasGateway.updateGrade(courseId, assignmentId, studentId, teacherId, grade);
@@ -134,7 +137,22 @@ export default class FeedbackMutationService {
         } else if (metodo === 'email') {
           metodoUsado = emailSuccess ? 'email' : 'error_email';
         }
+        
+        let warnings = [];
+        if (metodoUsado.startsWith('error_')) {
+            warnings.push('NOTIFICATION_FAILED');
+            if (this.systemNotificationService) {
+                await this.systemNotificationService.saveNotification(
+                    teacherId,
+                    'NOTIFICATION_FAILED',
+                    `Falló el envío de notificación al estudiante ${studentId} para la tarea ${assignmentId}`
+                );
+            }
+        }
+        
         await this.feedbackRepo.saveNotification(studentId, feedbackId, `Tienes un nuevo feedback aprobado en el curso ${courseId}`, metodoUsado);
+        
+        return { feedbackId, studentId, warnings: warnings.length > 0 ? warnings : undefined };
       }
     }
     return { feedbackId, studentId };
@@ -158,7 +176,8 @@ export default class FeedbackMutationService {
     await this.feedbackRepo.updateStatusAndContent(fbGuardado.id, FeedbackStateMachine.STATES.SENT, contenidoManual);
     
     try {
-      await this.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, contenidoManual);
+      const formattedContent = RichTextProcessor.process(contenidoManual);
+      await this.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, formattedContent);
       if (grade) {
         await this.canvasGateway.updateGrade(courseId, assignmentId, studentId, teacherId, grade);
       }

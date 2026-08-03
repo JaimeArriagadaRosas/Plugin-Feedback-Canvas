@@ -1,8 +1,6 @@
 import crypto from 'crypto';
 import { verifyCanvasWebhook } from '../security/webhook.js';
-import { isLocalModeAllowed } from '../security/envGuard.js';
-import { getSecret, maskSecret } from '../config/secrets.js';
-import { nowIso } from '../utils/datetime.js';
+import { getSecret } from '../config/secrets.js';
 import logger from '../utils/logger.js';
 import { AppError } from '../utils/errors.js';
 
@@ -42,7 +40,7 @@ export default class CanvasWebhookController {
 
 
   _extractEventData(req) {
-    const eventId = req.headers['x-canvas-event-id'] || '';
+    
     const eventName = req.headers['x-canvas-event-name'] || req.body?.event_name || '';
     const eventHash = crypto.createHash('sha256')
       .update(JSON.stringify({ ...req.body, eventId, eventName }))

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from 'shared/api';
-import { assignmentKeys } from 'shared/lib/queryKeys';
+import { api } from '@/api';
+import { assignmentKeys } from '@/lib/queryKeys';
 import logger from '../../../utils/logger';
 
 export function useAssignmentList(course) {

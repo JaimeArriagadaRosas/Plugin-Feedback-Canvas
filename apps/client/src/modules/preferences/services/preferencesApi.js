@@ -1,4 +1,4 @@
-import { api } from 'shared/api';
+import { api } from '@/api';
 
 export const getPreferences = async () => {
   const response = await api.get(`/preferences`);

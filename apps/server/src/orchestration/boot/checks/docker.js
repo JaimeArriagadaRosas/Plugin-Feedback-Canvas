@@ -120,7 +120,7 @@ export class DockerCheck {
           fs.writeFileSync(wslConfigPath, content);
           try {
              execFileSync('wsl', ['--shutdown'], { stdio: 'ignore' });
-          } catch(e) {}
+          } catch(e) { log.debug('WSL shutdown failed (possibly not running)', { error: e.message }); }
           log.info('WSL reiniciado. Esperando a que Docker vuelva a arrancar (8s)...');
           await new Promise(r => setTimeout(r, 8000));
           

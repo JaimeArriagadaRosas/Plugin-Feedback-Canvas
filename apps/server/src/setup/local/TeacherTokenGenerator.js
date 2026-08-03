@@ -15,7 +15,6 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import pc from 'picocolors';
 import { validateToken, healTokenViaFile, withRetry } from '../../orchestration/boot/setup/utils/TokenManager.js';
 import { safeUpdateEnvVariable } from '../../orchestration/boot/setup/utils/FileManager.js';
 import CanvasTokenRepository from '../../data/CanvasTokenRepository.js';

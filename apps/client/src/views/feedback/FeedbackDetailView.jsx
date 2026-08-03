@@ -5,6 +5,7 @@ import StudentInfoCard from "./components/StudentInfoCard";
 import FeedbackEditor from "./components/FeedbackEditor";
 import ActionControls from "./components/ActionControls";
 import { useFeedbackDetail } from "../../hooks/useFeedbackDetail";
+import RequirePermission from "../../components/atoms/RequirePermission";
 
 export default function FeedbackDetailView({ feedback, onBack }) {
   const {
@@ -20,8 +21,12 @@ export default function FeedbackDetailView({ feedback, onBack }) {
   } = useFeedbackDetail(feedback, onBack);
 
   return (
-    <div className={styles.wrapper}>
-      <header className={styles.header}>
+    <RequirePermission 
+      permission="view_feedback" 
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+    >
+      <div className={styles.wrapper}>
+        <header className={styles.header}>
         <h1 className={styles.title}>VISTA DETALLADA DEL FEEDBACK</h1>
       </header>
 
@@ -58,5 +63,6 @@ export default function FeedbackDetailView({ feedback, onBack }) {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }

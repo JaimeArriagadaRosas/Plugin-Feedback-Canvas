@@ -2,10 +2,10 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import logger from '../utils/logger.js';
 import { handleDbError } from '../security/dbGuard.js';
-import { isLocalModeAllowed, isProduction } from '../security/envGuard.js';
+import { isProduction } from '../security/envGuard.js';
 import { getEnv } from '../config/index.js';
 import { tenantContext } from '../middlewares/TenantMiddleware.js';
-import { AppError, DatabaseConnectionError } from '../utils/errors.js';
+import { DatabaseConnectionError } from '../utils/errors.js';
 import { withExponentialBackoff } from './db_retry.js';
 import { pingDatabase } from './db_health.js';
 
@@ -13,7 +13,7 @@ dotenv.config({ quiet: true });
 
 const { Pool } = pg;
 let pool = null;
-let isReconnecting = false;
+
 
 
 
@@ -64,38 +64,6 @@ function createPool() {
   return newPool;
 }
 
-async function reconnectPool() {
-  if (isReconnecting) return;
-  isReconnecting = true;
-
-  try {
-    if (pool) {
-      try { await pool.end(); } catch (e) {}
-    }
-
-    pool = createPool();
-
-    await withExponentialBackoff(async (attempt) => {
-      logger.warn(`[DB] Reintentando conexión a PostgreSQL (intento ${attempt})...`);
-      await pingDatabase(pool);
-    }, {
-      maxAttempts: 5,
-      baseDelayMs: 1000,
-      maxDelayMs: 15000,
-      shouldRetry: isConnectionError,
-      onAttemptFailed: (err, attempt, delay) => {
-        logger.progress(`[DB-RETRY] Fallo reconexión (intento ${attempt}). Esperando ${delay}ms...`);
-      }
-    });
-
-    logger.info('[DB] Reconexión a PostgreSQL exitosa.');
-  } catch (error) {
-    logger.error('[DB] Se agotaron los intentos de reconexión. El pool quedará en null.');
-    pool = null;
-  } finally {
-    isReconnecting = false;
-  }
-}
 
 async function initializePostgres() {
   logger.info('[DB] Iniciando conexión a PostgreSQL...');
@@ -131,7 +99,7 @@ async function initializePostgres() {
         }
         
         if (pool) {
-          try { await pool.end(); } catch (e) {}
+          try { await pool.end(); } catch (e) { logger.debug('Error closing pool', { error: e.message }); }
           pool = null;
         }
         throw error;

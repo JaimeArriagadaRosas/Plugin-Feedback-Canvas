@@ -1,4 +1,4 @@
-import { colors, font } from "shared/tokens";
+import { colors, font } from '@/tokens';
 
 /**
  * LoadingScreen — Indicador de carga a pantalla parcial.

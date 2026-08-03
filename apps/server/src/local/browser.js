@@ -2,7 +2,6 @@ import { execFileSync } from 'node:child_process';
 import * as os from 'node:os';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { isHttpsEnabled } from '../security/envGuard.js';
 import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';

@@ -6,6 +6,8 @@
  *   Si score >= 60 (aprobado): nota = 1 + (score - 55) * 6 / 45
  *   Si score <  60 (reprobado):  nota = 1 + score * 4  / 55
  * Umbral de aprobación en Canvas: 60% → equivale a nota 4.0 en Chile
+ *
+ * TODO (Deuda Técnica): Las variables matemáticas asumen una escala chilena al 60% por defecto. Referencia: docs/TECHNICAL_DEBT.md
  */
 export default class GradeConverter {
 

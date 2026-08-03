@@ -1,43 +1,64 @@
+import logger from '../utils/logger.js';
+
 /**
- * CourseStatisticsService - Calcula el promedio y tendencias de un curso de forma semántica.
+ * CourseStatisticsService - Calcula el promedio y tendencias de un curso.
+ *
+ * TODO (Deuda Técnica): Las variables matemáticas (GradeResolver, CourseStatisticsService y GradeConverter) asumen una escala chilena al 60% por defecto. Referencia: docs/TECHNICAL_DEBT.md
  */
 export default class CourseStatisticsService {
   constructor(canvasGateway) {
     this.canvasGateway = canvasGateway;
   }
 
-  /**
-   * Obtiene y procesa las calificaciones del curso para devolver una frase semántica
-   * que se inyectará en la variable {{promedio_curso}}.
-   */
-  async getSemanticCourseAverage(courseId, teacherId) {
+  async getAssignmentStats(courseId, assignmentId, teacherId) {
     try {
-      // Intentamos obtener todos los estudiantes y sus entregas.
-      // Dependiendo de la eficiencia, podríamos usar un endpoint de analytics de Canvas,
-      // pero por ahora usaremos una aproximación asumiendo que CanvasGateway puede darnos un resumen.
+      const submissions = await this.canvasGateway.getAssignmentSubmissions(courseId, assignmentId, teacherId);
       
-      // Simulamos la lógica real por ahora hasta que expandamos CanvasGateway:
-      // Lo ideal es: this.canvasGateway.getCourseAnalytics(courseId) 
-      // o consultar todas las notas y promediarlas.
-      
-      // Para efectos de implementación de Fase 7, dejaremos una estructura modular.
-      const hasEnoughData = true; // TODO: Implementar validación real de cantidad de datos
-      const hasGrades = false; // TODO: Determinar si el profesor califica con notas (1-7) o puntajes
-      const averageScore = 75; // TODO: Calcular real
-      const averageGrade = 5.5; // TODO: Calcular real
-
-      if (!hasEnoughData) {
-        return 'los primeros resultados del curso, indicando una tendencia inicial';
+      if (!submissions || !Array.isArray(submissions) || submissions.length === 0) {
+        return null; // Plan C: sin entregas
       }
 
-      if (hasGrades) {
-        return `el promedio general del curso de ${averageGrade}`;
-      } else {
-        return `el puntaje promedio del curso de ${averageScore} sobre 100`;
+      let totalGrade = 0;
+      let gradeCount = 0;
+      
+      let totalScore = 0;
+      let scoreCount = 0;
+
+      for (const sub of submissions) {
+        const gradeStr = sub.grade ?? sub.entered_grade;
+        if (gradeStr !== undefined && gradeStr !== null) {
+          const parsedGrade = parseFloat(gradeStr);
+          if (!isNaN(parsedGrade)) {
+            totalGrade += parsedGrade;
+            gradeCount++;
+          }
+        }
+        
+        const rawScore = sub.score ?? sub.entered_score ?? sub.unposted_score;
+        if (rawScore !== undefined && rawScore !== null) {
+          const parsedScore = parseFloat(rawScore);
+          if (!isNaN(parsedScore)) {
+            totalScore += parsedScore;
+            scoreCount++;
+          }
+        }
       }
-    } catch (error) {
-      // Si falla por alguna razón (red, permisos), fallback a una frase neutra
-      return 'el promedio actual del curso';
+
+      // Plan A: Notas explícitas (chilenas)
+      if (gradeCount > 0) {
+        return { grade: totalGrade / gradeCount };
+      }
+      
+      // Plan B: Puntajes brutos
+      if (scoreCount > 0) {
+        return { score: totalScore / scoreCount };
+      }
+
+      return null;
+    } catch (err) {
+      logger.error(`[CourseStatisticsService] Error calculando promedio: ${err.message}`);
+      return null;
     }
   }
 }
+

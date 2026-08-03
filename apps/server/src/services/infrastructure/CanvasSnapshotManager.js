@@ -3,11 +3,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import DockerRunner, { CANVAS_PATH } from './DockerRunner.js';
-import logger from '../../utils/logger.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 const STATE_FILE = path.join(CANVAS_PATH, '.canvas_local_state.json');
 const SNAPSHOTS_DIR = path.join(os.tmpdir(), 'canvas_snapshots');

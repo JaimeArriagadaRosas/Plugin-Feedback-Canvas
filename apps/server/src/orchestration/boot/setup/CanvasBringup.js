@@ -1,5 +1,4 @@
 import { runCommand } from './utils/Runner.js';
-import { createSpinner } from 'nanospinner';
 
 export class CanvasBringup {
   constructor(boot, canvasDir) {

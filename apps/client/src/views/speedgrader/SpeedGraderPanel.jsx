@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useSpeedGraderData } from './hooks/useSpeedGraderData';
-import SubmissionViewer from './SubmissionViewer';
+import OptimizeLoadPost from '../../modules/OptimizeLoadPost/OptimizeLoadPost';
 import FeedbackActions from './FeedbackActions';
 import { useSpeedGraderActions } from './hooks/useSpeedGraderActions';
 import WizardProgress from '../cursos/WizardProgress';
@@ -17,6 +17,7 @@ import RubricModal from '../components/RubricModal';
 import styles from './SpeedGraderPanel.module.css';
 import SubmissionNavigation from './SubmissionNavigation';
 import GradeConfigInfo from './GradeConfigInfo';
+import ManualFeedbackPanel from './ManualFeedbackPanel';
 
 export default function SpeedGraderPanel({ onExit }) {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function SpeedGraderPanel({ onExit }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showTrajectoryModal, setShowTrajectoryModal] = useState(false);
   const [showRubricModal, setShowRubricModal] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
   const taskSelectorRef = useRef(null);
 
   // Cierra el selector de tarea al hacer clic fuera
@@ -65,7 +67,7 @@ export default function SpeedGraderPanel({ onExit }) {
 
   const logExit = useButtonLogger();
 
-  const { handleGenerateMassive, handleApprove, handleExit } = useSpeedGraderActions({
+  const { handleGenerateMassive, handleApprove, handleManualSubmit, handleExit } = useSpeedGraderActions({
     courseId,
     currentAssignmentId,
     currentStudent,
@@ -131,6 +133,7 @@ export default function SpeedGraderPanel({ onExit }) {
       <div className={styles.wrapper}>
 
       <SpeedGraderHeader 
+        courseId={courseId}
         onBack={handleBack} 
         onShowTutorial={() => setShowTutorial(true)} 
       />
@@ -158,7 +161,7 @@ export default function SpeedGraderPanel({ onExit }) {
             currentIndex={currentIndex}
           />
 
-          <SubmissionViewer
+          <OptimizeLoadPost
             submission={submission}
             quizDetails={quizDetails}
             studentName={currentStudent.name}
@@ -174,29 +177,40 @@ export default function SpeedGraderPanel({ onExit }) {
             isFetchingSubmission={isFetchingSubmission}
             gradeRange={gradeRange}
             templateName={templateName}
+            isManualMode={isManualMode}
+            toggleManualMode={() => setIsManualMode(!isManualMode)}
           />
 
-          {/* Botones de acción: Rúbrica, Ver Historial, Simular Trayectoria */}
-          <SpeedGraderRubric 
-            onShowHistory={() => setShowHistory(true)} 
-            onShowTrajectory={() => setShowTrajectoryModal(true)}
-            grade={scaledGrade} 
-            hasRubric={!!activeAssignment?.rubric}
-            onShowRubric={() => setShowRubricModal(true)}
-            courseId={courseId}
-            studentId={currentStudent?.id}
-          />
+          {!isManualMode ? (
+            <>
+              {/* Botones de acción: Rúbrica, Ver Historial, Simular Trayectoria */}
+              <SpeedGraderRubric 
+                onShowHistory={() => setShowHistory(true)} 
+                onShowTrajectory={() => setShowTrajectoryModal(true)}
+                grade={scaledGrade} 
+                hasRubric={!!activeAssignment?.rubric}
+                onShowRubric={() => setShowRubricModal(true)}
+                courseId={courseId}
+                studentId={currentStudent?.id}
+              />
 
-          <AIControls
-            feedback={feedback}
-            loading={loading}
-            generatedFeedbackId={generatedFeedbackId}
-            rating={rating}
-            setRating={setRating}
-            handleGenerateMassive={handleGenerateMassive}
-            handleApprove={handleApprove}
-            isFeedbackApproved={isFeedbackApproved}
-          />
+              <AIControls
+                feedback={feedback}
+                loading={loading}
+                generatedFeedbackId={generatedFeedbackId}
+                rating={rating}
+                setRating={setRating}
+                handleGenerateMassive={handleGenerateMassive}
+                handleApprove={handleApprove}
+                isFeedbackApproved={isFeedbackApproved}
+              />
+            </>
+          ) : (
+            <ManualFeedbackPanel 
+              onSubmit={handleManualSubmit}
+              loading={loading}
+            />
+          )}
         </div>
       </main>
 

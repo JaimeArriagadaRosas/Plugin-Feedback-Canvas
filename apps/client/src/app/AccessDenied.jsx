@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api } from "shared/api";
-import { isIframe, setToken } from 'shared/lib/authToken';
+import { api } from '@/api';
+import { isIframe, setToken } from '@/lib/authToken';
 import logger from '../utils/logger';
 
 const log = {

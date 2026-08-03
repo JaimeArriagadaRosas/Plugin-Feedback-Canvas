@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { isLocalModeAllowed, isHttpsEnabled, isProduction } from './envGuard.js';
+import {  } from './envGuard.js';
 
 const LTI_TOKEN_COOKIE = 'lti-token';
 const DEV_ROLE_COOKIE = 'dev-role';

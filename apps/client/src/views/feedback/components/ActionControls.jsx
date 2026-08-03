@@ -1,7 +1,9 @@
 import React from 'react';
+import { usePermissions } from '../../../hooks/usePermissions';
 import styles from '../FeedbackDetailView.module.css';
 
 export default function ActionControls({ onApprove, onSave, onBack }) {
+  const { canEditFeedback, canSubmitFeedback } = usePermissions();
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>CONTROLES DE ACCIÓN</div>
@@ -12,8 +14,8 @@ export default function ActionControls({ onApprove, onSave, onBack }) {
           <strong>Última Sinc. Local:</strong> 11:30:05
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <button className={styles.btnPrimary} onClick={onApprove}>APROBAR Y PUBLICAR EN SPEEDGRADER</button>
-          <button className={styles.btnSecondary} onClick={onSave}>GUARDAR EDICIÓN (SIN ENVIAR)</button>
+          <button className={styles.btnPrimary} onClick={onApprove} disabled={!canSubmitFeedback} title={!canSubmitFeedback ? "Permiso de envío deshabilitado" : ""}>APROBAR Y PUBLICAR EN SPEEDGRADER</button>
+          <button className={styles.btnSecondary} onClick={onSave} disabled={!canEditFeedback} title={!canEditFeedback ? "Permiso de edición deshabilitado" : ""}>GUARDAR EDICIÓN (SIN ENVIAR)</button>
           <button className={styles.btnTertiary} onClick={onBack}>VOLVER A LISTA</button>
         </div>
       </div>

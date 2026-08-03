@@ -1,7 +1,5 @@
 import db from './db.js';
 import EncryptionService from '../services/infrastructure/EncryptionService.js';
-import fs from 'node:fs';
-import path from 'node:path';
 
 export default class CanvasTokenRepository {
   async getToken(canvasSub) {

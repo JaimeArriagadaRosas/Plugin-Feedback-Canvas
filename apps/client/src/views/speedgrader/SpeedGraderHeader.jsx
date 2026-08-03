@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './SpeedGraderHeader.module.css';
 
-export default function SpeedGraderHeader({ onBack, onShowTutorial }) {
+export default function SpeedGraderHeader({ courseId, onBack, onShowTutorial }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -36,6 +36,12 @@ export default function SpeedGraderHeader({ onBack, onShowTutorial }) {
               onClick={() => { setMenuOpen(false); navigate('/teacher/review'); }}
             >
               📋 Revisión de Feedbacks
+            </button>
+            <button
+              className={styles.headerDropdownItem}
+              onClick={() => { setMenuOpen(false); navigate('/teacher/variables', { state: { course: { id: courseId } } }); }}
+            >
+              ⚙️ Variables de Personalización
             </button>
             <button
               className={styles.headerDropdownItem}

@@ -1,5 +1,4 @@
-import db from '../data/db.js';
-import { classifyRoles, resolveViewRole } from '../utils/roles.js';
+import { resolveViewRole } from '../utils/roles.js';
 import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
 import { isProduction, isHttpsEnabled } from '../security/envGuard.js';
@@ -67,7 +66,7 @@ export default class SystemConfigController {
     res.json({ exito: true, mensaje: 'Sesion local eliminada' });
   }
 
-  getMe(req, res) {
+  async getMe(req, res) {
     const identity = req.appIdentity;
     if (identity) {
       const role = resolveViewRole({
@@ -85,12 +84,24 @@ export default class SystemConfigController {
         logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       }
 
+      // Obtener manager de permisos inyectado en app
+      const permissionsManager = req.app.get('permissionsManager');
+      let permissions = {};
+      if (permissionsManager) {
+        const matrix = await permissionsManager.getPermissionsMatrix();
+        const roleData = matrix.find(r => r.rol === role);
+        if (roleData && roleData.permisos) {
+          permissions = roleData.permisos;
+        }
+      }
+
       return res.json({
         exito: true,
         user: identity.ltiUserId, // Mantenemos el LTI UUID como identificador primario para el frontend (legacy)
         userName: identity.name || identity.ltiUserId,
         role,
         roles: identity.roles,
+        permissions, // NUEVO: Se envían los permisos al frontend
         courseId: identity.canonicalCourseId || identity.courseId,
         courseName: identity.courseName,
         studentId: identity.canonicalUserId || identity.numericUserId || null, // El ID numérico para queries específicas

@@ -18,7 +18,7 @@ const REQUIRED_FOR_LTI = [
   { key: 'GEMINI_API_KEY', desc: 'Clave de API de Gemini IA' },
 ];
 
-const STARTUP_VARS = ['STARTUP_MODE', 'NON_INTERACTIVE', 'USE_LOCAL_DATA', 'VITE_USE_LOCAL_DATA'];
+
 
 export class EnvironmentDetector {
   constructor(pluginDir) {

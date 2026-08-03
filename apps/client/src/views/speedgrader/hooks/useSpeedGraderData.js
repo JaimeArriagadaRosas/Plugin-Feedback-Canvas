@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import sanitizeHtml from 'sanitize-html';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from 'shared/api';
-import { assignmentKeys } from 'shared/lib/queryKeys';
+import { api } from '@/api';
+import { assignmentKeys } from '@/lib/queryKeys';
 import logger from '../../../utils/logger';
 
 export function useSpeedGraderData() {

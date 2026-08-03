@@ -8,7 +8,7 @@ export class ExcelExportService {
    * @param {Array} auditLogs - Lista de logs críticos de auditoría.
    * @returns {Promise<Buffer>} - Archivo XLSX en memoria.
    */
-  async generateExcel(data, auditLogs = []) {
+  async generateExcel(data, auditLogs = [], migrationLogs = [], systemNotifications = []) {
     try {
       const workbook = new ExcelJS.Workbook();
       
@@ -25,6 +25,8 @@ export class ExcelExportService {
       let countValoracionProfesor = 0;
       let sumaValoracionEstudiante = 0;
       let countValoracionEstudiante = 0;
+      let countEvaluacionesUtiles = 0;
+      let countTotalEvaluacionesUtilidad = 0;
 
       const cursosMap = new Map();
 
@@ -42,6 +44,13 @@ export class ExcelExportService {
         if (row.calificacion_estudiante) {
           sumaValoracionEstudiante += Number(row.calificacion_estudiante);
           countValoracionEstudiante++;
+        }
+        
+        if (row.es_util !== null && row.es_util !== undefined) {
+          countTotalEvaluacionesUtilidad++;
+          if (row.es_util === true) {
+            countEvaluacionesUtiles++;
+          }
         }
 
         const cursoKey = row.curso_id;
@@ -71,6 +80,7 @@ export class ExcelExportService {
 
       const avgProfesor = countValoracionProfesor > 0 ? (sumaValoracionProfesor / countValoracionProfesor).toFixed(1) : 'N/A';
       const avgEstudiante = countValoracionEstudiante > 0 ? (sumaValoracionEstudiante / countValoracionEstudiante).toFixed(1) : 'N/A';
+      const porcentajeUtilidad = countTotalEvaluacionesUtilidad > 0 ? ((countEvaluacionesUtiles / countTotalEvaluacionesUtilidad) * 100).toFixed(1) + '%' : 'N/A';
       const tasaAprobacion = totalFeedbacks > 0 ? ((totalAprobados / totalFeedbacks) * 100).toFixed(1) + '%' : 'N/A';
 
       const styleHeader = (sheet) => {
@@ -100,6 +110,20 @@ export class ExcelExportService {
       sheet1.addRow({ metrica: 'Total Pendientes', valor: totalPendientes });
       sheet1.addRow({ metrica: 'Total Rechazados', valor: totalRechazados });
       styleHeader(sheet1);
+
+      // ============================================
+      // HOJA 1B: UTILIDAD DEL FEEDBACK (RF50)
+      // ============================================
+      const sheetUtilidad = workbook.addWorksheet('Utilidad del Feedback');
+      sheetUtilidad.columns = [
+        { header: 'Métrica de Utilidad (Estudiantes)', key: 'metrica', width: 45 },
+        { header: 'Valor', key: 'valor', width: 20 }
+      ];
+      sheetUtilidad.addRow({ metrica: 'Total de Evaluaciones de Utilidad', valor: countTotalEvaluacionesUtilidad });
+      sheetUtilidad.addRow({ metrica: 'Total de Feedbacks Considerados Útiles', valor: countEvaluacionesUtiles });
+      sheetUtilidad.addRow({ metrica: 'Porcentaje de Utilidad', valor: porcentajeUtilidad });
+      sheetUtilidad.addRow({ metrica: 'Promedio Valoración (Escala 1-5)', valor: avgEstudiante !== 'N/A' ? `${avgEstudiante} ⭐` : 'N/A' });
+      styleHeader(sheetUtilidad);
 
       // ============================================
       // HOJA 2: MÉTRICAS POR CURSO
@@ -139,6 +163,7 @@ export class ExcelExportService {
         { header: 'Estado', key: 'estado', width: 15 },
         { header: 'Nota Original', key: 'nota_canvas', width: 15 },
         { header: 'Calificación IA', key: 'nota_chile', width: 15 },
+        { header: '¿Fue Útil? (Sí/No)', key: 'es_util', width: 20 },
         { header: 'Valoración Profesor', key: 'val_prof', width: 20 },
         { header: 'Valoración Estudiante', key: 'val_est', width: 20 }
       ];
@@ -153,6 +178,7 @@ export class ExcelExportService {
           estado: row.estado || 'PENDIENTE',
           nota_canvas: row.nota_canvas !== null && row.nota_canvas !== undefined ? row.nota_canvas : 'N/A',
           nota_chile: row.nota_chile !== null && row.nota_chile !== undefined ? row.nota_chile : 'N/A',
+          es_util: row.es_util !== null && row.es_util !== undefined ? (row.es_util ? 'Sí' : 'No') : 'N/A',
           val_prof: row.calificacion_profesor ? `${row.calificacion_profesor} ⭐` : 'N/A',
           val_est: row.calificacion_estudiante ? `${row.calificacion_estudiante} ⭐` : 'N/A'
         });
@@ -188,6 +214,69 @@ export class ExcelExportService {
         });
       }
       styleHeader(sheet4);
+
+      // ============================================
+      // HOJA 5: MÉTRICAS DE DESPLIEGUE (RF60)
+      // ============================================
+      const sheet5 = workbook.addWorksheet('Métricas de Despliegue');
+      sheet5.columns = [
+        { header: 'Fecha de Ejecución', key: 'fecha', width: 25 },
+        { header: 'Versión / Archivo', key: 'version', width: 40 },
+        { header: 'Estado', key: 'estado', width: 20 },
+        { header: 'Detalle / Logs', key: 'logs', width: 80 }
+      ];
+
+      if (migrationLogs && migrationLogs.length > 0) {
+        migrationLogs.forEach(log => {
+          sheet5.addRow({
+            fecha: log.ejecutado_en ? new Date(log.ejecutado_en).toLocaleString() : 'N/A',
+            version: log.version,
+            estado: log.status,
+            logs: log.logs || 'Sin detalle'
+          });
+        });
+      } else {
+        sheet5.addRow({
+          fecha: 'N/A',
+          version: 'N/A',
+          estado: 'N/A',
+          logs: 'No hay registros de migración disponibles.'
+        });
+      }
+      styleHeader(sheet5);
+
+      // ============================================
+      // HOJA 6: NOTIFICACIONES DE SISTEMA
+      // ============================================
+      const sheet6 = workbook.addWorksheet('Notificaciones de Sistema');
+      sheet6.columns = [
+        { header: 'ID Profesor', key: 'profesor_id', width: 20 },
+        { header: 'Tipo Error', key: 'tipo_error', width: 30 },
+        { header: 'Mensaje Error', key: 'mensaje_error', width: 60 },
+        { header: 'Fecha Detección', key: 'creado_en', width: 25 },
+        { header: 'Resuelto', key: 'resuelto', width: 15 }
+      ];
+
+      if (systemNotifications && systemNotifications.length > 0) {
+        systemNotifications.forEach(notif => {
+          sheet6.addRow({
+            profesor_id: notif.profesor_id || 'N/A',
+            tipo_error: notif.tipo_error || 'N/A',
+            mensaje_error: notif.mensaje_error || 'Sin mensaje',
+            creado_en: notif.creado_en ? new Date(notif.creado_en).toLocaleString() : 'N/A',
+            resuelto: notif.resuelto ? 'Sí' : 'No'
+          });
+        });
+      } else {
+        sheet6.addRow({
+          profesor_id: 'N/A',
+          tipo_error: 'N/A',
+          mensaje_error: 'No hay notificaciones de sistema.',
+          creado_en: 'N/A',
+          resuelto: 'N/A'
+        });
+      }
+      styleHeader(sheet6);
 
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;

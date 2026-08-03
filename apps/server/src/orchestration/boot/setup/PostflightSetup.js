@@ -3,7 +3,6 @@ import { VerifyData } from './VerifyData.js';
 import { DataSeeder } from './DataSeeder.js';
 import { DatabaseHealth } from './DatabaseHealth.js';
 import { GemInstaller } from './installers/GemInstaller.js';
-import { LtiBootstrap } from '../lti.js';
 import { pingCanvasAPI } from './utils/TokenManager.js';
 
 export class PostflightSetup {

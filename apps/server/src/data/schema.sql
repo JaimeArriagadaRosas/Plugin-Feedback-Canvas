@@ -173,6 +173,26 @@ CREATE TABLE IF NOT EXISTS Notificaciones_Feedback (
 CREATE INDEX IF NOT EXISTS idx_notificaciones_feedback ON Notificaciones_Feedback(feedback_id);
 
 -- ==============================
+-- 7.1 NOTIFICACIONES DE SISTEMA (ERRORES GLOBALES RF61)
+-- ==============================
+CREATE TABLE IF NOT EXISTS notificaciones_sistema (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    profesor_id VARCHAR(50) NOT NULL,
+    tipo_error VARCHAR(50) NOT NULL,
+    mensaje_error TEXT,
+    detalle TEXT,
+    contexto JSONB,
+    leido BOOLEAN DEFAULT FALSE,
+    resuelto BOOLEAN DEFAULT FALSE,
+    fecha TIMESTAMPTZ DEFAULT NOW(),
+    creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_sistema_profesor ON notificaciones_sistema(profesor_id);
+CREATE INDEX IF NOT EXISTS idx_notif_sistema_tipo ON notificaciones_sistema(tipo_error);
+CREATE INDEX IF NOT EXISTS idx_notif_sistema_leido ON notificaciones_sistema(leido);
+
+-- ==============================
 -- 7.5 PREFERENCIAS DE NOTIFICACION (ESTUDIANTES)
 -- ==============================
 CREATE TABLE IF NOT EXISTS Preferencias_Notificacion_Estudiante (
@@ -360,3 +380,21 @@ BEGIN
         ('Evaluación Cruzada', '{"alto":"Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Tus compañeros y yo coincidimos en que tu trabajo es destacado y aporta gran valor a la revisión entre pares.\n\n¡Felicidades!\n\nSaludos,\nProfesor","medio":"Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. Según la evaluación cruzada, tu desempeño es promedio, presentando un trabajo adecuado pero con oportunidades de mejora identificadas por tus pares.\n\n¡Sigue trabajando!\n\nSaludos,\nProfesor","bajo":"Hola {{nombre_estudiante}},\n\nTu calificación es {{calificacion}}. La revisión cruzada indica que hay debilidades importantes en tu entrega que deben ser atendidas, según el consenso de la coevaluación.\n\nRevisa los comentarios de tus compañeros.\n\nSaludos,\nProfesor"}', NULL);
     END IF;
 END $$;
+
+-- ==============================
+-- 15. CONTROL DE MIGRACIONES Y DESPLIEGUES
+-- ==============================
+CREATE TABLE IF NOT EXISTS migrations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  executed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS migration_logs (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  version VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  logs TEXT,
+  ejecutado_en TIMESTAMPTZ DEFAULT NOW()
+);
+

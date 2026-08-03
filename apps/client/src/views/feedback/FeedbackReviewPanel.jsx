@@ -10,10 +10,13 @@ import { useFeedbackReview } from './review/useFeedbackReview';
 import Toast from '../../components/atoms/Toast';
 import ConfirmDialog from '../../components/molecules/ConfirmDialog';
 import PendingFeedbacksIndicator from './review/PendingFeedbacksIndicator';
+import { usePermissions } from '../../hooks/usePermissions';
+import RequirePermission from '../../components/atoms/RequirePermission';
 import styles from './FeedbackReviewPanel.module.css';
 
 export default function FeedbackReviewPanel() {
   const logClick = useButtonLogger();
+  const { canSubmitFeedback } = usePermissions();
   const { selectedCourse: globalSelectedCourse } = useAuth();
   const initialCourse = globalSelectedCourse?.id;
   const {
@@ -33,6 +36,7 @@ export default function FeedbackReviewPanel() {
     activeFeedback,
     setActiveFeedback,
     handleApprove,
+    handleReject,
     handleEditSave,
     handleBulkApprove,
     confirmBulkApprove,
@@ -41,6 +45,9 @@ export default function FeedbackReviewPanel() {
     handleExportExcel,
     toastMessage,
     setToastMessage,
+    selectedIds,
+    toggleSelection,
+    toggleAllSelection,
   } = useFeedbackReview({ initialSelectedCourse: initialCourse ? String(initialCourse) : undefined });
 
   const handleReview = useCallback((row) => {
@@ -69,8 +76,12 @@ export default function FeedbackReviewPanel() {
   }, [setShowApprovalModal, setShowEditModal, setActiveFeedback]);
 
   return (
-    <div className={styles.panel}>
-      <header className={styles.header}>
+    <RequirePermission 
+      permission="view_feedback" 
+      fallback={<div className={styles.panel} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+    >
+      <div className={styles.panel}>
+        <header className={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <PendingFeedbacksIndicator courseId={selectedCourse} />
           <h1 className={styles.title}>REVISIÓN DE FEEDBACKS</h1>
@@ -80,7 +91,9 @@ export default function FeedbackReviewPanel() {
             type="button"
             className={styles.exportButton}
             onClick={logClick('FEEDBACK_REVIEW_BULK_APPROVE', handleBulkApprove)}
-            style={{ marginRight: '10px', backgroundColor: '#0374B5', color: '#fff', borderColor: '#0374B5' }}
+            style={{ marginRight: '10px', backgroundColor: canSubmitFeedback ? '#0374B5' : '#ccc', color: '#fff', borderColor: canSubmitFeedback ? '#0374B5' : '#ccc' }}
+            disabled={!canSubmitFeedback}
+            title={!canSubmitFeedback ? "Permiso de envío deshabilitado" : ""}
           >
             ✔️ Aprobar Pendientes
           </button>
@@ -112,6 +125,9 @@ export default function FeedbackReviewPanel() {
             feedbacks={filteredFeedbacks}
             onReview={handleReview}
             onEdit={handleEdit}
+            selectedIds={selectedIds}
+            onToggleSelection={toggleSelection}
+            onToggleAllSelection={toggleAllSelection}
           />
         )}
       </main>
@@ -120,6 +136,7 @@ export default function FeedbackReviewPanel() {
         isOpen={showApprovalModal}
         onClose={handleCloseModal}
         onApprove={handleApprove}
+        onReject={handleReject}
         feedback={activeFeedback}
       />
 
@@ -148,5 +165,6 @@ export default function FeedbackReviewPanel() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }

@@ -1,7 +1,6 @@
 import FeedbackGenerationService from './FeedbackGenerationService.js';
 import FeedbackQueryService from './FeedbackQueryService.js';
 import FeedbackMutationService from './FeedbackMutationService.js';
-import { AppError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -11,7 +10,7 @@ import logger from '../utils/logger.js';
  * delega en servicios especializados para cumplir SRP sin romper dependencias.
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager, preferencesService = null, emailService = null) {
+  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager, preferencesService = null, emailService = null, systemNotificationService = null) {
     this.generation = new FeedbackGenerationService(
       iaProvider, canvasGateway, feedbackRepo, templateRepo,
       academicHistoryService, validadorAcademico, configRepo, iaConfigManager
@@ -20,7 +19,11 @@ export default class FeedbackService {
       feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico
     );
     this.mutation = new FeedbackMutationService(
-      feedbackRepo, canvasGateway, preferencesService, emailService
+      feedbackRepo,
+      canvasGateway,
+      preferencesService,
+      emailService,
+      systemNotificationService
     );
     this.academicHistoryService = academicHistoryService;
     this.feedbackRepo = feedbackRepo;
@@ -67,8 +70,8 @@ export default class FeedbackService {
     return this.mutation.editFeedback(id, nuevoContenido);
   }
 
-  rateByStudent(feedbackId, rating, ltiContext = null) {
-    return this.mutation.rateByStudent(feedbackId, rating, ltiContext);
+  rateByStudent(feedbackId, rating, esUtil, ltiContext = null) {
+    return this.mutation.rateByStudent(feedbackId, rating, esUtil, ltiContext);
   }
 
   getStudentView(studentId, courseId, teacherId) {

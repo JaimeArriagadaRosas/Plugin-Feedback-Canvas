@@ -5,6 +5,7 @@ import LocalAuthController from '../../controllers/AuthController.local.js';
 import authRouter from '../../routes/auth.js';
 import canvasSessionRouter from '../../routes/canvasSession.js';
 import deepDiagnosticRouter from '../../routes/deepDiagnostic.js';
+import createVariablesRoutes from '../../routes/variablesRoutes.js';
 import db from '../../data/db.js';
 import logger from '../../utils/logger.js';
 import { getCanvasCircuitBreaker } from '../../services/infrastructure/CanvasClient.js';
@@ -98,6 +99,7 @@ export function registerRoutes(app, services, ltiPublicJwk) {
 
   app.use('/api/canvas', canvasSessionRouter);
   app.use('/api/canvas', deepDiagnosticRouter);
+  app.use('/api/courses', createVariablesRoutes());
 
   const dependencias = {
     canvasService: services.canvasService,
@@ -114,6 +116,8 @@ export function registerRoutes(app, services, ltiPublicJwk) {
     permissionsService: services.permissionsService,
     canvasTokenRepo: services.canvasTokenRepo,
     courseService: services.courseService,
+    privateNoteService: services.privateNoteService,
+    systemNotificationService: services.systemNotificationService,
     ltiPublicJwk
   };
   app.use('/api', idempotencyManager.middleware());

@@ -1,7 +1,7 @@
 import * as readline from 'node:readline';
 import dotenv from 'dotenv';
 import pc from 'picocolors';
-import { input, password, confirm } from '@inquirer/prompts';
+import { confirm } from '@inquirer/prompts';
 
 // Cargar .env para que NON_INTERACTIVE/STARTUP_MODE estén disponibles
 dotenv.config({ quiet: true });

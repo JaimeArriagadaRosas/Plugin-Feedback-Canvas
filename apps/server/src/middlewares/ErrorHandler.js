@@ -1,4 +1,3 @@
-import { AppError } from '../utils/errors.js';
 import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
 
@@ -49,6 +48,7 @@ export const ErrorHandler = (err, req, res, next) => {
     error: {
       mensaje: clientMessage,
       codigo: statusCode,
+      codigoError: err.errorCode || (isOperational ? 'OPERATIONAL_ERROR' : 'UNKNOWN_ERROR'),
       timestamp: nowIso(),
       path: req.originalUrl,
       ...(isDev && { stack: err.stack, detalle: err.message })

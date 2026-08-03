@@ -10,6 +10,7 @@ export default function StudentRecentFeedback({
   assignment,
   studentId,
   studentRating,
+  studentEsUtil,
   ratingSaved,
   onRate,
   onBack,
@@ -19,9 +20,16 @@ export default function StudentRecentFeedback({
 
   const handleRate = useCallback(
     async (rating) => {
-      await logRate(`STUDENT_FEEDBACK_RATE_${rating}`, () => onRate?.(assignment.feedback.id, rating))();
+      await logRate(`STUDENT_FEEDBACK_RATE_${rating}`, () => onRate?.(assignment.feedback.id, rating, studentEsUtil))();
     },
-    [assignment, onRate, logRate]
+    [assignment, onRate, logRate, studentEsUtil]
+  );
+
+  const handleUtilChange = useCallback(
+    async (esUtil) => {
+      await logRate(`STUDENT_FEEDBACK_UTIL_${esUtil}`, () => onRate?.(assignment.feedback.id, studentRating, esUtil))();
+    },
+    [assignment, onRate, logRate, studentRating]
   );
 
   const handleBack = useCallback(
@@ -66,15 +74,32 @@ export default function StudentRecentFeedback({
               </div>
 
               <div className={styles.ratingAreaSide}>
-                <h3 className={styles.ratingTitle}>¿Qué tan útil te resultó este feedback?</h3>
-                <div className={styles.ratingControls}>
+                <h3 className={styles.ratingTitle}>Califica el feedback</h3>
+                <div className={styles.ratingControls} style={{ marginBottom: '1.5rem' }}>
                   <StarRating 
                     value={studentRating} 
                     onChange={handleRate} 
                     readonly={false} 
                   />
-                  {ratingSaved && <span className={styles.ratingSavedMsg}>✓ ¡Gracias por tu valoración!</span>}
                 </div>
+
+                <h3 className={styles.ratingTitle}>¿Te fue útil este feedback?</h3>
+                <div className={styles.utilControls} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
+                  <Button 
+                    variant={studentEsUtil === true ? 'primary' : 'outline'} 
+                    onClick={() => handleUtilChange(true)}
+                  >
+                    Sí, fue útil
+                  </Button>
+                  <Button 
+                    variant={studentEsUtil === false ? 'danger' : 'outline'} 
+                    onClick={() => handleUtilChange(false)}
+                  >
+                    No me sirvió
+                  </Button>
+                </div>
+
+                {ratingSaved && <span className={styles.ratingSavedMsg}>✓ ¡Gracias por tu valoración!</span>}
               </div>
             </div>
           </div>

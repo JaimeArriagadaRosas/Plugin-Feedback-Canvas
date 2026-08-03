@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { validateLtiCallback, buildLtiCookie } from '../../services/infrastructure/LtiCallbackValidator.js';
 import { secureState, secureNonce } from '../../security/crypto.js';
 import { storeNonce } from '../../security/nonceStore.js';
-import { isHttpsEnabled } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 import { handleLtiError } from '../../middlewares/LtiErrorHandler.js';
 import { signSessionToken } from '../../services/infrastructure/SessionTokenService.js';
@@ -13,7 +12,7 @@ const router = Router();
 const loginHandler = async (req, res) => {
   const bodyData = (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { iss, login_hint, target_link_uri, lti_message_hint } = bodyData;
-  const reqId = Math.random().toString(36).substring(2, 8);
+  
   logger.debug(`[LTI-LOGIN] OIDC Init Request recibida -> Iniciando flujo login`);
 
   if (!iss || !login_hint || !target_link_uri) {
@@ -53,7 +52,7 @@ const loginHandler = async (req, res) => {
       if (target.origin === base.origin) {
         redirectUri = target_link_uri;
       }
-    } catch {}
+    } catch (e) { logger.warn('Invalid target_link_uri', { error: e.message }); }
   }
 
   const authParams = new URLSearchParams({
@@ -115,13 +114,13 @@ router.get('/login', loginHandler);
 router.post('/login', loginHandler);
 router.get('/authorize', authorizeHandler);
 
-router.post('/callback', asyncSafe(async (req, res, next) => {
+router.post('/callback', asyncSafe(async (req, res) => {
   const reqId = Math.random().toString(36).substring(2, 8);
-  const bodyKeys = Object.keys(req.body || {});
-  const hasIdToken = !!(req.body?.id_token || req.query?.id_token);
-  const hasError = !!(req.body?.error || req.query?.error);
-  const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : 'unknown');
-  const cleanPath = req.originalUrl.split('?')[0];
+  
+  
+  
+  
+  
 
   logger.debug(`[LTI-CALLBACK] Procesando callback con id_token...`);
 

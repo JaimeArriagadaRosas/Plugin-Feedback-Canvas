@@ -5,6 +5,9 @@ import CourseStatisticsService from './CourseStatisticsService.js';
 import StudentNameResolver from './variables/StudentNameResolver.js';
 import GradeResolver from './variables/GradeResolver.js';
 import CourseAverageResolver from './variables/CourseAverageResolver.js';
+import OtherCoursePerformanceResolver from './variables/OtherCoursePerformanceResolver.js';
+import StudentEntryProfileResolver from './variables/StudentEntryProfileResolver.js';
+import PreviousAcademicStatusResolver from './variables/PreviousAcademicStatusResolver.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -28,7 +31,10 @@ export default class FeedbackGenerationService {
     this.resolvers = [
       new StudentNameResolver(),
       new GradeResolver(),
-      new CourseAverageResolver(this.canvasGateway, this.courseStatisticsService)
+      new CourseAverageResolver(this.canvasGateway, this.courseStatisticsService),
+      new OtherCoursePerformanceResolver(),
+      new StudentEntryProfileResolver(),
+      new PreviousAcademicStatusResolver()
     ];
   }
 
@@ -76,7 +82,7 @@ export default class FeedbackGenerationService {
       } catch (err) {
         if (err.statusCode === 422) {
           logger.debug(`Este estudiante no ha entregado (Estudiante: ${studentId})`);
-          return { exito: false, omitido: true, data: null, mensaje: 'Este estudiante no ha entregado' };
+          return { exito: false, omitido: true, data: null, mensaje: 'Este estudiante no ha entregado', razon: err.errorCode || 'INSUFFICIENT_DATA' };
         }
         throw err;
       }
@@ -102,7 +108,7 @@ export default class FeedbackGenerationService {
       const template = await this.templateRepo.getById(templateId);
       if (!template) throw new DomainError('Plantilla no encontrada', 404);
 
-      const activeVariablesText = await this._getActiveVariablesText(courseId, assignmentId);
+      const activeVariablesText = await this._getActiveVariablesText(courseId);
       context.instructionIA = context.instructionIA + activeVariablesText;
 
       // Inyección modular de variables usando el Patrón Strategy
@@ -117,11 +123,18 @@ export default class FeedbackGenerationService {
         }
       }
 
-      const feedbackText = await this.iaProvider.generateFeedback(prompt, {
-        apiKey: aiConfig.apiKey,
-        model: aiConfig.model || 'gemini-3.5-flash',
-        maxOutputTokens: aiConfig.maxTokens
-      });
+      let feedbackText;
+      try {
+        feedbackText = await this.iaProvider.generateFeedback(prompt, {
+          apiKey: aiConfig.apiKey,
+          model: aiConfig.model || 'gemini-3.5-flash',
+          maxOutputTokens: aiConfig.maxTokens,
+          systemInstruction: context.instructionIA
+        });
+      } catch (aiErr) {
+        logger.error('[IA_ERROR] Fallo al generar con IA', { error: aiErr.message });
+        throw new DomainError(`Error de IA: ${aiErr.message}`, 502, 'AI_GENERATION_FAILED');
+      }
 
       let saved;
       if (pending) {
@@ -195,14 +208,14 @@ export default class FeedbackGenerationService {
       : 100;
 
     if (pointsPossible <= 0) {
-      throw new DomainError('points_possible debe ser mayor a 0', 422);
+      throw new DomainError('points_possible debe ser mayor a 0', 422, 'INSUFFICIENT_DATA');
     }
 
     // Plan A: Hay nota explícita del profesor (currentGrade)
     if (currentGrade !== undefined && currentGrade !== null && currentGrade !== '') {
       const parsedGrade = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade);
       if (!Number.isFinite(parsedGrade) || parsedGrade < 1.0 || parsedGrade > 7.0) {
-        throw new DomainError('Nota chilena fuera de rango (1.0–7.0)', 422);
+        throw new DomainError('Nota chilena fuera de rango (1.0–7.0)', 422, 'INSUFFICIENT_DATA');
       }
       const rawCanvasScore = parsedGrade >= 4.0 
         ? 60 + ((parsedGrade - 4.0) / 3.0) * 40
@@ -217,14 +230,14 @@ export default class FeedbackGenerationService {
     if (submission && rawScore !== undefined && rawScore !== null) {
       const rawCanvasScore = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore);
       if (!Number.isFinite(rawCanvasScore) || rawCanvasScore < 0 || rawCanvasScore > pointsPossible) {
-        throw new DomainError(`Calificación Canvas fuera de rango (0–${pointsPossible})`, 422);
+        throw new DomainError(`Calificación Canvas fuera de rango (0–${pointsPossible})`, 422, 'INSUFFICIENT_DATA');
       }
       const { chileGrade, approved } = GradeConverter.toChileGrade(rawCanvasScore, pointsPossible);
       return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
     }
 
     // Plan C: Ni nota explícita ni puntaje
-    throw new DomainError('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada', 422);
+    throw new DomainError('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada', 422, 'INSUFFICIENT_DATA');
   }
 
   async _buildProfile(courseId, studentId, teacherId) {
@@ -240,47 +253,54 @@ export default class FeedbackGenerationService {
     const accuracyPct = submission.accuracy_percent ??
       (questionSet.length > 0 ? Math.round((correctCount / questionSet.length) * 100) : null);
 
-    const context = {
-      courseId,
-      assignmentId,
-      teacherToken: teacherId, // El token o ID de LTI que el servicio CanvasGateway pueda usar
-      currentGrade, // Para el GradeResolver
-      student: { id: studentId, name: finalStudentName },
-      assignment: { id: assignmentId, name: assignmentName },
-      submission: {
-        body: submission.body,
-        score: submission.score, // Conservamos el original para GradeResolver
-        canvasScore,
-        chileGrade,
-        pointsPossible: submission.points_possible || 100,
-        submittedAt: submission.submitted_at,
-        correctCount,
-        incorrectCount,
-        accuracyPercent: accuracyPct,
-        assignment: submission.assignment
-      },
-      rubric,
-      profile,
-      instructionIA: `El estudiante tiene un nivel ${profile.level} y tendencia ${profile.trend}. ` +
-        `Genera la respuesta estrictamente en el idioma que solicite la plantilla o el profesor, si no se especifica, usa español.`
-    };
+      let tendenciaPrompt = `El estudiante tiene un nivel ${profile.level}. `;
+      if (profile.trend === 'Mejora') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido mejora en el semestre. ";
+      else if (profile.trend === 'Retroceso') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido un pequeño retroceso. ";
+      else tendenciaPrompt += "Menciona explícitamente al estudiante: Has mantenido un rendimiento constante. ";
+
+      const context = {
+        courseId,
+        assignmentId,
+        teacherToken: teacherId, // El token o ID de LTI que el servicio CanvasGateway pueda usar
+        currentGrade, // Para el GradeResolver
+        student: { id: studentId, name: finalStudentName },
+        assignment: { id: assignmentId, name: assignmentName },
+        submission: {
+          body: submission.body,
+          score: submission.score, // Conservamos el original para GradeResolver
+          canvasScore,
+          chileGrade,
+          pointsPossible: submission.points_possible || 100,
+          submittedAt: submission.submitted_at,
+          correctCount,
+          incorrectCount,
+          accuracyPercent: accuracyPct,
+          assignment: submission.assignment
+        },
+        rubric,
+        profile,
+        instructionIA: tendenciaPrompt +
+          `Genera la respuesta estrictamente en el idioma que solicite la plantilla o el profesor, si no se especifica, usa español.`
+      };
 
     return { context };
   }
 
-  async _getActiveVariablesText(courseId, assignmentId) {
+  async _getActiveVariablesText(courseId) {
+    if (!this.courseVariablesService) {
+      const CourseVariablesService = (await import('./variables/CourseVariablesService.js')).default;
+      this.courseVariablesService = new CourseVariablesService();
+    }
+    const courseVariables = await this.courseVariablesService.getCourseVariables(courseId);
+    const activeVars = Object.values(courseVariables).filter(v => v.activa);
+    
     let activeVariablesText = "";
-    if (this.configRepo) {
-      const configAsignacion = await this.configRepo.getConfigAsignacion(courseId, assignmentId);
-      if (configAsignacion?.variables) {
-        const activeVars = configAsignacion.variables.filter(v => v.variable_activa);
-        if (activeVars.length > 0) {
-          activeVariablesText = "\\nAdicionalmente, ten en cuenta las siguientes variables de personalización solicitadas por el profesor:\\n";
-          activeVars.forEach(v => {
-            activeVariablesText += `- ${v.variable_id} (Relevancia: ${v.ponderacion}%)\\n`;
-          });
-        }
-      }
+    if (activeVars.length > 0) {
+      activeVariablesText = "\\nAdicionalmente, ten en cuenta las siguientes variables de personalización solicitadas por el profesor:\\n";
+      activeVars.forEach(v => {
+        activeVariablesText += `- ${v.nombre} (Relevancia: ${v.ponderacion}%)\\n`;
+      });
+      activeVariablesText += "Debes dedicar proporcionalmente más espacio, profundidad y atención en tu respuesta a aquellas variables que tengan mayor ponderación.\\n";
     }
     return activeVariablesText;
   }

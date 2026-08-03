@@ -23,21 +23,30 @@ import TemplateManagement from '../plantillas/TemplateManagement';
 import SpeedGraderPanel from '../speedgrader/SpeedGraderPanel';
 import FeedbackReviewPanel from '../feedback/FeedbackReviewPanel';
 import FeedbackDetailView from '../feedback/FeedbackDetailView';
+import VariablesConfigView from '../cursos/variables/VariablesConfigView';
 import UserMenu from '../components/UserMenu';
 import logger from '../../utils/logger';
 import { useAuth } from '../context/AuthContext';
 import { useCourseData } from '../cursos/hooks/useCourseData';
+import RequirePermission from '../../components/atoms/RequirePermission';
 
 export default function TeacherLayout({ isAdminView = false }) {
   const navigate   = useNavigate();
   const location   = useLocation();
-
   return (
-    <div className="teacher-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', position: 'relative' }}>
-      <UserMenu mode="anchored" />
-      <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+    <RequirePermission 
+      permission="view_feedback" 
+      fallback={
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Lato, sans-serif', color: '#2d3b45' }}>
+          <h2>Funcionalidad deshabilitada por el administrador.</h2>
+        </div>
+      }
+    >
+      <div className="teacher-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <UserMenu mode="anchored" />
+        <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
 
-      {/* ────────────────────────────────────────────────────────────────────
+        {/* ────────────────────────────────────────────────────────────────────
           NO HAY BARRA SUPERIOR AQUÍ.
           La separación de vistas es innegociable:
             • Si role=teacher  → solo este layout, sin ninguna barra de admin.
@@ -97,11 +106,18 @@ export default function TeacherLayout({ isAdminView = false }) {
           element={<FeedbackDetailView onBack={() => navigate('/teacher/review')} />}
         />
 
+        {/* ── Configuración de Variables (RF34/35) ──────────────────────── */}
+        <Route
+          path="variables"
+          element={<VariablesConfigView />}
+        />
+
         {/* Catch-all → cursos */}
         <Route path="*" element={<Navigate to="/teacher/courses" replace />} />
-      </Routes>
-      </main>
-    </div>
+        </Routes>
+        </main>
+      </div>
+    </RequirePermission>
   );
 }
 

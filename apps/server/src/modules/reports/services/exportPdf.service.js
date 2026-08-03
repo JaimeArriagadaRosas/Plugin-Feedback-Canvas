@@ -5,7 +5,7 @@ export class PDFExportService {
   /**
    * Genera un buffer de PDF a partir de los datos estadísticos globales.
    */
-  async generateReport(data, auditLogs = []) {
+  async generateReport(data, auditLogs = [], migrationLogs = []) {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -217,6 +217,60 @@ export class PDFExportService {
             doc.y = Math.max(doc.y, startY + 15);
             doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#EEEEEE');
             doc.y += 5;
+          });
+        }
+
+        // ============================================
+        // 4. ANEXO: MÉTRICAS DE DESPLIEGUE (RF60)
+        // ============================================
+        doc.addPage();
+        
+        doc.rect(0, 0, doc.page.width, 100).fill(canvasBlue);
+        doc.fillColor('white').fontSize(24).text('Anexo: Métricas de Despliegue', 0, 35, { align: 'center' });
+        doc.fontSize(12).text(`Historial de Migraciones`, 0, 65, { align: 'center' });
+        
+        doc.y = 120;
+        doc.fillColor(canvasBlue).fontSize(16).text('Registro de Migraciones de Base de Datos', 50, doc.y);
+        doc.moveTo(50, doc.y + 5).lineTo(545, doc.y + 5).stroke(canvasBlue);
+        doc.y += 20;
+
+        if (!migrationLogs || migrationLogs.length === 0) {
+          doc.fillColor('#777777').fontSize(12).text('No hay registros de migración disponibles.', 50, doc.y);
+        } else {
+          const topMigrations = migrationLogs.slice(0, 20);
+          
+          doc.fillColor('#777777').fontSize(9);
+          doc.text('FECHA', 50, doc.y, { width: 90 });
+          doc.text('VERSIÓN', 140, doc.y, { width: 140 });
+          doc.text('ESTADO', 280, doc.y, { width: 60 });
+          doc.text('LOGS / DETALLE', 340, doc.y, { width: 205 });
+          doc.y += 15;
+
+          topMigrations.forEach(log => {
+            doc.fillColor(textColor).fontSize(9);
+            const rawFecha = log.ejecutado_en ? new Date(log.ejecutado_en).toLocaleString() : 'N/A';
+            const rawVersion = log.version || 'N/A';
+            const rawEstado = log.status || 'N/A';
+            const rawLogs = log.logs || 'Sin detalle';
+            
+            const startY = doc.y;
+            
+            if (rawEstado === 'FAILED') doc.fillColor('#d32f2f');
+            else if (rawEstado === 'SUCCESS') doc.fillColor('#137333');
+            
+            doc.text(rawFecha, 50, startY, { width: 90 });
+            doc.text(rawVersion.substring(0, 35), 140, startY, { width: 140 });
+            doc.text(rawEstado, 280, startY, { width: 60 });
+            doc.fillColor(textColor).text(rawLogs.substring(0, 60), 340, startY, { width: 205 });
+            
+            doc.y = Math.max(doc.y, startY + 15);
+            doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#EEEEEE');
+            doc.y += 5;
+            
+            if (doc.y > doc.page.height - 50) {
+              doc.addPage();
+              doc.y = 50;
+            }
           });
         }
 

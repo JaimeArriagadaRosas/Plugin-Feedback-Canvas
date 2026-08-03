@@ -12,6 +12,9 @@ export default class PermissionsManager {
       teacher: new TeacherRole(),
       student: new StudentRole()
     };
+    
+    // Caché en memoria para los overrides de permisos por rol
+    this.cache = new Map();
   }
 
   /**
@@ -55,6 +58,18 @@ export default class PermissionsManager {
   }
 
   /**
+   * Obtiene los overrides cacheados para un rol, o consulta la BD si no están en caché.
+   */
+  async _getCachedOverrides(role) {
+    if (this.cache.has(role)) {
+      return this.cache.get(role);
+    }
+    const overrides = await this.permissionsRepo.getPermissionsByRole(role) || {};
+    this.cache.set(role, overrides);
+    return overrides;
+  }
+
+  /**
    * Valida si un rol tiene cierto permiso. Útil para middlewares o chequeos específicos.
    */
   async checkPermission(role, permissionKey, context = {}) {
@@ -62,8 +77,8 @@ export default class PermissionsManager {
     const strategy = this.roleStrategies[role];
     if (!strategy) return false;
 
-    const overrides = await this.permissionsRepo.getPermissionsByRole(role);
-    return strategy.hasPermission(permissionKey, overrides || {}, context);
+    const overrides = await this._getCachedOverrides(role);
+    return strategy.hasPermission(permissionKey, overrides, context);
   }
 
   /**
@@ -78,7 +93,7 @@ export default class PermissionsManager {
     const mutables = strategy.getMutableKeys();
     
     // Obtenemos los overrides actuales
-    const currentOverrides = await this.permissionsRepo.getPermissionsByRole(role) || {};
+    const currentOverrides = await this._getCachedOverrides(role);
     
     // Filtramos solo las llaves mutables para este rol
     const filteredUpdate = { ...currentOverrides };
@@ -89,6 +104,11 @@ export default class PermissionsManager {
       }
     }
 
-    return this.permissionsRepo.updatePermissions(role, filteredUpdate);
+    const result = await this.permissionsRepo.updatePermissions(role, filteredUpdate);
+    
+    // Invalidamos la caché de este rol tras la actualización
+    this.cache.delete(role);
+    
+    return result;
   }
 }

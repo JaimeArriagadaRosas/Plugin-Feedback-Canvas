@@ -2,9 +2,9 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback } 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authReducer, initialState } from './authReducer';
 import { ApiError } from '../../utils/ApiError';
-import { api } from "shared/api";
-import { logout as logoutToken } from "shared/lib/authToken";
-import { authKeys } from "shared/lib/queryKeys";
+import { api } from '@/api';
+import { logout as logoutToken } from '@/lib/authToken';
+import { authKeys } from '@/lib/queryKeys';
 import logger from "../../utils/logger";
 
 const AuthContext = createContext(null);
@@ -20,7 +20,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const { role, rawRoles, user, userName, courseId, courseName, studentId, selectedCourse, isLoading, apiError } = state;
+  const { role, rawRoles, permissions, user, userName, courseId, courseName, studentId, selectedCourse, isLoading, apiError } = state;
 
   const { data, error, refetch } = useQuery({
     queryKey: authKeys.me(),
@@ -103,6 +103,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     role,
     rawRoles,
+    permissions,
     user,
     userName,
     courseId,

@@ -1,24 +1,41 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from project root
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import db from './src/data/db.js';
 
 async function run() {
   try {
+    console.log('Creando tabla notificaciones_sistema...');
     await db.query(`
-      CREATE TABLE IF NOT EXISTS Preferencias_Notificacion_Estudiante (
-          estudiante_id VARCHAR(50) PRIMARY KEY,
-          metodo VARCHAR(20) DEFAULT 'canvas_inapp',
-          frecuencia VARCHAR(20) DEFAULT 'inmediata',
-          actualizado_en TIMESTAMPTZ DEFAULT NOW()
+      CREATE TABLE IF NOT EXISTS notificaciones_sistema (
+          id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+          profesor_id VARCHAR(50) NOT NULL,
+          tipo_error VARCHAR(50) NOT NULL,
+          mensaje_error TEXT,
+          detalle TEXT,
+          contexto JSONB,
+          leido BOOLEAN DEFAULT FALSE,
+          resuelto BOOLEAN DEFAULT FALSE,
+          fecha TIMESTAMPTZ DEFAULT NOW(),
+          creado_en TIMESTAMPTZ DEFAULT NOW()
       );
-      
-      DROP TRIGGER IF EXISTS pref_notif_estud_updated_at ON Preferencias_Notificacion_Estudiante;
-      CREATE TRIGGER pref_notif_estud_updated_at
-        BEFORE UPDATE ON Preferencias_Notificacion_Estudiante
-        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `);
-    console.log("Tabla Preferencias_Notificacion_Estudiante creada correctamente.");
+    
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_notif_sistema_profesor ON notificaciones_sistema(profesor_id);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_notif_sistema_tipo ON notificaciones_sistema(tipo_error);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_notif_sistema_leido ON notificaciones_sistema(leido);`);
+    
+    console.log('Tabla y los índices creados con éxito.');
     process.exit(0);
-  } catch (error) {
-    console.error("Error creando la tabla:", error);
+  } catch (e) {
+    console.error('Error:', e);
     process.exit(1);
   }
 }

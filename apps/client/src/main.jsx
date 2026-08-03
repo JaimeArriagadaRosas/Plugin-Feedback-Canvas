@@ -13,10 +13,10 @@
  */
 import ReactDOM from 'react-dom/client';
 
-import 'shared/tokens/theme.css';
+import '@/tokens/theme.css';
 import './styles/global.css';
 import './styles/mixins.css';
-import { captureTokenFromUrl, getToken, setSessionToken, isIframe } from 'shared/lib/authToken';
+import { captureTokenFromUrl, getToken, setSessionToken, isIframe } from '@/lib/authToken';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/queryClient';
 import App from './app/App';

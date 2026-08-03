@@ -1,6 +1,7 @@
 import React from 'react';
 import FeedbackActions from './FeedbackActions';
 import styles from './SpeedGraderAIPanel.module.css';
+import { RichTextProcessor } from '../../utils/RichTextProcessor';
 
 export default function AIControls({ 
   feedback, 
@@ -21,10 +22,10 @@ export default function AIControls({
         <div className={styles.feedbackAdaptiveBody}>
           {feedback ? (
             <>
-              <div className={styles.feedbackAdaptiveText}>
+              <div className={styles.feedbackAdaptiveText} style={{ whiteSpace: 'pre-wrap' }}>
                 {typeof feedback === 'string' && (feedback.includes('API key not valid') || feedback.includes('API_KEY_INVALID') || feedback.includes('GoogleGenerativeAI Error'))
                   ? 'Por favor, comunícate con tu administrador para configurar una clave o modelo de IA válido en el sistema.'
-                  : feedback}
+                  : RichTextProcessor.process(feedback)}
               </div>
             </>
           ) : (

@@ -184,7 +184,7 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
 
   // Eliminar el archivo inmediatamente (no dejar tokens en disco más de lo necesario)
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  await fs.unlink(hostHandoffPath).catch(() => {});
+  await fs.unlink(hostHandoffPath).catch(e => { console.debug('Error unlinking handoff file', e.message); });
 
   let data;
   try {

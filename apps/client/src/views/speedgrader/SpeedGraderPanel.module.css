@@ -404,3 +404,22 @@
   min-width: 140px;
   max-width: 200px;
 }
+
+.manualToggleButton {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.manualToggleButton:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  border-color: #aaa;
+}

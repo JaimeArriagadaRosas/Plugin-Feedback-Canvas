@@ -26,7 +26,12 @@ export async function setLtiState(key, value) {
     await redisClient.setEx(key, TTL_SECONDS, payload);
   } else if (memoryStore) {
     memoryStore.set(key, payload);
-    setTimeout(() => memoryStore.delete(key), TTL_SECONDS * 1000);
+    const t = setTimeout(() => memoryStore.delete(key), TTL_SECONDS * 1000);
+    if (t.unref) t.unref();
+    if (memoryStore.size > 5000) {
+      const oldest = memoryStore.keys().next().value;
+      memoryStore.delete(oldest);
+    }
   }
 }
 

@@ -1,5 +1,3 @@
-import { ApiError } from '../../utils/errors.js';
-import logger from '../../utils/logger.js';
 
 export class ReportsController {
   constructor(reportsService) {

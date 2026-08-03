@@ -64,7 +64,7 @@ export async function safeWriteJSON(filePath, data, log = null) {
     if (log) log(`[FILE-MANAGER] ERROR escribiendo ${path.basename(filePath)}: ${e.message}`);
     // Limpiar el temporal si quedó
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    await fs.unlink(tmpPath).catch(() => {});
+    await fs.unlink(tmpPath).catch(e => { console.debug('Error unlinking temp file', e.message); });
     throw e;
   }
 }
