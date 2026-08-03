@@ -1,0 +1,124 @@
+.container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.header h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-color-primary, #333);
+}
+
+.header p {
+  color: var(--text-color-secondary, #666);
+  font-size: 0.95rem;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 900px) {
+  .content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formCard, .listCard {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.formCard h3, .listCard h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-color-primary, #333);
+  border-bottom: 1px solid var(--border-color, #eee);
+  padding-bottom: 0.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.formGroup input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.formGroup small {
+  color: var(--text-color-secondary, #666);
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.submitBtn {
+  background-color: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--primary-color-dark, #0056b3);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.variablesTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.variablesTable th, .variablesTable td {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color, #eee);
+  font-size: 0.9rem;
+}
+
+.variablesTable th {
+  font-weight: 600;
+  background-color: var(--bg-neutral, #f9f9f9);
+}

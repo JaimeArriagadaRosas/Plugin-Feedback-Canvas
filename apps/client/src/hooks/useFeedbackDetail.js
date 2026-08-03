@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "shared/api";
+import { api } from '@/api';
 import logger from "../utils/logger";
 
 export function useFeedbackDetail(feedback, onBack) {

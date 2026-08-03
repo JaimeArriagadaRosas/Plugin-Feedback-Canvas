@@ -1,6 +1,5 @@
 import rateLimit from 'express-rate-limit';
 import { body, param, query, validationResult } from 'express-validator';
-import { AppError } from '../utils/errors.js';
 import { extractLtiToken } from '../security/ltiCookie.js';
 
 function ipKeyGenerator(req) {

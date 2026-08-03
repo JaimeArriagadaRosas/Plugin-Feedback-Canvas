@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "db:migrate": "node scripts/deploy/migrate-db.mjs",
     "dev": "vite --config apps/client/vite.config.js",
     "server": "node apps/server/src/server.js",
     "build": "vite build --config apps/client/vite.config.js",
@@ -21,7 +22,7 @@
     "test": "vitest run --pool=forks --fileParallelism=false",
     "lint": "eslint apps/server/src --ext .js",
     "test:watch": "vitest --pool=forks --fileParallelism=false",
-    "test:integration": "vitest run --project integration --pool=forks --fileParallelism=false",
+    "test:integration": "vitest run apps/server/tests/integration --pool=forks --fileParallelism=false",
     "test:coverage": "vitest run --coverage --pool=forks --fileParallelism=false",
     "test:client": "vitest run --config apps/client/vitest.config.js",
     "test:client:watch": "vitest --config apps/client/vitest.config.js",
@@ -55,11 +56,13 @@
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",
     "@vitejs/plugin-react": "5.2.0",
+    "autocannon": "^8.0.0",
     "chalk": "5.6.2",
     "cross-env": "7.0.3",
     "dotenv": "17.4.2",
     "eslint": "8.57.1",
     "eslint-plugin-security": "1.7.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "execa": "10.0.0",
     "inquirer": "14.0.2",
     "jsdom": "29.1.1",
@@ -71,8 +74,5 @@
     "vite": "8.1.5",
     "vitest": "3.0.0"
   },
-  "overrides": {
-    "esbuild": ">=0.25.0",
-    "undici": "6.21.0"
-  }
+  "overrides": {}
 }

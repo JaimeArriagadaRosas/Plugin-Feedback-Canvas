@@ -53,7 +53,7 @@ export default class CanvasClient {
     
     while (attempt < maxRetries) {
       if (!canvasCircuitBreaker.canAttempt()) {
-        const err = new Error('Canvas API temporalmente no disponible (circuito abierto).');
+        const err = new AppError('Canvas API temporalmente no disponible (circuito abierto).', 503, null, null, 'CANVAS_CONNECTION_FAILED');
         err.isTransient = true;
         err.isCircuitOpen = true;
         logger.warn('[CANVAS-API] Solicitud bloqueada por circuit breaker.');
@@ -105,7 +105,7 @@ export default class CanvasClient {
             throw err;
           }
           if ([500, 502, 503, 504].includes(response.status)) {
-            const err = new Error(`Canvas API error [${response.status}]: ${response.statusText}`);
+            const err = new AppError(`Canvas API error [${response.status}]: ${response.statusText}`, response.status, null, null, 'CANVAS_CONNECTION_FAILED');
             err.isTransient = true;
             canvasCircuitBreaker.recordFailure();
             throw err;
@@ -135,7 +135,12 @@ export default class CanvasClient {
           canvasCircuitBreaker.recordFailure();
           attempt++;
           if (attempt >= maxRetries) {
-            // global.canvasState = 'ERROR'; // CircuitBreaker ya lo maneja
+            if (!(error instanceof AppError)) {
+               throw new AppError(error.message || 'Error de conexión', 503, null, null, 'CANVAS_CONNECTION_FAILED');
+            }
+            if (error instanceof AppError && !error.errorCode) {
+               error.errorCode = 'CANVAS_CONNECTION_FAILED';
+            }
             throw error;
           }
           const delay = Math.pow(2, attempt) * 2000; 

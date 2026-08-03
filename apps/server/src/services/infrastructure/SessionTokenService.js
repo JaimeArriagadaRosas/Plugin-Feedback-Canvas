@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
-import logger from '../../utils/logger.js';
+import { } from '../../utils/roles.js';
 import { keyManagerService } from '../auth/KeyManagerService.js';
 
 const SESSION_TOKEN_EXPIRY_MS = parseInt(process.env.SESSION_TOKEN_EXPIRY_MS || '28800000', 10);

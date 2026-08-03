@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifySessionToken, signSessionToken, getSessionPublicKeyPem } from '../services/infrastructure/SessionTokenService.js';
+import { signSessionToken, getSessionPublicKeyPem } from '../services/infrastructure/SessionTokenService.js';
 import { getLTITokenService } from '../services/infrastructure/LTITokenService.js';
 import { getRolesFromClaims, getEntryFromClaims } from '../utils/roles.js';
 import { AppError } from '../utils/errors.js';

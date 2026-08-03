@@ -1,8 +1,7 @@
 import db from '../../data/db.js';
 import { ErrorHandler } from '../../middlewares/ErrorHandler.js';
-import { authLimiter, webhookLimiter } from '../../middlewares/security.js';
 import { getEnv, getCanvasEnv, isLocalDataEnabled, isProduction } from '../../config/index.js';
-import { SECRET_REGISTRY, validateSecretsOrThrow, getSecret, maskSecret } from '../../config/secrets.js';
+import { SECRET_REGISTRY, validateSecretsOrThrow, getSecret } from '../../config/secrets.js';
 import configManager from '../config/ConfigManager.js';
 
 import express from 'express';
@@ -20,7 +19,7 @@ import AcademicHistoryService from '../AcademicHistoryService.js';
 import ValidadorAcademico from '../ValidadorAcademico.js';
 import GeminiProvider from '../ia/GeminiProvider.js';
 import LLMConfigurationService from '../../services/LLMConfigurationService.js';
-import VariableConfigManager from '../../services/VariableConfigManager.js';
+import CourseVariablesService from '../../services/variables/CourseVariablesService.js';
 import FeedbackWorkflowService from '../../services/FeedbackWorkflowService.js';
 import TemplateValidatorService from '../../services/TemplateValidatorService.js';
 import CanvasWebhookController from '../../controllers/CanvasWebhookController.js';
@@ -31,6 +30,7 @@ import PreferencesService from '../../modules/preferences/PreferencesService.js'
 import EmailServiceLocal from '../../modules/notifications/EmailService.local.js';
 import NotificationDiagnosticsLocal from '../../modules/notifications/NotificationDiagnostics.local.js';
 import TokenRotationJob from '../auth/TokenRotationJob.js';
+import PrivateNoteService from '../../services/PrivateNoteService.js';
 import WebhookService from '../../services/WebhookService.js';
 import CourseService from '../../services/CourseService.js';
 
@@ -41,6 +41,8 @@ import TokenRepository from '../../data/TokenRepository.js';
 import CanvasTokenRepository from '../../data/CanvasTokenRepository.js';
 import StudentRepository from '../../data/StudentRepository.js';
 import PermissionsRepository from '../../data/PermissionsRepository.js';
+import SystemNotificationRepository from '../../data/SystemNotificationRepository.js';
+import SystemNotificationService from '../../services/SystemNotificationService.js';
 
 import { registerRoutes } from './routes.js';
 import { SSLService } from '../../security/SSLService.js';
@@ -52,9 +54,13 @@ import { isLocalModeAllowed } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
 
 try {
-  logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos...');
-  await runMigrations();
-  logger.info('[BOOTSTRAP] Migraciones completadas.');
+  if (process.env.AUTO_MIGRATE === 'true') {
+    logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos (AUTO_MIGRATE=true)...');
+    await runMigrations();
+    logger.info('[BOOTSTRAP] Migraciones completadas.');
+  } else {
+    logger.info('[BOOTSTRAP] Auto-migración desactivada. Ejecutar "npm run db:migrate" manualmente en despliegue.');
+  }
 } catch (err) {
   logger.error('[BOOTSTRAP] Fallo critico en migraciones:', err.message);
   process.exit(1);
@@ -121,12 +127,13 @@ export function initializeDataLayer() {
   const canvasTokenRepo = new CanvasTokenRepository();
   const studentRepo   = new StudentRepository(db);
   const permissionsRepo = new PermissionsRepository(db);
+  const systemNotificationRepo = new SystemNotificationRepository();
 
   logger.info('[DATA] Repositorios de datos inicializados.', {
     db: 'PostgreSQL real'
   });
 
-  return { feedbackRepo, templateRepo, configRepo, tokenRepo, canvasTokenRepo, studentRepo, permissionsRepo };
+  return { feedbackRepo, templateRepo, configRepo, tokenRepo, canvasTokenRepo, studentRepo, permissionsRepo, systemNotificationRepo };
 }
 
 export async function initializeServiceLayer(env, repos) {
@@ -147,6 +154,7 @@ export async function initializeServiceLayer(env, repos) {
   const preferencesService = new PreferencesService();
   const emailServiceLocal = new EmailServiceLocal();
   const diagnosticsService = process.env.NODE_ENV !== 'production' ? new NotificationDiagnosticsLocal() : null;
+  const systemNotificationService = new SystemNotificationService(repos.systemNotificationRepo);
 
   const feedbackService = new FeedbackService(
     iaProvider,
@@ -158,11 +166,12 @@ export async function initializeServiceLayer(env, repos) {
     configRepo,
     iaConfigManager,
     preferencesService,
-    emailServiceLocal
+    emailServiceLocal,
+    systemNotificationService
   );
 
   const llmConfigService = new LLMConfigurationService();
-  const variableConfigManager = new VariableConfigManager();
+  const variableConfigManager = new CourseVariablesService();
   const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway, preferencesService, emailServiceLocal, diagnosticsService);
   const templateValidatorService = new TemplateValidatorService();
   const webhookService = new WebhookService();
@@ -173,13 +182,15 @@ export async function initializeServiceLayer(env, repos) {
     ? new PermissionsManagerLocal(permissionsRepo)
     : new PermissionsManager(permissionsRepo);
   const tokenRotationJob = new TokenRotationJob(canvasTokenManager);
+  const privateNoteService = new PrivateNoteService(feedbackRepo);
 
   return {
     canvasService: canvasGateway, feedbackService, templateManager, iaConfigManager,
     configRepo, llmConfigService, variableConfigManager,
     feedbackWorkflowService, templateValidatorService, feedbackRepo,
     webhookController, statsService, permissionsService, canvasTokenRepo,
-    canvasTokenManager, canvasClient, tokenRotationJob, webhookService, courseService
+    canvasTokenManager, canvasClient, tokenRotationJob, webhookService, courseService,
+    privateNoteService, systemNotificationService
   };
 }
 
@@ -238,6 +249,7 @@ export async function startServer(app, PORT) {
   // Moved tokenRotationJob.start() to the listen callback
 
   registerRoutes(app, services, ltiPublicJwk);
+  app.set('permissionsManager', services.permissionsService);
 
   const frontendDist = resolveFrontendDist(__dirname);
   logger.info(`[FRONTEND] Servidor estático: Sirviendo SPA desde carpeta /dist.`);

@@ -130,6 +130,10 @@ export default class CanvasLmsAdapter {
     return this.submissionApi.getSubmission(courseId, assignmentId, studentId, teacherId);
   }
 
+  async getAssignmentSubmissions(courseId, assignmentId, teacherId) {
+    return this.submissionApi.getAssignmentSubmissions(courseId, assignmentId, teacherId);
+  }
+
   async getStudentSubmissions(courseId, studentId, teacherId) {
     return this.submissionApi.getStudentSubmissions(courseId, studentId, teacherId);
   }

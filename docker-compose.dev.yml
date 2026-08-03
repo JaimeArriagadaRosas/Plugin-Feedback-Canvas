@@ -19,6 +19,7 @@ services:
       - "5173:5173"
     environment:
       - NODE_ENV=development
+      - GOTENBERG_URL=http://gotenberg:3000
     volumes:
       - ./apps/server:/app/apps/server
       - ./apps/client:/app/apps/client

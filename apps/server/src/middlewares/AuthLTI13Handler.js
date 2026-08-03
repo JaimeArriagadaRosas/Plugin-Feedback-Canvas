@@ -1,5 +1,4 @@
 import { AppError } from '../utils/errors.js';
-import { isLocalModeAllowed } from '../security/envGuard.js';
 import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
@@ -9,9 +8,7 @@ import { ApiTokenIdentityProvider } from '../security/identityProviders/ApiToken
 import { IdentityProviderLocal } from '../security/identityProviders/IdentityProvider.local.js';
 import { LTI_PUBLIC_ROUTES } from '../config/lti-public-routes.js';
 import { shouldRefreshLtiCookie, refreshLtiCookieOptions } from '../security/ltiCookie.js';
-import { verifyDevToken } from '../security/crypto.js';
 import { verifySessionToken } from '../services/infrastructure/SessionTokenService.js';
-import { getRolesFromClaims, getEntryFromClaims } from '../utils/roles.js';
 import { IdentityFactory } from '../domain/identity/IdentityFactory.js';
 
 class SessionTokenIdentityProvider {
@@ -51,7 +48,7 @@ export const refreshLtiTokenCookie = (req, res, next) => {
 };
 
 export const AuthLTI13Handler = async (req, res, next) => {
-  const timestamp = nowIso();
+  
   const reqId = crypto.randomBytes(4).toString('hex');
   const path = req.path;
   const method = req.method;

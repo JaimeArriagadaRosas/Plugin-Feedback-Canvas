@@ -3,5 +3,6 @@ export const LTI_PUBLIC_ROUTES = [
   '/config/startup-mode', '/config/set-local-role', '/config/clear-local-role',
   '/webhooks/canvas', '/auth/local-login', '/auth/local-logout', '/auth/lti-logout',
   '/auth/session', '/auth/session-public-key',
-  '/canvas/session-events', '/oauth2/canvas/callback'
+  '/canvas/session-events', '/oauth2/canvas/callback',
+  '/system-notifications/simulate'
 ];

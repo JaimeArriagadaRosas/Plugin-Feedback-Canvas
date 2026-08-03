@@ -25,7 +25,7 @@ export async function startLocalOrchestrator() {
   global.isCanvasInitializing = true;
   
   try {
-    const serverInstance = await startServer(app, PORT);
+    const _serverInstance = await startServer(app, PORT);
     
     await CanvasLocalManager.autoStartAndInitialize();
     

@@ -1,6 +1,4 @@
 import logger from '../../utils/logger.js';
-import CanvasTokenRepository from '../../data/CanvasTokenRepository.js';
-import CanvasTokenManager from './CanvasTokenManager.js';
 
 export default class TokenRotationJob {
   constructor(canvasTokenManager, intervalMs = 5 * 60 * 1000) {

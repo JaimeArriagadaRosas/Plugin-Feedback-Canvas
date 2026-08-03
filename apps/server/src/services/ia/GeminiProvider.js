@@ -37,19 +37,32 @@ export default class GeminiProvider extends IAProvider {
     }
 
     const modelName = config.model || "gemini-3.5-flash";
-    const promptConGuardrails = prompt + OUTPUT_GUARDRAILS;
+    
+    // Si hay systemInstruction, adjuntamos los guardrails obligatorios
+    let finalSystemInstruction = config.systemInstruction || '';
+    if (finalSystemInstruction) {
+      finalSystemInstruction += '\n' + OUTPUT_GUARDRAILS;
+    } else {
+      finalSystemInstruction = OUTPUT_GUARDRAILS;
+    }
 
     return await ExponentialBackoff.execute(async () => {
       try {
-        const model = genAI.getGenerativeModel({
+        const modelOptions = {
           model: modelName,
           generationConfig: {
             temperature: config.temperature || 0.7,
             maxOutputTokens: config.maxOutputTokens || 2048,
           }
-        });
+        };
 
-        const result = await model.generateContent(promptConGuardrails);
+        if (finalSystemInstruction) {
+          modelOptions.systemInstruction = finalSystemInstruction;
+        }
+
+        const model = genAI.getGenerativeModel(modelOptions);
+
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text().trim();
 

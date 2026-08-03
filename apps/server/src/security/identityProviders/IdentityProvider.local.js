@@ -1,7 +1,6 @@
 import { isLocalModeAllowed } from '../envGuard.js';
 import { extractDevRole } from '../ltiCookie.local.js';
 import { verifyDevToken } from '../crypto.js';
-import { toRoleURN } from '../../utils/roles.js';
 import logger from '../../utils/logger.js';
 import { IdentityFactory } from '../../domain/identity/IdentityFactory.js';
 
@@ -39,9 +38,9 @@ export class IdentityProviderLocal {
 
     const studentMatch = resolvedRole && resolvedRole.match(/^student-(\d+)$/);
     const baseRole = studentMatch ? 'student' : resolvedRole;
-    const studentIndex = studentMatch ? parseInt(studentMatch[1], 10) : null;
+    
 
-    const ltiRoles = [toRoleURN(baseRole)];
+    
     const courseId = process.env.CANVAS_COURSE_ID || process.env.VITE_CANVAS_COURSE_ID || '1';
 
     let userId;

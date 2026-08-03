@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import { AppError } from '../utils/errors.js';
-import logger from '../utils/logger.js';
 
-const idNum = z.coerce.number().int().positive();
+
 
 const rejectFeedbackSchema = z.object({
-  nota_obtenida: z.number().min(0).max(100).optional(),
+  plantilla_id: z.number().int().positive().optional(),
 }).strict();
 
 export default class AdvancedFeedbackController {
@@ -59,17 +58,4 @@ export default class AdvancedFeedbackController {
     }
   }
 
-  async updatePrivateNote(req, res, next) {
-    try {
-      const { id } = req.params;
-      const { nota_privada } = req.body;
-      
-      // Inject repo from workflow service or a better place. For now, since AdvancedFeedbackController only has workflowService,
-      // I'll call workflowService.updatePrivateNote
-      const result = await this.workflowService.updatePrivateNote(id, nota_privada);
-      res.json({ exito: true, mensaje: 'Nota privada actualizada', data: result });
-    } catch (error) {
-      next(error);
-    }
-  }
 }

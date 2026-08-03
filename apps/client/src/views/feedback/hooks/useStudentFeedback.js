@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from 'shared/api';
+import { api } from '@/api';
 import logger from '../../../utils/logger';
 
 export function useStudentFeedback(initialStudentId = 1, courseId) {
@@ -24,31 +24,38 @@ export function useStudentFeedback(initialStudentId = 1, courseId) {
     enabled: !!studentId,
   });
 
+  const [studentEsUtil, setStudentEsUtil] = useState(null);
+
   const rateMutation = useMutation({
-    mutationFn: async ({ feedbackId, rating }) => {
-      const result = await api.post('/student/rate', { id: feedbackId, rating });
+    mutationFn: async ({ feedbackId, rating, esUtil }) => {
+      const result = await api.post('/student/rate', { id: feedbackId, rating, esUtil });
       if (!result.exito) throw new Error(result.mensaje || 'Error saving rating');
       return result;
     },
-    onMutate: async ({ feedbackId, rating }) => {
+    onMutate: async ({ feedbackId, rating, esUtil }) => {
       const prevRating = studentRating;
+      const prevEsUtil = studentEsUtil;
       setStudentRating(rating);
+      setStudentEsUtil(esUtil);
       await queryClient.cancelQueries({ queryKey: ['student-feedback', studentId, courseId] });
       const previous = queryClient.getQueryData(['student-feedback', studentId, courseId]);
       queryClient.setQueryData(['student-feedback', studentId, courseId], (old = []) =>
         old.map(a => {
           if (a.feedback && a.feedback.id === feedbackId) {
-            return { ...a, feedback: { ...a.feedback, calificacion_estudiante: rating } };
+            return { ...a, feedback: { ...a.feedback, calificacion_estudiante: rating, es_util: esUtil } };
           }
           return a;
         })
       );
       setRatingSaved(true);
-      return { previous, prevRating };
+      return { previous, prevRating, prevEsUtil };
     },
     onError: (err, _, context) => {
       if (context?.prevRating !== undefined) {
         setStudentRating(context.prevRating);
+      }
+      if (context?.prevEsUtil !== undefined) {
+        setStudentEsUtil(context.prevEsUtil);
       }
       if (context?.previous) {
         queryClient.setQueryData(['student-feedback', studentId, courseId], context.previous);
@@ -60,12 +67,13 @@ export function useStudentFeedback(initialStudentId = 1, courseId) {
   const handleSelectAssignment = useCallback((a) => {
     setSelectedFeedback(a);
     setStudentRating(a.feedback?.calificacion_estudiante || 0);
-    setRatingSaved(!!a.feedback?.calificacion_estudiante);
+    setStudentEsUtil(a.feedback?.es_util !== undefined ? a.feedback?.es_util : null);
+    setRatingSaved(!!a.feedback?.calificacion_estudiante || a.feedback?.es_util !== null && a.feedback?.es_util !== undefined);
     setViewMode('details');
   }, []);
 
-  const handleRateFeedback = useCallback((feedbackId, rating) => {
-    rateMutation.mutate({ feedbackId, rating });
+  const handleRateFeedback = useCallback((feedbackId, rating, esUtil) => {
+    rateMutation.mutate({ feedbackId, rating, esUtil });
   }, [rateMutation]);
 
   const handleBackToList = useCallback(() => {
@@ -79,10 +87,12 @@ export function useStudentFeedback(initialStudentId = 1, courseId) {
     viewMode,
     selectedFeedback,
     studentRating,
+    studentEsUtil,
     ratingSaved,
     setViewMode,
     setSelectedFeedback,
     setStudentRating,
+    setStudentEsUtil,
     setRatingSaved,
     handleSelectAssignment,
     handleRateFeedback,

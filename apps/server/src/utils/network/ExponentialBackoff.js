@@ -1,4 +1,3 @@
-import { ApiError } from '../errors.js';
 
 /**
  * Utilidad de red para manejar reintentos con Exponential Backoff

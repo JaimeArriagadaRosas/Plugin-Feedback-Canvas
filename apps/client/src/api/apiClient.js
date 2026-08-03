@@ -1,3 +1,3 @@
-import { api } from 'shared/api';
+import { api } from '@/api';
 
 export default api;

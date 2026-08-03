@@ -23,11 +23,39 @@ export default function FeedbackTable({
   feedbacks,
   onReview,
   onEdit,
+  selectedIds = new Set(),
+  onToggleSelection,
+  onToggleAllSelection,
 }) {
   const logReview = useButtonLogger();
   const logEdit = useButtonLogger();
 
+  // Obtenemos los IDs de los feedbacks pendientes para la casilla "Seleccionar Todos"
+  const pendingFeedbacks = feedbacks.filter(fb => fb.status === 'PENDIENTE' || fb.status === 'EDITADO');
+  const allPendingSelected = pendingFeedbacks.length > 0 && pendingFeedbacks.every(fb => selectedIds.has(fb.id));
+
   const columns = useMemo(() => [
+    { 
+      key: 'checkbox', 
+      label: (
+        <input 
+          type="checkbox" 
+          checked={allPendingSelected}
+          onChange={() => onToggleAllSelection(pendingFeedbacks.map(fb => fb.id))}
+          disabled={pendingFeedbacks.length === 0}
+          title="Seleccionar todos los pendientes o editados"
+        />
+      ), 
+      width: '5%',
+      render: (_, row) => (
+        <input 
+          type="checkbox" 
+          checked={selectedIds.has(row.id)}
+          onChange={() => onToggleSelection(row.id)}
+          disabled={row.status !== 'PENDIENTE' && row.status !== 'EDITADO'}
+        />
+      )
+    },
     { key: 'student', label: 'Estudiante', width: '20%' },
     { key: 'grade', label: 'Calificación', width: '10%' },
     { key: 'profile', label: 'Perfil Académico (IA)', width: '15%', render: (value) => {
@@ -54,7 +82,7 @@ export default function FeedbackTable({
         </div>
       );
     }},
-  ], [onReview, onEdit, logReview, logEdit]);
+  ], [onReview, onEdit, logReview, logEdit, selectedIds, onToggleSelection, onToggleAllSelection, allPendingSelected, pendingFeedbacks]);
 
   return (
     <div className={styles.wrapper}>
@@ -65,15 +93,15 @@ export default function FeedbackTable({
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.key} style={{ width: col.width }}>{col.label}</th>
+                <th key={col.key} style={{ width: col.width, textAlign: col.key === 'checkbox' ? 'center' : 'left' }}>{col.label}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {feedbacks.map((fb) => (
-              <tr key={fb.id}>
+              <tr key={fb.id} style={{ backgroundColor: selectedIds.has(fb.id) ? '#f0f8ff' : 'transparent' }}>
                 {columns.map((col) => (
-                  <td key={col.key}>{col.render ? col.render(fb[col.key], fb) : fb[col.key]}</td>
+                  <td key={col.key} style={{ textAlign: col.key === 'checkbox' ? 'center' : 'left' }}>{col.render ? col.render(fb[col.key], fb) : fb[col.key]}</td>
                 ))}
               </tr>
             ))}

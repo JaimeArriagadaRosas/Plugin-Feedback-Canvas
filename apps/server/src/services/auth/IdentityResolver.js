@@ -30,6 +30,10 @@ class IdentityResolver {
         const numericId = String(res.rows[0].canvas_user_id);
         logger.info(`[IDENTITY] Resolución exitosa en DB: ${canvasSub} -> ${numericId}`);
         this.cache.set(canvasSub, numericId);
+        if (this.cache.size > 1000) {
+          const oldestKey = this.cache.keys().next().value;
+          this.cache.delete(oldestKey);
+        }
         return numericId;
       } else {
         logger.warn(`[IDENTITY] No se encontró canvas_user_id en usuarios_local para: ${canvasSub}`);

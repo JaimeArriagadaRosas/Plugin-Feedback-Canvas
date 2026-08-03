@@ -12,17 +12,16 @@ import PermissionsController from '../controllers/PermissionsController.js';
 import AuditLogController from '../controllers/AuditLogController.js';
 import AuditLogControllerLocal from '../controllers/AuditLogController_local.js';
 import CanvasOAuthController from '../controllers/CanvasOAuthController.js';
+import SystemNotificationController from '../controllers/SystemNotificationController.js';
 import StudentController from '../controllers/StudentController.js';
 import FileController from '../controllers/FileController.js';
 import PreferencesController from '../modules/preferences/PreferencesController.js';
 import PreferencesService from '../modules/preferences/PreferencesService.js';
 import { initializeReportsModule } from '../modules/reports/index.js';
 import { requireCanvasOAuth } from '../middlewares/CanvasOAuthMiddleware.js';
-import { authorizeRole } from '../authz/authorizeRole.js';
 import { auditLogMiddleware } from '../middlewares/AuditLogMiddleware.js';
 import { tenantMiddleware } from '../middlewares/TenantMiddleware.js';
-import { webhookLimiter, authLimiter, handleValidationErrors, validateId, validateCourseId, validateAssignmentId, validateStudentId, validateFeedbackDetailQuery } from '../middlewares/security.js';
-import { schemas, validateBody, requireDeploymentId } from '../security/validation.js';
+import { webhookLimiter, authLimiter } from '../middlewares/security.js';
 import ltiRouter from './lti/index.js';
 import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
@@ -33,6 +32,9 @@ import { createFeedbackRoutes, createStudentFeedbackRoutes } from './api/feedbac
 import { createStatsRoutes, createAuditRoutes } from './api/stats.routes.js';
 import { createConfigRoutes } from './api/config.routes.js';
 import { createPreferencesRoutes } from './api/preferences.routes.js';
+import { createPrivateNotesRoutes } from './api/private_notes.routes.js';
+import PrivateNoteController from '../controllers/PrivateNoteController.js';
+import { createGlobalVariablesRoutes } from './api/global_variables.routes.js';
 
 export default class GestorRutasAPI {
   constructor(dependencias) {
@@ -60,6 +62,7 @@ export default class GestorRutasAPI {
     const prefService = new PreferencesService();
     this.preferencesCtrl = new PreferencesController(prefService);
 
+    this.privateNoteCtrl = new PrivateNoteController(this.deps.privateNoteService);
     
     // Inyección condicional del controlador de auditoría según entorno
     if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
@@ -70,6 +73,7 @@ export default class GestorRutasAPI {
 
     this.webhookCtrl    = this.deps.webhookController;
     this.canvasOAuthCtrl = new CanvasOAuthController(this.deps.canvasTokenRepo, this.deps.canvasClient);
+    this.systemNotificationCtrl = new SystemNotificationController(this.deps.systemNotificationService);
     this.fileCtrl        = new FileController(this.deps.canvasService);
     this.reportsRouter   = initializeReportsModule(this.deps.statsService.feedbackRepo);
     logger.debug('Controladores de API inicializados');
@@ -113,6 +117,9 @@ export default class GestorRutasAPI {
     this.router.use('/student', createStudentFeedbackRoutes(this.studentCtrl));
     this.router.use('/config', createConfigRoutes(this.configCtrl, this.iaConfigCtrl, this.permissionsCtrl, this.variableCtrl));
     this.router.use('/preferences', createPreferencesRoutes(this.preferencesCtrl));
+    this.router.use('/private-notes', createPrivateNotesRoutes(this.privateNoteCtrl));
+    this.router.use('/system-notifications', this.systemNotificationCtrl.getRouter());
+    this.router.use('/global-variables', createGlobalVariablesRoutes());
     
     // Doble montaje eliminado (Phase 4.1)
 

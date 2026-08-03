@@ -1,8 +1,6 @@
-import logger from '../utils/logger.js';
 import { isProduction } from '../config/index.js';
 export { isProduction };
 import { SSLConfig } from './SSLConfig.js';
-import path from 'node:path';
 
 /**
  * Retorna true si debemos usar HTTPS en este entorno local.

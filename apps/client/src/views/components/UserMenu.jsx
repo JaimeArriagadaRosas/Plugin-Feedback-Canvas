@@ -3,13 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLogger } from '../../hooks/useLogger';
 import { usePopover } from '../../hooks/usePopover';
+import { usePermissions } from '../../hooks/usePermissions';
 import TutorialModal from './TutorialModal';
-
 export default function UserMenu({ mode = 'fixed' }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const { isOpen, ref: menuRef, toggle: toggleMenuState, close: closeMenu } = usePopover();
-  
   const { role, rawRoles, selectedCourse } = useAuth();
+  const { canViewFeedback } = usePermissions();
   const { logClick } = useLogger();
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,6 +41,12 @@ export default function UserMenu({ mode = 'fixed' }) {
     logClick('ADMIN_PANEL_NAVIGATE');
     closeMenu();
     navigate('/admin');
+  };
+
+  const handleVariablesClick = () => {
+    logClick('VARIABLES_NAVIGATE');
+    closeMenu();
+    navigate('/teacher/variables', { state: { course: selectedCourse } });
   };
 
   return (
@@ -106,7 +112,7 @@ export default function UserMenu({ mode = 'fixed' }) {
               </button>
             )}
 
-            {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/review') && (
+            {(role === 'teacher' || role === 'admin') && canViewFeedback && !location.pathname.startsWith('/teacher/review') && (
               <button 
                 onClick={() => { closeMenu(); navigate('/teacher/review', { state: { course: selectedCourse } }); }}
                 style={{
@@ -121,20 +127,20 @@ export default function UserMenu({ mode = 'fixed' }) {
               </button>
             )}
 
-            {location.pathname.startsWith('/teacher/review') && (
+            {(role === 'teacher' || role === 'admin') && !location.pathname.startsWith('/teacher/variables') && (
               <button 
-                onClick={() => { closeMenu(); navigate('/teacher/courses'); }}
+                onClick={handleVariablesClick}
                 style={{
                   ...menuItemStyle,
-                  borderTop: isTrueAdmin ? '1px solid #eee' : 'none'
+                  borderTop: 'none'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
-                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                onMouseEnter={e => (e.currentTarget.style.background = '#f0f4f7')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
               >
-                <span>↩️</span> Volver
+                <span>⚙️</span> Variables de Personalización
               </button>
             )}
-            
+
             <button 
               onClick={handleTutorialClick}
               style={{
@@ -146,6 +152,20 @@ export default function UserMenu({ mode = 'fixed' }) {
             >
               <span>🎥</span> Tutorial
             </button>
+
+            {(location.pathname.startsWith('/teacher/review') || location.pathname.startsWith('/teacher/variables')) && (
+              <button 
+                onClick={() => { closeMenu(); navigate('/teacher/courses'); }}
+                style={{
+                  ...menuItemStyle,
+                  borderTop: '1px solid #eee'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+              >
+                <span>↩️</span> Volver
+              </button>
+            )}
           </div>
         )}
       </div>

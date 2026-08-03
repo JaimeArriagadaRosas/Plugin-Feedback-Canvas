@@ -5,6 +5,7 @@ import Button from '../../components/atoms/Button';
 import StudentFeedbackHistory from './student/StudentFeedbackHistory';
 import StudentRecentFeedback from './student/StudentRecentFeedback';
 import NotificationPreferencesForm from '../../modules/preferences/components/NotificationPreferencesForm';
+import RequirePermission from '../../components/atoms/RequirePermission';
 import styles from './StudentFeedbackView.module.css';
 
 export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
@@ -21,6 +22,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
     viewMode,
     selectedFeedback,
     studentRating,
+    studentEsUtil,
     ratingSaved,
     handleSelectAssignment,
     handleRateFeedback,
@@ -28,8 +30,12 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
   } = useStudentFeedback(studentId, courseId);
 
   return (
-    <div className={styles.wrapper}>
-      <header className={styles.header}>
+    <RequirePermission 
+      permission="view_feedback" 
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+    >
+      <div className={styles.wrapper}>
+        <header className={styles.header}>
         <h1 className={styles.title}>
           {viewMode === 'list' ? 'CALIFICACIONES' : 'DETALLES DE LA ENTREGA'}
         </h1>
@@ -67,6 +73,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
             assignment={selectedFeedback}
             studentId={studentId}
             studentRating={studentRating}
+            studentEsUtil={studentEsUtil}
             ratingSaved={ratingSaved}
             onRate={handleRateFeedback}
             onBack={handleBackToList}
@@ -74,5 +81,6 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
         )}
       </main>
     </div>
+    </RequirePermission>
   );
 }

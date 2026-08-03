@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from 'shared/api';
+import { api } from '@/api';
 import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './AssignmentTable.module.css';

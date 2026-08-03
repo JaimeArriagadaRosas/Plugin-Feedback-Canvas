@@ -1,4 +1,3 @@
-import { AppError } from '../utils/errors.js';
 import CourseIdResolver from './CourseIdResolver.js';
 
 /**
@@ -80,7 +79,9 @@ export default class FeedbackQueryService {
         profile: 'PROMEDIO',
         trend: 'Estable',
         status: fb.estado || 'PENDIENTE',
-        feedback: fb.contenido_generado
+        feedback: fb.contenido_generado,
+        studentRating: fb.calificacion_estudiante || null,
+        isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
       };
     }).filter(Boolean);
   }
@@ -115,7 +116,9 @@ export default class FeedbackQueryService {
       profile: 'PROMEDIO',
       trend: 'Estable',
       status: fb.estado || 'PENDIENTE',
-      feedback: fb.contenido_generado
+      feedback: fb.contenido_generado,
+      studentRating: fb.calificacion_estudiante || null,
+      isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
     };
   }
 
@@ -145,7 +148,9 @@ export default class FeedbackQueryService {
       profile: this._translateProfile(profile.level || 'AVERAGE'),
       trend: this._translateTrend(profile.trend || 'STABLE'),
       status: fb.estado || 'PENDIENTE',
-      feedback: fb.contenido_generado
+      feedback: fb.contenido_generado,
+      studentRating: fb.calificacion_estudiante || null,
+      isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
     };
   }
 

@@ -37,7 +37,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      'shared': resolve(__dirname, './src'),
+      '@': resolve(__dirname, './src'),
     }
   },
 build: {

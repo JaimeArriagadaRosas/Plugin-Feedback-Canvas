@@ -5,7 +5,6 @@ import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
 import { AppError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 import { LTI_TOKEN_COOKIE } from '../../security/ltiCookie.js';
-import { isHttpsEnabled, isProduction } from '../../security/envGuard.js';
 import { validateAndConsumeNonce } from '../../security/nonceStore.js';
 
 const ltiService = getLTITokenService();
@@ -23,7 +22,7 @@ export async function validateLtiCallback(req) {
       const launchCookie = JSON.parse(launchCookieStr);
       expectedState = state; // Si la cookie lti_state (indexada) existe, el state matchea.
       expectedNonce = launchCookie.nonce;
-    } catch(e) {}
+    } catch (e) { logger.warn('Failed to parse launch cookie', { error: e.message }); }
   }
 
   logger.info(`[LTI-CALLBACK-VALIDATOR] Inicio validación | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
@@ -99,7 +98,7 @@ export async function validateLtiCallback(req) {
 }
 
 export function buildLtiCookie(token) {
-  const cookieSecure = isProduction() || isHttpsEnabled();
+  
   return {
     name: LTI_TOKEN_COOKIE,
     value: token,

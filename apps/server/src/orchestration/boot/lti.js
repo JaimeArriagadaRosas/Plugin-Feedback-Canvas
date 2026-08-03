@@ -1,7 +1,5 @@
 import { runDockerCommand } from '../../utils/dockerRunner.js';
-import { LtiVerifier } from '../../setup/LtiVerifier.js';
 import { BootResult } from './result.js';
-import pc from 'picocolors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

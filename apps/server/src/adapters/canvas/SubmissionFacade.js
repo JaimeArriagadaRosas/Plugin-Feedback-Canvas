@@ -13,6 +13,10 @@ export default class SubmissionFacade {
     return this.adapter._fetchAllWithToken(`/courses/${courseId}/students/submissions?student_ids[]=${studentId}&include[]=assignment`, teacherId);
   }
 
+  async getAssignmentSubmissions(courseId, assignmentId, teacherId) {
+    return this.adapter._fetchAllWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions`, teacherId);
+  }
+
   async getStudentGrades(courseId, studentId, teacherId) {
     return this.adapter._fetchWithToken(`/courses/${courseId}/users/${studentId}/enrollments`, teacherId);
   }

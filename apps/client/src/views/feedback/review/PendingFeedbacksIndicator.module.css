@@ -49,12 +49,36 @@
   border-bottom: 1px solid #eee;
   padding-bottom: 5px;
   margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .popoverHeader h4 {
   margin: 0;
   font-size: 0.95rem;
   color: #333;
+}
+
+.sectionHeader {
+  margin-bottom: 10px;
+}
+
+.emojiToggleBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emojiToggleBtn:hover {
+  background-color: #f0f0f0;
 }
 
 .popoverBody {
@@ -83,4 +107,49 @@
   margin: 0;
   font-size: 0.9rem;
   color: #777;
+}
+
+.errorSection {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #fee;
+  padding-bottom: 5px;
+}
+
+.sectionTitle {
+  margin: 0 0 5px 0;
+  font-size: 0.85rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.errorList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.errorItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 0.9rem;
+  color: #e74c3c;
+}
+
+.errorLabel {
+  flex-grow: 1;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: 0.8rem;
+}
+
+.clearBtn:hover {
+  color: #e74c3c;
 }

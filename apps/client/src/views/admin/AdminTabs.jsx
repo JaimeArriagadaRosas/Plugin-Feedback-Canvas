@@ -10,6 +10,12 @@ export default function AdminTabs({ activeTab, setActiveTab }) {
         Gestión de Tokens IA
       </button>
       <button
+        className={`${styles.tabButton} ${activeTab === 'RF06' ? styles.tabActive : ''}`}
+        onClick={() => setActiveTab('RF06')}
+      >
+        Variables Globales
+      </button>
+      <button
         className={`${styles.tabButton} ${activeTab === 'RF55' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('RF55')}
       >

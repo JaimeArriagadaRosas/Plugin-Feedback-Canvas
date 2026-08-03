@@ -1,5 +1,4 @@
 import { toRoleURN, classifyRoles } from '../../utils/roles.js';
-import { getCanvasEnv } from '../../config/index.js';
 import CanvasClient from '../../services/infrastructure/CanvasClient.js';
 import { AppIdentity } from '../../domain/identity/AppIdentity.js';
 

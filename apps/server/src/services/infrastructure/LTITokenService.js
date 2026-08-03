@@ -26,7 +26,7 @@ export default class LTITokenService {
       const publicKey = await this.jwksClient.getPublicKey(decodedHeader);
       logger.info(`[LTI-TOKEN] Token validado con éxito vía JWKS (Canvas) | kid: ${decodedHeader.kid?.substring(0,10)}...`);
       
-      const baseUrl = process.env.CANVAS_BASE_URL || 'https://canvas.instructure.com';
+      
       const expectedIssuer = configManager.getCanvasIssuer();
 
       const decoded = jwt.verify(token, publicKey, {

@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import { api } from 'shared/api';
+import { useLocation } from 'react-router-dom';
+import { api } from '@/api';
 import logger from '../../../utils/logger';
 
 export function useAdminConfig() {
-  const [activeTab, setActiveTab] = useState("RF56");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "RF56");
   const [model, setModel] = useState("gemini-1.5-flash");
   const [service, setService] = useState("gemini");
   const [temperature, setTemperature] = useState(0.7);

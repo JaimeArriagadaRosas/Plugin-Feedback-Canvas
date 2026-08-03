@@ -4,7 +4,7 @@ import Button from '../../components/atoms/Button';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useTemplateEditor } from './hooks/useTemplateEditor';
 import TemplateForm from './editor/TemplateForm';
-import TextToolbar from './editor/TextToolbar';
+import TextToolbar from '../../components/molecules/TextToolbar';
 import VariableInserter from './editor/VariableInserter';
 import LivePreview from './editor/LivePreview';
 import AuditInfo from './editor/AuditInfo';

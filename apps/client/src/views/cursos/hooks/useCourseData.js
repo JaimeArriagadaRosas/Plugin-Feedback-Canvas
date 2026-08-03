@@ -8,7 +8,7 @@
  */
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "shared/api";
+import { api } from '@/api';
 import logger from "../../../utils/logger";
 
 const QUERY_KEY = ["courses", "teacher"];

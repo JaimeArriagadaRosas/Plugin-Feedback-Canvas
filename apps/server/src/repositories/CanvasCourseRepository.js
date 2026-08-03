@@ -1,5 +1,3 @@
-import logger from '../utils/logger.js';
-import { AppError } from '../utils/errors.js';
 
 export default class CanvasCourseRepository {
   constructor(canvasLmsAdapter) {

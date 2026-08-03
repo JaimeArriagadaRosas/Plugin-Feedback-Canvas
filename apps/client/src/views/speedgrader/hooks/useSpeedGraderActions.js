@@ -1,6 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { api } from 'shared/api';
+import { api } from '@/api';
 import logger from '../../../utils/logger';
 
 export function useSpeedGraderActions({

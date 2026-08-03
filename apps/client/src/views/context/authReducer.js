@@ -1,6 +1,7 @@
 export const initialState = {
   role: null,
   rawRoles: [],
+  permissions: {},
   user: null,
   userName: null,
   courseId: null,
@@ -16,6 +17,7 @@ export function authReducer(state, action) {
         ...state,
         role: action.payload.role,
         rawRoles: action.payload.roles || [],
+        permissions: action.payload.permissions || {},
         user: action.payload.user,
         userName: action.payload.userName,
         courseId: action.payload.courseId,
@@ -30,6 +32,7 @@ export function authReducer(state, action) {
         apiError: action.payload,
         role: null,
         rawRoles: [],
+        permissions: {},
         user: null,
         courseId: null,
         isLoading: false,

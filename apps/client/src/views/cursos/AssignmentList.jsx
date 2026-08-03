@@ -1,4 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useButtonLogger } from '../../hooks/useButtonLogger';
 import { useAssignmentList } from './hooks/useAssignmentList';
 import WizardProgress from './WizardProgress';
@@ -10,6 +11,7 @@ import styles from './AssignmentList.module.css';
 
 export default function AssignmentList({ course, onBack, onNext }) {
   const logClick = useButtonLogger();
+  const { canEditFeedback } = usePermissions();
   const {
     assignments,
     loading,
@@ -46,6 +48,10 @@ export default function AssignmentList({ course, onBack, onNext }) {
 
   const handleNext = useCallback(
     () => logClick('ASSIGNMENT_LIST_NEXT', () => {
+      if (!canEditFeedback) {
+        setErrorMsg("No tienes permiso para editar feedback o avanzar al Paso 3.");
+        return;
+      }
       const activeAssignments = assignments.filter(a => a.active);
       if (activeAssignments.length === 0) {
         setErrorMsg("Debe activar el plugin IA para al menos una tarea antes de continuar.");
@@ -83,7 +89,14 @@ export default function AssignmentList({ course, onBack, onNext }) {
       <div className={styles.stickyBar}>
         <div className={styles.navButtons}>
           <button className={styles.btnBack} onClick={handleBack}>Volver</button>
-          <button className={styles.btnNext} onClick={handleNext}>Continuar</button>
+          <button 
+            className={styles.btnNext} 
+            onClick={handleNext}
+            disabled={!canEditFeedback}
+            title={!canEditFeedback ? "Permiso de edición deshabilitado" : ""}
+          >
+            Continuar
+          </button>
         </div>
         <WizardProgress currentStep={1} />
       </div>

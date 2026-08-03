@@ -1,8 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { assignmentKeys } from 'shared/lib/queryKeys';
-import { api } from 'shared/api';
+import { assignmentKeys } from '@/lib/queryKeys';
+import { api } from '@/api';
 
 const styles = {
   wizard: {

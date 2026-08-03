@@ -30,8 +30,8 @@ export default class FeedbackWorkflowService {
         fb.curso_id,
         fb.tarea_id,
         fb.estudiante_id,
-        fb.plantilla_id,
-        newVariables?.nota_obtenida || fb.nota_canvas
+        newVariables?.plantilla_id || fb.plantilla_id,
+        fb.nota_canvas
       );
       return regenerated;
     } catch (error) {
@@ -159,14 +159,4 @@ export default class FeedbackWorkflowService {
     }
   }
 
-  /**
-   * Actualiza la nota privada asociada a un feedback (RF31)
-   */
-  async updatePrivateNote(feedbackId, notaPrivada) {
-    const fb = await this.feedbackRepo.getById(feedbackId);
-    if (!fb) {
-      throw new Error(`Feedback ${feedbackId} no encontrado`);
-    }
-    return await this.feedbackRepo.updatePrivateNote(feedbackId, notaPrivada);
-  }
 }

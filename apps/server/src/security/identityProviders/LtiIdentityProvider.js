@@ -1,7 +1,6 @@
 import { getLTITokenService } from '../../services/infrastructure/LTITokenService.js';
-import { extractLtiToken } from '../ltiCookie.js';
 import { isDevToken } from '../ltiCookie.local.js';
-import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
+import { } from '../../utils/roles.js';
 import { AppError } from '../../utils/errors.js';
 import { IdentityFactory } from '../../domain/identity/IdentityFactory.js';
 

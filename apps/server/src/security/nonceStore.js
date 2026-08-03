@@ -1,7 +1,7 @@
 import logger from '../utils/logger.js';
 import db from '../data/db.js';
 
-const NONCE_TTL_MS = 5 * 60 * 1000;
+
 let validationCount = 0;
 
 export async function storeNonce(nonce) {

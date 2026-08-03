@@ -6,13 +6,14 @@
  * a la capa de transporte (middlewares).
  */
 export class AppError extends Error {
-  constructor(message, statusCode, data = null, responseHeaders = null) {
+  constructor(message, statusCode, data = null, responseHeaders = null, errorCode = null) {
     super(message);
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
     this.isOperational = true;
     this.data = data;
     this.headers = responseHeaders;
+    this.errorCode = errorCode; // RF61
 
     Error.captureStackTrace(this, this.constructor);
   }
@@ -23,8 +24,8 @@ export class AppError extends Error {
  * Hereda de AppError para mantener consistencia operativa.
  */
 export class ApiError extends AppError {
-  constructor(message, statusCode) {
-    super(message, statusCode);
+  constructor(message, statusCode, errorCode = null) {
+    super(message, statusCode, null, null, errorCode);
     this.name = 'ApiError';
   }
 }
@@ -47,8 +48,9 @@ export class IdempotencyError extends AppError {
 }
 
 export class DomainError extends AppError {
-  constructor(message, statusCode = 400) {
-    super(message, statusCode);
+  constructor(message, statusCode = 400, errorCode = null) {
+    super(message, statusCode, null, null, errorCode);
     this.name = 'DomainError';
   }
 }
+

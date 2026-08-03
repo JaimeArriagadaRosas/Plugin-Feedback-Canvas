@@ -25,6 +25,11 @@ const config = {
     getAbsolutePath('@storybook/addon-docs'),
     getAbsolutePath('@storybook/addon-mcp')
   ],
-  "framework": getAbsolutePath('@storybook/react-vite')
+  "framework": getAbsolutePath('@storybook/react-vite'),
+  async viteFinal(config) {
+    config.build = config.build || {};
+    config.build.target = 'esnext';
+    return config;
+  }
 };
 export default config;

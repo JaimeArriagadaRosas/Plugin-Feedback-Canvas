@@ -9,7 +9,9 @@ import TokenConfigTab from './tabs/TokenConfigTab';
 import PermissionsConfigTab from './tabs/PermissionsConfigTab';
 import StatsTab from './tabs/StatsTab';
 import AuditLogTab from './tabs/AuditLogTab';
+import VariablesGlobalView from './tabs/VariablesGlobalView';
 import AdminTabs from './AdminTabs';
+import RequirePermission from '../../components/atoms/RequirePermission';
 import styles from './AdminPanel.module.css';
 
 export default function AdminPanel({ onExit }) {
@@ -40,8 +42,12 @@ export default function AdminPanel({ onExit }) {
   );
 
   return (
-    <div className={styles.wrapper}>
-      <ConfigHeader title="PANEL DE ADMINISTRACIÓN" onExit={onExit} activeTab={config.activeTab} />
+    <RequirePermission 
+      permission="config_llm" 
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>No tienes permisos para acceder a la configuración del sistema.</h2></div>}
+    >
+      <div className={styles.wrapper}>
+        <ConfigHeader title="PANEL DE ADMINISTRACIÓN" onExit={onExit} activeTab={config.activeTab} />
 
       <main className={styles.main}>
         <AdminTabs activeTab={config.activeTab} setActiveTab={config.setActiveTab} />
@@ -77,6 +83,8 @@ export default function AdminPanel({ onExit }) {
           />
         )}
 
+        {config.activeTab === 'RF06' && <VariablesGlobalView />}
+
         {config.activeTab === 'RF52' && <PermissionsConfigTab />}
         
         {config.activeTab === 'reports' && <StatsTab />}
@@ -88,5 +96,6 @@ export default function AdminPanel({ onExit }) {
         <ConfigFooter onSave={handleSave} onDiscard={handleDiscard} />
       )}
     </div>
+    </RequirePermission>
   );
 }

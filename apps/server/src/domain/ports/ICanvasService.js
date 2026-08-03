@@ -16,6 +16,7 @@ export class ICanvasService {
   async getAssignment(courseId, assignmentId) { throw new Error('Method not implemented'); }
   async getRubric(courseId, assignmentId) { throw new Error('Method not implemented'); }
   async getSubmission(courseId, assignmentId, studentId) { throw new Error('Method not implemented'); }
+  async getAssignmentSubmissions(courseId, assignmentId) { throw new Error('Method not implemented'); }
   async getQuizQuestions(courseId, assignmentId) { throw new Error('Method not implemented'); }
   async getStudentGrades(courseId, studentId) { throw new Error('Method not implemented'); }
   async postComment(courseId, assignmentId, studentId, comment) { throw new Error('Method not implemented'); }
