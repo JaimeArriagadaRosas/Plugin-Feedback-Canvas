@@ -116,6 +116,15 @@ export class DataSeeder {
           this.boot.warn('No se encontró token de profesor en perfiles_data.json');
         }
 
+        // --- EJECUTAR MIGRACIONES ANTES DE SINCRONIZAR (Protección contra Volúmenes Sucios) ---
+        try {
+          const { runMigrations } = await import('../../../../../../scripts/setup/migrate.mjs');
+          await runMigrations();
+          this.boot.info('Migraciones incrementales aplicadas localmente antes del seed.');
+        } catch (mErr) {
+          this.boot.warn('Error ejecutando migraciones pre-seed: ' + mErr.message);
+        }
+
         // --- SINCRONIZAR BASE DE DATOS LOCAL DEL PLUGIN ---
         const seedPath = path.join(this.pluginDir, 'db', 'seeds', 'seedLocalUsers.js');
         const { success: seedSuccess, out: seedOut } = await runCommand('node', [seedPath, localPath], { cwd: this.pluginDir });

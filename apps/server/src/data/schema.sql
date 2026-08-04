@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS usuarios_local (
     rol usuario_rol NOT NULL,
     estudiante_index INTEGER NULL,
     canvas_user_id TEXT NOT NULL,
-    canvas_user_uuid UUID NULL,
+    canvas_user_uuid TEXT NULL,
     activo BOOLEAN DEFAULT TRUE,
     creado_en TIMESTAMPTZ DEFAULT NOW(),
     actualizado_en TIMESTAMPTZ DEFAULT NOW()
@@ -312,7 +312,7 @@ CREATE TABLE IF NOT EXISTS user_lti_mappings (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     local_user_id BIGINT NOT NULL REFERENCES usuarios_local(id),
     canvas_sub TEXT NOT NULL,
-    canvas_uuid UUID NULL,
+    canvas_uuid TEXT NULL,
     deployment_id TEXT NOT NULL,
     issuer TEXT NOT NULL,
     creado_en TIMESTAMPTZ DEFAULT NOW(),

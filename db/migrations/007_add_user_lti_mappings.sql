@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS user_lti_mappings (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     local_user_id BIGINT NOT NULL REFERENCES usuarios_local(id),
     canvas_sub TEXT NOT NULL,
-    canvas_uuid UUID NULL,
+    canvas_uuid TEXT NULL,
     deployment_id TEXT NOT NULL,
     issuer TEXT NOT NULL,
     creado_en TIMESTAMPTZ DEFAULT NOW(),
