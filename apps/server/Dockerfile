@@ -9,8 +9,6 @@ RUN apk add --no-cache python3 make g++
 # Copiar configuración de workspaces si existe (asumiendo monorepo)
 COPY package.json package-lock.json ./
 COPY apps/server/package.json ./apps/server/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/logger/package.json ./packages/logger/
 
 # Instalar todas las dependencias (incluyendo devDependencies para compilar)
 RUN npm install
@@ -36,8 +34,6 @@ RUN apk add --no-cache curl tzdata
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/server ./apps/server
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/packages/logger ./packages/logger
 
 # Cambiar a un usuario sin privilegios por seguridad
 USER node
