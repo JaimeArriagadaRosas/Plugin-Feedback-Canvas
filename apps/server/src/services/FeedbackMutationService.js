@@ -158,37 +158,26 @@ export default class FeedbackMutationService {
     return { feedbackId, studentId };
   }
 
-  async submitManualFeedback({ courseId, assignmentId, studentId, teacherId, contenidoManual, grade }) {
+  async submitManualFeedback({ courseId, assignmentId, studentId, teacherId, contenidoManual, grade, studentName }) {
     if (!contenidoManual) throw new AppError('El contenido manual es requerido', 400);
+    if (!teacherId) throw new AppError('teacherId es requerido para feedback manual', 400);
 
     const fbGuardado = await this.feedbackRepo.save({
       estudianteId: studentId,
+      profesorId: teacherId,
       cursoId: courseId,
       tareaId: assignmentId,
-      plantillaId: null,
+      plantillaId: 1,
+      nombreEstudiante: studentName || null,
       contenidoGenerado: contenidoManual,
       promptUsado: 'MODO MANUAL - SIN IA (RF62)',
       notaCanvas: grade || null,
       notaChile: null,
-      aprobado: true
+      aprobado: false
     });
 
-    await this.feedbackRepo.updateStatusAndContent(fbGuardado.id, FeedbackStateMachine.STATES.SENT, contenidoManual);
+    await this.feedbackRepo.updateStatusAndContent(fbGuardado.id, FeedbackStateMachine.STATES.PENDING, contenidoManual);
     
-    try {
-      const formattedContent = RichTextProcessor.process(contenidoManual);
-      await this.canvasGateway.postComment(courseId, assignmentId, studentId, teacherId, formattedContent);
-      if (grade) {
-        await this.canvasGateway.updateGrade(courseId, assignmentId, studentId, teacherId, grade);
-      }
-    } catch (canvasError) {
-      logger.error('[FeedbackMutation] Error en Canvas al enviar feedback manual', { error: canvasError.message, studentId });
-      await this.feedbackRepo.updateStatusAndContent(fbGuardado.id, FeedbackStateMachine.STATES.PENDING, contenidoManual).catch(e => {
-        logger.error('[FeedbackMutation] Error Crítico: Fallo al revertir estado', { feedbackId: fbGuardado.id, error: e.message });
-      });
-      throw canvasError;
-    }
-
     return fbGuardado;
   }
 }

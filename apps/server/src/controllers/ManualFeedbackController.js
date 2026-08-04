@@ -23,9 +23,9 @@ export default class ManualFeedbackController {
         }
       }
 
-      const teacherId = req.user?.id; // asumiendo auth middleware
-      if (!courseId || !assignmentId || !teacherId) {
-        throw new AppError('courseId, assignmentId y teacherId son obligatorios', 400);
+      const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
+      if (!courseId || !assignmentId || !studentId || !teacherId) {
+        throw new AppError('courseId, assignmentId, studentId y teacherId son obligatorios', 400);
       }
       
       const sanitizedContent = sanitizeHtml(content, {
@@ -36,8 +36,8 @@ export default class ManualFeedbackController {
         }
       });
 
-      await this.feedbackService.submitManualFeedback({ courseId, assignmentId, studentId, contenidoManual: sanitizedContent, grade });
-      res.json({ exito: true, mensaje: 'Feedback manual sincronizado con Canvas (RF62)' });
+      const fbGuardado = await this.feedbackService.submitManualFeedback({ courseId, assignmentId, studentId, teacherId, contenidoManual: sanitizedContent, grade });
+      res.json({ exito: true, mensaje: 'Feedback manual guardado como pendiente', data: fbGuardado });
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,7 @@
+import { forwardRef } from 'react';
 import styles from './Input.module.css';
 
-export default function Input({
+const Input = forwardRef(({
   label,
   id,
   type = 'text',
@@ -14,7 +15,7 @@ export default function Input({
   required = false,
   className = '',
   ...props
-}) {
+}, ref) => {
   const inputId = id || `input-${Math.random().toString(36).slice(2, 9)}`;
 
   return (
@@ -27,6 +28,7 @@ export default function Input({
       )}
       <input
         id={inputId}
+        ref={ref}
         type={type}
         value={value}
         onChange={onChange}
@@ -51,4 +53,6 @@ export default function Input({
       )}
     </div>
   );
-}
+});
+
+export default Input;

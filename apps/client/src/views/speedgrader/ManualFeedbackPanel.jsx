@@ -76,29 +76,17 @@ export default function ManualFeedbackPanel({
         </div>
       </section>
 
-      {text.trim() && (
-        <section className={aiStyles.feedbackAdaptivePanel}>
-          <div className={aiStyles.feedbackAdaptiveHeader}>
-            VISTA PREVIA
-          </div>
-          <div className={aiStyles.feedbackAdaptiveBody} style={{ padding: '12px' }}>
-            <LivePreview text={text} />
-          </div>
-        </section>
-      )}
-
       <Button
         variant="primary"
         onClick={() => {
             if (text.trim()) {
                 onSubmit(text);
-                setText('');
             }
         }}
         disabled={loading || !text.trim()}
         className={actionStyles.action}
       >
-        {loading ? "GUARDANDO..." : "GUARDAR Y ENVIAR"}
+        {loading ? "GUARDANDO..." : "GUARDAR"}
       </Button>
     </div>
   );

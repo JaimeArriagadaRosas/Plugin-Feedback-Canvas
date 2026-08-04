@@ -11,7 +11,7 @@ export default class TemplateRepository {
 
   async listByProfesor(profesorId) {
     const res = await db.query(
-      'SELECT id, nombre, contenido, profesor_id FROM Plantilla_Feedback WHERE (profesor_id = $1 OR profesor_id IS NULL) AND deleted_at IS NULL ORDER BY nombre ASC',
+      'SELECT id, nombre, contenido, profesor_id FROM Plantilla_Feedback WHERE profesor_id = $1 AND deleted_at IS NULL ORDER BY nombre ASC',
       [profesorId]
     );
     return res.rows;

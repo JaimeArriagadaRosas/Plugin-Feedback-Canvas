@@ -18,7 +18,9 @@ export function useSpeedGraderActions({
   setGeneratedFeedbackId,
   activeAssignment,
   onExit,
-  logExit
+  logExit,
+  setIsManualMode,
+  isAssignmentsLoading
 }) {
   const queryClient = useQueryClient();
   const currentStudentRef = useRef(currentStudent?.id);
@@ -28,6 +30,11 @@ export function useSpeedGraderActions({
   }, [currentStudent?.id]);
 
   const handleGenerateMassive = useCallback(async (isRegenerate = false) => {
+    if (isAssignmentsLoading) {
+      alert("Por favor espere a que todas las tareas terminen de cargar antes de generar el feedback masivo.");
+      return;
+    }
+
     setLoading(true);
     setStatusMsg(isRegenerate ? "Generando y regenerando masivamente..." : "Generando masivamente...");
     
@@ -36,18 +43,29 @@ export function useSpeedGraderActions({
     try {
       const activeAssignments = assignments.filter(a => a.active);
       const otherStudents = students.filter(s => s.id !== targetStudentId);
+      const otherAssignments = activeAssignments.filter(a => a.id !== currentAssignmentId);
 
-      // 1. Disparar generación masiva en background para los demás
+      // 1. Disparar generación masiva en background para los DEMÁS estudiantes (en todas las tareas)
       if (otherStudents.length > 0) {
         api.post('/feedback/generate-all', {
           courseId,
           activeAssignments,
           students: otherStudents,
           isRegenerate
-        }).catch(err => logger.error('SpeedGrader', "Error en background generate-all", { err }));
+        }).catch(err => logger.error('SpeedGrader', "Error en background generate-all others", { err }));
       }
 
-      // 2. Generar síncronamente para el actual, permitiendo capturar errores y mostrar estado de 'Generando...'
+      // 2. Disparar generación masiva en background para el ESTUDIANTE ACTUAL (en las demás tareas)
+      if (otherAssignments.length > 0 && targetStudentId) {
+        api.post('/feedback/generate-all', {
+          courseId,
+          activeAssignments: otherAssignments,
+          students: [{ id: targetStudentId }],
+          isRegenerate
+        }).catch(err => logger.error('SpeedGrader', "Error en background generate-all current student", { err }));
+      }
+
+      // 3. Generar síncronamente para el actual en la tarea actual, permitiendo capturar errores y mostrar estado de 'Generando...'
       const result = await api.post('/feedback/generate', {
         courseId,
         assignmentId: currentAssignmentId,
@@ -80,7 +98,7 @@ export function useSpeedGraderActions({
         setLoading(false);
       }
     }
-  }, [assignments, courseId, students, currentAssignmentId, currentStudent, activeAssignment, setLoading, setStatusMsg, setFeedback, setGeneratedFeedbackId, queryClient]);
+  }, [assignments, courseId, students, currentAssignmentId, currentStudent, activeAssignment, setLoading, setStatusMsg, setFeedback, setGeneratedFeedbackId, queryClient, isAssignmentsLoading]);
 
   const handleApprove = useCallback(async (rating) => {
     if (!generatedFeedbackId) return;
@@ -98,7 +116,6 @@ export function useSpeedGraderActions({
       });
       if (!result.exito) throw new Error("Error al aprobar feedback");
       setStatusMsg("¡Enviado exitosamente a Canvas!");
-      setGeneratedFeedbackId(null);
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
     } catch (e) {
       logger.error('SpeedGrader', "Error al enviar feedback", { error: e });
@@ -108,21 +125,29 @@ export function useSpeedGraderActions({
     }
   }, [generatedFeedbackId, currentAssignmentId, currentStudent, feedback, grade, courseId, setGeneratedFeedbackId, setLoading, setStatusMsg, queryClient]);
 
-  const handleManualSubmit = useCallback(async (manualFeedbackText) => {
-    if (!manualFeedbackText) return;
+  const handleManualSubmit = useCallback(async (text) => {
+    if (!text) return;
     setLoading(true);
-    setStatusMsg("Enviando feedback manual a Canvas...");
+    setStatusMsg("Guardando feedback manual como pendiente...");
     try {
       const result = await api.post('/feedback/manual', {
-        courseId: courseId,
+        courseId,
         assignmentId: currentAssignmentId,
         studentId: currentStudent.id,
-        contenidoManual: manualFeedbackText,
-        grade: grade,
+        content: text,
+        grade: grade
       });
       if (!result.exito) throw new Error("Error al enviar feedback manual");
-      setStatusMsg("¡Feedback manual enviado exitosamente a Canvas!");
-      setFeedback(''); // Opcional, limpiar tras éxito
+      setStatusMsg("¡Feedback manual guardado como pendiente exitosamente!");
+      
+      if (result.data) {
+        setFeedback(result.data.contenido_generado || text);
+        setGeneratedFeedbackId(result.data.id);
+      }
+      if (setIsManualMode) {
+        setIsManualMode(false);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
     } catch (e) {
       logger.error('SpeedGrader', "Error al enviar feedback manual", { error: e });
@@ -130,7 +155,7 @@ export function useSpeedGraderActions({
     } finally {
       setLoading(false);
     }
-  }, [courseId, currentAssignmentId, currentStudent, grade, setFeedback, setLoading, setStatusMsg, queryClient]);
+  }, [courseId, currentAssignmentId, currentStudent, grade, setFeedback, setLoading, setStatusMsg, queryClient, setGeneratedFeedbackId, setIsManualMode]);
 
   const handleExit = useCallback(
     async (e) => {

@@ -87,6 +87,15 @@ function formatDevLog(level, rawMessage) {
   const isHttpRequest = finalMessage.startsWith('-> GET') || finalMessage.startsWith('-> POST') || finalMessage.startsWith('-> PUT') || finalMessage.startsWith('-> DELETE');
   const isHttpResponse = finalMessage.startsWith('<- GET') || finalMessage.startsWith('<- POST') || finalMessage.startsWith('<- PUT') || finalMessage.startsWith('<- DELETE');
 
+  // Ignorar endpoints ruidosos (polling del frontend) para mantener la consola limpia
+  const isNoisyEndpoint = finalMessage.includes('/system-notifications/pending') || 
+                          finalMessage.includes('/feedback/pending/summary') || 
+                          finalMessage.includes('/feedback/list');
+
+  if (isNoisyEndpoint) {
+    return null;
+  }
+
   if (isHttpRequest) {
     const methodPath = finalMessage.replace('-> ', '').trim();
     const [method, ...rest] = methodPath.split(' ');
@@ -171,10 +180,12 @@ function writeDevLog(level, rawMessage) {
   const lines = String(rawMessage).split('\n');
   for (const line of lines) {
     const formatted = formatDevLog(level, line);
-    if (process.stdout.isTTY) {
-      process.stdout.write('\r\x1b[K');
+    if (formatted !== null) {
+      if (process.stdout.isTTY) {
+        process.stdout.write('\r\x1b[K');
+      }
+      process.stdout.write(`${formatted}\n`);
     }
-    process.stdout.write(`${formatted}\n`);
   }
   if (global.canvasSpinner) global.canvasSpinner.start();
 }

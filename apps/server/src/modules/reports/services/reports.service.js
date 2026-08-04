@@ -54,13 +54,36 @@ export class ReportsService {
     }
   }
 
+  async _getTemplatesHistory() {
+    try {
+      const query = `
+        SELECT 
+          p.nombre,
+          p.creado_en AS fecha_creacion,
+          p.actualizado_en AS ultima_modificacion,
+          p.profesor_id AS autor,
+          COUNT(h.id) AS frecuencia_uso
+        FROM Plantilla_Feedback p
+        LEFT JOIN Historial_Feedback_Generado h ON p.id = h.plantilla_id
+        GROUP BY p.id, p.nombre, p.creado_en, p.actualizado_en, p.profesor_id
+        ORDER BY p.creado_en DESC
+      `;
+      const res = await db.query(query);
+      return res.rows;
+    } catch (err) {
+      logger.error('[ReportsService] Error getting templates history', { error: err });
+      return [];
+    }
+  }
+
   async exportToExcel(courseId = null) {
     try {
       const data = await this.feedbackRepo.listAll(5000, courseId);
       const auditData = await AuditManager.getCriticalLogs(200);
       const migrationLogs = await this._getMigrationLogs();
       const systemNotifications = await this._getSystemNotifications();
-      return await this.excelExport.generateExcel(data, auditData.logs, migrationLogs, systemNotifications);
+      const templatesHistory = await this._getTemplatesHistory();
+      return await this.excelExport.generateExcel(data, auditData.logs, migrationLogs, systemNotifications, templatesHistory);
     } catch (err) {
       logger.error('[ReportsService] Error exportToExcel', { error: err });
       throw new ApiError('Error al generar archivo Excel', 500);

@@ -66,6 +66,7 @@ export function waitForBackend(backend) {
       settled = true;
       backend.removeListener('error', onError);
       backend.removeListener('exit', onExit);
+      if (backend.stdout) backend.stdout.removeListener('data', onData);
       clearTimeout(timer);
       fn();
     };
@@ -74,9 +75,18 @@ export function waitForBackend(backend) {
       if (code !== 0 && code !== null) reject(new Error(`Backend cerrado con código ${code}`));
       else resolve();
     });
+    const onData = (data) => {
+      if (data.toString().includes('BACKEND INICIADO')) {
+        finish(resolve);
+      }
+    };
+    
     backend.on('error', onError);
     backend.on('exit', onExit);
-    const timer = setTimeout(() => finish(resolve), 4000); // 4s: el server arranca en ms
+    if (backend.stdout) backend.stdout.on('data', onData);
+    
+    // 120s: Dar tiempo suficiente para el prompt de Admin de mkcert en Windows
+    const timer = setTimeout(() => finish(resolve), 120000); 
   });
 }
 

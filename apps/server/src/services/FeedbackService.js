@@ -3,6 +3,8 @@ import FeedbackQueryService from './FeedbackQueryService.js';
 import FeedbackMutationService from './FeedbackMutationService.js';
 import logger from '../utils/logger.js';
 
+import MassiveGenerationOrchestrator from './jobs/MassiveGenerationOrchestrator.js';
+
 /**
  * FeedbackService - Facade de composición.
  *
@@ -10,9 +12,9 @@ import logger from '../utils/logger.js';
  * delega en servicios especializados para cumplir SRP sin romper dependencias.
  */
 export default class FeedbackService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager, preferencesService = null, emailService = null, systemNotificationService = null) {
+  constructor(canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager, preferencesService = null, emailService = null, systemNotificationService = null) {
     this.generation = new FeedbackGenerationService(
-      iaProvider, canvasGateway, feedbackRepo, templateRepo,
+      canvasGateway, feedbackRepo, templateRepo,
       academicHistoryService, validadorAcademico, configRepo, iaConfigManager
     );
     this.query = new FeedbackQueryService(
@@ -25,6 +27,8 @@ export default class FeedbackService {
       emailService,
       systemNotificationService
     );
+    this.orchestrator = new MassiveGenerationOrchestrator(this.generation);
+    
     this.academicHistoryService = academicHistoryService;
     this.feedbackRepo = feedbackRepo;
     this.canvasGateway = canvasGateway;
@@ -36,17 +40,7 @@ export default class FeedbackService {
   }
 
   generateMassive(courseId, activeAssignments, students, teacherId, isRegenerate = false) {
-    setTimeout(async () => {
-      for (const assignment of activeAssignments) {
-        for (const student of students) {
-          try {
-             await this.generateFeedback(courseId, assignment.id, student.id, assignment.templateId || 1, undefined, teacherId, { isRegenerate });
-          } catch (e) {
-             logger.error(`[FeedbackService] Error en generación masiva para estudiante ${student.id} en tarea ${assignment.id}: ${e.message}`);
-          }
-        }
-      }
-    }, 0);
+    this.orchestrator.execute(courseId, activeAssignments, students, teacherId, isRegenerate);
   }
 
   // Consultas

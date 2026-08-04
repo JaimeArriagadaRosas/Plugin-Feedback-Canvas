@@ -15,7 +15,7 @@ export default class ConfigController {
       
       // Update config table
       if (this.configRepo) {
-        await this.configRepo.saveConfigIA(modelo, temperatura, longitud_maxima, endpoint_api, req.user?.id || 1);
+        await this.configRepo.saveConfigIA(modelo, temperatura, longitud_maxima, endpoint_api, req.user?.id || 1, servicio);
       }
       
       const config = await this.iaConfigManager.updateServiceStatus(servicio, true);

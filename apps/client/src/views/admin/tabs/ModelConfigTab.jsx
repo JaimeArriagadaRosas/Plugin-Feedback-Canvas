@@ -25,12 +25,6 @@ export default function ModelConfigTab({
   const handleModelChange = useCallback(
     async (e) => {
       let newModel = e.target.value;
-      
-      // Si el usuario eligió "otros", puede que desee escribir el modelo manualmente
-      // (En este caso 'e.target.value' podría ser el input manual o 'custom')
-      if (service === 'otros' && newModel === 'custom') {
-        newModel = 'Modelo Personalizado';
-      }
 
       await logModelChange('ADMIN_MODEL_CHANGE', () => {
         setModel(newModel);
@@ -62,12 +56,21 @@ export default function ModelConfigTab({
       <div className={styles.row}>
         <div className={styles.col}>
           <label className={styles.label}>Cambiar de Modelo de Lenguaje</label>
-          <Select
-            value={model}
-            onChange={handleModelChange}
-            options={availableOptions}
-            disabled={isLoadingModels || availableModels.length === 0}
-          />
+          {service === 'otros' ? (
+            <Input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="Ej: llama3-70b-8192 o mistral:latest"
+            />
+          ) : (
+            <Select
+              value={model}
+              onChange={handleModelChange}
+              options={availableOptions}
+              disabled={isLoadingModels || availableModels.length === 0}
+            />
+          )}
         </div>
         <div className={styles.col}>
           <label className={styles.label}>Temperatura (0.0 a 2.0)</label>

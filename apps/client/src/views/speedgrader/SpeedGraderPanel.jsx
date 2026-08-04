@@ -63,6 +63,7 @@ export default function SpeedGraderPanel({ onExit }) {
     isFetchingSubmission,
     quizDetails,
     isFeedbackApproved,
+    isAssignmentsLoading,
   } = useSpeedGraderData();
 
   const logExit = useButtonLogger();
@@ -82,7 +83,9 @@ export default function SpeedGraderPanel({ onExit }) {
     setGeneratedFeedbackId,
     activeAssignment,
     onExit,
-    logExit
+    logExit,
+    setIsManualMode,
+    isAssignmentsLoading
   });
 
   const handleBack = useCallback(() => {

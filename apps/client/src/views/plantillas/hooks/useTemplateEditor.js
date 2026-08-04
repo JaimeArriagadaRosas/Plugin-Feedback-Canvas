@@ -13,7 +13,7 @@ export function useTemplateEditor(template) {
     const rawContent = template.contenido || template.content;
     try {
       const parsed = JSON.parse(rawContent);
-      if (parsed.alto && parsed.medio && parsed.bajo) {
+      if (parsed.alto !== undefined && parsed.medio !== undefined && parsed.bajo !== undefined) {
         initialContent = parsed;
       } else {
         initialContent.medio = rawContent;

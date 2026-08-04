@@ -17,7 +17,7 @@ import TemplateManager from '../TemplateManager.js';
 import IAConfigManager from '../IAConfigManager.js';
 import AcademicHistoryService from '../AcademicHistoryService.js';
 import ValidadorAcademico from '../ValidadorAcademico.js';
-import GeminiProvider from '../ia/GeminiProvider.js';
+// Import removido para evitar acoplamiento estático a Gemini
 import LLMConfigurationService from '../../services/LLMConfigurationService.js';
 import CourseVariablesService from '../../services/variables/CourseVariablesService.js';
 import FeedbackWorkflowService from '../../services/FeedbackWorkflowService.js';
@@ -145,7 +145,7 @@ export async function initializeServiceLayer(env, repos) {
   const canvasGateway = new CanvasLmsAdapter(canvasClient, canvasTokenManager, env);
   logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapter (Paridad Producción)`);
 
-  const iaProvider = new GeminiProvider(getSecret('GEMINI_API_KEY'));
+  // El proveedor de IA ahora se instanciará dinámicamente en FeedbackGenerationService
   const academicHistoryService = new AcademicHistoryService(canvasGateway, repos.studentRepo);
   const templateManager = new TemplateManager(templateRepo);
 
@@ -157,7 +157,6 @@ export async function initializeServiceLayer(env, repos) {
   const systemNotificationService = new SystemNotificationService(repos.systemNotificationRepo);
 
   const feedbackService = new FeedbackService(
-    iaProvider,
     canvasGateway,
     feedbackRepo,
     templateRepo,
