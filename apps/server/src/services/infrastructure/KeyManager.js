@@ -37,6 +37,7 @@ export default class KeyManager {
     }
 
     if (needsUpdate) {
+      process.env.KEYS_REGENERATED = 'true';
       updateEnvVars(pluginDir, keysToUpdate);
       if (log && log.success) {
         log.success('Claves criptográficas seguras guardadas en .env correctamente.');

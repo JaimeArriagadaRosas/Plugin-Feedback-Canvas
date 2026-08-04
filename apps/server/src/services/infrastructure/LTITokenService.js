@@ -24,7 +24,7 @@ export default class LTITokenService {
       if (!decodedHeader) throw new AppError('Token mal formado', 401);
 
       const publicKey = await this.jwksClient.getPublicKey(decodedHeader);
-      logger.info(`[LTI-TOKEN] Token validado con éxito vía JWKS (Canvas) | kid: ${decodedHeader.kid?.substring(0,10)}...`);
+      logger.debug(`[LTI-TOKEN] Token validado con éxito vía JWKS (Canvas) | kid: ${decodedHeader.kid?.substring(0,10)}...`);
       
       
       const expectedIssuer = configManager.getCanvasIssuer();
