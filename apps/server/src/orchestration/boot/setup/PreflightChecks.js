@@ -86,6 +86,11 @@ export class PreflightChecks {
   }
 
   async checkPluginDb() {
+    if (process.env.KEYS_REGENERATED === 'true') {
+      await runCommand('docker', ['compose', 'down', '-v'], { cwd: this.pluginDir });
+      this.boot.plain('  · Primera instalación detectada: Volúmenes Docker purgados automáticamente (Dirty Volume Prevention)');
+    }
+
     const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir, captureAll: true });
     const isRunning = success && out && out.trim().length > 0;
     return { ok: isRunning, details: isRunning ? {} : { missing_plugin_db: true } };

@@ -1,29 +1,30 @@
 import os from 'node:os';
-import path from 'node:path';
-import fs from 'node:fs';
 import { runCommand } from '../utils/Runner.js';
-import { askConfirm } from '../../../cli.js';
+import { WinDockerInstaller } from './strategies/WinDockerInstaller.js';
+import { MacDockerInstaller } from './strategies/MacDockerInstaller.js';
+import { LinuxDockerInstaller } from './strategies/LinuxDockerInstaller.js';
 
 export class DockerInstaller {
   constructor(boot, logFile) {
     this.boot = boot;
     this.logFile = logFile;
     this.platform = os.platform(); // 'win32', 'darwin', 'linux'
+    
+    // Inicializar la estrategia adecuada
+    if (this.platform === 'win32') {
+      this.strategy = new WinDockerInstaller(boot, logFile);
+    } else if (this.platform === 'darwin') {
+      this.strategy = new MacDockerInstaller(boot, logFile);
+    } else if (this.platform === 'linux') {
+      this.strategy = new LinuxDockerInstaller(boot, logFile);
+    } else {
+      this.strategy = null;
+    }
   }
 
   async isDockerInstalled() {
-    const { success } = await runCommand('docker', ['--version']);
-    if (success) return true;
-
-    // Fallback: Check standard paths (False Negative prevention)
-    if (this.platform === 'win32') {
-      const defaultWinPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Docker', 'Docker', 'resources', 'bin', 'docker.exe');
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (fs.existsSync(defaultWinPath)) return true;
-    } else if (this.platform === 'darwin') {
-      if (fs.existsSync('/Applications/Docker.app/Contents/Resources/bin/docker')) return true;
-    }
-    return false;
+    if (!this.strategy) return false;
+    return this.strategy.isInstalled();
   }
 
   async isDockerDaemonRunning() {
@@ -32,100 +33,11 @@ export class DockerInstaller {
   }
 
   async installDocker() {
-    if (this.platform === 'win32') {
-      return this._installWindows();
-    } else if (this.platform === 'darwin') {
-      return this._installMac();
-    } else if (this.platform === 'linux') {
-      return this._installLinux();
-    }
-    this.boot.error(`Sistema operativo no soportado para instalación automática: ${this.platform}`);
-    return false;
-  }
-
-  async _installWindows() {
-    this.boot.info('Descargando Docker Desktop Installer...');
-    const url = 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe';
-    const dest = path.join(process.env.TEMP || 'C:\\Windows\\Temp', 'DockerDesktopInstaller.exe');
-    
-    // Simplificación de descarga para Node
-    const { success, err } = await runCommand('powershell', [
-      '-Command',
-      `Invoke-WebRequest -Uri "${url}" -OutFile "${dest}"`
-    ], { logFile: this.logFile });
-
-    if (!success) {
-      this.boot.error(`No se pudo descargar Docker Desktop: ${err}`);
+    if (!this.strategy) {
+      this.boot.error(`Sistema operativo no soportado para instalación automática: ${this.platform}`);
       return false;
     }
-
-    this.boot.info('Ejecutando instalador de Docker Desktop... Por favor siga las instrucciones.');
-    // start-process no bloquea
-    runCommand('powershell', ['-Command', `Start-Process -FilePath "${dest}"`]);
-    
-    this.boot.warn('IMPORTANTE: Debe reiniciar su equipo después de que Docker termine de instalarse.');
-    return true;
-  }
-
-  async _installMac() {
-    this.boot.info('');
-    this.boot.warn('Recomendación para macOS: OrbStack es una alternativa a Docker mucho más rápida, que consume menos batería y RAM.');
-    const useOrbstack = await askConfirm('¿Deseas instalar OrbStack en lugar de Docker Desktop?');
-    
-    if (useOrbstack) {
-      this.boot.info('Descargando e instalando OrbStack vía Homebrew (requiere brew)...');
-      const { success, err } = await runCommand('brew', ['install', '--cask', 'orbstack'], { logFile: this.logFile });
-      if (!success) {
-        this.boot.error(`Fallo instalando OrbStack vía brew: ${err}`);
-        this.boot.action('Instálalo manualmente desde https://orbstack.dev/');
-        return false;
-      }
-      this.boot.info('Iniciando OrbStack...');
-      runCommand('open', ['-a', 'OrbStack']);
-      return true;
-    }
-
-    this.boot.info('Descargando Docker Desktop para macOS...');
-    const url = 'https://desktop.docker.com/mac/main/amd64/Docker.dmg';
-    const dest = path.join(os.tmpdir(), 'Docker.dmg');
-    
-    const { success, err } = await runCommand('curl', ['-L', '-o', dest, url], { logFile: this.logFile });
-    if (!success) {
-      this.boot.error(`No se pudo descargar Docker Desktop: ${err}`);
-      return false;
-    }
-
-    this.boot.info('Montando e instalando Docker Desktop...');
-    await runCommand('hdiutil', ['attach', dest]);
-    await runCommand('cp', ['-R', '/Volumes/Docker/Docker.app', '/Applications']);
-    await runCommand('hdiutil', ['detach', '/Volumes/Docker']);
-    
-    this.boot.info('Iniciando Docker Desktop...');
-    runCommand('open', ['-a', 'Docker']);
-    return true;
-  }
-
-  async _installLinux() {
-    this.boot.info('Instalando Docker y Docker Compose (requiere sudo)...');
-    
-    const { success, err } = await runCommand('sudo', ['apt-get', 'update'], { logFile: this.logFile });
-    if (!success) {
-      this.boot.error(`Fallo actualizando apt: ${err}`);
-      return false;
-    }
-
-    const { success: installSuccess, err: installErr } = await runCommand('sudo', ['apt-get', 'install', '-y', 'docker.io', 'docker-compose'], { logFile: this.logFile });
-    if (!installSuccess) {
-      this.boot.error(`Fallo instalando Docker: ${installErr}`);
-      return false;
-    }
-
-    this.boot.info('Iniciando servicio de Docker...');
-    await runCommand('sudo', ['systemctl', 'start', 'docker']);
-    await runCommand('sudo', ['systemctl', 'enable', 'docker']);
-    
-    this.boot.warn('IMPORTANTE: Es posible que necesites añadir tu usuario al grupo docker: sudo usermod -aG docker $USER');
-    return true;
+    return this.strategy.install();
   }
 
   async waitForDaemon(timeout = 600, interval = 5) {
@@ -139,21 +51,15 @@ export class DockerInstaller {
       }
 
       let isUpdating = false;
-      if (this.platform === 'win32') {
-        try {
-          const { runCommand } = await import('../utils/Runner.js');
-          const { out } = await runCommand('tasklist', ['/fi', 'imagename eq Docker Desktop Installer.exe'], { captureAll: true });
-          if (out && out.includes('Docker Desktop Installer.exe')) {
-            isUpdating = true;
-          }
-        } catch (e) { /* ignore */ }
+      if (this.strategy && typeof this.strategy.isUpdating === 'function') {
+        isUpdating = await this.strategy.isUpdating();
       }
 
       await new Promise(r => setTimeout(r, interval * 1000));
       elapsed += interval;
       
       if (isUpdating) {
-        spinner.update({ text: `Docker Desktop se está actualizando. Esperando adaptativamente (restan ${Math.floor((timeout - elapsed) / 60)} min)...` });
+        spinner.update({ text: `Docker Desktop se está instalando o actualizando. Esperando adaptativamente (restan ${Math.floor((timeout - elapsed) / 60)} min)...` });
       } else if (elapsed === 30) {
         spinner.update({ text: `El daemon de Docker tarda más de 30s en iniciar. Sigo esperando...` });
       }
@@ -163,8 +69,9 @@ export class DockerInstaller {
   }
 
   async handleDockerDaemonDown() {
-    this.boot.warn('La aplicación de Docker Desktop (Daemon) está cerrada.');
-    this.boot.action('👉 Por favor, abre tu aplicación de Docker Desktop para continuar con la instalación.');
+    this.boot.warn('La aplicación de Docker Desktop (Daemon) está cerrada o no tiene los permisos suficientes.');
+    this.boot.action('👉 Por favor, abre tu aplicación de Docker Desktop manualmente para continuar, o acepta el aviso del sistema operativo si aparece.');
     return this.waitForDaemon(600, 5);
   }
 }
+
