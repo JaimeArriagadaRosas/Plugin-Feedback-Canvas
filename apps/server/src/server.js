@@ -1,5 +1,5 @@
 import { createApp } from './services/server/middleware.js';
-import { startServer } from './services/server/bootstrap.js';
+import { startServer } from './services/server/appFactory.js'; // Updated to use the new appFactory
 import db from './data/db.js';
 import logger from './utils/logger.js';
 
@@ -7,7 +7,7 @@ const { app, PORT } = createApp();
 
 let serverInstance = null;
 
-export async function shutdown(signal = 'SIGINT') {
+export async function shutdown(signal = 'SIGINT', errorDetails = null) {
   const isOrchestrated = !!process.env.STARTUP_MODE;
 
   if (!isOrchestrated) {
@@ -31,8 +31,15 @@ export async function shutdown(signal = 'SIGINT') {
     }
   }
   
-  if (!isOrchestrated) logger.info('[SHUTDOWN] Proceso terminando.');
-  process.exit(0);
+  const isError = signal === 'STARTUP_ERROR' || signal === 'uncaughtException' || signal === 'unhandledRejection';
+  const exitCode = isError ? 1 : 0;
+  
+  if (isError && process.send) {
+    process.send({ type: 'server-error', message: errorDetails || `Error de inicialización (${signal})` });
+  }
+
+  if (!isOrchestrated) logger.info(`[SHUTDOWN] Proceso terminando con código ${exitCode}.`);
+  process.exit(exitCode);
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));
@@ -40,12 +47,12 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 process.on('uncaughtException', (err) => {
   logger.error('[SERVER] Excepción no capturada (uncaughtException):', err);
-  shutdown('uncaughtException');
+  shutdown('uncaughtException', err.message);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('[SERVER] Promesa rechazada no manejada (unhandledRejection):', { reason, promise });
-  shutdown('unhandledRejection');
+  shutdown('unhandledRejection', reason?.message || String(reason));
 });
 
 logger.info('[SERVER] Entorno configurado. Esperando conexiones de autenticación...');
@@ -53,7 +60,7 @@ startServer(app, PORT).then((server) => {
   serverInstance = server;
 }).catch((err) => {
   logger.error('[SERVER] No se pudo iniciar el backend:', err);
-  shutdown('STARTUP_ERROR');
+  shutdown('STARTUP_ERROR', err.message);
 });
 
 export default app;

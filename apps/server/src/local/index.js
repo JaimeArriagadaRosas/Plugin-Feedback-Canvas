@@ -1,5 +1,5 @@
 import { createApp } from '../services/server/middleware.js';
-import { startServer } from '../services/server/bootstrap.js';
+import { startServer } from '../services/server/appFactory.js';
 import { configureLocalTLS } from './TLSConfigurator.js';
 import { notifyCanvasReady, notifyCanvasError, openBrowser } from './browser.js';
 import CanvasConfigurator from './CanvasConfigurator.js';

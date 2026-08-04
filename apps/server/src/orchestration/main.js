@@ -137,17 +137,7 @@ export async function main() {
     const checker = new StaticChecker(PLUGIN_DIR);
     await prepareEnvironment(mode, checker);
 
-    if (process.env.KEYS_REGENERATED === 'true') {
-      boot.warn('ATENCIÓN: Se ha generado una nueva clave criptográfica (ENCRYPTION_KEY).');
-      boot.warn('Si está reinstalando sobre una versión anterior, el volumen de base de datos antiguo (plugin_db_data)');
-      boot.warn('contendrá tokens encriptados con la clave vieja, causando un fallo crítico.');
-      const answer = await ask('¿Desea purgar la base de datos antigua (docker compose down -v) ahora? (s/n): ');
-      if (answer.toLowerCase().startsWith('s')) {
-        const { spawnSync } = await import('node:child_process');
-        spawnSync('docker', ['compose', 'down', '-v'], { cwd: PLUGIN_DIR, stdio: 'inherit' });
-        boot.success('Volúmenes antiguos eliminados.');
-      }
-    }
+
 
     if (mode === '3') {
       const { Orchestrator } = await import('../setup/local/index.js');
