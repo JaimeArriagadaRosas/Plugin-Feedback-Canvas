@@ -18,7 +18,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
       }
       return { count: 0, students: [] };
     },
-    refetchInterval: 10000, // Polling cada 10s
+    refetchInterval: 10000,
   });
 
   const { data: systemErrors = [], refetch: refetchSystemErrors } = useQuery({

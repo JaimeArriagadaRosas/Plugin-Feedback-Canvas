@@ -126,7 +126,7 @@ export function useAdminConfig() {
         const response = await api.get(`/config/ia-models?servicio=${service.toLowerCase()}`);
         if (isMounted && response.exito) {
            setAvailableModels(response.data);
-           if (response.data.length > 0 && !response.data.find(m => m.id === model)) {
+           if (response.data.length > 0 && service !== 'otros' && !response.data.find(m => m.id === model)) {
              setModel(response.data[0].id);
            }
         }

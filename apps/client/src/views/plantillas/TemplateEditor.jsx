@@ -21,6 +21,17 @@ export default function TemplateEditor({ template, onSave, onClose }) {
 
   const handleSave = useCallback(
     async (e) => {
+      if (!editor.name?.trim()) {
+        setToast({ message: "La plantilla debe tener un nombre.", type: "error" });
+        return;
+      }
+      
+      const { alto, medio, bajo } = editor.content;
+      if (!alto?.trim() || !medio?.trim() || !bajo?.trim()) {
+        setToast({ message: "No puedes guardar una plantilla con un rango en blanco. Completa el rango Alto, Medio y Bajo.", type: "error" });
+        return;
+      }
+
       const payload = {
         ...template,
         name: editor.name,

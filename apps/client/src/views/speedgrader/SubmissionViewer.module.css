@@ -33,6 +33,13 @@
   text-align: center;
 }
 
+.textEntryContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .paper {
   display: inline-block;
   width: 100%;

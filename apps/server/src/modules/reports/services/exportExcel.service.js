@@ -8,7 +8,7 @@ export class ExcelExportService {
    * @param {Array} auditLogs - Lista de logs críticos de auditoría.
    * @returns {Promise<Buffer>} - Archivo XLSX en memoria.
    */
-  async generateExcel(data, auditLogs = [], migrationLogs = [], systemNotifications = []) {
+  async generateExcel(data, auditLogs = [], migrationLogs = [], systemNotifications = [], templatesHistory = []) {
     try {
       const workbook = new ExcelJS.Workbook();
       
@@ -277,6 +277,39 @@ export class ExcelExportService {
         });
       }
       styleHeader(sheet6);
+
+      // ============================================
+      // HOJA 7: HISTORIAL DE PLANTILLAS (RF13)
+      // ============================================
+      const sheet7 = workbook.addWorksheet('Historial de Plantillas');
+      sheet7.columns = [
+        { header: 'Nombre Plantilla', key: 'nombre', width: 35 },
+        { header: 'Autor (Profesor ID)', key: 'autor', width: 25 },
+        { header: 'Fecha de Creación', key: 'fecha_creacion', width: 25 },
+        { header: 'Última Modificación', key: 'ultima_modificacion', width: 25 },
+        { header: 'Frecuencia de Uso', key: 'frecuencia_uso', width: 20 }
+      ];
+
+      if (templatesHistory && templatesHistory.length > 0) {
+        templatesHistory.forEach(template => {
+          sheet7.addRow({
+            nombre: template.nombre || 'Sin nombre',
+            autor: template.autor || 'Sistema (Global)',
+            fecha_creacion: template.fecha_creacion ? new Date(template.fecha_creacion).toLocaleString() : 'N/A',
+            ultima_modificacion: template.ultima_modificacion ? new Date(template.ultima_modificacion).toLocaleString() : 'N/A',
+            frecuencia_uso: template.frecuencia_uso || 0
+          });
+        });
+      } else {
+        sheet7.addRow({
+          nombre: 'No hay plantillas registradas.',
+          autor: 'N/A',
+          fecha_creacion: 'N/A',
+          ultima_modificacion: 'N/A',
+          frecuencia_uso: 0
+        });
+      }
+      styleHeader(sheet7);
 
       const buffer = await workbook.xlsx.writeBuffer();
       return buffer;

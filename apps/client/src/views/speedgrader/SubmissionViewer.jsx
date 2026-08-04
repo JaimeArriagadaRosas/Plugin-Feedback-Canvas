@@ -116,11 +116,7 @@ export default function SubmissionViewer({
       </div>
     );
 
-    if (!submission) {
-      return renderTextCard(textBody);
-    }
-
-    if (submission && (submission.workflow_state === 'unsubmitted' || submission.missing)) {
+    if (!submission || submission.workflow_state === 'unsubmitted' || submission.missing) {
       return (
         <div className={styles.scrollableWrapper}>
           <div className={styles.fallbackCard}>
@@ -172,7 +168,7 @@ export default function SubmissionViewer({
     // 2.5. PRIORIDAD: Visor Nativo de Cuestionarios (Quizzes)
     if (submission && submission.submission_type === 'online_quiz') {
       return (
-        <div className={styles.scrollableWrapper}>
+        <div className={styles.textEntryContainer}>
           <QuizViewer quizDetails={quizDetails} studentName={studentName} />
         </div>
       );
@@ -181,7 +177,7 @@ export default function SubmissionViewer({
     // 3. PRIORIDAD: Contenido de texto/HTML de la entrega (online_text_entry)
     if (hasBody) {
       return (
-        <div className={styles.scrollableWrapper}>
+        <div className={styles.textEntryContainer}>
           <TextEntryViewer 
             submission={submission} 
             studentName={studentName} 

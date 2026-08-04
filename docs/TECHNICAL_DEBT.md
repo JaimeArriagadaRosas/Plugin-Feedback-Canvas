@@ -108,3 +108,21 @@ Dado que el requerimiento funcional exige enviar formato de texto enriquecido (n
 ### Acción Requerida (Futuro)
 - Cuando Canvas LMS exponga una API nativa para comentarios de texto enriquecido (ej. con soporte oficial HTML/Markdown), esta deuda técnica deberá ser saldada removiendo la conversión a caracteres Unicode.
 - Así, los comentarios se cargarán y renderizarán de manera correcta nativamente, dependiendo 100% de la funcionalidad de Canvas LMS y no de la capa de traducción del plugin.
+
+---
+
+## 7. Unificación del Diseño de Notificaciones (Anexo)
+
+### Descripción
+Actualmente, las notificaciones emitidas por el sistema no mantienen una línea de diseño unificada ni un sistema de componentes gráficos estandarizado.
+
+### Contexto y Justificación
+Durante las primeras iteraciones de desarrollo y la priorización de características del backend (como la conexión de la IA o los sistemas de fallback), los mensajes y las interfaces visuales de retroalimentación se abordaron de manera aislada y funcional en lugar de priorizar un lenguaje de diseño cohesivo.
+
+### Estado Actual
+- Las notificaciones son funcionales pero pueden diferir visualmente (colores, padding, iconos) dependiendo del contexto o de si son notificaciones push, avisos en el dashboard, o alertas temporales.
+- Esto genera un impacto menor en la experiencia del usuario, percibiéndose como un sistema desarticulado visualmente en los avisos.
+
+### Acción Requerida (Futuro)
+- Diseñar un único sistema de componentes estandarizado para todo tipo de notificaciones del sistema (toasts, alertas de banner, notificaciones persistentes).
+- Migrar y refactorizar las vistas actuales de advertencia/notificación para que consuman este componente global unificado.

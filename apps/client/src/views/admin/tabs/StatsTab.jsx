@@ -67,6 +67,13 @@ export default function StatsTab() {
               {stats.byStatus['PENDIENTE'] || 0} ({stats.percentages['PENDIENTE'] || 0}%)
             </p>
           </div>
+
+          <div style={{ padding: '20px', background: '#ebf5fb', borderRadius: '8px', minWidth: '200px' }}>
+            <h3 style={{ margin: '0 0 10px 0' }}>Editados</h3>
+            <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#1a5276' }}>
+              {stats.byStatus['EDITADO'] || 0} ({stats.percentages['EDITADO'] || 0}%)
+            </p>
+          </div>
         </div>
       )}
 

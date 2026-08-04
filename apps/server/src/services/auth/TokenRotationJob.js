@@ -44,7 +44,7 @@ export default class TokenRotationJob {
         return; // Nada que refrescar
       }
 
-      logger.info(`[JOBS] Se encontraron ${expiringTokens.length} tokens próximos a expirar. Refrescando...`);
+      logger.info(`\n[JOBS] Se encontraron ${expiringTokens.length} tokens próximos a expirar. Refrescando...`);
 
       for (const tokenData of expiringTokens) {
         if (!tokenData.refresh_token) {

@@ -11,11 +11,21 @@ export default class IAConfigManager {
   }
 
   /**
-   * Obtiene la configuración activa para un servicio (ej. 'gemini')
+   * Obtiene la configuración activa global usando la DB como fuente de la verdad
+   */
+  async getGlobalActiveConfig() {
+    const config = this.configRepo ? await this.configRepo.getConfigIA() : null;
+    const serviceName = config?.proveedor_preferido || 'gemini';
+    return this.getActiveConfig(serviceName);
+  }
+
+  /**
+   * Obtiene la configuración activa para un servicio dado
    */
   async getActiveConfig(serviceName) {
     const keyData = await this.tokenRepo.getActiveKey(serviceName);
     
+    // Si se solicitó un proveedor específico y no tiene llave, fallamos
     if (!keyData || !keyData.apiKey) {
       throw new Error(`No se encontró una llave de API activa para el servicio: ${serviceName}`);
     }
@@ -27,7 +37,8 @@ export default class IAConfigManager {
       apiKey: keyData.apiKey,
       customEndpoint: keyData.customEndpoint,
       model: config?.modelo_preferido || 'gemini-3.5-flash',
-      maxTokens: config?.longitud_maxima || 2048
+      maxTokens: config?.longitud_maxima ? parseInt(config.longitud_maxima, 10) : 2048,
+      temperature: config?.temperatura !== undefined && config?.temperatura !== null ? parseFloat(config.temperatura) : 0.7
     };
   }
 

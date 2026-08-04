@@ -50,8 +50,8 @@ export default class CustomProvider extends IAProvider {
           body: JSON.stringify({
             model: modelName,
             messages: [{ role: 'user', content: promptConGuardrails }],
-            temperature: config.temperature || 0.7,
-            max_tokens: config.maxOutputTokens || 2048
+            temperature: Number(config.temperature ?? 0.7),
+            max_tokens: Number(config.maxOutputTokens ?? 2048)
           }),
           ...localConfig
         });

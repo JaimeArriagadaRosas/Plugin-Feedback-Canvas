@@ -29,13 +29,20 @@ export default class ExponentialBackoff {
           throw error;
         }
 
-        // Calcular el delay exponencial con jitter: baseDelay * 2^attempt + jitter aleatorio (evita estampida)
-        const delay = (baseDelay * Math.pow(2, attempt)) + (Math.random() * 500);
+        let delay;
+        if (status === 429) {
+          // Lógica para 429 (Too Many Requests): Exponential Backoff con Jitter
+          // No más esperas estáticas de 60s. Usamos un baseDelay mayor (ej. 4000ms) y lo escalamos exponencialmente
+          const base429Delay = 4000;
+          delay = (base429Delay * Math.pow(2, attempt)) + (Math.random() * 1000);
+          delay = error.retryAfter ? parseInt(error.retryAfter) * 1000 : delay; 
+        } else {
+          // Calcular el delay exponencial con jitter para otros errores 5xx
+          delay = (baseDelay * Math.pow(2, attempt)) + (Math.random() * 500);
+          delay = error.retryAfter ? parseInt(error.retryAfter) * 1000 : delay;
+        }
         
-        // Respetar header Retry-After si el cliente (como ClaudeErrorHandler) lo inyecta en el error
-        const retryAfter = error.retryAfter ? parseInt(error.retryAfter) * 1000 : delay;
-        
-        await new Promise(res => setTimeout(res, retryAfter));
+        await new Promise(res => setTimeout(res, delay));
       }
     }
   }

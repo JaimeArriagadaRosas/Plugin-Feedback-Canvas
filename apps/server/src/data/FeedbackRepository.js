@@ -15,6 +15,8 @@ export default class FeedbackRepository {
       notaCanvas, notaChile, aprobado
     } = feedbackData;
 
+    const safeNotaCanvas = notaCanvas != null && !isNaN(Number(notaCanvas)) ? Math.round(Number(notaCanvas)) : null;
+
     const query = `
       INSERT INTO Historial_Feedback_Generado
         (estudiante_id, profesor_id, curso_id, tarea_id, plantilla_id, 
@@ -34,7 +36,7 @@ export default class FeedbackRepository {
       estudianteId, profesorId, cursoId, tareaId, plantillaId,
       nombreCurso || null, nombreTarea || null, nombreEstudiante || null,
       contenidoGenerado, promptUsado,
-      notaCanvas ?? null,
+      safeNotaCanvas,
       notaChile ?? null,
       aprobado ?? null
     ]);
@@ -53,6 +55,8 @@ export default class FeedbackRepository {
       contenidoGenerado, promptUsado, notaCanvas, notaChile, aprobado
     } = feedbackData;
 
+    const safeNotaCanvas = notaCanvas != null && !isNaN(Number(notaCanvas)) ? Math.round(Number(notaCanvas)) : null;
+
     const query = `
       UPDATE Historial_Feedback_Generado
       SET contenido_generado = $1, 
@@ -65,7 +69,7 @@ export default class FeedbackRepository {
       RETURNING *
     `;
     const res = await db.query(query, [
-      contenidoGenerado, promptUsado, notaCanvas ?? null, notaChile ?? null, aprobado ?? null, id
+      contenidoGenerado, promptUsado, safeNotaCanvas, notaChile ?? null, aprobado ?? null, id
     ]);
     return res.rows[0];
   }

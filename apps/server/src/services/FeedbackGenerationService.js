@@ -8,16 +8,19 @@ import CourseAverageResolver from './variables/CourseAverageResolver.js';
 import OtherCoursePerformanceResolver from './variables/OtherCoursePerformanceResolver.js';
 import StudentEntryProfileResolver from './variables/StudentEntryProfileResolver.js';
 import PreviousAcademicStatusResolver from './variables/PreviousAcademicStatusResolver.js';
+import PreviousGradesResolver from './variables/PreviousGradesResolver.js';
+import FeedbackValidator from './feedback/FeedbackValidator.js';
+import FeedbackPersistenceHandler from './feedback/FeedbackPersistenceHandler.js';
 import logger from '../utils/logger.js';
+import IAProviderFactory from './ia/factories/IAProviderFactory.js';
 
 /**
- * FeedbackGenerationService - Responsabilidad única: orquestar generación de feedback.
+ * Servicio para generar feedback interactuando con Canvas y LLMs.
  *
  * Separtado de FeedbackService para cumplir SRP. Usa dependency injection.
  */
 export default class FeedbackGenerationService {
-  constructor(iaProvider, canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
-    this.iaProvider = iaProvider;
+  constructor(canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
     this.canvasGateway = canvasGateway;
     this.feedbackRepo = feedbackRepo;
     this.templateRepo = templateRepo;
@@ -26,6 +29,7 @@ export default class FeedbackGenerationService {
     this.configRepo = configRepo;
     this.iaConfigManager = iaConfigManager;
     this.courseStatisticsService = new CourseStatisticsService(canvasGateway);
+    this.persistenceHandler = new FeedbackPersistenceHandler(feedbackRepo);
     
     // Instanciar Resolvers
     this.resolvers = [
@@ -34,36 +38,24 @@ export default class FeedbackGenerationService {
       new CourseAverageResolver(this.canvasGateway, this.courseStatisticsService),
       new OtherCoursePerformanceResolver(),
       new StudentEntryProfileResolver(),
-      new PreviousAcademicStatusResolver()
+      new PreviousAcademicStatusResolver(),
+      new PreviousGradesResolver()
     ];
   }
 
   async generateFeedback(courseId, assignmentId, studentId, templateId, currentGrade, teacherId, metadata = {}) {
     try {
       logger.debug(`[DEBUG] generateFeedback started for student ${studentId}. isRegenerate = ${metadata.isRegenerate}`);
-      // 1. Reglas de Negocio para Generación Masiva e Individual
+      
       const existingFeedbacks = await this.feedbackRepo.findByStudent(studentId, courseId);
+      const validation = FeedbackValidator.validateGeneration(existingFeedbacks, assignmentId, studentId, metadata.isRegenerate);
       
-      // Regla A: Jamás regenerar si ya está enviado o aprobado
-      const sentOrApproved = existingFeedbacks.find(fb => fb.tarea_id == assignmentId && (fb.estado === 'ENVIADO' || fb.estado === 'APROBADO'));
-      if (sentOrApproved) {
-        logger.debug(`[DEBUG] student ${studentId} skipped (sentOrApproved)`);
-        return { exito: false, omitido: true, data: null, mensaje: 'Feedback ya enviado o aprobado' };
+      if (!validation.isValid) {
+        return validation.skipData;
       }
 
-      // Regla B: Si ya tiene borrador, solo regeneramos si la intención explícita era regenerar
       const pending = existingFeedbacks.find(fb => fb.tarea_id == assignmentId && (fb.estado === 'PENDIENTE' || fb.estado === 'EDITADO' || !fb.estado));
-      if (pending && !metadata.isRegenerate) {
-        logger.debug(`[DEBUG] student ${studentId} skipped (pending && !isRegenerate)`);
-        return { exito: false, omitido: true, data: null, mensaje: 'El estudiante ya tiene un borrador y la acción no es forzar regeneración' };
-      }
 
-      // Regla C: Si la intención es explícitamente regenerar, saltar a los que no tienen feedback previo
-      if (!pending && metadata.isRegenerate) {
-        logger.debug(`[DEBUG] student ${studentId} skipped (!pending && isRegenerate)`);
-        return { exito: false, omitido: true, data: null, mensaje: 'Modo regenerar activo, pero el estudiante no tiene feedback previo' };
-      }
-      
       logger.debug(`[DEBUG] student ${studentId} proceeding to fetchCanvasData`);
 
       const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
@@ -89,6 +81,9 @@ export default class FeedbackGenerationService {
 
       const profile = await this._buildProfile(courseId, studentId, teacherId);
 
+      const activeVariablesInfo = await this._getActiveVariablesInfo(courseId);
+      const isTrayectoriaActiva = activeVariablesInfo.isTrayectoriaActiva;
+
       const { context } = this._buildContext(
         courseId,
         studentId,
@@ -102,14 +97,35 @@ export default class FeedbackGenerationService {
         profile,
         chileGrade,
         canvasScore,
-        finalStudentName
+        finalStudentName,
+        isTrayectoriaActiva
       );
 
       const template = await this.templateRepo.getById(templateId);
       if (!template) throw new DomainError('Plantilla no encontrada', 404);
 
-      const activeVariablesText = await this._getActiveVariablesText(courseId);
-      context.instructionIA = context.instructionIA + activeVariablesText;
+      context.instructionIA = context.instructionIA + activeVariablesInfo.text;
+
+      if (activeVariablesInfo.activeVars && activeVariablesInfo.activeVars.length > 0) {
+        let variablesDataText = "\\nDatos del estudiante correspondientes a las variables activas:\\n";
+        let addedData = false;
+        
+        for (const activeVar of activeVariablesInfo.activeVars) {
+           const expectedTag = `{{${activeVar.key}}}`;
+           const resolver = this.resolvers.find(r => r.variableName === expectedTag);
+           if (resolver) {
+              const value = await resolver.resolve(context);
+              if (value && value.trim() !== '') {
+                 variablesDataText += `- ${activeVar.nombre}: ${value}\\n`;
+                 addedData = true;
+              }
+           }
+        }
+        
+        if (addedData) {
+           context.instructionIA += variablesDataText;
+        }
+      }
 
       // Inyección modular de variables usando el Patrón Strategy
       const prompt = await PromptManager.buildPrompt(template.contenido, context, this.resolvers);
@@ -117,53 +133,34 @@ export default class FeedbackGenerationService {
       let aiConfig = {};
       if (this.iaConfigManager) {
         try {
-          aiConfig = await this.iaConfigManager.getActiveConfig('gemini');
+          aiConfig = await this.iaConfigManager.getGlobalActiveConfig();
         } catch (e) {
-          // Si no hay configuración activa, se usará el fallback local o el key base del provider
+          throw new DomainError(`Error obteniendo configuración de IA: ${e.message}`, 500, 'AI_CONFIG_ERROR');
         }
+      } else {
+        throw new DomainError('IAConfigManager no está inyectado', 500, 'SERVER_ERROR');
       }
+
+      const provider = IAProviderFactory.createProvider(aiConfig.service, aiConfig.apiKey, aiConfig.customEndpoint);
 
       let feedbackText;
       try {
-        feedbackText = await this.iaProvider.generateFeedback(prompt, {
+        feedbackText = await provider.generateFeedback(prompt, {
           apiKey: aiConfig.apiKey,
           model: aiConfig.model || 'gemini-3.5-flash',
           maxOutputTokens: aiConfig.maxTokens,
+          temperature: aiConfig.temperature,
           systemInstruction: context.instructionIA
         });
       } catch (aiErr) {
-        logger.error('[IA_ERROR] Fallo al generar con IA', { error: aiErr.message });
         throw new DomainError(`Error de IA: ${aiErr.message}`, 502, 'AI_GENERATION_FAILED');
       }
 
-      let saved;
-      if (pending) {
-        saved = await this.feedbackRepo.updateGeneratedFeedback(pending.id, {
-          contenidoGenerado: feedbackText,
-          promptUsado: prompt,
-          notaCanvas: canvasScore,
-          notaChile: chileGrade,
-          aprobado: approved
-        });
-        // NOTA: Si queremos actualizar los nombres también en el update, habría que pasarlos,
-        // pero por lo general se guardan al crear. Aquí lo mantenemos simple.
-      } else {
-        saved = await this.feedbackRepo.save({
-          cursoId: courseId,
-          tareaId: assignmentId,
-          estudianteId: studentId,
-          profesorId: teacherId,
-          nombreCurso: finalCourseName,
-          nombreTarea: finalAssignmentName,
-          nombreEstudiante: finalStudentName,
-          plantillaId: templateId,
-          contenidoGenerado: feedbackText,
-          promptUsado: prompt,
-          notaCanvas: canvasScore,
-          notaChile: chileGrade,
-          aprobado: approved
-        });
-      }
+      const saved = await this.persistenceHandler.saveGeneratedFeedback({
+        pending, courseId, assignmentId, studentId, teacherId, 
+        finalCourseName, finalAssignmentName, finalStudentName, 
+        templateId, feedbackText, prompt, canvasScore, chileGrade, approved
+      });
 
       return {
         exito: true,
@@ -180,7 +177,6 @@ export default class FeedbackGenerationService {
         }
       };
     } catch (error) {
-      logger.error('[FeedbackGenerationService] Error generando feedback', { error: error.message, stack: error.stack, studentId, assignmentId });
       throw error;
     }
   }
@@ -245,7 +241,7 @@ export default class FeedbackGenerationService {
     return this.validadorAcademico.generateStudentProfile(profileData.history);
   }
 
-  _buildContext(courseId, studentId, assignmentId, assignmentName, teacherId, currentGrade, submission, questions, rubric, profile, chileGrade, canvasScore, finalStudentName) {
+  _buildContext(courseId, studentId, assignmentId, assignmentName, teacherId, currentGrade, submission, questions, rubric, profile, chileGrade, canvasScore, finalStudentName, isTrayectoriaActiva) {
     const questionSet = submission.questions || questions;
 
     const correctCount = submission.correct_count ?? questionSet.filter(q => q.is_correct).length;
@@ -253,10 +249,13 @@ export default class FeedbackGenerationService {
     const accuracyPct = submission.accuracy_percent ??
       (questionSet.length > 0 ? Math.round((correctCount / questionSet.length) * 100) : null);
 
-      let tendenciaPrompt = `El estudiante tiene un nivel ${profile.level}. `;
-      if (profile.trend === 'Mejora') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido mejora en el semestre. ";
-      else if (profile.trend === 'Retroceso') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido un pequeño retroceso. ";
-      else tendenciaPrompt += "Menciona explícitamente al estudiante: Has mantenido un rendimiento constante. ";
+      let tendenciaPrompt = '';
+      if (isTrayectoriaActiva) {
+        tendenciaPrompt = `El estudiante tiene un nivel ${profile.level}. `;
+        if (profile.trend === 'Mejora') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido mejora en el semestre. ";
+        else if (profile.trend === 'Retroceso') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido un pequeño retroceso. ";
+        else tendenciaPrompt += "Menciona explícitamente al estudiante: Has mantenido un rendimiento constante. ";
+      }
 
       const context = {
         courseId,
@@ -280,19 +279,22 @@ export default class FeedbackGenerationService {
         rubric,
         profile,
         instructionIA: tendenciaPrompt +
-          `Genera la respuesta estrictamente en el idioma que solicite la plantilla o el profesor, si no se especifica, usa español.`
+          `Genera la respuesta estrictamente en el idioma que solicite la plantilla o el profesor, si no se especifica, usa español. ` +
+          `IMPORTANTE: Si la plantilla contiene formato de texto enriquecido como **negrita**, *cursiva*, <u>subrayado</u> o listas (- o 1.), debes preservar y replicar exactamente ese mismo formato en tu respuesta. Usa la misma sintaxis Markdown y etiquetas HTML que aparezcan en la plantilla.`
       };
 
     return { context };
   }
 
-  async _getActiveVariablesText(courseId) {
+  async _getActiveVariablesInfo(courseId) {
     if (!this.courseVariablesService) {
       const CourseVariablesService = (await import('./variables/CourseVariablesService.js')).default;
       this.courseVariablesService = new CourseVariablesService();
     }
     const courseVariables = await this.courseVariablesService.getCourseVariables(courseId);
-    const activeVars = Object.values(courseVariables).filter(v => v.activa);
+    const activeVars = Object.entries(courseVariables)
+      .filter(([key, v]) => v.activa)
+      .map(([key, v]) => ({ key, ...v }));
     
     let activeVariablesText = "";
     if (activeVars.length > 0) {
@@ -302,6 +304,10 @@ export default class FeedbackGenerationService {
       });
       activeVariablesText += "Debes dedicar proporcionalmente más espacio, profundidad y atención en tu respuesta a aquellas variables que tengan mayor ponderación.\\n";
     }
-    return activeVariablesText;
+    return {
+      text: activeVariablesText,
+      activeVars: activeVars,
+      isTrayectoriaActiva: !!courseVariables.trayectoria_academica?.activa
+    };
   }
 }

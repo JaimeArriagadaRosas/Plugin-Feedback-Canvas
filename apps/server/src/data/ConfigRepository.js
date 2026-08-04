@@ -77,25 +77,25 @@ export default class ConfigRepository {
     return res.rows[0] || null;
   }
 
-  async saveConfigIA(modelo, temperatura, longitudMaxima, endpointApi, userId) {
+  async saveConfigIA(modelo, temperatura, longitudMaxima, endpointApi, userId, proveedor_preferido = 'gemini') {
     const current = await db.query('SELECT id FROM Configuracion_IA LIMIT 1');
 
     if (current.rows.length === 0) {
       const res = await db.query(
-        `INSERT INTO Configuracion_IA (modelo_preferido, temperatura, longitud_maxima, endpoint_api, actualizado_en)
-         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        `INSERT INTO Configuracion_IA (modelo_preferido, temperatura, longitud_maxima, endpoint_api, proveedor_preferido, actualizado_en)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
          RETURNING *`,
-        [modelo, temperatura, longitudMaxima, endpointApi]
+        [modelo, temperatura, longitudMaxima, endpointApi, proveedor_preferido]
       );
       return res.rows[0];
     }
 
     const res = await db.query(
       `UPDATE Configuracion_IA
-       SET modelo_preferido = $1, temperatura = $2, longitud_maxima = $3, endpoint_api = $4, actualizado_en = CURRENT_TIMESTAMP
-       WHERE id = $5
+       SET modelo_preferido = $1, temperatura = $2, longitud_maxima = $3, endpoint_api = $4, proveedor_preferido = $5, actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = $6
        RETURNING *`,
-      [modelo, temperatura, longitudMaxima, endpointApi, current.rows[0].id]
+      [modelo, temperatura, longitudMaxima, endpointApi, proveedor_preferido, current.rows[0].id]
     );
     return res.rows[0];
   }

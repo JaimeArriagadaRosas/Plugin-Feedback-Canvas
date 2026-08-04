@@ -39,6 +39,7 @@ export const schemas = {
     studentId: idNum,
     content: z.string().min(1).max(20000),
     templateId: idNum.optional(),
+    grade: z.union([z.string().min(1), z.number()]).optional(),
   }).strict(),
   iaModel: z.object({
     servicio: z.string().min(1).max(64),

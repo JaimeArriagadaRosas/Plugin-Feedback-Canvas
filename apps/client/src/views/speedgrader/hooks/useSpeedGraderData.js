@@ -26,7 +26,7 @@ export function useSpeedGraderData() {
     },
   });
 
-  const { data: assignments = [] } = useQuery({
+  const { data: assignments = [], isFetching: isAssignmentsLoading } = useQuery({
     queryKey: assignmentKeys.speedgrader(courseId),
     queryFn: async () => {
       if (!courseId) return [];
@@ -38,6 +38,7 @@ export function useSpeedGraderData() {
             id: a.id,
             name: a.name,
             points: a.points_possible,
+            templateId: a.template || "",
             templateName: a.templateName || "",
             rubric: a.rubric || null,
             active: Boolean(a.active)
@@ -171,5 +172,6 @@ export function useSpeedGraderData() {
     setGeneratedFeedbackId,
     isFeedbackApproved,
     isFetchingSubmission,
+    isAssignmentsLoading,
   };
 }
