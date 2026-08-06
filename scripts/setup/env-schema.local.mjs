@@ -8,6 +8,11 @@ export const localEnvSchema = {
     message: 'Puerto para el servidor de Node.js:',
     initial: '3000'
   },
+  AUTO_MIGRATE: {
+    type: 'input',
+    message: 'Ejecutar migraciones de base de datos al iniciar el servidor (true/false):',
+    initial: 'true'
+  },
   DATABASE_URL: {
     type: 'input',
     message: 'URL de conexión a PostgreSQL:',

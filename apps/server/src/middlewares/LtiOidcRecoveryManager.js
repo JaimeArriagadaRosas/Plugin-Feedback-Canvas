@@ -107,7 +107,7 @@ class LtiOidcRecoveryManager {
       throw new AppError(`jwt audience invalid. expected: ${targetClientId} but got: ${receivedAudience.join(',')}`, 401);
     }
     
-    logger.info('[LtiOidcRecoveryManager] Audience verificada y saneada con éxito.');
+    logger.debug('[LtiOidcRecoveryManager] Audience verificada y saneada con éxito.');
   }
 
   /**
