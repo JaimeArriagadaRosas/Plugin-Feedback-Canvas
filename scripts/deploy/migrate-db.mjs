@@ -1,4 +1,4 @@
-import { runMigrations } from '../../apps/server/src/data/migrations.js';
+import { runMigrations } from '../setup/migrate.mjs';
 import dotenv from 'dotenv';
 
 // Cargar variables de entorno si existen
