@@ -48,6 +48,7 @@ export default function FeedbackReviewPanel() {
     selectedIds,
     toggleSelection,
     toggleAllSelection,
+    isApprovalSubmitting,
   } = useFeedbackReview({ initialSelectedCourse: initialCourse ? String(initialCourse) : undefined });
 
   const handleReview = useCallback((row) => {
@@ -138,6 +139,7 @@ export default function FeedbackReviewPanel() {
         onApprove={handleApprove}
         onReject={handleReject}
         feedback={activeFeedback}
+        isSubmitting={isApprovalSubmitting}
       />
 
       <EditFeedbackModal

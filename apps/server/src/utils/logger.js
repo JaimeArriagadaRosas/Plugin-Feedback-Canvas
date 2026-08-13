@@ -52,6 +52,11 @@ const pinoLogger = pino(
   targets.length > 0 ? pino.transport({ targets }) : undefined
 );
 
+function isNoisyEndpoint(message) {
+  return ['/system-notifications/pending', '/feedback/pending/summary', '/feedback/list']
+    .some((pathFragment) => message.includes(pathFragment));
+}
+
 function formatDevLog(level, rawMessage) {
   const redacted = redactSensitiveStrings(rawMessage);
   
@@ -84,17 +89,9 @@ function formatDevLog(level, rawMessage) {
     finalMessage = match[2];
   }
 
-  const isHttpRequest = finalMessage.startsWith('-> GET') || finalMessage.startsWith('-> POST') || finalMessage.startsWith('-> PUT') || finalMessage.startsWith('-> DELETE');
-  const isHttpResponse = finalMessage.startsWith('<- GET') || finalMessage.startsWith('<- POST') || finalMessage.startsWith('<- PUT') || finalMessage.startsWith('<- DELETE');
-
-  // Ignorar endpoints ruidosos (polling del frontend) para mantener la consola limpia
-  const isNoisyEndpoint = finalMessage.includes('/system-notifications/pending') || 
-                          finalMessage.includes('/feedback/pending/summary') || 
-                          finalMessage.includes('/feedback/list');
-
-  if (isNoisyEndpoint) {
-    return null;
-  }
+  const [isHttpRequest, isHttpResponse] = ['->', '<-'].map((prefix) =>
+    ['GET', 'POST', 'PUT', 'DELETE'].some((method) => finalMessage.startsWith(`${prefix} ${method}`)));
+  if (isNoisyEndpoint(finalMessage)) return null;
 
   if (isHttpRequest) {
     const methodPath = finalMessage.replace('-> ', '').trim();

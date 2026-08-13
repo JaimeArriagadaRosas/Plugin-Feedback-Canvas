@@ -1,17 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { getE2ETargetConfig } from './ltiTargetConfig.mjs';
 
 test.describe('LTI Launch Flow (E2E)', () => {
   // Ignorar errores de certificados SSL en entornos de desarrollo local
   test.use({ ignoreHTTPSErrors: true });
 
   test('Debería poder iniciar sesión en Canvas y acceder al LTI', async ({ page }) => {
-    const isLocal = process.env.E2E_TARGET === 'local';
-    
-    // Obtenemos los datos desde las variables de entorno, o definimos valores por defecto (ej. docker local)
-    const canvasUrl = process.env.CANVAS_URL || 'http://canvas.docker';
-    const canvasUser = process.env.CANVAS_TEST_USER || 'admin@example.com';
-    const canvasPass = process.env.CANVAS_TEST_PASS || 'password';
-    const courseId = process.env.CANVAS_TEST_COURSE_ID || '1';
+    const { canvasUrl, canvasUser, canvasPass, courseId, isLocal } = getE2ETargetConfig();
     
     console.log(`Ejecutando E2E LTI Launch contra Canvas en: ${canvasUrl}`);
 
@@ -54,7 +49,11 @@ test.describe('LTI Launch Flow (E2E)', () => {
       // Podrías agregar asserts específicos aquí dependiendo del UI de React, ej:
       // await expect(ltiIframe.locator('h1')).toContainText('Bienvenido al Feedback');
     } else {
-      console.log('El enlace LTI "Feedback" no es visible en el menú del curso. Omitiendo validación del iframe.');
+      if (isLocal) {
+        console.log('El enlace LTI "Feedback" no es visible en el menu local. Omitiendo validacion del iframe.');
+      } else {
+        throw new Error('La herramienta LTI Feedback no aparece en el curso de Canvas real.');
+      }
     }
   });
 });

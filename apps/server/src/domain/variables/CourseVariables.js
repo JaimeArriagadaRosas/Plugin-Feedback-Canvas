@@ -83,7 +83,7 @@ export class CourseVariables {
       validatedVariables[key] = {
         activa,
         ponderacion: activa ? ponderacion : 0,
-        nombre: DEFAULT_VARIABLES[key].nombre
+        nombre: inputVar.nombre && inputVar.nombre.trim() !== '' ? inputVar.nombre.trim() : DEFAULT_VARIABLES[key].nombre
       };
     }
 

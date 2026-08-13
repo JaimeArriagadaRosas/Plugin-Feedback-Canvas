@@ -67,7 +67,7 @@ export default class FeedbackGenerationService {
 
       let chileGrade, approved, canvasScore;
       try {
-        const gradeResult = this._convertGrade(currentGrade, canvasData.submission);
+        const gradeResult = GradeConverter.processGrade(currentGrade, canvasData.submission);
         chileGrade = gradeResult.chileGrade;
         approved = gradeResult.approved;
         canvasScore = gradeResult.canvasScore;
@@ -76,7 +76,7 @@ export default class FeedbackGenerationService {
           logger.debug(`Este estudiante no ha entregado (Estudiante: ${studentId})`);
           return { exito: false, omitido: true, data: null, mensaje: 'Este estudiante no ha entregado', razon: err.errorCode || 'INSUFFICIENT_DATA' };
         }
-        throw err;
+        throw new DomainError(err.message, err.statusCode || 400, err.errorCode);
       }
 
       const profile = await this._buildProfile(courseId, studentId, teacherId);
@@ -102,30 +102,10 @@ export default class FeedbackGenerationService {
       );
 
       const template = await this.templateRepo.getById(templateId);
-      if (!template) throw new DomainError('Plantilla no encontrada', 404);
+      if (!template || !template.contenido) throw new DomainError('Plantilla no encontrada o sin contenido', 404);
 
       context.instructionIA = context.instructionIA + activeVariablesInfo.text;
-
-      if (activeVariablesInfo.activeVars && activeVariablesInfo.activeVars.length > 0) {
-        let variablesDataText = "\\nDatos del estudiante correspondientes a las variables activas:\\n";
-        let addedData = false;
-        
-        for (const activeVar of activeVariablesInfo.activeVars) {
-           const expectedTag = `{{${activeVar.key}}}`;
-           const resolver = this.resolvers.find(r => r.variableName === expectedTag);
-           if (resolver) {
-              const value = await resolver.resolve(context);
-              if (value && value.trim() !== '') {
-                 variablesDataText += `- ${activeVar.nombre}: ${value}\\n`;
-                 addedData = true;
-              }
-           }
-        }
-        
-        if (addedData) {
-           context.instructionIA += variablesDataText;
-        }
-      }
+      await this._appendActiveVariableData(context, activeVariablesInfo.activeVars);
 
       // Inyección modular de variables usando el Patrón Strategy
       const prompt = await PromptManager.buildPrompt(template.contenido, context, this.resolvers);
@@ -181,6 +161,21 @@ export default class FeedbackGenerationService {
     }
   }
 
+  async _appendActiveVariableData(context, activeVariables = []) {
+    const lines = [];
+    for (const variable of activeVariables) {
+      const resolver = this.resolvers.find((item) => item.variableName === `{{${variable.key}}}`);
+      if (!resolver) continue;
+      const value = await resolver.resolve(context);
+      if (value !== null && value !== undefined && String(value).trim() !== '') {
+        lines.push(`- ${variable.nombre}: ${value}`);
+      }
+    }
+    if (lines.length > 0) {
+      context.instructionIA += `\\nDatos del estudiante correspondientes a las variables activas:\\n${lines.join('\\n')}\\n`;
+    }
+  }
+
   async _fetchCanvasData(courseId, assignmentId, studentId, teacherId) {
     const [submission, questions, rubric, students] = await Promise.all([
       this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId),
@@ -197,44 +192,7 @@ export default class FeedbackGenerationService {
     return { submission, questions, rubric, students, student, assignment };
   }
 
-  _convertGrade(currentGrade, submission) {
-    const pointsPossibleRaw = submission?.points_possible;
-    const pointsPossible = typeof pointsPossibleRaw === 'number' && Number.isFinite(pointsPossibleRaw)
-      ? pointsPossibleRaw
-      : 100;
 
-    if (pointsPossible <= 0) {
-      throw new DomainError('points_possible debe ser mayor a 0', 422, 'INSUFFICIENT_DATA');
-    }
-
-    // Plan A: Hay nota explícita del profesor (currentGrade)
-    if (currentGrade !== undefined && currentGrade !== null && currentGrade !== '') {
-      const parsedGrade = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade);
-      if (!Number.isFinite(parsedGrade) || parsedGrade < 1.0 || parsedGrade > 7.0) {
-        throw new DomainError('Nota chilena fuera de rango (1.0–7.0)', 422, 'INSUFFICIENT_DATA');
-      }
-      const rawCanvasScore = parsedGrade >= 4.0 
-        ? 60 + ((parsedGrade - 4.0) / 3.0) * 40
-        : ((parsedGrade - 1.0) / 2.9) * 60;
-      
-      const { chileGrade, approved } = GradeConverter.toChileGrade(rawCanvasScore, pointsPossible);
-      return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
-    }
-    
-    // Plan B: No hay nota explícita, usamos el puntaje de Canvas (score, entered_score o unposted_score)
-    const rawScore = submission?.score ?? submission?.entered_score ?? submission?.unposted_score;
-    if (submission && rawScore !== undefined && rawScore !== null) {
-      const rawCanvasScore = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore);
-      if (!Number.isFinite(rawCanvasScore) || rawCanvasScore < 0 || rawCanvasScore > pointsPossible) {
-        throw new DomainError(`Calificación Canvas fuera de rango (0–${pointsPossible})`, 422, 'INSUFFICIENT_DATA');
-      }
-      const { chileGrade, approved } = GradeConverter.toChileGrade(rawCanvasScore, pointsPossible);
-      return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
-    }
-
-    // Plan C: Ni nota explícita ni puntaje
-    throw new DomainError('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada', 422, 'INSUFFICIENT_DATA');
-  }
 
   async _buildProfile(courseId, studentId, teacherId) {
     const profileData = await this.academicHistoryService.getStudentAcademicProfile(courseId, studentId, teacherId);

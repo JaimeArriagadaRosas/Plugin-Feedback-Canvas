@@ -50,9 +50,13 @@ export default class AdvancedFeedbackController {
 
       // Esperamos a que termine la Fase A (actualización en BD a APROBADO).
       // La Fase B (envío a Canvas) seguirá corriendo en segundo plano dentro del servicio.
-      await this.workflowService.bulkApproveAndSend(feedbackIds, teacherId);
+      const result = await this.workflowService.bulkApproveAndSend(feedbackIds, teacherId);
       
-      res.status(200).json({ exito: true, mensaje: 'Feedbacks aprobados. El envío a Canvas se está procesando en segundo plano.' });
+      res.status(202).json({
+        exito: true,
+        mensaje: 'Feedbacks encolados. El envío a Canvas se está procesando en segundo plano.',
+        data: result
+      });
     } catch (error) {
       next(error);
     }

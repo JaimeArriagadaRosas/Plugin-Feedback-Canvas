@@ -1,0 +1,51 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": ["security"],
+  "extends": ["plugin:security/recommended"],
+  "rules": {
+    "security/detect-possible-timing-attacks": "error",
+    "security/detect-object-injection": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-unsafe-regex": "error",
+    "security/detect-non-literal-regexp": "error",
+    "security/detect-buffer-noassert": "error",
+    "security/detect-child-process": "warn",
+    "security/detect-disable-mustache-escape": "error",
+    "security/detect-eval-with-expression": "error",
+    "security/detect-no-csrf-before-method-override": "error",
+    "security/detect-pseudoRandomBytes": "error",
+    "security/detect-new-buffer": "error"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "logs/",
+    "coverage/",
+    "apps/client/"
+  ],
+  "overrides": [
+    {
+      "files": ["apps/installer/src/**/*.js", "apps/server/src/**/*.js", "packages/**/*.js"],
+      "rules": {
+        "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }],
+        "max-lines-per-function": ["error", { "max": 100, "skipBlankLines": true, "skipComments": true }]
+      }
+    },
+    {
+      "files": ["apps/installer/**/*.js", "packages/**/*.js", "**/tests/**/*.js", "**/*.test.js"],
+      "rules": {
+        "security/detect-non-literal-fs-filename": "off",
+        "security/detect-object-injection": "off",
+        "security/detect-unsafe-regex": "off"
+      }
+    }
+  ]
+}

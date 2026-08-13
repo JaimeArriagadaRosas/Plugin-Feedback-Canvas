@@ -90,7 +90,7 @@ const styles = {
   }
 };
 
-export default function ApprovalModal({ feedback, onApprove, onReject, onClose, isOpen }) {
+export default function ApprovalModal({ feedback, onApprove, onReject, onClose, isOpen, isSubmitting = false }) {
   const [now, setNow] = useState("");
   const [rating, setRating] = useState(0);
   const [privateNote, setPrivateNote] = useState("");
@@ -206,21 +206,33 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
           {!isRejecting ? (
             <>
               {(!isApproved && feedback?.status !== 'RECHAZADO') && (
-                <button style={{...styles.btnConfirm, background: "#c0392b", marginRight: "10px"}} onClick={() => setIsRejecting(true)}>Rechazar Feedback</button>
+                <button
+                  style={{...styles.btnConfirm, background: "#c0392b", marginRight: "10px"}}
+                  onClick={() => setIsRejecting(true)}
+                  disabled={isSubmitting}
+                >
+                  Rechazar Feedback
+                </button>
               )}
-              <button style={styles.btnConfirm} onClick={() => onApprove(rating, privateNote)}>{isApproved ? 'Guardar Cambios' : 'Confirmar Aprobación'}</button>
-              <button style={styles.btnCancel} onClick={onClose}>Cancelar</button>
+              <button
+                style={{...styles.btnConfirm, cursor: isSubmitting ? "wait" : "pointer", opacity: isSubmitting ? 0.7 : 1}}
+                disabled={isSubmitting}
+                onClick={() => onApprove(rating, privateNote)}
+              >
+                {isSubmitting ? 'Procesando…' : (isApproved ? 'Guardar Cambios' : 'Confirmar Aprobación')}
+              </button>
+              <button style={styles.btnCancel} onClick={onClose} disabled={isSubmitting}>Cancelar</button>
             </>
           ) : (
             <>
               <button 
                 style={{...styles.btnConfirm, background: selectedTemplate ? "#0374B5" : "#95a5a6", cursor: selectedTemplate ? "pointer" : "not-allowed"}} 
-                disabled={!selectedTemplate} 
+                disabled={!selectedTemplate || isSubmitting}
                 onClick={() => onReject(Number(selectedTemplate))}
               >
                 Generar Nuevo Feedback
               </button>
-              <button style={styles.btnCancel} onClick={() => setIsRejecting(false)}>Volver</button>
+              <button style={styles.btnCancel} onClick={() => setIsRejecting(false)} disabled={isSubmitting}>Volver</button>
             </>
           )}
         </div>

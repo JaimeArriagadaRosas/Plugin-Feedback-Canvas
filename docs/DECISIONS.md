@@ -1,33 +1,80 @@
-# Registro de Decisiones Arquitectónicas (ADR)
+# Registro de decisiones arquitectónicas
 
-Este archivo (basado en el patrón *Architecture Decision Records*) documenta el **"por qué"** de las decisiones técnicas más importantes del proyecto. Su objetivo es evitar que futuros desarrolladores intenten cambiar un componente sin conocer el contexto histórico que motivó su creación.
+Los ADR explican por qué existe una decisión. Los cambios nuevos deben añadir o reemplazar un ADR; no se reescribe el pasado para aparentar que una decisión siempre fue distinta.
 
-## ADR 1: Uso de Proxy TLS Inverso en Localhost
+## ADR-001: proxy TLS local para Canvas
 
-*   **Estado:** Aceptado
-*   **Contexto:** Canvas LMS exige conexiones completamente seguras (HTTPS) para las herramientas externas conectadas mediante LTI 1.3. Si Canvas se ejecuta localmente mediante Docker (puerto 8080, HTTP) y el plugin se sirve en HTTPS (puerto 3000), los navegadores modernos bloquean la interacción por políticas de *Mixed Content* y *Cross-Origin*.
-*   **Decisión:** Se optó por construir y orquestar un Proxy TLS Inverso en Node.js (escuchando en el puerto 8443) que envuelve el tráfico de Canvas.
-*   **Consecuencia:** Todos los usuarios locales deben acceder a Canvas a través de `https://localhost:8443` o `https://canvas.docker:8443`. Esto agrega una capa extra en el entorno local pero garantiza que el flujo LTI funcione idéntico a producción.
+- **Estado:** aceptado.
+- **Contexto:** Canvas local sirve HTTP en `:8080`, mientras LTI y el navegador requieren orígenes HTTPS coherentes.
+- **Decisión:** usar un proxy TLS local en `:8443` hacia Canvas HTTP.
+- **Consecuencias:** hay certificados locales y un proceso adicional; producción debe usar TLS público en el proxy/ingress institucional, no este certificado.
 
-## ADR 2: Congelamiento de Dependencias y Versiones (Agosto 2024)
+## ADR-002: dependencias y Canvas fijados
 
-*   **Estado:** Aceptado
-*   **Contexto:** El ciclo de vida de mantenimiento activo del proyecto terminará a finales de año. Para evitar que actualizaciones inesperadas en el ecosistema Node.js o en el repositorio base de Canvas LMS rompan el sistema.
-*   **Decisión:** 
-    1.  Fijar estrictamente todas las dependencias en los archivos `package.json` eliminando los operadores de versión dinámica (`^`, `~`).
-    2.  Forzar al script de clonación (`CanvasCloner.js`) a apuntar a la release oficial `release/2026-05-20.143` en lugar de la rama dinámica `prod`.
-*   **Consecuencia:** El código es completamente estable en el tiempo y predecible. Se debe utilizar estrictamente `npm ci` para instalar paquetes. Actualizar librerías requerirá un esfuerzo manual y pruebas de regresión.
+- **Estado:** aceptado, revisado en agosto de 2026.
+- **Contexto:** npm 9 no reprodujo el lockfile; una rama Canvas móvil hacía el setup no determinista.
+- **Decisión:** declarar Node `^20.19.0 || >=22.12.0`, npm 11.8.0 y fijar Canvas local a `release/2026-05-20.143`.
+- **Consecuencias:** instalaciones con `npx --yes npm@11.8.0 ci`; las actualizaciones requieren una rama, revisión de lockfile y regresión del setup.
 
-## ADR 3: Monorepo con NPM Workspaces
+## ADR-003: monorepo con npm workspaces
 
-*   **Estado:** Aceptado
-*   **Contexto:** El proyecto tiene un frontend (React) y un backend (Express) que comparten modelos de datos, validaciones y tipos.
-*   **Decisión:** Utilizar NPM Workspaces en un único repositorio en lugar de repositorios separados.
-*   **Consecuencia:** Facilita el intercambio de código (a través del workspace `packages/shared`). Simplifica el proceso de clonación e instalación (`npm install` instala todo a la vez), pero requiere que los comandos del terminal estén correctamente orquestados.
+- **Estado:** aceptado.
+- **Contexto:** cliente y servidor evolucionan juntos y comparten una única entrega.
+- **Decisión:** usar un repositorio con workspaces `apps/*` y reserva `packages/*`.
+- **Consecuencias:** un solo lockfile y pipeline. En el árbol actual solo `apps/client` y `apps/server` son workspaces efectivos; no se documentan paquetes compartidos inexistentes.
 
-## ADR 4: Elección del Motor de IA (Google Gemini)
+## ADR-004: proveedores de IA mediante estrategia/factoría
 
-*   **Estado:** Aceptado
-*   **Contexto:** Se necesitaba generar retroalimentación académica adaptativa basada en reglas y contexto del estudiante.
-*   **Decisión:** Se integró el modelo fundacional de Google (Gemini) debido a su gran ventana de contexto, velocidad de procesamiento para textos largos, y coste-beneficio en el API.
-*   **Consecuencia:** El sistema depende del servicio en la nube de Google, requiriendo siempre conectividad y una clave API válida (`GEMINI_API_KEY`) definida en las variables de entorno.
+- **Estado:** aceptado; reemplaza la decisión «Gemini como único motor».
+- **Contexto:** distintos entornos requieren Gemini, OpenAI, Claude o un endpoint compatible/personalizado.
+- **Decisión:** seleccionar un adaptador con `IAProviderFactory`; el dominio de feedback no conoce detalles HTTP de cada proveedor.
+- **Consecuencias:** cada adaptador debe normalizar errores, timeouts y modelos; credenciales se cifran/gestionan fuera del frontend. Gemini puede ser el default local sin convertirse en dependencia única.
+
+## ADR-005: Canvas local fuera del repositorio
+
+- **Estado:** aceptado.
+- **Contexto:** Canvas LMS es un proyecto upstream grande usado como simulador, no lógica del plugin.
+- **Decisión:** mantener `canvas-lms-master` como carpeta hermana y fijar la release.
+- **Consecuencias:** no se versionan assets/configuración generada de Canvas; el setup protege destinos desconocidos y conserva `.env` existente.
+
+## ADR-006: adaptación explícita por sistema operativo
+
+- **Estado:** aceptado.
+- **Contexto:** una única rama condicional mezclaba Docker Desktop/UAC, APT/systemd, Gatekeeper y WSL.
+- **Decisión:** probes y políticas compartidas; acciones nativas en adaptadores `Win…`, `Mac…`, `Linux…` y políticas WSL.
+- **Consecuencias:** una plataforma no emite instrucciones de otra; agregar un sistema exige adaptador y tests específicos sin inflar el coordinador.
+
+## ADR-007: Docker rootless preferido en Linux
+
+- **Estado:** aceptado.
+- **Contexto:** el grupo `docker` concede control equivalente a root y provocaba problemas de permisos/seguridad.
+- **Decisión:** después de instalar Docker Engine, ofrecer rootless como opción recomendada; el grupo requiere una confirmación separada.
+- **Consecuencias:** aparecen mapeos UID/GID y algunas limitaciones de cgroups/red; los writes de Canvas se ejecutan con el usuario interno necesario sin convertir al host en root.
+
+## ADR-008: configuración Canvas mediante overrides reanudables
+
+- **Estado:** aceptado.
+- **Contexto:** editar/destruir configuración upstream hacía el setup frágil y no idempotente.
+- **Decisión:** conservar archivos existentes, partir de plantillas Docker oficiales y aplicar overrides/versiones locales explícitas.
+- **Consecuencias:** el setup debe distinguir carpeta ausente, reconocida y desconocida; cualquier reset destructivo queda fuera de la recuperación automática.
+
+## ADR-009: instalación npm reproducible en preboot
+
+- **Estado:** aceptado.
+- **Contexto:** `npm install`, `shell: true` y reintentos ilimitados podían modificar lockfile o saturar procesos.
+- **Decisión:** invocar `npx --yes npm@11.8.0 ci` con argumentos estructurados y como máximo un intento de reparación.
+- **Consecuencias:** el arranque falla de forma visible si la instalación reproducible no puede completarse; no oculta incompatibilidades mediante otra resolución.
+
+## ADR-010: sufijo `.local` como adaptador versionado
+
+- **Estado:** aceptado con migración progresiva.
+- **Contexto:** `.local` se usa para comportamiento propio del entorno de desarrollo, no para secretos ignorados por Git.
+- **Decisión:** versionar esos módulos y activarlos solo desde composition roots/guardas locales. Compartir dominio y casos de uso.
+- **Consecuencias:** no se aplica una regla `.gitignore` global a `*.local.*`; cada bypass debe demostrar que producción no puede alcanzarlo.
+
+## ADR-011: Eliminación del directorio `scripts/`
+
+- **Estado:** aceptado y completado.
+- **Contexto:** existían scripts heredados de deploy, reparación y diagnóstico con responsabilidad desigual en un directorio raíz genérico.
+- **Decisión:** el directorio `scripts/` ha sido eliminado. La lógica de entrada y los comandos operativos ahora viven en sus módulos correspondientes, como `apps/installer/src/commands/` y `apps/server/bin/`.
+- **Consecuencias:** mayor cohesión; las dependencias están claras para cada aplicación.

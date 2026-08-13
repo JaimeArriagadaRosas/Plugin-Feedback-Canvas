@@ -22,4 +22,5 @@ services:
     volumes:
       - ./apps/server:/app/apps/server
       - ./apps/client:/app/apps/client
+      - ./packages:/app/packages
     command: npm run dev

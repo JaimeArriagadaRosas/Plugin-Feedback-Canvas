@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import { RichTextProcessor } from '../modules/formatting/RichTextProcessor.js';
 
 export default class FeedbackWorkflowService {
   constructor(feedbackRepo, feedbackService, canvasService, preferencesService, emailService, diagnosticsService = null) {
@@ -51,12 +52,20 @@ export default class FeedbackWorkflowService {
     // 1. Fase A: Síncrona - Actualización masiva instantánea
     await this.feedbackRepo.executeTransaction(async (client) => {
       const queryParams = feedbackIds.map((_, i) => `$${i + 1}`).join(',');
+      const queryValues = [...feedbackIds];
+      let teacherFilter = '';
+      if (currentTeacherId !== 'system') {
+        queryValues.push(currentTeacherId);
+        teacherFilter = ` AND profesor_id = $${queryValues.length}`;
+      }
       const res = await client.query(`
         SELECT id, estado, contenido_generado, curso_id, tarea_id, estudiante_id, profesor_id, nota_canvas 
         FROM Historial_Feedback_Generado 
-        WHERE id IN (${queryParams}) AND estado = 'PENDIENTE'
+        WHERE id IN (${queryParams})
+          AND estado IN ('PENDIENTE', 'EDITADO')
+          ${teacherFilter}
         FOR UPDATE
-      `, feedbackIds);
+      `, queryValues);
       
       feedbacksToProcess = res.rows;
       if (feedbacksToProcess.length > 0) {
@@ -80,14 +89,18 @@ export default class FeedbackWorkflowService {
 
   async _processCanvasUploadsInBackground(feedbacksToProcess, currentTeacherId) {
     for (const fb of feedbacksToProcess) {
+       let canvasPublished = false;
        try {
          const teacherToUse = currentTeacherId !== 'system' ? currentTeacherId : fb.profesor_id;
          
          // Canvas API calls
-         await this.canvasService.postComment(fb.curso_id, fb.tarea_id, fb.estudiante_id, teacherToUse, fb.contenido_generado);
+         const formattedContent = RichTextProcessor.process(fb.contenido_generado);
+         await this.canvasService.postComment(fb.curso_id, fb.tarea_id, fb.estudiante_id, teacherToUse, formattedContent);
          if (fb.nota_canvas !== null && fb.nota_canvas !== undefined) {
             await this.canvasService.updateGrade(fb.curso_id, fb.tarea_id, fb.estudiante_id, teacherToUse, fb.nota_canvas);
          }
+         canvasPublished = true;
+         await this.feedbackRepo.updateStatusAndContent(fb.id, 'ENVIADO', fb.contenido_generado);
 
          // Obtener preferencia (RF43)
          let metodo = 'canvas_inapp';
@@ -120,11 +133,8 @@ export default class FeedbackWorkflowService {
          
          if (sendEmail) {
             try {
-               if (this.emailService) {
-                  await this.emailService.sendNotification(fb.estudiante_id, fb.curso_id, 'Nuevo Feedback Disponible');
-               } else {
-                  logger.info(`[Email] Simulando envío de correo al estudiante ${fb.estudiante_id}`);
-               }
+               if (!this.emailService) throw new Error('Proveedor de correo no configurado');
+               await this.emailService.sendNotification(fb.estudiante_id, fb.curso_id, 'Nuevo Feedback Disponible');
                emailSuccess = true;
             } catch (e) {
                logger.warn(`[Workflow] Error enviando correo para feedback ${fb.id}`, { error: e.message });
@@ -149,9 +159,13 @@ export default class FeedbackWorkflowService {
             );
          }
        } catch (error) {
-         logger.error(`[Workflow] Error subiendo a Canvas feedback ${fb.id}. Revirtiendo a PENDIENTE...`, { error: error.message });
+         if (canvasPublished) {
+           logger.error(`[Workflow] Canvas recibió el feedback ${fb.id}, pero falló una operación posterior. Se conserva ENVIADO para evitar duplicados.`, { error: error.message });
+           continue;
+         }
+         logger.error(`[Workflow] Error subiendo a Canvas feedback ${fb.id}. Restaurando ${fb.estado}...`, { error: error.message });
          try {
-           await this.feedbackRepo.updateStatusAndContent(fb.id, 'PENDIENTE', fb.contenido_generado);
+           await this.feedbackRepo.updateStatusAndContent(fb.id, fb.estado, fb.contenido_generado);
          } catch(rollbackErr) {
            logger.error(`[Workflow] Error crítico revirtiendo estado para feedback ${fb.id}`, { error: rollbackErr.message });
          }

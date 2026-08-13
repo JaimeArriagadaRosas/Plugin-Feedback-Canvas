@@ -5,6 +5,8 @@ import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './AssignmentTable.module.css';
 
+const SKELETON_KEYS = ['skel-assign-1', 'skel-assign-2', 'skel-assign-3', 'skel-assign-4', 'skel-assign-5'];
+
 export default function AssignmentTable({ assignments, onToggle, onTemplateChange, onError, loading }) {
   const logToggle = useButtonLogger();
   const [selectedTemplates, setSelectedTemplates] = useState({});
@@ -54,8 +56,8 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
       </thead>
       <tbody>
         {loading ? (
-          Array.from({ length: 5 }).map((_, idx) => (
-            <tr key={`skel-${idx}`}>
+          SKELETON_KEYS.map((key) => (
+            <tr key={key}>
               <td><div className={`${styles.skeletonCell} ${styles.skeletonCellLong}`} /></td>
               <td><div className={`${styles.skeletonCell} ${styles.skeletonCellMedium}`} /></td>
               <td><div className={`${styles.skeletonCell} ${styles.skeletonCellShort}`} style={{ margin: 'auto' }} /></td>

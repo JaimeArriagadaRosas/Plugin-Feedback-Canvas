@@ -3,7 +3,7 @@
  *
  * NOTA: La orquestacion real de Canvas Local (copiar/inyectar configuraciones
  * por defecto, levantar contenedores, validar la herramienta LTI y el script
- * JS) la ejecuta la capa Python de setup (ver packages/server/src/setup/,
+ * JS) la ejecuta la capa Python de setup (ver apps/installer/src/installation/,
  * p.ej. bringup.py y verificar_plugin.py) invocada desde runPythonVerify().
  *
  * Esta clase es un punto de extension deliberadamente liviano: hoy no realiza

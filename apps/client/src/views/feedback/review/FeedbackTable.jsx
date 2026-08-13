@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isFinalFeedbackState, isReviewableFeedbackState } from '@plugin-feedback/contracts';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -31,7 +32,7 @@ export default function FeedbackTable({
   const logEdit = useButtonLogger();
 
   // Obtenemos los IDs de los feedbacks pendientes para la casilla "Seleccionar Todos"
-  const pendingFeedbacks = feedbacks.filter(fb => fb.status === 'PENDIENTE' || fb.status === 'EDITADO');
+  const pendingFeedbacks = feedbacks.filter((feedback) => isReviewableFeedbackState(feedback.status));
   const allPendingSelected = pendingFeedbacks.length > 0 && pendingFeedbacks.every(fb => selectedIds.has(fb.id));
 
   const columns = useMemo(() => [
@@ -52,7 +53,7 @@ export default function FeedbackTable({
           type="checkbox" 
           checked={selectedIds.has(row.id)}
           onChange={() => onToggleSelection(row.id)}
-          disabled={row.status !== 'PENDIENTE' && row.status !== 'EDITADO'}
+          disabled={!isReviewableFeedbackState(row.status)}
         />
       )
     },
@@ -68,7 +69,7 @@ export default function FeedbackTable({
       return <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: '80px', justifyContent: 'center', backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.text}33` }}>{value}</span>;
     }},
     { key: 'actions', label: 'Acciones', width: '15%', render: (_, row) => {
-      const isApproved = row.status === 'APROBADO' || row.status === 'ENVIADO';
+      const isApproved = isFinalFeedbackState(row.status);
       return (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button variant="secondary" size="sm" onClick={() => logReview('FEEDBACK_REVIEW_OPEN', () => onReview?.(row))()}>

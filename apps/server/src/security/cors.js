@@ -16,7 +16,6 @@
 
 import cors from 'cors';
 import { getEnv } from '../config/index.js';
-import { isProduction } from './envGuard.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -95,9 +94,9 @@ export function getCanvasFrameAncestor() {
 
 /**
  * Middleware CORS basado en allowlist por entorno.
- *  - En producción, un Origin ausente se rechaza (fail-closed).
- *  - Fuera de producción, un Origin ausente (ej. server-to-server, form-post
- *    sin Origin) se acepta para no romper el flujo LTI local.
+ *  - Un Origin ausente (healthchecks, webhooks y clientes server-to-server)
+ *    se acepta. CORS es una política del navegador y no sustituye la
+ *    autenticación o la firma propia de cada endpoint.
  *  - Cualquier Origin presente se valida contra la allowlist; si no coincide,
  *    se rechaza con un error claro y se registra para diagnóstico.
  */
@@ -114,11 +113,10 @@ export function corsMiddleware() {
         return cb(new Error('Origen no permitido por CORS'));
       }
 
-      // Sin Origin: en producción fallamos cerrado; en desarrollo aceptamos.
-      if (isProduction()) {
-        return cb(new Error('CORS: missing origin'));
-      }
-      cb(null, true);
+      // Healthchecks, webhooks y otros clientes server-to-server normalmente
+      // no envían Origin. Deben pasar CORS y ser protegidos por sus mecanismos
+      // propios (firma HMAC, autenticación, red interna, etc.).
+      return cb(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

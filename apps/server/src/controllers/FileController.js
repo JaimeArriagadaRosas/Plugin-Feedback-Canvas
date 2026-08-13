@@ -1,46 +1,51 @@
-import logger from '../utils/logger.js';
-import path from 'path';
-import https from 'node:https';
 import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
 
-// Función auxiliar para evadir la restricción de Node 18 fetch que bloquea el encabezado Host.
-// Esto permite que el contenedor envíe peticiones a Canvas burlando su DNS Rebinding Protection.
+import logger from '../utils/logger.js';
+
+const MAX_PREVIEW_BYTES = 25 * 1024 * 1024;
+const TRUSTED_CANVAS_SUFFIXES = ['instructure.com'];
+
 function proxyFetch(url, headers) {
   return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
-    const options = {
-      method: 'GET',
-      headers: headers,
-      rejectUnauthorized: false
-    };
-    
-    const client = urlObj.protocol === 'https:' ? https : http;
-    const req = client.request(url, options, (res) => {
-      let data = [];
-      res.on('data', chunk => data.push(chunk));
-      res.on('end', () => {
-        const buffer = Buffer.concat(data);
-        
-        // Simular el objeto Headers nativo de fetch
-        const responseHeaders = {
-          get: (name) => res.headers[name.toLowerCase()] || null,
-          raw: () => res.headers
-        };
-
-        resolve({
-          ok: res.statusCode >= 200 && res.statusCode < 300,
-          status: res.statusCode,
-          statusText: res.statusMessage,
-          headers: responseHeaders,
-          json: async () => JSON.parse(buffer.toString('utf-8')),
-          text: async () => buffer.toString('utf-8'),
-          arrayBuffer: async () => buffer
-        });
+    const target = new URL(url);
+    const client = target.protocol === 'https:' ? https : http;
+    const request = client.request(target, { method: 'GET', headers, rejectUnauthorized: false }, (response) => {
+      const declaredSize = Number(response.headers['content-length'] || 0);
+      if (declaredSize > MAX_PREVIEW_BYTES) {
+        response.resume();
+        reject(new Error('El archivo supera el límite de vista previa de 25 MB.'));
+        return;
+      }
+      const chunks = [];
+      let size = 0;
+      response.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > MAX_PREVIEW_BYTES) {
+          request.destroy(new Error('El archivo supera el límite de vista previa de 25 MB.'));
+          return;
+        }
+        chunks.push(chunk);
       });
+      response.on('error', reject);
+      response.on('end', () => resolve(createProxyResponse(response, Buffer.concat(chunks))));
     });
-    req.on('error', reject);
-    req.end();
+    request.on('error', reject);
+    request.end();
   });
+}
+
+function createProxyResponse(response, buffer) {
+  return {
+    ok: response.statusCode >= 200 && response.statusCode < 300,
+    status: response.statusCode,
+    statusText: response.statusMessage,
+    headers: { get: (name) => response.headers[name.toLowerCase()] || null },
+    json: async () => JSON.parse(buffer.toString('utf8')),
+    text: async () => buffer.toString('utf8'),
+    arrayBuffer: async () => buffer
+  };
 }
 
 export default class FileController {
@@ -48,165 +53,155 @@ export default class FileController {
     this.canvasService = canvasService;
   }
 
-  async preview(req, res, next) {
+  async preview(req, res) {
     try {
-      const fileUrl = req.query.url;
-      if (!fileUrl) {
-        return res.status(400).json({ error: 'Falta la URL del archivo' });
-      }
-
-      logger.debug(`FileController.preview - URL solicitada: ${fileUrl}`);
-
-      // Validación SSRF básica
-      let urlObj;
-      try {
-        urlObj = new URL(fileUrl);
-      } catch (e) {
-        return res.status(400).json({ error: 'URL inválida' });
-      }
-
-      const allowedDomains = ['instructure.com', 'localhost', '127.0.0.1'];
-      const canvasBaseUrl = process.env.CANVAS_BASE_URL || '';
-      let isAllowed = allowedDomains.some(d => urlObj.hostname.endsWith(d));
-      if (canvasBaseUrl) {
-        try { isAllowed = isAllowed || urlObj.hostname === new URL(canvasBaseUrl).hostname; } catch(e) { logger.debug('Error checking allowed domain', { error: e.message }); }
-      }
-      if (!isAllowed) {
-        logger.warn(`Intento de SSRF detectado en preview: ${fileUrl}`);
-        return res.status(403).json({ error: 'Dominio de origen no permitido.' });
-      }
-
-      // Obtener token de Canvas si existe el contexto LTI
-      const teacherId = req.appIdentity?.canonicalUserId;
-      const headers = {};
-      if (teacherId && this.canvasService && this.canvasService.tokenManager) {
-        try {
-          const token = await this.canvasService.tokenManager.getValidToken(teacherId);
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-        } catch (e) {
-          logger.warn(`No se pudo cargar token Canvas para preview: ${e.message}`);
-        }
-      }
-
-      // Si la URL apunta a localhost (típico en desarrollo local), redirigir al host 
-      // para que el contenedor Docker pueda llegar a la instancia de Canvas (en la máquina host).
-      let fetchUrl = fileUrl;
-      let useProxyFetch = false;
-      const isLocal = fetchUrl.includes('localhost') || fetchUrl.includes('127.0.0.1');
-      if (isLocal) {
-        useProxyFetch = true;
-        const proxyHost = 'host.docker.internal';
-        fetchUrl = fetchUrl.replace(/localhost|127\.0\.0\.1/, proxyHost);
-        
-        // CORRECCIÓN CLAVE: Canvas (Rails) bloquea peticiones con encabezados Host no coincidentes (DNS Rebinding protection)
-        // Debemos forzar el header Host original (ej. localhost:8443) para que Canvas acepte la petición.
-        try {
-          headers['Host'] = new URL(fileUrl).host;
-        } catch (e) { logger.debug('Error parsing URL', { error: e.message }); }
-
-        logger.info(`[FileController] Reescribiendo URL local para Docker: de ${fileUrl} a ${fetchUrl} (Host: ${headers['Host']})`);
-      }
-
-      // Si es una URL web de Canvas (/files/ID/download), rechazará el token Bearer (error 403 Forbidden).
-      // Debemos consultar la API primero para obtener el enlace de descarga real temporal.
-      const fileIdMatch = fetchUrl.match(/\/files\/(\d+)/);
-      if (fileIdMatch && !fetchUrl.includes('/api/v1/')) {
-        const fileId = fileIdMatch[1];
-        const baseUrl = fetchUrl.split('/files/')[0];
-        const apiUrl = `${baseUrl}/api/v1/files/${fileId}`;
-        
-        logger.info(`[FileController] Transformando URL web a API para autorizar descarga: ${apiUrl}`);
-        
-        const apiResponse = useProxyFetch ? await proxyFetch(apiUrl, { ...headers }) : await fetch(apiUrl, { headers });
-        if (!apiResponse.ok) {
-           const errorBody = await apiResponse.text();
-           throw new Error(`Fallo al consultar la API del archivo (HTTP ${apiResponse.status}): ${apiResponse.statusText} - Body: ${errorBody.substring(0, 200)}`);
-        }
-        const fileData = await apiResponse.json();
-        if (fileData.url) {
-           fetchUrl = fileData.url;
-           logger.info(`[FileController] URL de descarga temporal obtenida de la API con éxito.`);
-        }
-      }
-
-      // Hacer fetch de la URL original (o la temporal obtenida de la API)
-      logger.info(`Iniciando descarga de documento desde: ${fetchUrl.substring(0, 100)}...`);
-      console.time(`Download_Original_${fileUrl.substring(0, 30)}`);
-      const fileResponse = useProxyFetch ? await proxyFetch(fetchUrl, { ...headers }) : await fetch(fetchUrl, { headers });
-      console.timeEnd(`Download_Original_${fileUrl.substring(0, 30)}`);
-      
-      if (!fileResponse.ok) {
-        throw new Error(`No se pudo descargar el archivo de origen: ${fileResponse.statusText}`);
-      }
-
-      const contentType = fileResponse.headers.get('content-type') || '';
-      const arrayBuffer = await fileResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      let filename = path.basename(urlObj.pathname) || 'documento';
-      
-      // Si el nombre no tiene extensión, intentar deducirla del contentType
-      if (!path.extname(filename)) {
-        if (contentType.includes('wordprocessingml.document')) filename += '.docx';
-        else if (contentType.includes('msword')) filename += '.doc';
-        else if (contentType.includes('presentationml.presentation')) filename += '.pptx';
-        else if (contentType.includes('ms-powerpoint')) filename += '.ppt';
-        else if (contentType.includes('spreadsheetml.sheet')) filename += '.xlsx';
-        else if (contentType.includes('ms-excel')) filename += '.xls';
-      }
-      
-      const extension = path.extname(filename).toLowerCase();
-
-      // Si es un PDF original, lo servimos directamente
-      if (extension === '.pdf' || contentType.includes('application/pdf')) {
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        return res.send(buffer);
-      }
-
-      // Si no es PDF (ej. Word, Excel), lo enviamos a Gotenberg
-      // Si NODE_ENV no está definido o es development, asumimos que Node corre en el Host, por lo que Gotenberg está en localhost:3001
-      // Si corren la app vía Docker Compose, la variable de entorno GOTENBERG_URL="http://gotenberg:3000" sobrescribirá esto.
-      let gotenbergUrl = process.env.GOTENBERG_URL || 'http://localhost:3001';
-      // Asegurar que use el endpoint correcto para Gotenberg v8
-      if (!gotenbergUrl.includes('/forms/')) {
-        gotenbergUrl = `${gotenbergUrl.replace(/\/$/, '')}/forms/libreoffice/convert`;
-      } else if (gotenbergUrl.endsWith('/pdf')) {
-        // Corrección por si alguien puso la URL antigua de Gotenberg v7
-        gotenbergUrl = gotenbergUrl.replace(/\/pdf$/, '');
-      }
-      
-      const formData = new FormData();
-      const blob = new Blob([buffer], { type: contentType });
-      formData.append('files', blob, filename); // Gotenberg requiere el campo 'files'
-
-      logger.info(`Enviando archivo ${filename} a Gotenberg (${gotenbergUrl}) para conversión a PDF...`);
-      console.time(`Gotenberg_Conversion_${filename}`);
-      let gotenbergResponse;
-      try {
-        gotenbergResponse = await fetch(gotenbergUrl, {
-          method: 'POST',
-          body: formData,
-        });
-      } catch (gotenbergErr) {
-        throw new Error(`Error de red al contactar a Gotenberg: ${gotenbergErr.message} (Causa: ${gotenbergErr.cause ? gotenbergErr.cause.message : 'Desconocida'})`);
-      }
-      console.timeEnd(`Gotenberg_Conversion_${filename}`);
-
-      if (!gotenbergResponse.ok) {
-        const errText = await gotenbergResponse.text();
-        logger.error(`Error en Gotenberg (${gotenbergResponse.status}): ${errText}`);
-        throw new Error(`Falló la conversión a PDF: ${gotenbergResponse.statusText}`);
-      }
-
-      const pdfArrayBuffer = await gotenbergResponse.arrayBuffer();
-      const pdfBuffer = Buffer.from(pdfArrayBuffer);
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}.pdf"`);
-      return res.send(pdfBuffer);
+      const originalUrl = this._validateUrl(req.query.url);
+      const headers = await this._getCanvasHeaders(req.appIdentity?.canonicalUserId);
+      const requestContext = this._prepareRequest(originalUrl, headers);
+      const downloadUrl = await this._resolveDownloadUrl(requestContext);
+      const file = await this._downloadFile(downloadUrl, requestContext);
+      return this._respondWithPreview(res, originalUrl, file);
     } catch (error) {
       logger.error('Error en FileController.preview:', { error: error.message, stack: error.stack });
-      res.status(500).json({ error: 'No se pudo generar la vista previa del archivo' });
+      return res.status(this._statusFor(error)).json({ error: error.message || 'No se pudo generar la vista previa del archivo' });
     }
+  }
+
+  _validateUrl(rawUrl) {
+    if (!rawUrl) throw this._httpError(400, 'Falta la URL del archivo');
+    let url;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      throw this._httpError(400, 'URL inválida');
+    }
+    if (!['http:', 'https:'].includes(url.protocol) || !this._isTrustedHost(url.hostname)) {
+      throw this._httpError(403, 'Dominio de origen no permitido.');
+    }
+    return url;
+  }
+
+  _isTrustedHost(hostname) {
+    const canvasHost = this._canvasHost();
+    const matchesCanvas = canvasHost && hostname === canvasHost;
+    const matchesSuffix = TRUSTED_CANVAS_SUFFIXES.some((suffix) =>
+      hostname === suffix || hostname.endsWith(`.${suffix}`));
+    return matchesCanvas || matchesSuffix || ['localhost', '127.0.0.1'].includes(hostname);
+  }
+
+  _canvasHost() {
+    try {
+      return new URL(process.env.CANVAS_BASE_URL || '').hostname;
+    } catch {
+      return null;
+    }
+  }
+
+  async _getCanvasHeaders(teacherId) {
+    const headers = {};
+    if (!teacherId || !this.canvasService?.tokenManager) return headers;
+    try {
+      const token = await this.canvasService.tokenManager.getValidToken(teacherId);
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      logger.warn('No se pudo cargar token Canvas para preview', { error: error.message });
+    }
+    return headers;
+  }
+
+  _prepareRequest(originalUrl, headers) {
+    const proxyHost = process.env.FILE_PREVIEW_LOCAL_HOST ||
+      (process.env.RUNNING_IN_CONTAINER === 'true' ? 'host.docker.internal' : null);
+    if (!proxyHost || !['localhost', '127.0.0.1'].includes(originalUrl.hostname)) {
+      return { url: originalUrl.toString(), headers, useProxyFetch: false };
+    }
+    const rewritten = new URL(originalUrl);
+    rewritten.hostname = proxyHost;
+    headers.Host = originalUrl.host;
+    logger.info('[FileController] URL local redirigida para contenedor', { from: originalUrl.host, to: proxyHost });
+    return { url: rewritten.toString(), headers, useProxyFetch: true };
+  }
+
+  async _resolveDownloadUrl(context) {
+    const fileMatch = context.url.match(/\/files\/(\d+)/);
+    if (!fileMatch || context.url.includes('/api/v1/')) return context.url;
+    const baseUrl = context.url.split('/files/')[0];
+    const apiUrl = `${baseUrl}/api/v1/files/${fileMatch[1]}`;
+    const response = await this._fetch(apiUrl, context);
+    if (!response.ok) throw new Error(`Fallo al consultar la API del archivo (HTTP ${response.status}).`);
+    const file = await response.json();
+    return file.url || context.url;
+  }
+
+  async _downloadFile(downloadUrl, context) {
+    const response = await this._fetch(downloadUrl, context);
+    if (!response.ok) throw new Error(`No se pudo descargar el archivo de origen: ${response.statusText}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > MAX_PREVIEW_BYTES) throw new Error('El archivo supera el límite de vista previa de 25 MB.');
+    return { buffer, contentType: response.headers.get('content-type') || '' };
+  }
+
+  _fetch(url, context) {
+    const usesRewrittenHost = context.useProxyFetch && new URL(url).hostname === new URL(context.url).hostname;
+    return usesRewrittenHost ? proxyFetch(url, { ...context.headers }) : fetch(url, { headers: context.headers });
+  }
+
+  async _respondWithPreview(res, originalUrl, file) {
+    const filename = this._filenameFor(originalUrl.pathname, file.contentType);
+    if (this._isPdf(filename, file.contentType)) return this._sendPdf(res, file.buffer, filename);
+    const pdf = await this._convertToPdf(file.buffer, file.contentType, filename);
+    return this._sendPdf(res, pdf, `${filename}.pdf`);
+  }
+
+  _filenameFor(pathname, contentType) {
+    let filename = path.basename(pathname) || 'documento';
+    if (path.extname(filename)) return filename;
+    const extensions = [
+      ['wordprocessingml.document', '.docx'], ['msword', '.doc'],
+      ['presentationml.presentation', '.pptx'], ['ms-powerpoint', '.ppt'],
+      ['spreadsheetml.sheet', '.xlsx'], ['ms-excel', '.xls']
+    ];
+    return `${filename}${extensions.find(([type]) => contentType.includes(type))?.[1] || ''}`;
+  }
+
+  _isPdf(filename, contentType) {
+    return path.extname(filename).toLowerCase() === '.pdf' || contentType.includes('application/pdf');
+  }
+
+  async _convertToPdf(buffer, contentType, filename) {
+    const endpoint = this._gotenbergEndpoint();
+    const formData = new FormData();
+    formData.append('files', new Blob([buffer], { type: contentType }), filename);
+    let response;
+    try {
+      response = await fetch(endpoint, { method: 'POST', body: formData });
+    } catch (error) {
+      throw new Error(`Error de red al contactar a Gotenberg: ${error.message}`);
+    }
+    if (!response.ok) {
+      logger.error('Error en Gotenberg', { status: response.status, body: await response.text() });
+      throw new Error(`Falló la conversión a PDF: ${response.statusText}`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  _gotenbergEndpoint() {
+    let url = process.env.GOTENBERG_URL || 'http://localhost:3001';
+    if (!url.includes('/forms/')) return `${url.replace(/\/$/, '')}/forms/libreoffice/convert`;
+    return url.endsWith('/pdf') ? url.replace(/\/pdf$/, '') : url;
+  }
+
+  _sendPdf(res, buffer, filename) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename.replaceAll('"', '')}"`);
+    return res.send(buffer);
+  }
+
+  _httpError(status, message) {
+    return Object.assign(new Error(message), { status });
+  }
+
+  _statusFor(error) {
+    return error.status || 500;
   }
 }
