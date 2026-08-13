@@ -26,6 +26,10 @@ coverage/
 *.crt
 apps/server/certs/
 
+# Archivos temporales de agentes IA
+.gemini/
+graphify-out/
+
 # Archivos locales de ejecucion, datos y logs
 *.log
 logs/
