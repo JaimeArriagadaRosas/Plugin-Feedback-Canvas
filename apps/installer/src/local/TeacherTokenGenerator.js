@@ -44,10 +44,19 @@ export class TeacherTokenGenerator {
         tokenData = await this._regenerateToken(teacherEmail, teacherFallbackName, existingToken, spinner, log, warn);
       }
 
-      await this._syncToDatabase(tokenData, teacherEmail, teacherFallbackName, spinner, log, warn);
+      const tokenSynchronized = await this._syncToDatabase(
+        tokenData, teacherEmail, teacherFallbackName, spinner, log, warn
+      );
 
       if (spinner) {
-        spinner.success({ text: 'Configuración de token de profesor completada.', mark: '  √' });
+        if (tokenSynchronized) {
+          spinner.success({ text: 'Configuración de token de profesor completada.', mark: '  √' });
+        } else {
+          spinner.warn({
+            text: 'Token válido; sincronización en PostgreSQL pendiente.',
+            mark: '  !'
+          });
+        }
       }
 
     } catch (e) {
@@ -107,7 +116,7 @@ export class TeacherTokenGenerator {
       if (tokenData.networkError && spinner) {
         spinner.warn({ text: `Token asumido válido (Canvas no respondía). Se sincronizará en la próxima petición autenticada.`, mark: '  !' });
       }
-      return;
+      return false;
     }
 
     try {
@@ -133,18 +142,20 @@ export class TeacherTokenGenerator {
           if (!spinner) {
             console.log(`  √ Token sincronizado en PostgreSQL (canvas_user_id=${userId}).`);
           }
+          return true;
         } finally {
           await store.close();
         }
-      } else {
-        warn(`No se pudo extraer canvas_sub para sincronizar en BD.`);
       }
+      warn('No se pudo extraer canvas_sub para sincronizar en BD.');
+      return false;
     } catch (e) {
       if (e.message && e.message.includes('does not exist')) {
-        log(`Migraciones pendientes. Se sincronizará el token luego.`);
+        log('Migraciones pendientes. Se sincronizará el token luego.');
       } else {
-        warn(`No se pudo sincronizar el token del profesor. Error: ${e.message}`);
+        warn('No se pudo sincronizar el token del profesor. Se reintentará en el próximo arranque.');
       }
+      return false;
     }
   }
 }

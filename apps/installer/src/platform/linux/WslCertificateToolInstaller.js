@@ -26,7 +26,7 @@ export class WslCertificateToolInstaller extends LinuxCertificateToolInstaller {
     const linuxRootCaPath = path.join(rootDirectory, 'rootCA.pem');
     if (this._isTrusted(linuxRootCaPath)) return true;
     const accepted = await this.confirm(
-      'Chrome usa el almacén de Windows. ¿Desea confiar en Windows solo el certificado público rootCA.pem?',
+      'Windows puede compartir su confianza con los navegadores que usan su almacén de certificados. ¿Desea confiar solo en la CA pública rootCA.pem?',
       false
     );
     if (!accepted) {
@@ -39,15 +39,18 @@ export class WslCertificateToolInstaller extends LinuxCertificateToolInstaller {
       return false;
     }
 
-    this.boot.info('Importando la CA pública de desarrollo en el almacén del usuario de Windows...');
-    const imported = await this.interactiveRunner('certutil.exe', [
+    const spinner = this.spinnerFactory('Confiando en la CA pública para Windows...').start();
+    const imported = await this.runner('certutil.exe', [
       '-user', '-addstore', 'Root', rootCaPath
     ]);
-    if (imported) {
+    if (imported.success) {
       this._saveTrustedFingerprint(linuxRootCaPath);
+      spinner.success({ text: 'CA pública confiada en el usuario de Windows.', mark: '  √' });
       return true;
     }
-    this.boot.error('Windows no pudo confiar en rootCA.pem. El certificado no se importó automáticamente.');
+    spinner.error({ text: 'Windows no pudo confiar en rootCA.pem.', mark: '  ×' });
+    const detail = String(imported.err || imported.out || '').trim().split('\n').at(-1);
+    if (detail) this.boot.debug(detail);
     return false;
   }
 

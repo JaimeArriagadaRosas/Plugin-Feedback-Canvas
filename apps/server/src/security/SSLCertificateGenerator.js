@@ -36,7 +36,7 @@ export class SSLCertificateGenerator {
     try {
       this._prepareCertificatesDirectory();
       logger.info('[SSL] Ejecutando mkcert para configurar HTTPS local...');
-      execFileSync('mkcert', ['-install'], { stdio: 'inherit' });
+      execFileSync('mkcert', ['-install'], { stdio: 'ignore' });
       execFileSync('mkcert', [
         '-key-file', temporaryPaths.key,
         '-cert-file', temporaryPaths.certificate,

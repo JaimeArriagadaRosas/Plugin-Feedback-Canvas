@@ -1,12 +1,21 @@
+import { createSpinner } from 'nanospinner';
+
 import { runCommand } from '../../installation/utils/Runner.js';
 import { runInteractiveCommand } from '../shared/InteractiveCommandRunner.js';
 
 export class WindowsCertificateToolInstaller {
-  constructor({ boot, runner = runCommand, interactiveRunner = runInteractiveCommand, confirm }) {
+  constructor({
+    boot,
+    runner = runCommand,
+    interactiveRunner = runInteractiveCommand,
+    confirm,
+    spinnerFactory = createSpinner
+  }) {
     this.boot = boot;
     this.runner = runner;
     this.interactiveRunner = interactiveRunner;
     this.confirm = confirm;
+    this.spinnerFactory = spinnerFactory;
   }
 
   async ensureTool() {
@@ -24,16 +33,21 @@ export class WindowsCertificateToolInstaller {
       return false;
     }
 
-    this.boot.info('Instalando mkcert mediante winget...');
-    const installed = await this.interactiveRunner('winget', [
+    const spinner = this.spinnerFactory('Instalando mkcert mediante winget...').start();
+    const installed = await this.runner('winget', [
       'install', '--id', 'FiloSottile.mkcert', '--exact', '--source', 'winget',
-      '--accept-package-agreements', '--accept-source-agreements'
+      '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity'
     ]);
-    if (!installed) {
-      this.boot.error('No se pudo instalar mkcert con winget.');
+    if (!installed.success) {
+      spinner.error({ text: 'No se pudo instalar mkcert con winget.', mark: '  ×' });
+      const detail = String(installed.err || installed.out || '').trim().split('\n').at(-1);
+      if (detail) this.boot.debug(detail);
       return false;
     }
-    return this._isMkcertAvailable();
+    const available = await this._isMkcertAvailable();
+    if (available) spinner.success({ text: 'mkcert instalado mediante winget.', mark: '  √' });
+    else spinner.error({ text: 'mkcert no quedó disponible tras la instalación.', mark: '  ×' });
+    return available;
   }
 
   async confirmCertificateAuthority() {

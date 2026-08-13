@@ -1,19 +1,55 @@
-import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as os from 'node:os';
 import * as http from 'node:http';
 import * as https from 'node:https';
 
-export async function openBrowser(url) {
-  const platform = os.platform();
+function isWsl(environment) {
+  return Boolean(environment.WSL_INTEROP || environment.WSL_DISTRO_NAME);
+}
+
+/**
+ * Resuelve el comando que delega una URL al navegador predeterminado del SO.
+ * No detecta ni fuerza navegadores concretos: la preferencia pertenece al usuario.
+ */
+export function resolveDefaultBrowserLaunch(url, {
+  platform = os.platform(),
+  environment = process.env
+} = {}) {
+  if (platform === 'win32' || isWsl(environment)) {
+    // start consulta la asociación HTTP(S) configurada por el usuario en Windows.
+    return { command: 'cmd.exe', args: ['/d', '/s', '/c', 'start', '', url] };
+  }
+  if (platform === 'darwin') return { command: 'open', args: [url] };
+  return { command: 'xdg-open', args: [url] };
+}
+
+function launchDetached(command, args, spawnProcess = spawn) {
+  return new Promise((resolve) => {
+    const child = spawnProcess(command, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+    child.once('error', () => resolve(false));
+    child.once('spawn', () => {
+      child.unref?.();
+      resolve(true);
+    });
+  });
+}
+
+/**
+ * Abre una URL sin bloquear el instalador y usando siempre el navegador
+ * predeterminado del sistema anfitrión.
+ */
+export async function openBrowser(url, options = {}) {
   try {
-    if (platform === 'win32') {
-      execFileSync('cmd.exe', ['/c', 'start', '""', url]);
-    } else if (platform === 'darwin') {
-      execFileSync('open', [url]);
-    } else {
-      execFileSync('xdg-open', [url]);
-    }
-  } catch { /* ignorar */ }
+    const launch = resolveDefaultBrowserLaunch(url, options);
+    const launcher = options.launcher || launchDetached;
+    return await launcher(launch.command, launch.args, options.spawnProcess);
+  } catch {
+    return false;
+  }
 }
 
 /**
