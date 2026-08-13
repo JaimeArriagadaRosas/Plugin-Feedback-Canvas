@@ -1,15 +1,39 @@
 import path from 'node:path';
 import dotenv from 'dotenv';
+import { CertificateBootstrap } from '../platform/shared/CertificateBootstrap.js';
+import { createCertificateToolInstaller } from '../platform/shared/CertificateToolInstallerFactory.js';
 import { BootResult } from '../orchestration/boot/result.js';
 import { EnvironmentSetup } from '../installation/EnvironmentSetup.js';
 import { LtiBootstrap } from '../orchestration/boot/lti.js';
+import { askConfirm } from '../orchestration/cli.js';
 import { waitForCanvasReady, openBrowser } from './browser.js';
 
+async function createLocalCertificateBootstrap(boot) {
+  const { SSLCertificateGenerator } = await import('../../../server/src/security/SSLCertificateGenerator.js');
+  const platformInstaller = createCertificateToolInstaller(process.platform, {
+    boot,
+    confirm: (message, defaultValue) => {
+      if (!process.stdin.isTTY) return Promise.resolve(false);
+      return askConfirm(message, defaultValue);
+    },
+    environment: process.env
+  });
+  return new CertificateBootstrap({
+    boot,
+    certificateGenerator: SSLCertificateGenerator,
+    platformInstaller
+  });
+}
+
+
 export class Orchestrator {
-  constructor(boot, pluginDir, canvasDir) {
+  constructor(boot, pluginDir, canvasDir, {
+    certificateBootstrapFactory = createLocalCertificateBootstrap
+  } = {}) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
+    this.certificateBootstrapFactory = certificateBootstrapFactory;
   }
 
   async runCheck(stageName, checkFn) {
@@ -63,12 +87,10 @@ export class Orchestrator {
 
   async ensureTlsPrerequisites() {
     try {
-      const { assertTlsProxyConfiguration } = await import('./TlsProxyServer.js');
-      assertTlsProxyConfiguration();
-      return true;
+      const bootstrap = await this.certificateBootstrapFactory(this.boot);
+      return bootstrap.ensure();
     } catch (error) {
-      this.boot.warn(`No se encontró una configuración TLS válida: ${error.message}`);
-      this.boot.action('Instale mkcert y genere certificados para localhost antes de configurar LTI.');
+      this.boot.warn(`No se pudo preparar HTTPS local: ${error.message}`);
       return false;
     }
   }
