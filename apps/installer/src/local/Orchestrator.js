@@ -59,7 +59,7 @@ export class Orchestrator {
         // Reload the environment variables so that spawnBackend() inherits them.
         const resEnv = dotenv.config({ path: path.join(this.pluginDir, '.env'), override: true, quiet: true });
         const cEnv = resEnv.parsed ? Object.keys(resEnv.parsed).length : 0;
-        this.boot.plain(`  · injected env (${cEnv}) from .env // tip: secrets for agents [www.dotenvx.com]`);
+        this.boot.info(`Entorno local recargado desde .env (${cEnv} variables).`);
         return BootResult.ok({ installed: true });
       } catch (e) {
         this.boot.error(e.message);
@@ -101,8 +101,12 @@ export class Orchestrator {
       this.boot.plain('');
       this.boot.plain('  √ Canvas LMS inicializado y proxy habilitado.');
       const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
-      this.boot.plain(`  · Abriendo ${canvasBrowserUrl} ...`);
-      await openBrowser(canvasBrowserUrl);
+      this.boot.plain('  · Abriendo Canvas con el navegador predeterminado del sistema...');
+      const browserOpened = await openBrowser(canvasBrowserUrl);
+      if (!browserOpened) {
+        this.boot.warn('No se pudo solicitar la apertura automática del navegador.');
+        this.boot.action(`Abra manualmente: ${canvasBrowserUrl}`);
+      }
     } catch (err) {
       this.boot.warn('No se pudo detectar que Canvas estuviera listo');
       this.boot.warn(err.message);

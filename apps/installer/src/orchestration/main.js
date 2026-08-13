@@ -112,7 +112,7 @@ async function startServices(mode, localOrchestrator) {
       const viteSpinner = (await import('nanospinner')).createSpinner('Iniciando frontend (Vite)...');
       viteSpinner.start();
       spawnVite();
-      viteSpinner.success({ text: 'Servidor Frontend (SPA) servido desde /dist.', mark: '  √' });
+      viteSpinner.success({ text: `Proceso de desarrollo Vite iniciado (puerto ${VITE_PORT}).`, mark: '  √' });
     } else {
       boot.info('Modo de Producción: Sirviendo frontend desde /dist (Requiere ejecución previa de npm run build)');
     }
