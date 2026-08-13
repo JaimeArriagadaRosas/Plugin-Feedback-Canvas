@@ -7,7 +7,8 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const CANVAS_PATH = path.resolve(__dirname, '../../../../canvas-lms-master');
+const pluginDirectory = path.resolve(__dirname, '../../../../../');
+export const CANVAS_PATH = process.env.CANVAS_LMS_DIR || path.resolve(pluginDirectory, '..', 'canvas-lms-master');
 
 const LOGS_DIR = path.resolve(__dirname, '../../logs');
 // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -54,10 +55,10 @@ class DockerRunner {
 
   static startCanvas() {
     return new Promise((resolve, reject) => {
-      console.log('[DockerRunner] Verificando Docker Desktop...');
+      console.log('[DockerRunner] Verificando el runtime de Docker...');
       if (!this.checkDocker()) {
         console.error('[DockerRunner] ERROR: Docker no está en ejecución.');
-        console.error('Por favor, asegúrate de iniciar "Docker Desktop" y de que WSL2 esté activo antes de continuar.');
+        console.error('Inicia el runtime de Docker configurado para este entorno y vuelve a intentarlo.');
         return reject(new Error('Docker no está en ejecución.'));
       }
 

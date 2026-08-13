@@ -1,12 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { withCanvasWorkspaceContext } from '../installation/utils/CanvasContainerExecContext.js';
+import { getCanvasDirectory, getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 import { runCommand } from '../installation/utils/Runner.js';
 import { boot as logger } from '../orchestration/boot/logger.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../canvas-lms-master');
+const CANVAS_DIR = getCanvasDirectory();
 
 export class LtiVerifier {
   static async isCanvasRunning() {
@@ -85,7 +84,9 @@ export class LtiVerifier {
     `;
 
     try {
-      const { success, out, err } = await runCommand('docker', ['compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: CANVAS_DIR });
+      const { success, out, err } = await runCommand('docker', withCanvasWorkspaceContext([
+        'compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script
+      ]), { cwd: CANVAS_DIR });
 
       if (!success) {
         logger.error('[LtiVerifier] Fallo el script de verificación LTI.', { error: err });
@@ -114,7 +115,7 @@ export class LtiVerifier {
         }
 
         if (needsUpdate) {
-          const pluginDir = path.resolve(__dirname, '../../../');
+          const pluginDir = getPluginDirectory();
           const { updateEnvVars } = await import('../orchestration/envWriter.js');
           updateEnvVars(pluginDir, updates);
         }

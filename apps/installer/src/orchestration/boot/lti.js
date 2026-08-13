@@ -1,11 +1,8 @@
 import { runDockerCommand } from '../../platform/shared/dockerRunner.js';
+import { getCanvasDirectory } from '../../installation/utils/LocalWorkspacePaths.js';
 import { BootResult } from './result.js';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../../canvas-lms-master');
+const CANVAS_DIR = getCanvasDirectory();
 
 /**
  * LtiBootstrap — Encapsula la inicialización LTI 1.3.

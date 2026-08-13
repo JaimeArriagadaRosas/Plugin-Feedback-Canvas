@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import pg from 'pg';
 
 import { createDatabaseConfig } from '../connection/databaseConfig.js';
+import { MigrationProgressReporter } from './MigrationProgressReporter.js';
 
 const { Client } = pg;
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -52,10 +53,10 @@ async function recordFailure(client, version, error) {
   ).catch(() => undefined);
 }
 
-async function applyMigration(client, migrationsDirectory, file) {
+async function applyMigration(client, migrationsDirectory, file, reporter, index) {
   const version = file.replace(/\.sql$/u, '');
   const sql = await fs.readFile(path.join(migrationsDirectory, file), 'utf8');
-  console.log(`[MIGRATION] Ejecutando: ${file}`);
+  reporter.migrationStart(index, file);
 
   try {
     await client.query('BEGIN');
@@ -66,10 +67,11 @@ async function applyMigration(client, migrationsDirectory, file) {
       [version, 'SUCCESS', `Ejecución exitosa de ${file}`],
     );
     await client.query('COMMIT');
-    console.log(`[MIGRATION] OK: ${file}`);
+
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
     await recordFailure(client, version, error);
+    reporter.migrationFailed(index, file);
     throw error;
   }
 }
@@ -79,6 +81,7 @@ export async function runMigrations(options = {}) {
   dotenv.config({ path: options.envPath || path.join(repositoryRoot, '.env') });
   const client = options.client || new Client(options.connectionConfig || createDatabaseConfig());
   const ownsClient = !options.client;
+  const reporter = options.reporter || new MigrationProgressReporter();
   let lockAcquired = false;
 
   try {
@@ -87,8 +90,12 @@ export async function runMigrations(options = {}) {
     lockAcquired = true;
     await ensureMigrationTables(client);
     const pending = await readPendingMigrations(client, migrationsDirectory);
-    for (const file of pending) await applyMigration(client, migrationsDirectory, file);
-    if (pending.length === 0) console.log('[MIGRATION] No hay migraciones pendientes.');
+    if (pending.length === 0) reporter.noPending();
+    else reporter.start(pending.length);
+    for (const [index, file] of pending.entries()) {
+      await applyMigration(client, migrationsDirectory, file, reporter, index + 1);
+    }
+    if (pending.length > 0) reporter.complete();
   } finally {
     if (lockAcquired) {
       await client.query('SELECT pg_advisory_unlock($1)', [advisoryLockId]).catch(() => undefined);

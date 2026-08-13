@@ -49,12 +49,28 @@ export class Orchestrator {
     if (!canvasRes.ok) {
       throw new Error('Canvas Setup Failed');
     }
+    if (!(await this.ensureTlsPrerequisites())) {
+      throw new Error('Falta la configuración TLS requerida para Canvas Local.');
+    }
 
     // LTI: instala/activa solo en modo local.
-    await this.runCheck('Inicialización LTI 1.3', async () => {
+    const ltiResult = await this.runCheck('Inicialización LTI 1.3', async () => {
       const lti = new LtiBootstrap({ mode, log: this.boot });
       return lti.run();
     });
+    if (!ltiResult.ok) throw new Error(ltiResult.message);
+  }
+
+  async ensureTlsPrerequisites() {
+    try {
+      const { assertTlsProxyConfiguration } = await import('./TlsProxyServer.js');
+      assertTlsProxyConfiguration();
+      return true;
+    } catch (error) {
+      this.boot.warn(`No se encontró una configuración TLS válida: ${error.message}`);
+      this.boot.action('Instale mkcert y genere certificados para localhost antes de configurar LTI.');
+      return false;
+    }
   }
 
   async waitForCanvasAndOpenBrowser() {
@@ -75,10 +91,12 @@ export class Orchestrator {
   async startTlsProxy() {
     try {
       const { startTlsProxy } = await import('../orchestration/tlsProxy.js');
-      startTlsProxy();
+      await startTlsProxy();
+      return true;
     } catch (err) {
       this.boot.warn(`No se pudo iniciar el proxy TLS para Canvas: ${err.message}`);
-      this.boot.action('El flujo LTI requiere HTTPS; verifique la configuración del proxy TLS.');
+      this.boot.action('El flujo LTI requiere HTTPS; instale mkcert y genere los certificados locales.');
+      return false;
     }
   }
 

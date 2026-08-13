@@ -6,31 +6,40 @@ import { GemInstaller } from './installers/GemInstaller.js';
 import { pingCanvasAPI } from './utils/TokenManager.js';
 
 export class PostflightSetup {
-  constructor(boot, pluginDir, canvasDir) {
+  constructor(boot, pluginDir, canvasDir, {
+    verifierFactory = (...args) => new VerifyData(...args),
+    seederFactory = (...args) => new DataSeeder(...args),
+    gemInstallerFactory = (...args) => new GemInstaller(...args),
+    databaseHealthFactory = (...args) => new DatabaseHealth(...args)
+  } = {}) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
+    this.verifierFactory = verifierFactory;
+    this.seederFactory = seederFactory;
+    this.gemInstallerFactory = gemInstallerFactory;
+    this.databaseHealthFactory = databaseHealthFactory;
   }
 
   async runChecks() {
     this.boot.info('Iniciando verificación post-arranque de la Universidad y el plugin LTI');
 
-    const verifier = new VerifyData(this.boot, this.canvasDir);
-    const seeder = new DataSeeder(this.boot, this.pluginDir, this.canvasDir);
+    const verifier = this.verifierFactory(this.boot, this.canvasDir);
+    const seeder = this.seederFactory(this.boot, this.pluginDir, this.canvasDir);
 
     const hasData = await verifier.isDataPopulated();
 
     if (!hasData) {
       this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
       
-      const gemInstaller = new GemInstaller(this.boot, this.canvasDir);
+      const gemInstaller = this.gemInstallerFactory(this.boot, this.canvasDir);
       const gemsOk = await gemInstaller.ensureBundlerPlugins();
       if (!gemsOk) {
         this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
         return false;
       }
       
-      const dbHealth = new DatabaseHealth(this.boot, this.canvasDir);
+      const dbHealth = this.databaseHealthFactory(this.boot, this.canvasDir);
       await dbHealth.ensureDatabaseReady();
       
       const seeded = await seeder.seedData();
@@ -46,7 +55,7 @@ export class PostflightSetup {
       }
     } else {
       this.boot.info('Datos base de la Universidad validados. Sincronizando tokens locales desde Docker...');
-      await seeder._syncTokenFromContainer();
+      await seeder.synchronizeLocalToken();
     }
 
     // Verificar que Canvas esté respondiendo antes de continuar con la fase LTI.

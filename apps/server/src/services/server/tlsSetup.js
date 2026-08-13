@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import http from 'node:http';
 import { SSLService } from '../../security/SSLService.js';
 import { isHttpsEnabled, getSslCertPaths } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';
@@ -56,6 +57,6 @@ export async function createServerInstance(app) {
     }
     return https.default.createServer(sslOptions, app);
   } else {
-    return app;
+    return http.createServer(app);
   }
 }
