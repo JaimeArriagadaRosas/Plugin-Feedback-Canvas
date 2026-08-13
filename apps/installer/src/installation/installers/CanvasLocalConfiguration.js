@@ -27,7 +27,32 @@ export class CanvasLocalConfiguration {
 
   configure(resourceLimits) {
     this._ensureLocalConfig();
+    this._patchDomainForLocalDev();
     this._writeComposeOverride(resourceLimits);
+  }
+
+  _patchDomainForLocalDev() {
+    const domainYml = path.join(this.canvasDir, 'config', 'domain.yml');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    if (!this.fs.existsSync(domainYml)) return;
+
+    const canvasDomain = process.env.CANVAS_DOMAIN || 'localhost:8443';
+    const content = [
+      'test:',
+      '  domain: localhost',
+      '',
+      'development:',
+      `  domain: "${canvasDomain}"`,
+      '  ssl: true',
+      '',
+      'production:',
+      '  domain: "canvas.example.com"',
+      '  ssl: true',
+      ''
+    ].join('\n');
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    this.fs.writeFileSync(domainYml, content, 'utf-8');
   }
 
   _ensureLocalConfig() {

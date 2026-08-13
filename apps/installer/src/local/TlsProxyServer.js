@@ -42,12 +42,26 @@ function createCanvasProxy() {
 }
 
 function rewriteLocationHeader(headers, requestUrl) {
-  if (!headers.location || !headers.location.includes(`${canvasHttpHost}:${canvasHttpPort}`)) {
+  if (!headers.location) {
     return headers;
   }
-  const location = headers.location
-    .replace(`http://${canvasHttpHost}:${canvasHttpPort}`, `https://localhost:${tlsListenPort}`)
-    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, `https://localhost:${tlsListenPort}`);
+
+  const canvasDockerDomain = process.env.CANVAS_DOCKER_DOMAIN || 'canvas.docker';
+  const tlsTarget = `https://localhost:${tlsListenPort}`;
+
+  let location = headers.location;
+  const hasCanvasHttp = location.includes(`${canvasHttpHost}:${canvasHttpPort}`);
+  const hasCanvasDocker = location.includes(canvasDockerDomain);
+
+  if (!hasCanvasHttp && !hasCanvasDocker) return headers;
+
+  location = location
+    .replace(`http://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
+    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget);
+
+  location = location
+    .replace(new RegExp(`https?://${canvasDockerDomain}(:\\d+)?`), tlsTarget);
+
   if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirige a ${location}`);
   return { ...headers, location };
 }

@@ -19,7 +19,9 @@ import { runCommand } from './Runner.js';
 const CANVAS_LOCAL_URL = 'http://127.0.0.1:8080';
 const CANVAS_VALIDATION_ENDPOINT = '/api/v1/users/self/profile';
 const CANVAS_PING_ENDPOINT = '/api/v1/brand_variables';
-const TOKEN_HANDOFF_PATH_IN_CONTAINER = '/usr/src/app/tmp/.token_handoff.json';
+// Usamos la raíz del proyecto para evitar que la carpeta 'tmp' (que es un volumen Docker separado) 
+// intercepte la escritura y oculte el archivo del host (Path shadowing).
+const TOKEN_HANDOFF_PATH_IN_CONTAINER = '/usr/src/app/.token_handoff.json';
 
 // --- Utilidades ---
 
@@ -173,7 +175,7 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
   }
 
   // Leer el archivo de handoff desde el host (volumen compartido)
-  const hostHandoffPath = path.join(canvasDir, 'tmp', '.token_handoff.json');
+  const hostHandoffPath = path.join(canvasDir, '.token_handoff.json');
   let raw;
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename

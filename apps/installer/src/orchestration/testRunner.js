@@ -1,9 +1,11 @@
 import { execFileSync, spawn } from 'node:child_process';
+import path from 'node:path';
 
 import pc from 'picocolors';
 
 import { getE2ETargetConfig } from '../../../client/tests/e2e/ltiTargetConfig.mjs';
 import { ask } from './cli.js';
+import { DataSeeder } from '../installation/DataSeeder.js';
 
 export async function runBlackBoxTests(pluginDir) {
   printMenu();
@@ -12,7 +14,7 @@ export async function runBlackBoxTests(pluginDir) {
   switch (option) {
     case '1': return runVitestLocal(pluginDir);
     case '2': return withServer('1', pluginDir, () => runSmokeTests(pluginDir), { USE_LOCAL_DATA: 'true' });
-    case '3': return withServer('3', pluginDir, () => runPlaywrightTests(pluginDir, 'local'), {}, 300000);
+    case '3': return withServer('3', pluginDir, () => runPlaywrightTests(pluginDir, 'local'), { TEST_MODE: 'true' }, 300000);
     case '4': return runPlaywrightTests(pluginDir, 'real');
     case '5': return runStressSuite(pluginDir);
     default:
@@ -99,13 +101,24 @@ function runSmokeTests(pluginDir) {
     'Los smoke tests fallaron.', { NODE_OPTIONS: '--no-warnings' });
 }
 
-function runPlaywrightTests(pluginDir, target) {
+async function runPlaywrightTests(pluginDir, target) {
   let configuration;
   try {
     configuration = getE2ETargetConfig({ ...process.env, E2E_TARGET: target });
   } catch (error) {
     console.error(pc.red(`\n  [E2E] Configuracion invalida: ${error.message}`));
     return false;
+  }
+
+  if (target === 'local') {
+    const mockBoot = { plain: console.log, error: console.error };
+    const canvasDir = path.join(pluginDir, '..', 'canvas-lms-master');
+    const seeder = new DataSeeder(mockBoot, pluginDir, canvasDir);
+    const seeded = await seeder.seedData();
+    if (!seeded) {
+      console.error(pc.red('\n  [E2E] Fallo la inyeccion de datos de prueba.'));
+      return false;
+    }
   }
   return runProcess(npxCommand(), ['--no-install', 'playwright', 'test',
     'apps/client/tests/e2e/lti-flow.spec.js'], pluginDir,
@@ -149,10 +162,13 @@ function runStressScenario(pluginDir, scenario, disableRateLimit) {
 
 function runProcess(command, args, cwd, failureMessage, env = {}) {
   try {
-    execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, ...env } });
+    execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, ...env }, shell: process.platform === 'win32' });
     return true;
-  } catch {
+  } catch (error) {
     console.error(pc.red(`\n  × ${failureMessage}`));
+    if (error && error.message) {
+      console.error(pc.dim(`    Detalle: ${error.message} (Code: ${error.code || 'N/A'})`));
+    }
     return false;
   }
 }

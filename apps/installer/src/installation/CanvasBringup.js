@@ -1,5 +1,6 @@
 import { createContainerWorkspacePermissions } from '../platform/shared/ContainerWorkspacePermissionsFactory.js';
 import { runCommand } from './utils/Runner.js';
+import { execa } from 'execa';
 
 const DEFAULT_HEALTH_URL = 'http://localhost:8080';
 
@@ -92,22 +93,39 @@ export class CanvasBringup {
     return true;
   }
 
-  async waitForReady(timeout = 180, interval = 5) {
-    this.boot.info('Esperando a que Canvas LMS responda...');
-    for (let elapsed = 0; elapsed <= timeout; elapsed += interval) {
+  async waitForReady(interval = 5) {
+    const { createSpinner } = await import('nanospinner');
+    const spinner = createSpinner('Iniciando lectura de logs de Canvas...').start();
+    
+    const tailProcess = execa('docker', ['compose', 'logs', '-f', '--tail=0', 'web', 'jobs', 'postgres', 'redis'], {
+      cwd: this.canvasDir,
+      reject: false
+    });
+
+    tailProcess.stdout?.on('data', (data) => {
+      const lines = data.toString().trim().split('\n');
+      const lastLine = lines[lines.length - 1];
+      if (lastLine) {
+        let cleanLine = lastLine.replace(/^[^|]+\|\s*/, '').trim();
+        cleanLine = cleanLine.substring(0, 100);
+        if (cleanLine.length > 0) {
+          spinner.update({ text: cleanLine });
+        }
+      }
+    });
+
+    while (true) {
       const web = await this.runner('docker', ['compose', 'ps', '-q', 'web'], {
         cwd: this.canvasDir,
         captureAll: true
       });
       if (web.success && web.out.trim() && await this.healthCheck(this.healthUrl)) {
-        this.boot.success('Canvas LMS está listo para recibir solicitudes');
+        tailProcess.kill();
+        spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
         return true;
       }
-      if (elapsed < timeout) await this.sleep(interval * 1000);
+      await this.sleep(interval * 1000);
     }
-
-    this.boot.error(`Timeout: Canvas LMS no respondió por HTTP en ${timeout}s`);
-    return false;
   }
 
   async _prepareContainerWorkspace() {

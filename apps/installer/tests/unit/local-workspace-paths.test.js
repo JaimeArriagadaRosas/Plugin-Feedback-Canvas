@@ -9,6 +9,6 @@ describe('LocalWorkspacePaths', () => {
   });
 
   it('permite definir una ubicación explícita de Canvas', () => {
-    expect(getCanvasDirectory({ CANVAS_LMS_DIR: '/work/canvas' })).toBe('/work/canvas');
+    expect(getCanvasDirectory({ CANVAS_LMS_DIR: '/work/canvas' })).toBe(path.resolve('/work/canvas'));
   });
 });

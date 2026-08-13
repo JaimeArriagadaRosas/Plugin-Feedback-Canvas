@@ -43,6 +43,11 @@ La consola es una ventana de texto desde la que se ejecutan comandos. Todos los 
 
 ### Windows
 
+> [!TIP]
+> **Rendimiento:** Si el arranque o compilación son muy lentos en Windows nativo, se recomienda encarecidamente añadir la carpeta del proyecto a las **exclusiones de Windows Defender**. El escaneo en tiempo real de miles de archivos pequeños (como los de `node_modules` o contenedores de Docker) penaliza drásticamente el disco.
+> Puedes hacerlo abriendo PowerShell como Administrador y ejecutando:
+> `Add-MpPreference -ExclusionPath "C:\Ruta\A\Tu\Proyecto"`
+
 Abra **Windows Terminal**, **PowerShell** o **Símbolo del sistema (CMD)** desde Inicio. Para una prueba WSL, abra directamente la aplicación **Ubuntu**: ahí ya está dentro de Linux.
 
 ### Ubuntu sobre WSL2
