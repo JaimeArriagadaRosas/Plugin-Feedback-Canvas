@@ -1,16 +1,17 @@
-import path from 'node:path';
 import fs from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { withCanvasWorkspaceContext } from '../installation/utils/CanvasContainerExecContext.js';
+import { getCanvasDirectory, getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 import { runCommand } from '../installation/utils/Runner.js';
 import { generateLtiRubyScript } from './LtiRubyScriptTemplate.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../../canvas-lms-master');
 
 export class DockerLtiConfigurator {
   static async runDockerCommand(args, envs = {}, runnerOptions = {}) {
-    return runCommand('docker', args, { cwd: CANVAS_DIR, env: { ...process.env, ...envs }, ...runnerOptions });
+    return runCommand('docker', withCanvasWorkspaceContext(args), {
+      cwd: getCanvasDirectory(),
+      env: { ...process.env, ...envs },
+      ...runnerOptions
+    });
   }
 
   static async cleanDatabase(spinner) {
@@ -87,7 +88,7 @@ export class DockerLtiConfigurator {
         updates.LTI_CLIENT_SECRET = process.env.LTI_CLIENT_SECRET;
       }
       
-      const pluginDir = path.resolve(__dirname, '../../../../../');
+      const pluginDir = getPluginDirectory();
       const { updateEnvVars } = await import('../orchestration/envWriter.js');
       if (spinner) spinner.clear();
       updateEnvVars(pluginDir, updates);

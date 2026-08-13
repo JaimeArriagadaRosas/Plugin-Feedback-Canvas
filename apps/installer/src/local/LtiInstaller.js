@@ -1,59 +1,71 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+
 import { createSpinner } from 'nanospinner';
-import { LtiVerifier } from './LtiVerifier.js';
+
+import { getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 import { DockerLtiConfigurator } from './DockerLtiConfigurator.js';
 import { TeacherTokenGenerator } from './TeacherTokenGenerator.js';
+import { LtiVerifier } from './LtiVerifier.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const LTI_JSON_PATH = path.resolve(__dirname, '../../../../../config/lti_placement.json');
+export function getLtiJsonPath() {
+  return path.join(getPluginDirectory(), 'config', 'lti_placement.json');
+}
 
 export class LtiInstaller {
   static async verifyAndInstall() {
     const spinner = createSpinner('Verificando estado de Canvas LMS...').start();
-    
     if (!(await LtiVerifier.isCanvasRunning())) {
       spinner.error({ text: 'Canvas LMS no está corriendo. Ejecute docker compose up -d' });
       throw new Error('Canvas LMS no está corriendo. Ejecute docker compose up -d');
     }
 
-    spinner.update({ text: 'Verificando y corrigiendo dependencias de Canvas LMS (bundler-multilock)...' });
     try {
-      await DockerLtiConfigurator.runDockerCommand(['compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock']);
-      spinner.update({ text: 'Instalando dependencias faltantes (bundle install) en Canvas LMS...' });
-      await DockerLtiConfigurator.runDockerCommand(['compose', 'exec', '-T', 'web', 'bundle', 'install']);
-    } catch (e) {
-      // Ignorar si falla, puede que ya esté instalado o el contenedor use otra versión.
+      await this.ensureCanvasDependencies(spinner);
+    } catch (error) {
+      spinner.error({ text: `No se pudieron preparar las dependencias de Canvas: ${error.message}` });
+      throw error;
     }
 
-    spinner.update({ text: 'Verificando instalacion de herramienta LTI...' });
-    const isInstalled = await LtiVerifier.checkLtiStatus() === 'OK';
-
-    if (isInstalled) {
-      spinner.update({ text: 'La herramienta LTI ya esta instalada correctamente (formato LTI 1.3 moderno).' });
+    spinner.update({ text: 'Verificando instalación de herramienta LTI...' });
+    const installed = await LtiVerifier.checkLtiStatus() === 'OK';
+    if (installed) {
+      spinner.update({ text: 'La herramienta LTI ya está instalada correctamente.' });
       await TeacherTokenGenerator.generate(spinner);
       return;
     }
 
-    spinner.update({ text: 'Herramienta no encontrada o en formato legacy. Iniciando instalacion limpia LTI 1.3...' });
-
+    spinner.update({ text: 'Herramienta LTI no encontrada. Iniciando instalación limpia...' });
     try {
       await DockerLtiConfigurator.cleanDatabase(spinner);
-      const clientId = await DockerLtiConfigurator.injectLtiTool(LTI_JSON_PATH, spinner);
-      
-      if (clientId) {
-        spinner.update({ text: `LTI_CLIENT_ID actualizado en .env a: ${clientId}` });
-      }
-
+      const clientId = await DockerLtiConfigurator.injectLtiTool(getLtiJsonPath(), spinner);
+      if (clientId) spinner.update({ text: `LTI_CLIENT_ID actualizado en .env: ${clientId}` });
       await TeacherTokenGenerator.generate(spinner);
-    } catch (err) {
-      spinner.error({ text: `Error critico durante la instalacion de LTI: ${err.message}` });
-      throw err;
+    } catch (error) {
+      spinner.error({ text: `Error crítico durante la instalación de LTI: ${error.message}` });
+      throw error;
     }
   }
 
-  // Se mantiene para retrocompatibilidad con tests o dependencias externas
+  static async ensureCanvasDependencies(spinner) {
+    spinner.update({ text: 'Verificando dependencias de Canvas...' });
+    const check = await DockerLtiConfigurator.runDockerCommand([
+      'compose', 'exec', '-T', 'web', 'bundle', 'check'
+    ]);
+    if (check.success) return;
+
+    spinner.update({ text: 'Instalando plugin de Bundler para Canvas...' });
+    const plugin = await DockerLtiConfigurator.runDockerCommand([
+      'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'
+    ]);
+    if (!plugin.success) throw new Error(plugin.err || 'Falló bundler-multilock.');
+
+    spinner.update({ text: 'Instalando dependencias Ruby faltantes de Canvas...' });
+    const install = await DockerLtiConfigurator.runDockerCommand([
+      'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web', 'bundle', 'install', '--jobs=2'
+    ]);
+    if (!install.success) throw new Error(install.err || 'Falló bundle install.');
+  }
+
   static async runDockerCommand(args, envs = {}) {
     return DockerLtiConfigurator.runDockerCommand(args, envs);
   }

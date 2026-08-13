@@ -72,10 +72,10 @@ export class DataSeeder {
       return;
     }
     spinner.success({ text: 'Base de datos poblada exitosamente.', mark: '  √' });
-    this._syncCanvasToken().then(() => resolve(true)).catch(() => resolve(true));
+    this.synchronizeLocalToken().then(() => resolve(true)).catch(() => resolve(true));
   }
 
-  async _syncCanvasToken() {
+  async synchronizeLocalToken() {
     this.boot.info('Extrayendo perfiles y tokens completos desde el contenedor de Canvas...');
     const { success, out } = await this.runner('docker', [
       'compose', 'exec', '-T', 'web', 'cat', '/usr/src/app/tmp/perfiles_data.json'

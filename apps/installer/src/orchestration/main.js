@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
 
@@ -12,12 +11,12 @@ import { spawnVite, spawnBackend, stopBackend, stopVite, waitForBackend, VITE_PO
 import { StaticChecker } from './boot/checks/StaticChecker.js';
 import { LtiBootstrap } from './boot/lti.js';
 import { setupGracefulShutdown } from './shutdown_utils.js';
+import { getCanvasDirectory, getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 
 dotenv.config({ quiet: true });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PLUGIN_DIR = path.resolve(__dirname, '..', '..', '..', '..');
-const CANVAS_DIR = path.resolve(__dirname, '..', '..', '..', '..', '..', 'canvas-lms-master');
+const PLUGIN_DIR = getPluginDirectory();
+const CANVAS_DIR = getCanvasDirectory();
 
 const CANVAS_ADMIN_EMAIL = process.env.CANVAS_ADMIN_EMAIL || 'admin@canvas.local';
 // semgrep-ignore
@@ -99,13 +98,14 @@ async function startServices(mode, localOrchestrator) {
       boot.success('Backend principal escuchando en el puerto 3000.');
       
       if (mode === '3' && localOrchestrator) {
-        await localOrchestrator.startTlsProxy();
+        const proxyStarted = await localOrchestrator.startTlsProxy();
+        if (!proxyStarted) throw new Error('No se pudo iniciar el proxy TLS requerido para Canvas Local.');
         boot.success('Proxy TLS interno activo (https://localhost:8443 -> HTTP 8080).');
       }
     } catch (err) {
       boot.error(`No se pudo iniciar el backend: ${err.message}`);
-      await ask('Presione Enter para salir...');
-      process.exit(1);
+      if (process.env.NON_INTERACTIVE !== 'true') await ask('Presione Enter para salir...');
+      throw err;
     }
 
     if (mode !== '1') {

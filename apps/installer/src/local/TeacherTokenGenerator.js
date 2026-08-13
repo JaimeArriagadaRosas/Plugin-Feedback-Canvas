@@ -14,15 +14,13 @@
  */
 
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { getCanvasDirectory, getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 import { validateToken, healTokenViaFile, withRetry } from '../installation/utils/TokenManager.js';
 import { safeUpdateEnvVariable } from '../installation/utils/FileManager.js';
 import { LocalTokenStore } from './LocalTokenStore.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CANVAS_DIR = path.resolve(__dirname, '../../../../../canvas-lms-master');
-const PLUGIN_ENV_PATH = path.resolve(__dirname, '../../../../.env');
+const CANVAS_DIR = getCanvasDirectory();
+const PLUGIN_ENV_PATH = path.join(getPluginDirectory(), '.env');
 
 // Validez del token local: 1 año (entorno de desarrollo)
 const LOCAL_TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 365;
