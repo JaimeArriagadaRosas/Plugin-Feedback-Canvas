@@ -42,10 +42,11 @@ export default class BaseRole {
     }
     
     // Si hay un override explícito, lo usamos. Si no, usamos el valor por defecto.
+    const safeOverrides = overrides || {};
     // eslint-disable-next-line security/detect-object-injection
-    if (overrides[permissionKey] !== undefined) {
+    if (safeOverrides[permissionKey] !== undefined) {
       // eslint-disable-next-line security/detect-object-injection
-      return overrides[permissionKey];
+      return safeOverrides[permissionKey];
     }
     
     // eslint-disable-next-line security/detect-object-injection

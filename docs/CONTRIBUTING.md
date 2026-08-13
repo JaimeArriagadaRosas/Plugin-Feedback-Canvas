@@ -1,87 +1,157 @@
-# Guía de Contribución y Desarrollo (Onboarding)
+# Guía de contribución
 
-¡Bienvenido al código fuente de **Plugin Feedback**! Este documento está diseñado para ayudarte a entender la estructura del proyecto y cómo puedes modificarlo o ejecutarlo en tu entorno local.
+## 1. Preparar el repositorio
 
-## 1. Arquitectura del Monorepo
+```bash
+git clone https://github.com/JaimeArriagadaRosas/Plugin-Feedback-Canvas.git
+cd Plugin-Feedback-Canvas
+npx --yes npm@11.8.0 ci
+```
 
-Este proyecto utiliza una estructura de monorepo gestionada por los Workspaces de NPM. Esto significa que tenemos múltiples paquetes (frontend, backend, herramientas compartidas) dentro de un solo repositorio.
+Requisitos: Node `^20.19.0 || >=22.12.0`, npm 11.8.0 y Git. Docker solo es obligatorio para integración, Canvas local y E2E reales.
 
-La estructura principal es la siguiente:
+Antes de modificar:
+
+```bash
+git status
+git branch --show-current
+```
+
+Trabaje en una rama enfocada; no mezcle refactors masivos con una corrección funcional sin una justificación verificable.
+
+## 2. Límites de diseño
+
+- Máximo recomendado de 300 líneas por archivo.
+- Máximo recomendado de 100 líneas por función.
+- Una responsabilidad principal por módulo/clase.
+- Dependencias externas detrás de adaptadores o servicios inyectables.
+- Controladores finos: validan/adaptan HTTP y delegan casos de uso.
+- Repositorios encapsulan SQL/persistencia; componentes React no conocen detalles de base de datos.
+- Cada bug corregido incorpora una regresión proporcional.
+
+Cuando un archivo supera un límite por documentación generada o una tabla declarativa, documente la excepción; no compacte código para «cumplir» a costa de legibilidad.
+
+## 3. Monorepo
+
+Los paquetes activos son:
 
 ```text
-Plugin Feedback/
-├── apps/
-│   ├── client/          # Frontend en React + Vite (Interfaz de usuario)
-│   └── server/          # Backend en Node.js + Express (API y LTI Provider)
-├── packages/
-│   ├── logger/          # Utilidad compartida para logs (Pino)
-│   └── shared/          # Tipos, utilidades y esquemas compartidos entre cliente y servidor
-├── scripts/             # Scripts de orquestación, instalación y TLS
-├── config/              # Configuraciones globales (ESLint, Prettier, etc.)
-└── package.json         # Gestor del monorepo
+apps/client/    React + Vite
+apps/server/    Node.js + Express
 ```
 
-## 2. Preparación del Entorno Local
+El patrón `packages/*` está reservado en los workspaces, pero no hay paquetes compartidos activos en el árbol actual. Si se crea uno, debe tener límites y propietario claros.
 
-> [!IMPORTANT]
-> Recuerda que este proyecto **tiene las versiones congeladas**. Siempre debes usar `npm ci` para instalar dependencias. Evita usar `npm install` o `npm update` para prevenir errores de compatibilidad.
+Ejecute scripts desde la raíz para que npm resuelva workspaces y lockfile de forma uniforme.
 
-### Paso a paso:
-1. Asegúrate de tener Node.js v18.
-2. Clona el repositorio e ingresa a la carpeta `Plugin Feedback`.
-3. Instala estrictamente las dependencias:
-   ```bash
-   npm ci
-   ```
-4. Configura el archivo `.env` (puedes usar `.env.example` como base).
+## 4. Lógica por plataforma
 
-## 3. Ejecución en Modo Desarrollo
+- Código exclusivamente Windows: adaptador/clase `Windows…` o `Win…`.
+- Código exclusivamente Linux: `Linux…`.
+- Diferencias específicas WSL: `Wsl…` o política WSL explícita.
+- Código exclusivamente macOS: `Mac…`.
+- Lógica compartida no debe llevar un prefijo de sistema.
 
-Para trabajar en el código en tiempo real, puedes levantar el proyecto abriendo **dos consolas separadas**:
+Los probes observan y reportan; los instaladores mutan después de consentimiento. No mezcle descargas de Docker Desktop, APT, UAC, `sudo`, Gatekeeper o `.wslconfig` en un único archivo condicional.
 
-**Consola 1 (Backend):**
-Levanta el servidor Express. Detectará cambios en tus archivos automáticamente gracias a Nodemon.
-```bash
-npm run server
-```
-*(El servidor estará disponible en `https://localhost:3000`)*
+## 5. Código local y producción
 
-**Consola 2 (Frontend):**
-Levanta el servidor de desarrollo de Vite para React. Tiene Hot-Module Replacement (HMR) activo.
-```bash
-npm run dev
-```
-*(El cliente estará disponible en `https://localhost:5173`)*
+Los sufijos `.local.js`/`_local.js` indican un adaptador versionado para desarrollo, no un archivo privado. Nunca deben contener secretos.
 
-## 4. Estilos y Buenas Prácticas (Linting)
+- Comparta dominio y casos de uso entre local/producción.
+- Sustituya infraestructura mediante composition roots/adaptadores.
+- El bypass local requiere guardas explícitas y tests que demuestren que producción lo rechaza.
+- No cree una segunda implementación completa solo para cambiar la fuente de datos.
 
-Este proyecto utiliza **ESLint** para mantener un código limpio y seguro. Antes de hacer un commit, asegúrate de que tu código cumpla con las reglas:
+## 6. Antiguo directorio `scripts/`
+
+El directorio `scripts/` ha sido eliminado y su contenido redistribuido. Los comandos operativos y de diagnóstico ahora residen en `apps/installer/src/commands/` y `apps/server/bin/`. Nueva lógica de negocio, detección de plataforma o migraciones deben ubicarse en el módulo correspondiente.
+
+
+## 7. Desarrollo
 
 ```bash
-npm run lint
+npm run server   # backend; reinicio manual al cambiar código
+npm run dev      # frontend Vite con HMR
 ```
 
-## 5. Pruebas Automatizadas (Testing)
+Para Canvas completo:
 
-El framework de pruebas elegido es **Vitest**. Escribe tus pruebas junto al componente o archivo que vas a probar con el sufijo `.test.js` o `.spec.js`.
-
-Para ejecutar toda la batería de pruebas:
-```bash
-npm run test
-```
-
-Para mantener los tests corriendo en modo observación mientras programas:
-```bash
-npm run test:watch
-```
-
-## 6. Integración con Canvas LMS Local
-
-Si necesitas probar el flujo LTI completo localmente, debes usar el script de instalación automática:
 ```bash
 npm start
+# seleccionar opción 3
 ```
-Y seleccionar la **Opción 3** para montar Canvas LMS a través de Docker.
 
-> [!NOTE]
-> Canvas local utiliza el dominio `canvas.docker` en el puerto `8443` (Proxy TLS). Recuerda mapear este dominio a `127.0.0.1` en tu archivo de hosts del sistema operativo. Puedes usar el comando `npm run setup:hosts` para ayudarte con esto.
+No ejecute el proyecto Linux desde `/mnt/c` o `/mnt/d` si usa Docker Engine dentro de WSL2; clone en `/home/<usuario>/...`.
+
+## 8. Pruebas requeridas
+
+Base para cualquier cambio:
+
+```bash
+npx --yes npm@11.8.0 run lint
+npx --yes npm@11.8.0 test
+npx --yes npm@11.8.0 run build
+```
+
+Si cambia el cliente:
+
+```bash
+npx playwright install chromium
+npx --yes npm@11.8.0 run test:client
+```
+
+Si cambia persistencia/integración:
+
+```bash
+npx --yes npm@11.8.0 run test:integration
+```
+
+Si cambia setup/plataforma, agregue tests con dependencias inyectadas y valide al menos el sistema afectado. Un mock de Docker no demuestra una instalación real.
+
+Consulte [TESTING.md](TESTING.md) para la matriz completa.
+
+## 9. Base de datos
+
+- Añada una migración incremental en `packages/plugin-database/migrations/`; no reescriba una migración ya aplicada.
+- Diseñe migraciones reanudables cuando sea razonable.
+- No incluya datos institucionales reales en seeds.
+- Cambios destructivos requieren backup, estrategia de rollback y aprobación explícita.
+- Actualice repositorios, tests y documentación del esquema en el mismo cambio.
+
+## 10. Seguridad
+
+- No suba `.env`, tokens, claves privadas, credenciales o dumps.
+- No registre headers de autorización, cookies LTI ni prompts con datos personales completos.
+- Use argumentos estructurados al lanzar procesos; evite `shell: true` y concatenación de entradas.
+- No ejecute scripts remotos sin versión/verificación.
+- No mate procesos ajenos ni borre carpetas/volúmenes como recuperación automática.
+- Ejecute Gitleaks conforme a [GITLEAKS.md](GITLEAKS.md).
+
+Vulnerabilidades se comunican según [SECURITY.md](SECURITY.md), no mediante issues públicos con detalles explotables.
+
+## 11. Documentación
+
+Actualice documentación cuando cambie cualquiera de estos contratos:
+
+- comandos y versiones;
+- variables de entorno;
+- puertos/URLs;
+- modos del orquestador;
+- estructura del monorepo;
+- scopes o endpoints LTI;
+- soporte de plataformas;
+- estado de pruebas o producción.
+
+No enlace informes privados ni prometa un comportamiento que no tenga evidencia reproducible.
+
+## 12. Checklist de pull request
+
+- [ ] Alcance pequeño y descripción del problema/decisión.
+- [ ] Sin cambios ajenos ni artefactos generados.
+- [ ] Archivos/funciones dentro de límites o excepción justificada.
+- [ ] Prueba de regresión añadida o motivo explícito.
+- [ ] Lint, tests y build ejecutados con resultado informado.
+- [ ] Riesgos de migración, seguridad y rollback descritos.
+- [ ] Documentación y ejemplos actualizados.
+- [ ] Escaneo de secretos sin nuevos hallazgos.

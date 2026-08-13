@@ -11,7 +11,7 @@
  * (proxy) esta listo para usarse.
  */
 import logger from '../utils/logger.js';
-import { pingCanvasAPI } from '../orchestration/boot/setup/utils/TokenManager.js';
+import { pingCanvasAPI } from '../utils/canvasHealth.js';
 
 class CanvasLocalManager {
   static async autoStartAndInitialize() {

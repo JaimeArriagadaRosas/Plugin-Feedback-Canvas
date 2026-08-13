@@ -191,13 +191,14 @@ export default function SpeedGraderPanel({ onExit }) {
                 onShowHistory={() => setShowHistory(true)} 
                 onShowTrajectory={() => setShowTrajectoryModal(true)}
                 grade={scaledGrade} 
-                hasRubric={!!activeAssignment?.rubric}
+                hasRubric={activeAssignment?.hasRubric}
                 onShowRubric={() => setShowRubricModal(true)}
                 courseId={courseId}
                 studentId={currentStudent?.id}
               />
 
               <AIControls
+                key={`aicontrols-${currentStudent?.id}-${currentAssignmentId}`}
                 feedback={feedback}
                 loading={loading}
                 generatedFeedbackId={generatedFeedbackId}
@@ -210,6 +211,7 @@ export default function SpeedGraderPanel({ onExit }) {
             </>
           ) : (
             <ManualFeedbackPanel 
+              key={`manual-${currentStudent?.id}-${currentAssignmentId}`}
               onSubmit={handleManualSubmit}
               loading={loading}
             />

@@ -1,128 +1,127 @@
-# Registro de Deuda Técnica (Technical Debt)
+# Registro de deuda técnica
 
-Este documento registra las decisiones técnicas conscientes y los compromisos (trade-offs) asumidos durante el desarrollo del plugin, con el objetivo de alcanzar un Producto Mínimo Viable (MVP). Las deudas aquí documentadas no bloquean el funcionamiento actual del software en su estado de desarrollo, pero requieren atención futura para madurar el proyecto hacia un estado de producción completo.
+Este registro separa funcionalidades implementadas de preparación operativa. Las prioridades son: **P0** bloquea producción, **P1** debe cerrarse antes de ampliar un piloto y **P2** mejora mantenibilidad/experiencia.
 
----
+## Resumen
 
-## 1. Datos Hardcodeados y Ajustes Visuales en el Renderizado de Entregas (Step 3)
+| ID | Prioridad | Estado | Tema |
+|---|---:|---|---|
+| TD-01 | P0 | abierto | certificación LTI institucional |
+| TD-02 | P0 | abierto | jobs masivos no durables |
+| TD-03 | P0 | abierto | correo productivo ausente |
+| TD-04 | P0 | abierto | rotación de claves históricas |
+| TD-05 | P1 | abierto | E2E débiles/incompletos |
+| TD-06 | P1 | abierto | RF06 escribe código al filesystem |
+| TD-07 | P1 | parcial | matriz multiplataforma final |
+| TD-08 | P1 | abierto | despliegue/operación productiva |
+| TD-09 | P2 | abierto | variables SIS simuladas |
+| TD-10 | P2 | abierto | exigencia de calificación fija |
+| TD-11 | P2 | abierto | formato enriquecido limitado |
+| TD-12 | P2 | abierto | rendimiento del frontend |
+| TD-13 | P2 | abierto | scripts heredados y límites SOLID |
+| TD-14 | P2 | abierto | diseño de notificaciones |
 
-### Descripción
-El renderizado de las entregas de los estudiantes en la vista de *feedback* (conocido internamente como "Step 3") presenta información incompleta y/o datos *hardcodeados* (ej. indicador de "Puntaje: N/A").
+## TD-01 — Certificación LTI institucional
 
-### Contexto y Justificación
-Para la versión actual (MVP), la prioridad se centró en garantizar que la arquitectura de frontend cargara y renderizara la interfaz correctamente utilizando las tecnologías implementadas, demostrando la viabilidad de la vista. La inyección de datos reales y dinámicos para todos los campos detallados no es un bloqueante en esta etapa, por lo que se optó por utilizar datos genéricos o estáticos temporales.
+**Problema:** modos 1/2 y la configuración LTI no se han probado de extremo a extremo contra un Canvas institucional/staging con Developer Key, deployments, scopes y roles reales de prueba.
 
-### Estado Actual
-- La vista se renderiza correctamente sin errores en el flujo de la aplicación.
-- Existen componentes visuales que muestran información estática o de prueba.
-- Es posible que falten ajustes visuales finos para adaptar el diseño a diferentes variaciones de los datos reales.
+**Riesgo:** fallos OIDC/JWKS, cookies iframe, scopes, account/subaccount, identidad o endpoints al desplegar.
 
-### Acción Requerida (Futuro)
-- Integrar y vincular los datos dinámicos provenientes del backend con los componentes de la interfaz.
-- Realizar los ajustes visuales necesarios para asegurar que los datos dinámicos se presenten de manera fluida y correcta, reemplazando cualquier valor estático (como el puntaje "N/A").
+**Cierre:** E2E por rol en staging, pruebas negativas de issuer/audience/nonce/deployment, revisión administrativa del placement y rollback documentado.
 
----
+## TD-02 — Jobs masivos no durables
 
-## 2. Validación de Opciones LTI en Entorno de Producción Real
+**Problema:** `MassiveGenerationOrchestrator` usa `setTimeout(..., 0)` y bucles dentro del proceso Node.
 
-### Descripción
-Las opciones principales del menú de configuración orientadas a producción, específicamente:
-- **Ejecutar entorno de producción LTI 1.3** (Opción 1)
-- **Setup de despliegue LTI** (Opción 2)
- 
-No han sido probadas de extremo a extremo en un ambiente real de producción.
+**Riesgo:** reiniciar/crashear pierde trabajo; no hay lease, reanudación, estado durable, coordinación de réplicas ni dead-letter.
 
-### Contexto y Justificación
-Actualmente, no se ha contado con una *Developer Key* de Canvas LMS que permita validar el ciclo completo en un entorno 100% de producción. Para avanzar con el desarrollo, el entorno local fue configurado para replicar las condiciones de producción lo más fielmente posible, contemplando las variables esperadas. Sin embargo, se incluyeron pequeñas adaptaciones necesarias para que funcionara localmente (por ejemplo, la automatización del proceso de *bypass* para establecer la confianza del plugin), lo cual, en un entorno de producción, sería un proceso regular (usualmente manual o gestionado por el administrador).
+**Cierre:** cola durable con idempotencia, estados por estudiante/tarea, retries con backoff, cancelación, observabilidad y recuperación demostrada tras reinicio.
 
-### Estado Actual
-- El flujo LTI funciona correctamente de manera local mediante la simulación y el *bypass* automatizado.
-- Existe incertidumbre sobre el comportamiento exacto de las opciones de despliegue al momento de enfrentarse a un entorno productivo real, al no contar con la validación de la *Developer Key*.
+## TD-03 — Correo productivo
 
-### Acción Requerida (Futuro)
-- Obtener una *Developer Key* válida.
-- Ejecutar pruebas exhaustivas de despliegue y lanzamiento LTI 1.3 en un entorno de producción real o *staging* de Canvas.
-- Validar que el comportamiento simulado en el entorno local coincida con el comportamiento real de producción y refactorizar/eliminar los *bypasses* locales en el código destinado a producción.
+**Problema:** `EmailService.local.js` escribe `local-emails.log`; no existe adaptador SMTP/API institucional.
 
----
+**Riesgo:** RF42/RF44 y preferencias de correo no funcionan realmente en producción.
 
-## 3. Servicio de Envío de Correos Institucionales (EmailService) Incompleto para Producción
+**Cierre:** proveedor aprobado, plantillas, secretos, idempotencia/retries, métricas de entrega y prueba masiva con cuentas de staging.
 
-### Descripción
-El sistema permite a los estudiantes configurar sus preferencias de notificación ("Ambos métodos" o "Correo Institucional") y ejecuta la lógica para procesar esas notificaciones al aprobar feedbacks, pero actualmente **no envía correos electrónicos reales**. En su lugar, simula el envío escribiendo un registro local (`local-emails.log`).
+## TD-04 — Claves históricas
 
-### Contexto y Justificación
-Durante el desarrollo del MVP, el entorno local no se conectó a un proveedor SMTP real (ej. SendGrid, AWS SES o servidor de correo de la universidad) para evitar configuraciones complejas, manejo de credenciales y costos asociados al envío de correos durante la fase de pruebas. La arquitectura está diseñada para delegar esta tarea a un `EmailService`, pero su implementación para producción aún no se ha desarrollado.
+**Problema:** la línea base de Gitleaks contiene dos claves privadas antiguas presentes en commits públicos.
 
-### Estado Actual
-- El módulo `EmailService.local.js` captura correctamente la orden de envío y registra en disco un *Mock Email*.
-- No existe una integración funcional con un servidor de correo saliente.
-- No existen plantillas HTML (formato, logos, colores institucionales); solo se genera un texto plano en el log para efectos de depuración.
+**Riesgo:** cualquier sistema que aún confíe en ellas puede quedar comprometido.
 
-### Acción Requerida (Futuro)
-- Desarrollar e implementar un adaptador real para `EmailService` (ej. usando `nodemailer` o el SDK de un proveedor de correos) que se active cuando el plugin esté en un entorno de producción.
-- Diseñar e integrar plantillas formales de correo institucional (formato HTML, logos de la institución).
-- Configurar las credenciales seguras (variables de entorno) del proveedor SMTP en la infraestructura de producción.
+**Cierre:** inventario, revocación/rotación confirmada y decisión coordinada sobre reescritura de historial. Ignorar fingerprints no cierra el riesgo.
 
----
+## TD-05 — Cobertura E2E
 
-## 4. Escala de Exigencia Matemática (60%) Fija por Defecto
+**Problema:** `login.spec.js` y `massive-feedback.spec.js` terminan con asserts triviales; el segundo captura errores de título. El LTI local omite iframe si no ve el enlace.
 
-### Descripción
-Las variables dinámicas del motor de prompt que realizan cálculos matemáticos con las calificaciones, específicamente en `GradeResolver`, `CourseStatisticsService`, y `GradeConverter`, asumen por defecto que las conversiones a la escala chilena (1.0 a 7.0) utilizan una escala de exigencia del 60%.
+**Riesgo:** CI verde sin probar acciones críticas ni integración real.
 
-### Contexto y Justificación
-Durante esta fase no se ha integrado la capacidad para que el profesor configure su propia escala de exigencia por tarea o por curso (por ejemplo, 50% o 70%). Para poder entregar métricas semánticas y cálculos de promedio al LLM, se fijó el estándar universitario típico del 60%.
+**Cierre:** selectores estables, aserciones de estado/Canvas/BD, escenarios individuales y masivos, y una suite staging obligatoria antes de release.
 
-### Acción Requerida (Futuro)
-- Adaptar las firmas de los resolvers y del convertidor de notas para recibir la escala de exigencia como parámetro, la cual debería provenir de la configuración del curso en la base de datos o de las preferencias del profesor.
+## TD-06 — Variables dinámicas RF06
 
----
+**Problema:** crear una variable genera JavaScript bajo `services/variables` y modifica un registro en memoria.
 
-## 5. Simulación (Mocking) Local para Variables Globales (UNIDA/SIS)
+**Riesgo:** filesystem mutable, divergencia entre réplicas, pérdida en redeploy, auditoría/rollback débiles y superficie de generación de código.
 
-### Descripción
-Los módulos de variables personalizadas creados en la Fase 3 (`OtherCoursePerformanceResolver`, `StudentEntryProfileResolver` y `PreviousAcademicStatusResolver`) consumen datos simulados localmente en lugar de realizar llamadas a las API reales de los sistemas de información estudiantil (SIS/UNIDA).
+**Cierre:** catálogo versionado de resolvers + configuración persistida/declarativa. Véase [VARIABLES.md](VARIABLES.md).
 
-### Contexto y Justificación
-Para permitir el desarrollo y validación del flujo de inyección dinámica sin depender de integraciones externas (que aún no están disponibles para el plugin), se simuló el comportamiento exacto que tendrían en producción. La estructura, las promesas y el comportamiento de Fallback (ignorar silenciosamente la variable si no hay datos) funcionan idéntico a producción, diferenciándose únicamente en el origen de los datos.
+## TD-07 — Matriz multiplataforma
 
-### Acción Requerida (Futuro)
-- Reemplazar las llamadas locales simuladas en los Resolvers por llamadas reales a los endpoints de la universidad (SIS) cuando estén disponibles en el entorno de producción.
+**Avance:** setup completo validado en Ubuntu/WSL2 rootless; adaptadores Linux/Windows separados y tests unitarios disponibles.
 
----
+**Pendiente:** ejecución limpia en VM/host Linux independiente, otro Windows, macOS y estrategias DNF/Pacman. Registrar permisos, tiempos, disco, reinicio y limpieza.
 
-## 6. Limitación de Formato de Texto Enriquecido en Canvas LMS
+## TD-08 — Operación productiva
 
-### Descripción
-La API nativa de entregas de Canvas LMS (`Submission Comments API`) no soporta etiquetas HTML nativas ni sintaxis Markdown en los comentarios. Todo el contenido enviado se muestra literalmente como texto plano. Debido a esto, se implementó una solución alternativa ("Workaround") que traduce el formato básico de texto (negrita, cursiva) a caracteres Unicode matemáticos antes de enviarlos a Canvas. 
+**Problema:** los compose y modo 1 son referencias, no una plataforma certificada.
 
-### Contexto y Justificación
-Dado que el requerimiento funcional exige enviar formato de texto enriquecido (negritas, cursivas y listas) y la API actual de Canvas restringe esto, la transformación a Unicode fue la forma más eficiente de satisfacer el requerimiento visual sin requerir integraciones LTI complejas (iFrames) para los comentarios, lo que habría modificado la experiencia de uso.
+**Pendiente:** TLS/ingress, imágenes inmutables, secretos, health/readiness, observabilidad, backups, restore, migración, HA, límites, runbooks, rollback y prueba de carga reproducible.
 
-### Estado Actual
-- El módulo `RichTextProcessor` transforma la sintaxis básica a caracteres Unicode (ej. `𝗯𝗼𝗹𝗱`).
-- Al estudiante **no se le muestra un formato HTML real** en su vista de Canvas, sino caracteres estandarizados que simulan dicho formato.
-- La visualización depende enteramente de cómo el navegador y Canvas LMS renderizan la fuente Unicode estándar, lo cual escapa de nuestro control directo (depende de Canvas LMS).
+## TD-09 — Variables institucionales simuladas
 
-### Acción Requerida (Futuro)
-- Cuando Canvas LMS exponga una API nativa para comentarios de texto enriquecido (ej. con soporte oficial HTML/Markdown), esta deuda técnica deberá ser saldada removiendo la conversión a caracteres Unicode.
-- Así, los comentarios se cargarán y renderizarán de manera correcta nativamente, dependiendo 100% de la funcionalidad de Canvas LMS y no de la capa de traducción del plugin.
+`OtherCoursePerformanceResolver`, `StudentEntryProfileResolver` y `PreviousAcademicStatusResolver` usan datos locales/simulados hasta contar con APIs SIS aprobadas.
 
----
+**Cierre:** contratos, privacidad, timeouts, cache, fallback y pruebas con staging institucional.
 
-## 7. Unificación del Diseño de Notificaciones (Anexo)
+## TD-10 — Exigencia de calificación fija
 
-### Descripción
-Actualmente, las notificaciones emitidas por el sistema no mantienen una línea de diseño unificada ni un sistema de componentes gráficos estandarizado.
+Algunos cálculos asumen una escala chilena con 60% de exigencia.
 
-### Contexto y Justificación
-Durante las primeras iteraciones de desarrollo y la priorización de características del backend (como la conexión de la IA o los sistemas de fallback), los mensajes y las interfaces visuales de retroalimentación se abordaron de manera aislada y funcional en lugar de priorizar un lenguaje de diseño cohesivo.
+**Cierre:** configuración por institución/curso/tarea, persistencia, validación y regresiones para varias escalas.
 
-### Estado Actual
-- Las notificaciones son funcionales pero pueden diferir visualmente (colores, padding, iconos) dependiendo del contexto o de si son notificaciones push, avisos en el dashboard, o alertas temporales.
-- Esto genera un impacto menor en la experiencia del usuario, percibiéndose como un sistema desarticulado visualmente en los avisos.
+## TD-11 — Texto enriquecido de Canvas
 
-### Acción Requerida (Futuro)
-- Diseñar un único sistema de componentes estandarizado para todo tipo de notificaciones del sistema (toasts, alertas de banner, notificaciones persistentes).
-- Migrar y refactorizar las vistas actuales de advertencia/notificación para que consuman este componente global unificado.
+Los comentarios Canvas no aceptan el HTML/Markdown requerido; `RichTextProcessor` usa caracteres Unicode para simular formato.
+
+**Riesgo:** accesibilidad, búsqueda, copy/paste y renderizado dependiente de fuente.
+
+**Cierre:** validar una vía oficial Canvas compatible o documentar formalmente la degradación a texto plano/accesible.
+
+## TD-12 — Rendimiento frontend
+
+El build advierte chunks grandes asociados a `exceljs` y visor PDF. No hay baseline reproducible de carga/transferencia.
+
+**Cierre:** medir bundle y navegación, lazy-load por ruta/capacidad, presupuesto de rendimiento y regresión automatizada.
+
+## TD-13 — Scripts y SOLID
+
+Persisten scripts sueltos de reparación/diagnóstico y módulos heredados con nomenclatura/responsabilidad desigual.
+
+**Cierre:** inventariar consumidores, mover lógica reutilizable a `apps/server/src`, dejar entrypoints finos y retirar scripts sin flujo soportado. Mantener 300 líneas/archivo y 100/función salvo excepción documentada.
+
+## TD-14 — Diseño de notificaciones
+
+Toasts, banners, avisos persistentes y notificaciones no comparten todavía un sistema visual/semántico completo.
+
+**Cierre:** estados, accesibilidad, severidades y componentes comunes; pruebas visuales y de lector de pantalla.
+
+## Reglas de mantenimiento
+
+- Toda deuda nueva incluye evidencia, riesgo, prioridad y criterio verificable de cierre.
+- «Hay código» no equivale a «funciona en producción».
+- Al cerrar una deuda, enlace pruebas/commit/artefacto y actualice [README](README.md), [TESTING](TESTING.md) o [DEPLOYMENT](DEPLOYMENT.md) según corresponda.
+- No se guardan secretos ni informes privados en este documento.

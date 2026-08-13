@@ -3,7 +3,8 @@ import Modal from '../../components/atoms/Modal';
 import styles from './RubricModal.module.css';
 
 export default function RubricModal({ rubric, onClose }) {
-  const totalPoints = rubric?.reduce((acc, curr) => acc + (curr.points || 0), 0) || 0;
+  const safeRubric = Array.isArray(rubric) ? rubric : [];
+  const totalPoints = safeRubric.reduce((acc, curr) => acc + (curr.points || 0), 0);
 
   return (
     <Modal
@@ -19,7 +20,7 @@ export default function RubricModal({ rubric, onClose }) {
         </div>
         
         <div className={styles.criteriaList}>
-          {rubric?.map((criterion) => (
+          {safeRubric.map((criterion) => (
             <div key={criterion.id} className={styles.criterionCard}>
               <div className={styles.criterionHeader}>
                 <h4 className={styles.criterionTitle}>{criterion.description}</h4>

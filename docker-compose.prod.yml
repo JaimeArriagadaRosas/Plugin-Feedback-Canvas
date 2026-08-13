@@ -38,6 +38,24 @@ services:
           cpus: '0.5'
           memory: 512M
 
+  migrate:
+    image: plugin-feedback-app:latest
+    build:
+      context: ./
+      dockerfile: apps/server/Dockerfile
+    command: ["node", "packages/plugin-database/bin/migrate.js"]
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-CHANGE_ME_db_password_strong}
+      - DB_NAME=${DB_NAME:-feedback_plugin_db}
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     image: plugin-feedback-app:latest
     build:
@@ -59,6 +77,8 @@ services:
         condition: service_healthy
       gotenberg:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
     # Configuración de reinicio agresiva para producción
     restart: always
     healthcheck:

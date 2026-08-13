@@ -37,6 +37,7 @@ export default defineConfig({
       })],
       test: {
         name: 'storybook',
+        exclude: ['**/tests/e2e/**', '**/node_modules/**'],
         browser: {
           enabled: true,
           headless: true,

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { ErrorHandler } from '../../middlewares/ErrorHandler.js';
 import { SECRET_REGISTRY, validateSecretsOrThrow } from '../../config/secrets.js';
-import { runMigrations } from '../../../../../scripts/setup/migrate.mjs';
+import { runMigrations } from '@plugin-feedback/plugin-database';
 import { registerRoutes } from './routes.js';
 import { isHttpsEnabled } from '../../security/envGuard.js';
 import logger from '../../utils/logger.js';

@@ -5,7 +5,9 @@ import request from 'supertest';
 // Dependiendo de tu arquitectura, esto se importa desde tu archivo de setup.
 // import app from '../../src/app.js'; 
 
-describe('Backend Smoke Test con Testcontainers', () => {
+const describeDocker = process.env.RUN_DOCKER_TESTS === 'true' ? describe : describe.skip;
+
+describeDocker('Backend Smoke Test con Testcontainers', () => {
   let pgContainer;
   let client;
 
@@ -25,7 +27,7 @@ describe('Backend Smoke Test con Testcontainers', () => {
     process.env.DB_PASSWORD = 'test_pass';
 
     // (Opcional) Correr migraciones o inicializar la DB aquí
-  });
+  }, 60000); // 60s timeout for testcontainers pull and start
 
   afterAll(async () => {
     // 3. Destruir el contenedor tras las pruebas

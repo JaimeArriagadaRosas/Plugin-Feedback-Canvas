@@ -1,5 +1,12 @@
 name: Security & Secrets Scan
 
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: ["**"]
@@ -12,10 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '24' }
-      - run: npm install
-      - run: npm run build --workspace=apps/client
-      - run: docker compose build --no-cache
+        with:
+          node-version: '22.12.0'
+          cache: npm
+      - run: npx --yes npm@11.8.0 ci
+      - run: npx --yes npm@11.8.0 run build
+      - run: docker compose config -q
 
   gitleaks:
     name: Escaneo de secretos (gitleaks)
@@ -50,9 +59,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-      - run: npm install
-      - run: npm run lint
+          node-version: '22.12.0'
+          cache: npm
+      - run: npx --yes npm@11.8.0 ci
+      - run: npx --yes npm@11.8.0 run lint
 
   test:
     name: Tests del servidor
@@ -61,8 +71,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-      - run: npm install
-      - run: npm test
+          node-version: '22.12.0'
+          cache: npm
+      - run: npx --yes npm@11.8.0 ci
+      - run: npx --yes npm@11.8.0 test
         env:
           CI: true
+
+  test-client:
+    name: Tests de cliente
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+      - run: npx --yes npm@11.8.0 ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx --yes npm@11.8.0 run test:client

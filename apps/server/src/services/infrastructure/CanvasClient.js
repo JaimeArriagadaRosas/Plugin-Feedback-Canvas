@@ -5,6 +5,7 @@ import { getLocalCaBuffer } from '../../local/TLSConfigurator.js';
 import { getCanvasEnv } from '../../config/index.js';
 
 import { CircuitBreaker } from '../../utils/CircuitBreaker.js';
+import { getNextLink } from '@plugin-feedback/canvas-api';
 
 const canvasCircuitBreaker = new CircuitBreaker(0.5, 30000, 30000, 10);
 
@@ -154,8 +155,6 @@ export default class CanvasClient {
   }
 
   getNextLink(linkHeader) {
-    if (!linkHeader) return null;
-    const matches = linkHeader.match(/<([^>]+)>\s*;\s*rel="next"/i);
-    return matches ? matches[1] : null;
+    return getNextLink(linkHeader);
   }
 }

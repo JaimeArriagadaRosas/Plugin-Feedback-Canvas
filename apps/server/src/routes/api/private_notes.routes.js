@@ -1,5 +1,5 @@
 import express from 'express';
-import { validateId } from '../../middlewares/security.js';
+import { handleValidationErrors, validateId } from '../../middlewares/security.js';
 import { authorizeRole } from '../../authz/authorizeRole.js';
 
 export function createPrivateNotesRoutes(privateNoteCtrl) {
@@ -7,7 +7,8 @@ export function createPrivateNotesRoutes(privateNoteCtrl) {
 
   router.put('/:id', 
     authorizeRole(['teacher', 'admin']), 
-    validateId, 
+    ...validateId('id'),
+    handleValidationErrors,
     (req, res, next) => privateNoteCtrl.updateNote(req, res, next)
   );
 

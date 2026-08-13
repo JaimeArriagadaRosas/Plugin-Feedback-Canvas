@@ -40,7 +40,8 @@ export function useSpeedGraderData() {
             points: a.points_possible,
             templateId: a.template || "",
             templateName: a.templateName || "",
-            rubric: a.rubric || null,
+            rubric: Array.isArray(a.rubric) ? a.rubric : [],
+            hasRubric: a.use_rubric_for_grading === true || a.has_rubric === true || !!(Array.isArray(a.rubric) && a.rubric.length > 0),
             active: Boolean(a.active)
           }));
       }
@@ -92,6 +93,8 @@ export function useSpeedGraderData() {
   useEffect(() => {
     setGrade(0);
     setStatusMsg("Cargando datos desde Canvas...");
+    setFeedback("");
+    setGeneratedFeedbackId(null);
   }, [currentAssignmentId, currentStudent.id]);
 
   const { data: feedbackDetailList } = useQuery({

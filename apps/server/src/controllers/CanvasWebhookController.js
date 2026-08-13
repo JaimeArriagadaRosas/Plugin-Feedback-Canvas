@@ -40,7 +40,10 @@ export default class CanvasWebhookController {
 
 
   _extractEventData(req) {
-    
+    const eventId = req.headers['x-canvas-event-id']
+      || req.body?.event_id
+      || req.body?.id
+      || null;
     const eventName = req.headers['x-canvas-event-name'] || req.body?.event_name || '';
     const eventHash = crypto.createHash('sha256')
       .update(JSON.stringify({ ...req.body, eventId, eventName }))
@@ -48,29 +51,7 @@ export default class CanvasWebhookController {
     return { eventId, eventName, eventHash };
   }
 
-  async _handleAttempts(eventHash, eventName, req, res) {
-    const attempts = await this.webhookService.registrarEventoAtómico(eventHash, eventName);
-    if (!attempts) {
-      throw new AppError('No se pudo registrar el evento en DB', 500);
-    }
-
-    // Si el evento ya fue procesado (attempts > 1), devolver mensaje de idempotencia
-    if (attempts > 1) {
-      return res.status(202).json({ exito: true, mensaje: 'Evento ya procesado (idempotente)' });
-    }
-
-    const MAX_ATTEMPTS = 5;
-    if (attempts > MAX_ATTEMPTS) {
-      const yaEnDeadLetter = await this.webhookService.estaEnDeadLetter(eventHash);
-      if (!yaEnDeadLetter) {
-        await this.webhookService.moverADeadLetter(eventHash, eventName, req.body, 'Maximos reintentos excedidos', attempts);
-      }
-      return res.status(202).json({ exito: true, mensaje: 'Evento excedió reintentos máximos. Almacenado para revisión manual.' });
-    }
-    return null;
-  }
-
-  async _processGradeChange(payload, eventName, res) {
+  async _processGradeChange(payload, eventName) {
     const courseId = payload.course_id || (payload.data && payload.data.course_id);
     const assignmentId = payload.assignment_id || (payload.data && payload.data.assignment_id);
     const studentId = payload.user_id || (payload.data && payload.data.user_id);
@@ -112,35 +93,75 @@ export default class CanvasWebhookController {
     try {
       await this.feedbackService.generateFeedback(courseId, assignmentId, studentId, defaultTemplateId, grade, teacherId);
       logger.info(`[Webhook] Generación automática exitosa (RF41) para ${studentId}`);
-      return res.status(202).json({ exito: true, mensaje: 'Evento recibido y procesado (RF41)' });
+      return { mensaje: 'Evento recibido y procesado (RF41)' };
     } catch (err) {
       logger.error(`[Webhook] Error en generación automática (RF41):`, { error: err.message });
-      return res.status(500).json({ exito: false, error: { mensaje: 'Error procesando evento. Se reintentará.', codigo: 500 } });
+      throw new AppError('Error procesando evento. Se reintentará.', 500);
     }
   }
 
   async handleWebhook(req, res, next) {
+    let eventHash = null;
+    let eventName = '';
+    let claimed = false;
     try {
       if (!this.validarFirmaWebhook(req)) {
         throw new AppError('Firma de webhook inválida o secreto no configurado', 401);
       }
 
-      const { eventId, eventName, eventHash } = this._extractEventData(req);
+      const eventData = this._extractEventData(req);
+      eventHash = eventData.eventHash;
+      eventName = eventData.eventName;
 
       if (!eventName) {
         throw new AppError(`Evento webhook sin nombre y cuerpo sin event_name`, 400);
       }
 
-      const checkAttempts = await this._handleAttempts(eventHash, eventName, req, res);
-      if (checkAttempts) return checkAttempts;
+      const claim = await this.webhookService.claimEvent(eventHash, eventName);
+      if (!claim.claimed) {
+        const messages = {
+          PROCESSED: 'Evento ya procesado (idempotente)',
+          PROCESSING: 'Evento actualmente en proceso',
+          DEAD_LETTER: 'Evento almacenado para revisión manual'
+        };
+        return res.status(202).json({
+          exito: true,
+          mensaje: messages[claim.status] || 'Evento no disponible para procesamiento',
+          estado: claim.status
+        });
+      }
+      claimed = true;
 
       if (eventName === 'grade_change' || eventName === 'submission_updated') {
-        return this._processGradeChange(req.body, eventName, res);
+        const result = await this._processGradeChange(req.body, eventName);
+        await this.webhookService.markProcessed(eventHash);
+        return res.status(202).json({ exito: true, ...result });
       }
 
-      res.status(200).json({ exito: true, mensaje: 'Evento ignorado' });
+      await this.webhookService.markProcessed(eventHash);
+      return res.status(200).json({ exito: true, mensaje: 'Evento ignorado' });
     } catch (error) {
       logger.error('[Webhook] Error procesando evento:', { error: error.message, stack: error.stack });
+      if (claimed && eventHash) {
+        try {
+          const failure = await this.webhookService.markFailed(eventHash, error.message);
+          if (failure.deadLetter) {
+            await this.webhookService.moverADeadLetter(
+              eventHash,
+              eventName,
+              req.body,
+              error.message,
+              failure.attempts
+            );
+            return res.status(202).json({
+              exito: false,
+              mensaje: 'Evento excedió reintentos máximos y fue almacenado para revisión manual.'
+            });
+          }
+        } catch (trackingError) {
+          logger.error('[Webhook] No se pudo registrar el fallo del evento:', { error: trackingError.message, eventHash });
+        }
+      }
       if (error instanceof AppError) {
         return next(error);
       }

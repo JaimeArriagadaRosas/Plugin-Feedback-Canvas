@@ -1,0 +1,22 @@
+{
+  "name": "@plugin-feedback/installer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@plugin-feedback/canvas-api": "*",
+    "@plugin-feedback/contracts": "*",
+    "@plugin-feedback/plugin-database": "*",
+    "@inquirer/prompts": "8.5.2",
+    "cross-spawn": "7.0.6",
+    "dotenv": "17.4.2",
+    "execa": "10.0.0",
+    "js-yaml": "5.2.1",
+    "listr2": "11.0.0",
+    "nanospinner": "1.2.2",
+    "picocolors": "1.1.1"
+  }
+}
