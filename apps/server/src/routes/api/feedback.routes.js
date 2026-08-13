@@ -3,18 +3,6 @@ import { authorizeRole } from '../../authz/authorizeRole.js';
 import { requirePermission } from '../../authz/requirePermission.js';
 import { handleValidationErrors, validateId, validateCourseId, validateStudentId, validateFeedbackDetailQuery, studentRateLimiter } from '../../middlewares/security.js';
 import { schemas, validateBody, requireDeploymentId } from '../../security/validation.js';
-import { idempotencyManager } from '../../middlewares/IdempotencyKeyManager.js';
-
-const ensureIdempotencyKey = (req, res, next) => {
-  if (!req.headers['idempotency-key']) {
-    if (req.body && req.body.courseId && req.body.assignmentId && req.body.studentId) {
-      req.headers['idempotency-key'] = `concurrent-lock-${req.body.courseId}-${req.body.assignmentId}-${req.body.studentId}`;
-    } else if (req.body && req.body.id && req.body.rating) {
-      req.headers['idempotency-key'] = `concurrent-lock-rate-${req.body.id}`;
-    }
-  }
-  next();
-};
 
 export function createFeedbackRoutes(feedbackCtrl, advancedFbCtrl, manualFbCtrl) {
   const router = express.Router();
@@ -24,7 +12,7 @@ export function createFeedbackRoutes(feedbackCtrl, advancedFbCtrl, manualFbCtrl)
   router.get('/pending/summary', authorizeRole(['teacher']), requirePermission('view_feedback'), (req, res, next) => feedbackCtrl.getPendingSummary(req, res, next));
   router.get('/detail', authorizeRole(['teacher']), requirePermission('view_feedback'), ...validateFeedbackDetailQuery, handleValidationErrors, (req, res, next) => feedbackCtrl.getDetail(req, res, next));
   router.get('/history/:courseId/:studentId', authorizeRole(['teacher']), requirePermission('view_feedback'), ...validateCourseId, ...validateStudentId, handleValidationErrors, (req, res, next) => feedbackCtrl.getHistory(req, res, next));
-  router.post('/generate', authorizeRole(['teacher']), requirePermission('edit_feedback'), validateBody(schemas.feedbackGenerate), ensureIdempotencyKey, idempotencyManager.middleware(), (req, res, next) => feedbackCtrl.generate(req, res, next));
+  router.post('/generate', authorizeRole(['teacher']), requirePermission('edit_feedback'), validateBody(schemas.feedbackGenerate), (req, res, next) => feedbackCtrl.generate(req, res, next));
   router.post('/generate-all', authorizeRole(['teacher']), requirePermission('edit_feedback'), (req, res, next) => feedbackCtrl.generateMassive(req, res, next));
   router.put('/:id', authorizeRole(['teacher']), requirePermission('edit_feedback'), ...validateId('id'), handleValidationErrors, validateBody(schemas.feedbackUpdate), (req, res, next) => feedbackCtrl.updateFeedback(req, res, next));
   router.post('/approve', authorizeRole(['teacher']), requirePermission('submit_feedback'), validateBody(schemas.feedbackApprove), (req, res, next) => feedbackCtrl.approveAndSend(req, res, next));
@@ -32,7 +20,6 @@ export function createFeedbackRoutes(feedbackCtrl, advancedFbCtrl, manualFbCtrl)
   
   router.post('/bulk-approve', authorizeRole(['teacher']), requirePermission('submit_feedback'), (req, res, next) => advancedFbCtrl.bulkApprove(req, res, next));
   router.put('/:id/reject', authorizeRole(['teacher']), requirePermission('edit_feedback'), ...validateId('id'), handleValidationErrors, (req, res, next) => advancedFbCtrl.rejectFeedback(req, res, next));
-  router.put('/:id/memo', authorizeRole(['teacher']), requirePermission('edit_feedback'), ...validateId('id'), handleValidationErrors, (req, res, next) => advancedFbCtrl.updatePrivateNote(req, res, next));
   router.post('/manual', authorizeRole(['teacher']), requirePermission('edit_feedback'), validateBody(schemas.feedbackManual), (req, res, next) => manualFbCtrl.submitManualFeedback(req, res, next));
 
   return router;
@@ -42,7 +29,7 @@ export function createStudentFeedbackRoutes(studentCtrl) {
   const router = express.Router();
 
   router.get('/feedback/:studentId', authorizeRole(['student', 'teacher']), requirePermission('view_feedback'), ...validateStudentId, requireDeploymentId, handleValidationErrors, (req, res, next) => studentCtrl.getStudentView(req, res, next));
-  router.post('/rate', authorizeRole(['student']), studentRateLimiter, requireDeploymentId, validateBody(schemas.studentRate), ensureIdempotencyKey, idempotencyManager.middleware(), (req, res, next) => studentCtrl.rateByStudent(req, res, next));
+  router.post('/rate', authorizeRole(['student']), studentRateLimiter, requireDeploymentId, validateBody(schemas.studentRate), (req, res, next) => studentCtrl.rateByStudent(req, res, next));
 
   return router;
 }

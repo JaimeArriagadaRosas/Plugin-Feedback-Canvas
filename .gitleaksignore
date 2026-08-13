@@ -1,0 +1,10 @@
+# Hallazgos historicos anteriores a esta rama. Cada huella es exacta: cualquier
+# secreto nuevo, incluso en la misma ruta, seguira bloqueando el escaneo.
+# Ver docs/SEGURIDAD_GITLEAKS.md antes de modificar esta linea de base.
+ae058dace3b5a60e048a1e8a07a0f17f01f33e87:packages/server/certs/localhost-key.pem:private-key:1
+ae058dace3b5a60e048a1e8a07a0f17f01f33e87:packages/server/src/validation/rutas/config.routes.test.js:generic-api-key:22
+ae058dace3b5a60e048a1e8a07a0f17f01f33e87:packages/server/src/validation/rutas/config.routes.test.js:generic-api-key:57
+ae058dace3b5a60e048a1e8a07a0f17f01f33e87:packages/server/src/validation/unit/config.test.js:generic-api-key:141
+e6253d7e502bb9b870d7a576f3ec057d7d019e68:env_example:generic-api-key:13
+f1ed53e2ba09bfc5fda4b2ba07bcd643a62c89af:env_example:generic-api-key:13
+2017fa92e114bbdbe4a4ac3a9ee3763dbd258342:backend/config/lti.js:private-key:10

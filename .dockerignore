@@ -3,6 +3,9 @@ dist
 coverage
 .git
 .github
+.env
+.env.*
+!.env.example
 *.log
 tmp
 temp

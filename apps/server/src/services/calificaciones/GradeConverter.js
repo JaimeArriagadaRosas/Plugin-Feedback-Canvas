@@ -41,6 +41,58 @@ export default class GradeConverter {
   }
 
   /**
+   * Procesa la calificación (Canvas o sobreescrita) para generar el feedback
+   */
+  static processGrade(currentGrade, submission) {
+    const pointsPossibleRaw = submission?.points_possible;
+    const pointsPossible = typeof pointsPossibleRaw === 'number' && Number.isFinite(pointsPossibleRaw)
+      ? pointsPossibleRaw
+      : 100;
+
+    if (pointsPossible <= 0) {
+      // Usamos Error genérico aquí, el llamador debe mapearlo a DomainError si es necesario
+      const err = new Error('points_possible debe ser mayor a 0');
+      err.errorCode = 'INSUFFICIENT_DATA';
+      err.statusCode = 422;
+      throw err;
+    }
+
+    if (currentGrade !== undefined && currentGrade !== null && currentGrade !== '') {
+      const parsedGrade = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade);
+      if (!Number.isFinite(parsedGrade) || parsedGrade < 1.0 || parsedGrade > 7.0) {
+        const err = new Error('Nota chilena fuera de rango (1.0–7.0)');
+        err.errorCode = 'INSUFFICIENT_DATA';
+        err.statusCode = 422;
+        throw err;
+      }
+      const rawCanvasScore = parsedGrade >= 4.0 
+        ? 60 + ((parsedGrade - 4.0) / 3.0) * 40
+        : ((parsedGrade - 1.0) / 2.9) * 60;
+      
+      const { chileGrade, approved } = this.toChileGrade(rawCanvasScore, pointsPossible);
+      return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
+    }
+    
+    const rawScore = submission?.score ?? submission?.entered_score ?? submission?.unposted_score;
+    if (submission && rawScore !== undefined && rawScore !== null) {
+      const rawCanvasScore = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore);
+      if (!Number.isFinite(rawCanvasScore) || rawCanvasScore < 0 || rawCanvasScore > pointsPossible) {
+        const err = new Error(`Calificación Canvas fuera de rango (0–${pointsPossible})`);
+        err.errorCode = 'INSUFFICIENT_DATA';
+        err.statusCode = 422;
+        throw err;
+      }
+      const { chileGrade, approved } = this.toChileGrade(rawCanvasScore, pointsPossible);
+      return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
+    }
+
+    const err = new Error('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada');
+    err.errorCode = 'INSUFFICIENT_DATA';
+    err.statusCode = 422;
+    throw err;
+  }
+
+  /**
    * Selecciona el tono de feedback basado en la nota chilena (1.0–7.0)
    * Umbrales estándar de universidades chilenas:
    *   7.0–5.5 : Sobresaliente / Excelente

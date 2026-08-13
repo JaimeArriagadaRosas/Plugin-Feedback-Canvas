@@ -154,15 +154,32 @@ export default class FeedbackRepository {
     return res.rows[0];
   }
 
-  async updateStatusAndContent(id, estado, contenido) {
-    const res = await db.query(
-      `UPDATE Historial_Feedback_Generado 
-       SET estado = $1, contenido_generado = COALESCE($2, contenido_generado) 
-       WHERE id = $3 
-       RETURNING *`,
-      [estado, contenido, id]
-    );
+  async updateStatusAndContent(id, estado, contenido, notaCanvas = undefined) {
+    const params = [estado, contenido, id];
+    let query = `UPDATE Historial_Feedback_Generado 
+                 SET estado = $1, contenido_generado = COALESCE($2, contenido_generado)`;
+    
+    if (notaCanvas !== undefined && notaCanvas !== null) {
+      params.push(notaCanvas);
+      query += `, nota_canvas = $${params.length}`;
+    }
+    
+    query += ` WHERE id = $3 RETURNING *`;
+    
+    const res = await db.query(query, params);
     return res.rows[0];
+  }
+
+  async claimForApproval(id, contenido) {
+    const res = await db.query(
+      `UPDATE Historial_Feedback_Generado
+       SET estado = 'APROBADO', contenido_generado = COALESCE($1, contenido_generado)
+       WHERE id = $2
+         AND estado IN ('PENDIENTE', 'EDITADO', 'RECHAZADO')
+       RETURNING *`,
+      [contenido, id]
+    );
+    return res.rows[0] || null;
   }
 
   async updateProfesorRating(id, rating) {

@@ -13,6 +13,15 @@ import { nowIso } from '../../utils/datetime.js';
 import { idempotencyManager } from '../../middlewares/IdempotencyKeyManager.js';
 
 export function registerRoutes(app, services, ltiPublicJwk) {
+  registerHealthRoutes(app, services, ltiPublicJwk);
+  registerAuthRoutes(app);
+  registerFeatureRoutes(app);
+  app.use('/api', idempotencyManager.middleware());
+  app.use('/api', new GestorRutasAPI(buildDependencies(services, ltiPublicJwk)).getRouter());
+  registerSystemConfigRoutes(app);
+}
+
+function registerHealthRoutes(app, services, ltiPublicJwk) {
   app.get('/health', (req, res) => {
     res.send(`
       <div style="font-family: sans-serif; padding: 40px; text-align: center; color: #333;">
@@ -88,20 +97,26 @@ export function registerRoutes(app, services, ltiPublicJwk) {
     logger.info('[Health] Detailed check', { reqId, status: allOk ? 'healthy' : 'degraded' });
     res.status(statusCode).json({ status: allOk ? 'healthy' : 'degraded', checks });
   });
-  app.use('/api', AuthLTI13Handler, refreshLtiTokenCookie);
+}
 
+function registerAuthRoutes(app) {
+  app.use('/api', AuthLTI13Handler, refreshLtiTokenCookie);
   const localAuth = new LocalAuthController();
   app.post('/api/auth/local-login', (req, res, next) => localAuth.localLogin(req, res, next));
   app.post('/api/auth/local-logout', (req, res, next) => localAuth.localLogout(req, res, next));
   app.post('/api/auth/lti-logout', (req, res, next) => localAuth.ltiLogout(req, res, next));
 
   app.use('/api/auth', authRouter);
+}
 
+function registerFeatureRoutes(app) {
   app.use('/api/canvas', canvasSessionRouter);
   app.use('/api/canvas', deepDiagnosticRouter);
   app.use('/api/courses', createVariablesRoutes());
+}
 
-  const dependencias = {
+function buildDependencies(services, ltiPublicJwk) {
+  return {
     canvasService: services.canvasService,
     feedbackService: services.feedbackService,
     templateManager: services.templateManager,
@@ -120,11 +135,9 @@ export function registerRoutes(app, services, ltiPublicJwk) {
     systemNotificationService: services.systemNotificationService,
     ltiPublicJwk
   };
-  app.use('/api', idempotencyManager.middleware());
-  
-  const gestorRutas = new GestorRutasAPI(dependencias);
-  app.use('/api', gestorRutas.getRouter());
+}
 
+function registerSystemConfigRoutes(app) {
   const systemConfig = new SystemConfigController();
   app.get('/api/config/startup-mode', (req, res) => systemConfig.getStartupMode(req, res));
   app.post('/api/config/set-local-role', (req, res) => systemConfig.setLocalRole(req, res));

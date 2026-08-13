@@ -1,4 +1,51 @@
-# Backups temporales generados durante la refactorización
+# Dependencias y caches de gestores de paquetes
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/install-state.gz
+*.tgz
+
+# Builds y caches de herramientas
+dist/
+build/
+.vite/
+coverage/
+.nyc_output/
+.eslintcache
+*.tsbuildinfo
+
+# Variables de entorno y material criptografico local
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.cert
+*.crt
+apps/server/certs/
+
+# Archivos locales de ejecucion, datos y logs
+*.log
+logs/
+tmp/
+temp/
+*.sqlite
+*.sqlite3
+db/data/
+playwright-report/
+test-results/
+blob-report/
+
+# Estado generado por el setup de Canvas
+.setup_complete
+.assets_built
+canvas-lms-master/
+storybook-static/
+*storybook.log
+
+# Backups temporales de refactorizacion
 .backups/
 *.before-*
 *.backup
@@ -8,58 +55,13 @@
 *.placeholder-fix
 *.orig
 
-# Dependencias y builds
-node_modules/
-dist/
-build/
-.npm/
-.yarn/
-*.tgz
-
-# Variables de entorno y secretos (Critico para LTI)
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.cert
-*.crt
-apps/server/certs/
-
-# Entornos Locales y Overrides
-# (Comentado porque en este proyecto se usa el sufijo .local.js para archivos clave del código fuente)
-# *.local.js
-# *.local.ts
-# *.local.json
-
-# Logs y persistencia local
-*.log
-logs/
-*.sqlite
-*.sqlite3
-db/data/
-
-# Sistema
+# Sistema y editores
 .DS_Store
 Thumbs.db
 *.swp
-
-# Editores y Herramientas
 .vscode/
 .idea/
 .fleet/
-tmp/
-temp/
-coverage/
-.nyc_output/
-.eslintcache
-playwright-report/
-test-results/
-blob-report/
 
-# Estado y Orquestación de Setup
-.setup_complete
-.assets_built
-canvas-lms-master/
-*storybook.log
-storybook-static
+# Este proyecto versiona archivos de codigo/configuracion con sufijo *.local.*.
+# No agregar una regla global *.local: no son automaticamente secretos.

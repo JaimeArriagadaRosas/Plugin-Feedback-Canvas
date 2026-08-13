@@ -1,5 +1,7 @@
 import styles from '../TemplateManagement.module.css';
 
+const SKELETON_KEYS = ['skel-tmpl-1', 'skel-tmpl-2', 'skel-tmpl-3', 'skel-tmpl-4', 'skel-tmpl-5'];
+
 export default function TemplateList({ templates, loading, onEdit, onDelete, onRequestDuplicate }) {
   if (!loading && templates.length === 0) {
     return <div className={styles.emptyState}>No se encontraron plantillas.</div>;
@@ -17,8 +19,8 @@ export default function TemplateList({ templates, loading, onEdit, onDelete, onR
         </thead>
         <tbody>
           {loading ? (
-            Array.from({ length: 5 }).map((_, idx) => (
-              <tr key={`skel-${idx}`}>
+            SKELETON_KEYS.map((key) => (
+              <tr key={key}>
                 <td className={styles.td}><div className={`${styles.skeletonCell} ${styles.skeletonCellLong}`} /></td>
                 <td className={styles.td}><div className={`${styles.skeletonCell} ${styles.skeletonCellShort}`} /></td>
                 <td className={styles.td}><div className={`${styles.skeletonCell} ${styles.skeletonCellMedium}`} /></td>

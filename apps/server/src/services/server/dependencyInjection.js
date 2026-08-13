@@ -68,7 +68,12 @@ export async function initializeServiceLayer(env, repos) {
   const iaConfigManager = new IAConfigManager(tokenRepo, configRepo);
   
   const preferencesService = new PreferencesService();
-  const emailServiceLocal = new EmailServiceLocal();
+  const emailService = process.env.NODE_ENV !== 'production'
+    ? new EmailServiceLocal()
+    : null;
+  if (!emailService) {
+    logger.warn('[EMAIL] No hay proveedor de correo productivo configurado. Los envíos por email se registrarán como fallidos.');
+  }
   const diagnosticsService = process.env.NODE_ENV !== 'production' ? new NotificationDiagnosticsLocal() : null;
   const systemNotificationService = new SystemNotificationService(repos.systemNotificationRepo);
 
@@ -81,13 +86,13 @@ export async function initializeServiceLayer(env, repos) {
     configRepo,
     iaConfigManager,
     preferencesService,
-    emailServiceLocal,
+    emailService,
     systemNotificationService
   );
 
   const llmConfigService = new LLMConfigurationService();
   const variableConfigManager = new CourseVariablesService();
-  const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway, preferencesService, emailServiceLocal, diagnosticsService);
+  const feedbackWorkflowService = new FeedbackWorkflowService(feedbackRepo, feedbackService, canvasGateway, preferencesService, emailService, diagnosticsService);
   const templateValidatorService = new TemplateValidatorService();
   const webhookService = new WebhookService();
   const courseService = new CourseService(configRepo);

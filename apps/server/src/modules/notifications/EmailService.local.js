@@ -19,6 +19,7 @@ export default class EmailServiceLocal {
       fs.appendFileSync(this.logFilePath, message);
     } catch (err) {
       logger.error('Error escribiendo log de email local:', err);
+      throw err;
     }
   }
 }

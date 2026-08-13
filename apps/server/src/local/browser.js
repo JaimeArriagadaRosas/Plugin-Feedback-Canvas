@@ -1,13 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import * as os from 'node:os';
-import * as http from 'node:http';
 import * as https from 'node:https';
 import { EventEmitter } from 'node:events';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import logger from '../utils/logger.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function openBrowser(url) {
   const platform = os.platform();
@@ -51,28 +46,6 @@ export function notifyCanvasReady() {
 
 export function notifyCanvasError(err) {
   getCanvasInitEmitter().emit('error', err);
-}
-
-/** ¿El backend ya está escuchando en PORT? (espera por evento, no por timeout ciego) */
-function waitForBackendListening(port, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const tryOnce = () => {
-      const req = http.get({ host: 'localhost', port, path: '/api/config/startup-mode', timeout: 1500 }, (res) => {
-        res.resume();
-        resolve();
-      });
-      req.on('error', () => {
-        if (Date.now() - start > timeoutMs) {
-          reject(new Error('El backend no respondió tras iniciar.'));
-        } else {
-          setTimeout(tryOnce, 300);
-        }
-      });
-      req.on('timeout', () => req.destroy());
-    };
-    tryOnce();
-  });
 }
 
 /**
@@ -124,10 +97,9 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
       const delay = Math.min(2000 * 2 ** attempt, 10000);
       attempt++;
       
-      // En el proceso orquestador _RUNTIME_IS_HTTPS podría no estar seteado, 
-      // pero si el certificado mkcert existe, probablemente el hijo arrancó en HTTPS.
-      // Así que probamos forzosamente con https ignorando certificado, o caemos a http.
-      const protocol = https; 
+      // El flujo LTI local requiere HTTPS. Un fallo TLS se reintenta y se reporta;
+      // nunca se degrada silenciosamente a HTTP.
+      const protocol = https;
       const agentOptions = { rejectUnauthorized: false };
       
       const req = protocol.get(
@@ -146,22 +118,7 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
         }
       );
       
-      // Si falla en HTTPS, intentar silenciosamente en HTTP
-      req.on('error', () => {
-        const reqHttp = http.get('http://localhost:3000/api/config/startup-mode', (res2) => {
-          let data = '';
-          res2.on('data', (c) => { data += c; });
-          res2.on('end', () => {
-             try {
-               const json = JSON.parse(data);
-               if (json.initializing === false) return resolve();
-             } catch (err) { logger.debug('[CANVAS_READY] JSON inválido en polling HTTP fallback.', { error: err.message }); }
-             setTimeout(poll, delay);
-          });
-        });
-        reqHttp.on('error', () => setTimeout(poll, delay));
-        reqHttp.setTimeout(2000, () => { reqHttp.destroy(); setTimeout(poll, delay); });
-      });
+      req.on('error', () => setTimeout(poll, delay));
       req.setTimeout(2000, () => { req.destroy(); setTimeout(poll, delay); });
     };
     poll();
