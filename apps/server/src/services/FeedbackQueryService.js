@@ -75,12 +75,14 @@ export default class FeedbackQueryService {
         assignmentId: fb.tarea_id,
         assignmentName: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
         templateId: fb.plantilla_id,
-        grade: fb.nota_chile || null,
+        grade: fb.nota_chile ?? null,
         profile: 'PROMEDIO',
         trend: 'Estable',
         status: fb.estado || 'PENDIENTE',
         feedback: fb.contenido_generado,
-        studentRating: fb.calificacion_estudiante || null,
+        rating: fb.calificacion_profesor ?? null,
+        nota_privada: fb.nota_privada ?? '',
+        studentRating: fb.calificacion_estudiante ?? null,
         isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
       };
     }).filter(Boolean);
@@ -112,12 +114,14 @@ export default class FeedbackQueryService {
       courseId: fb.curso_id,
       assignmentId: fb.tarea_id,
       templateId: fb.plantilla_id,
-      grade: fb.nota_chile || null,
+      grade: fb.nota_chile ?? null,
       profile: 'PROMEDIO',
       trend: 'Estable',
       status: fb.estado || 'PENDIENTE',
       feedback: fb.contenido_generado,
-      studentRating: fb.calificacion_estudiante || null,
+      rating: fb.calificacion_profesor ?? null,
+      nota_privada: fb.nota_privada ?? '',
+      studentRating: fb.calificacion_estudiante ?? null,
       isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
     };
   }
@@ -144,12 +148,14 @@ export default class FeedbackQueryService {
       courseId: fb.curso_id,
       assignmentId: fb.tarea_id,
       templateId: fb.plantilla_id,
-      grade: fb.nota_chile || null,
+      grade: fb.nota_chile ?? null,
       profile: this._translateProfile(profile.level || 'AVERAGE'),
       trend: this._translateTrend(profile.trend || 'STABLE'),
       status: fb.estado || 'PENDIENTE',
       feedback: fb.contenido_generado,
-      studentRating: fb.calificacion_estudiante || null,
+      rating: fb.calificacion_profesor ?? null,
+      nota_privada: fb.nota_privada ?? '',
+      studentRating: fb.calificacion_estudiante ?? null,
       isUseful: fb.es_util !== null && fb.es_util !== undefined ? fb.es_util : null
     };
   }

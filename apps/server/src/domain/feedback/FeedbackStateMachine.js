@@ -1,12 +1,8 @@
 import { AppError } from '../../utils/errors.js';
+import { FEEDBACK_STATES } from '@plugin-feedback/contracts';
 
 export class FeedbackStateMachine {
-  static STATES = {
-    PENDING: 'PENDIENTE',
-    EDITED: 'EDITADO',
-    APPROVED: 'APROBADO',
-    SENT: 'ENVIADO'
-  };
+  static STATES = FEEDBACK_STATES;
 
   static validateCanApprove(currentState) {
     if (currentState === this.STATES.APPROVED || currentState === this.STATES.SENT) {

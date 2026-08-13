@@ -1,35 +1,17 @@
-# Configuración de gitleaks para detectar secretos en el repositorio.
-# Se extiende la configuración por defecto y se excluyen falsos positivos
-# conocidos (datos de prueba, certificados generados localmente y archivos muertos).
+title = "Plugin Feedback Canvas secret scanning policy"
 
 [extend]
 useDefault = true
 
 [allowlist]
+description = "Solo fixtures y artefactos no ejecutables con falsos positivos conocidos."
 paths = [
-  '''node_modules/''',
-  '''dist/''',
-  '''build/''',
-  '''logs/''',
-  '''tmp/''',
-  '''temp/''',
-  '''coverage/''',
-  '''package-lock\.json$''',
-  '''apps/server/src/services/infraestructura/CanvasSnapshotManager\.js$''',
-  '''apps/server/src/services/infraestructura/DockerRunner\.js$''',
-  '''env_example$''',
-  '''apps/server/src/validation/rutas/config.routes.test.js$''',
-  '''apps/server/src/validation/unit/config.test.js$''',
-  '''apps/server/certs/''',
-  '''\.github/''',
-  '''informaci.n/''',
-  '''db/seeds/.*''',
-  '''apps/server/src/orchestration/main\.js$'''
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)\.env(\.[^.]+)?\.example$''',
+  '''(^|/)apps/server/src/validation/rutas/config\.routes\.test\.js$''',
+  '''(^|/)apps/server/src/validation/unit/config\.test\.js$'''
 ]
 regexes = [
-  # Emails de prueba locales (p. ej. profesor@canvas.local)
   '''[a-zA-Z0-9._%+-]+@canvas\.local''',
-  
-  # Tokens genéricos y de ejemplo en mocks (ej. JWT simulados o keys mockeadas)
-  '''(client_id|secret|token)[\s:=]+['"]?(example|test|mock)''',
+  '''(?i)(client_id|secret|token)[\s:=]+['"]?(example|test|mock)['"]?'''
 ]

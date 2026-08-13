@@ -86,6 +86,8 @@ export function useSpeedGraderActions({
       }
       
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (error) {
       logger.error('SpeedGrader', "Error crítico al generar feedback", { error });
       if (currentStudentRef.current === targetStudentId) {
@@ -117,6 +119,8 @@ export function useSpeedGraderActions({
       if (!result.exito) throw new Error("Error al aprobar feedback");
       setStatusMsg("¡Enviado exitosamente a Canvas!");
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (e) {
       logger.error('SpeedGrader', "Error al enviar feedback", { error: e });
       setStatusMsg("Error al enviar.");
@@ -149,6 +153,8 @@ export function useSpeedGraderActions({
       }
       
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (e) {
       logger.error('SpeedGrader', "Error al enviar feedback manual", { error: e });
       setStatusMsg("Error al enviar feedback manual.");

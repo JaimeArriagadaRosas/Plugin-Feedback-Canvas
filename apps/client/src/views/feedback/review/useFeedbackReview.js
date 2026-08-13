@@ -1,7 +1,9 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FEEDBACK_STATES, isFinalFeedbackState, isReviewableFeedbackState } from '@plugin-feedback/contracts';
 import { api } from '@/api';
 import logger from '../../../utils/logger';
+import { exportFeedbackExcel } from './exportFeedbackExcel';
 
 const PROFILE_COLORS = {
   'SOBRESALIENTE': { bg: '#e9f7ef', text: '#1d8348' },
@@ -27,6 +29,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
   const [selectedAssignment, setSelectedAssignment] = useState("Todas");
   const [toastMessage, setToastMessage] = useState(null);
   const [pendingBulkApproval, setPendingBulkApproval] = useState(null);
+  const approvalKeysRef = useRef(new Map());
+  const approvalInFlightRef = useRef(false);
 
   const { data: feedbacks = [], isLoading: loading } = useQuery({
     queryKey: ['feedback-list'],
@@ -44,6 +48,11 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
 
   const approveMutation = useMutation({
     mutationFn: async (feedback) => {
+      let idempotencyKey = approvalKeysRef.current.get(feedback.id);
+      if (!idempotencyKey) {
+        idempotencyKey = crypto.randomUUID();
+        approvalKeysRef.current.set(feedback.id, idempotencyKey);
+      }
       const result = await api.post('/feedback/approve', {
         feedbackId: feedback.id,
         courseId: feedback.courseId,
@@ -51,13 +60,17 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
         studentId: feedback.studentId,
         content: feedback.feedback,
         rating: feedback.rating || null
+      }, {
+        headers: { 'Idempotency-Key': idempotencyKey }
       });
       if (!result.exito) throw new Error(result.mensaje || 'Error approving feedback');
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (_result, feedback) => {
+      approvalKeysRef.current.delete(feedback.id);
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Feedback aprobado con éxito", type: "success" });
     },
     onError: (e) => {
@@ -75,6 +88,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     onSuccess: () => {
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Feedback rechazado y regeneración solicitada con éxito", type: "success" });
     },
     onError: (e) => {
@@ -92,6 +106,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     onSuccess: () => {
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Valoración guardada con éxito", type: "success" });
     },
     onError: (e) => {
@@ -109,6 +124,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     onSuccess: () => {
       setShowEditModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Feedback editado con éxito", type: "success" });
     },
     onError: (e) => {
@@ -125,11 +141,11 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Nota privada guardada con éxito", type: "success" });
     },
-    onError: (e) => {
-      logger.error('FeedbackReview', "Error al guardar nota privada", { error: e });
-      setToastMessage({ message: "Error al intentar guardar la nota privada.", type: "error" });
+    onError: (error) => {
+      setToastMessage({ message: error.message || "Error al guardar nota privada", type: "error" });
     }
   });
 
@@ -141,6 +157,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       setToastMessage({ message: "Feedbacks aprobados masivamente con éxito.", type: "success" });
       setPendingBulkApproval(null);
     },
@@ -189,8 +206,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     });
 
     return filtered.sort((a, b) => {
-      if (a.status === 'PENDIENTE' && b.status !== 'PENDIENTE') return -1;
-      if (a.status !== 'PENDIENTE' && b.status === 'PENDIENTE') return 1;
+      if (a.status === FEEDBACK_STATES.PENDING && b.status !== FEEDBACK_STATES.PENDING) return -1;
+      if (a.status !== FEEDBACK_STATES.PENDING && b.status === FEEDBACK_STATES.PENDING) return 1;
       return 0;
     });
   }, [feedbacks, selectedCourse, selectedAssignment]);
@@ -210,25 +227,44 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     setSelectedIds(prev => prev.size === ids.length && ids.length > 0 ? new Set() : new Set(ids));
   }, []);
 
-  const handleApprove = useCallback((rating, privateNote) => {
-    if (!activeFeedback) return;
-    
-    // Save private note if changed
-    if (privateNote !== activeFeedback.nota_privada && privateNote !== undefined) {
-      privateNoteMutation.mutate({ id: activeFeedback.id, nota_privada: privateNote });
-    }
+  const handleApprove = useCallback(async (rating, privateNote) => {
+    if (!activeFeedback || approvalInFlightRef.current) return;
+    approvalInFlightRef.current = true;
+    let approved = false;
 
-    if (activeFeedback.status === 'APROBADO' || activeFeedback.status === 'ENVIADO') {
-      rateMutation.mutate({ id: activeFeedback.id, rating });
-    } else {
-      approveMutation.mutate({ ...activeFeedback, rating });
-    }
-  }, [activeFeedback, approveMutation, rateMutation, privateNoteMutation]);
+    try {
+      if (privateNote !== activeFeedback.nota_privada && privateNote !== undefined) {
+        await privateNoteMutation.mutateAsync({ id: activeFeedback.id, nota_privada: privateNote });
+      }
 
-  const handleReject = useCallback((templateId) => {
-    if (!activeFeedback) return;
-    rejectMutation.mutate({ id: activeFeedback.id, templateId });
-  }, [activeFeedback, rejectMutation]);
+      if (isFinalFeedbackState(activeFeedback.status)) {
+        await rateMutation.mutateAsync({ id: activeFeedback.id, rating });
+      } else {
+        await approveMutation.mutateAsync({ ...activeFeedback, rating });
+      }
+      approved = true;
+    } catch (error) {
+      // Error handled by useMutation onError
+    } finally {
+      approvalInFlightRef.current = false;
+      if (approved) setShowApprovalModal(false);
+    }
+  }, [activeFeedback, approveMutation, rateMutation, privateNoteMutation, setShowApprovalModal]);
+
+  const handleReject = useCallback(async (templateId) => {
+    if (!activeFeedback || approvalInFlightRef.current) return;
+    approvalInFlightRef.current = true;
+    let rejected = false;
+    try {
+      await rejectMutation.mutateAsync({ id: activeFeedback.id, templateId });
+      rejected = true;
+    } catch (error) {
+      // Error handled by useMutation onError
+    } finally {
+      approvalInFlightRef.current = false;
+      if (rejected) setShowApprovalModal(false);
+    }
+  }, [activeFeedback, rejectMutation, setShowApprovalModal]);
 
   const handleEditSave = useCallback((nuevoContenido) => {
     if (!activeFeedback) return;
@@ -241,7 +277,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       return;
     }
     const pendingIds = filteredFeedbacks
-      .filter(fb => (fb.status === 'PENDIENTE' || fb.status === 'EDITADO') && selectedIds.has(fb.id))
+      .filter((feedback) => isReviewableFeedbackState(feedback.status) && selectedIds.has(feedback.id))
       .map(fb => fb.id);
       
     if (pendingIds.length === 0) {
@@ -266,138 +302,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
 
   const handleExportExcel = useCallback(async () => {
     try {
-      const ExcelJS = (await import('exceljs')).default;
-      const workbook = new ExcelJS.Workbook();
-
-      let countValoracionEstudiante = 0;
-      let sumaValoracionEstudiante = 0;
-      let countTotalEvaluacionesUtilidad = 0;
-      let countEvaluacionesUtiles = 0;
-
-      filteredFeedbacks.forEach(fb => {
-        if (fb.studentRating) {
-          sumaValoracionEstudiante += Number(fb.studentRating);
-          countValoracionEstudiante++;
-        }
-        if (fb.isUseful !== null && fb.isUseful !== undefined) {
-          countTotalEvaluacionesUtilidad++;
-          if (fb.isUseful === true) {
-            countEvaluacionesUtiles++;
-          }
-        }
-      });
-
-      const avgEstudiante = countValoracionEstudiante > 0 ? (sumaValoracionEstudiante / countValoracionEstudiante).toFixed(1) : 'N/A';
-      const porcentajeUtilidad = countTotalEvaluacionesUtilidad > 0 ? ((countEvaluacionesUtiles / countTotalEvaluacionesUtilidad) * 100).toFixed(1) + '%' : 'N/A';
-
-      const styleHeader = (sheet) => {
-        const headerRow = sheet.getRow(1);
-        headerRow.eachCell((cell) => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0374B5' } };
-          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        });
-      };
-
-      const sheetUtilidad = workbook.addWorksheet('Utilidad del Feedback');
-      sheetUtilidad.columns = [
-        { header: 'Métrica de Utilidad (Estudiantes)', key: 'metrica', width: 45 },
-        { header: 'Valor', key: 'valor', width: 20 }
-      ];
-      sheetUtilidad.addRow({ metrica: 'Total de Evaluaciones de Utilidad', valor: countTotalEvaluacionesUtilidad });
-      sheetUtilidad.addRow({ metrica: 'Total de Feedbacks Considerados Útiles', valor: countEvaluacionesUtiles });
-      sheetUtilidad.addRow({ metrica: 'Porcentaje de Utilidad', valor: porcentajeUtilidad });
-      sheetUtilidad.addRow({ metrica: 'Promedio Valoración (Escala 1-5)', valor: avgEstudiante !== 'N/A' ? `${avgEstudiante} ⭐` : 'N/A' });
-      styleHeader(sheetUtilidad);
-
-      const worksheet = workbook.addWorksheet('Feedbacks');
-      worksheet.columns = [
-        { header: 'Estudiante', key: 'student', width: 25 },
-        { header: 'Curso', key: 'courseId', width: 10 },
-        { header: 'Asignacion', key: 'assignmentId', width: 15 },
-        { header: 'Estado', key: 'status', width: 15 },
-        { header: 'Calificacion IA', key: 'grade', width: 20 },
-        { header: 'Perfil Academico', key: 'profile', width: 25 },
-        { header: '¿Fue Útil? (Sí/No)', key: 'isUseful', width: 20 },
-        { header: 'Valoración Estudiante', key: 'studentRating', width: 20 }
-      ];
-
-      filteredFeedbacks.forEach(fb => {
-        worksheet.addRow({
-          student: fb.student || '',
-          courseId: fb.courseName || fb.courseId || '',
-          assignmentId: fb.assignmentName || fb.assignmentId || '',
-          status: fb.status || '',
-          grade: fb.grade || '',
-          profile: fb.profile || '',
-          isUseful: fb.isUseful !== null && fb.isUseful !== undefined ? (fb.isUseful ? 'Sí' : 'No') : 'N/A',
-          studentRating: fb.studentRating ? `${fb.studentRating} ⭐` : 'N/A'
-        });
-      });
-
-      styleHeader(worksheet);
-
-      // --- Hoja: Notificaciones de Sistema ---
-      let systemErrors = [];
-      try {
-        const errorRes = await api.get('/system-notifications/pending');
-        if (errorRes.exito) {
-          systemErrors = errorRes.data || [];
-        }
-      } catch (e) {
-        logger.error('FeedbackReview', "Error fetching system notifications for excel", { error: e });
-      }
-
-      const sheetErrores = workbook.addWorksheet('Notificaciones de Sistema');
-      sheetErrores.columns = [
-        { header: 'Tipo Error', key: 'tipo_error', width: 25 },
-        { header: 'Descripción', key: 'descripcion', width: 60 },
-        { header: 'Cantidad', key: 'count', width: 15 }
-      ];
-      
-      const errorLabels = {
-        'CANVAS_CONNECTION_FAILED': 'Fallo conexión Canvas',
-        'AI_GENERATION_FAILED': 'Error generación IA',
-        'INSUFFICIENT_DATA': 'Datos insuficientes',
-        'NOTIFICATION_FAILED': 'Fallo envío notificación'
-      };
-
-      const errorDescriptions = {
-        'CANVAS_CONNECTION_FAILED': 'El servidor no pudo comunicarse con la API de Canvas (timeout o endpoint inaccesible). Verifica que Canvas esté operativo y respondiendo.',
-        'AI_GENERATION_FAILED': 'Ocurrió un fallo con la Inteligencia Artificial al procesar el prompt (ej. límite de peticiones alcanzado o error interno del proveedor).',
-        'INSUFFICIENT_DATA': 'No se pudo procesar la solicitud porque el estudiante no ha entregado la asignación o la rúbrica carece de evaluación.',
-        'NOTIFICATION_FAILED': 'El sistema falló al intentar despachar el mensaje o correo de notificación de feedback generado al estudiante.'
-      };
-
-      if (systemErrors.length > 0) {
-        systemErrors.forEach(err => {
-          sheetErrores.addRow({
-            tipo_error: errorLabels[err.tipo_error] || err.tipo_error,
-            descripcion: errorDescriptions[err.tipo_error] || 'Error detectado en el sistema sin descripción detallada.',
-            count: err.cantidad
-          });
-        });
-      } else {
-        sheetErrores.addRow({
-          tipo_error: 'No hay notificaciones',
-          descripcion: 'Sin errores',
-          count: 0
-        });
-      }
-      styleHeader(sheetErrores);
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "reporte_feedbacks.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      logger.info('FeedbackReview', "Export Excel generado.", { count: filteredFeedbacks.length });
+      await exportFeedbackExcel(filteredFeedbacks);
     } catch (error) {
-      logger.error('FeedbackReview', "Error generando Excel", { error });
       setToastMessage({ message: "Error al generar el reporte Excel.", type: "error" });
     }
   }, [filteredFeedbacks]);
@@ -431,5 +337,6 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     selectedIds,
     toggleSelection,
     toggleAllSelection,
+    isApprovalSubmitting: approveMutation.isPending || rateMutation.isPending || privateNoteMutation.isPending,
   };
 }

@@ -36,7 +36,14 @@ export default class ManualFeedbackController {
         }
       });
 
-      const fbGuardado = await this.feedbackService.submitManualFeedback({ courseId, assignmentId, studentId, teacherId, contenidoManual: sanitizedContent, grade });
+      const fbGuardado = await this.feedbackService.submitManualFeedback({
+        courseId,
+        assignmentId,
+        studentId,
+        teacherId,
+        contenidoManual: sanitizedContent,
+        grade
+      });
       res.json({ exito: true, mensaje: 'Feedback manual guardado como pendiente', data: fbGuardado });
     } catch (error) {
       next(error);

@@ -13,6 +13,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@plugin-feedback/contracts": "*",
     "@hookform/resolvers": "5.4.0",
     "@tanstack/react-query": "5.101.2",
     "react": "18.2.0",
