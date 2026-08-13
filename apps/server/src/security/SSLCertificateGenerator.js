@@ -1,88 +1,107 @@
-import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
 import logger from '../utils/logger.js';
 import { SSLConfig } from './SSLConfig.js';
 
+const MINIMUM_VALIDITY_DAYS = 7;
+
 export class SSLCertificateGenerator {
-  /**
-   * Intenta generar certificados mkcert si el binario está disponible.
-   * Realiza una validación profunda para comprobar que no hayan caducado.
-   * @returns {Promise<boolean>}
-   */
-  static async ensureCertificates() {
-    const env = SSLConfig.getEnvironment();
-
-    if (env.isProduction) {
-      return false; // Producción no usa mkcert
-    }
-
+  static hasUsableCertificates() {
     const { CERT_PEM, CERT_KEY } = SSLConfig;
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    const certsExist = fs.existsSync(CERT_PEM) && fs.existsSync(CERT_KEY);
-    let needsGeneration = true;
-
-    if (certsExist) {
-      try {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const certBuffer = fs.readFileSync(CERT_PEM);
-        const cert = new crypto.X509Certificate(certBuffer);
-        const validTo = new Date(cert.validTo).getTime();
-        const now = Date.now();
-        const daysRemaining = (validTo - now) / (1000 * 60 * 60 * 24);
-
-        if (daysRemaining > 7) {
-          logger.info('[SSL] ✅ El certificado de mkcert actual es válido y aceptable.', { 
-            daysRemaining: Math.floor(daysRemaining) 
-          });
-          needsGeneration = false;
-        } else if (daysRemaining <= 0) {
-          logger.info('[SSL] ❌ El certificado actual ha expirado. Iniciando regeneración automática...');
-        } else {
-          logger.info(`[SSL] ⚠️ El certificado expirará en ${Math.floor(daysRemaining)} días. Iniciando regeneración preventiva...`);
-        }
-      } catch (err) {
-        logger.warn('[SSL] ❌ El certificado actual está corrupto o es ilegible. Regenerando...', { error: err.message });
-      }
-    } else {
-      logger.info('[SSL] 🔍 No se encontraron certificados locales. Iniciando creación automática...');
-    }
-
-    if (!needsGeneration) {
-      return true;
-    }
-
-    // Proceso de Generación / Regeneración
+    if (!fs.existsSync(CERT_PEM) || !fs.existsSync(CERT_KEY)) return false;
     try {
-      const { execSync } = await import('node:child_process');
-      
-      // Limpiar certificados obsoletos si existen
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (fs.existsSync(CERT_PEM)) fs.unlinkSync(CERT_PEM);
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (fs.existsSync(CERT_KEY)) fs.unlinkSync(CERT_KEY);
-
-      const path = await import('node:path');
-      const certsDir = path.dirname(CERT_PEM);
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (!fs.existsSync(certsDir)) {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        fs.mkdirSync(certsDir, { recursive: true });
-      }
-
-      logger.info('[SSL] ⏳ Ejecutando mkcert (Presta atención, Windows podría pedirte permisos de Administrador para confiar en la Autoridad Raíz)...');
-      execSync('mkcert -install', { stdio: 'inherit' });
-      execSync(`mkcert -key-file "${CERT_KEY}" -cert-file "${CERT_PEM}" localhost 127.0.0.1 host.docker.internal`, {
-        stdio: 'ignore'
-      });
-      
-      logger.info('[SSL] ✨ Nuevos certificados generados exitosamente con mkcert.');
-      return true;
-    } catch (e) {
-      logger.error('[SSL] 🚨 mkcert no está disponible o falló. Revise si tiene mkcert instalado en su PATH.', { error: e.message });
+      const certificate = new crypto.X509Certificate(fs.readFileSync(CERT_PEM));
+      return this._getDaysRemaining(certificate) > MINIMUM_VALIDITY_DAYS;
+    } catch {
       return false;
     }
+  }
+
+  static async ensureCertificates() {
+    const environment = SSLConfig.getEnvironment();
+    if (environment.isProduction) return false;
+
+    if (this.hasUsableCertificates()) {
+      logger.info('[SSL] El certificado mkcert existente sigue siendo válido.');
+      return true;
+    }
+
+    this._logCertificateRenewalState();
+    const temporaryPaths = this._getTemporaryCertificatePaths();
+    try {
+      this._prepareCertificatesDirectory();
+      logger.info('[SSL] Ejecutando mkcert para configurar HTTPS local...');
+      execFileSync('mkcert', ['-install'], { stdio: 'inherit' });
+      execFileSync('mkcert', [
+        '-key-file', temporaryPaths.key,
+        '-cert-file', temporaryPaths.certificate,
+        'localhost', '127.0.0.1', 'host.docker.internal'
+      ], { stdio: 'ignore' });
+      this._replaceCertificates(temporaryPaths);
+      logger.info('[SSL] Nuevos certificados locales generados exitosamente.');
+      return true;
+    } catch (error) {
+      logger.error('[SSL] mkcert no está disponible o falló.', { error: error.message });
+      return false;
+    } finally {
+      this._removeTemporaryCertificates(temporaryPaths);
+    }
+  }
+
+  static _logCertificateRenewalState() {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    if (!fs.existsSync(SSLConfig.CERT_PEM)) {
+      logger.info('[SSL] No se encontraron certificados locales. Se crearán ahora.');
+      return;
+    }
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const certificate = new crypto.X509Certificate(fs.readFileSync(SSLConfig.CERT_PEM));
+      const days = this._getDaysRemaining(certificate);
+      if (days <= 0) logger.info('[SSL] El certificado local expiró. Se regenerará.');
+      else logger.info(`[SSL] El certificado expirará en ${Math.floor(days)} días. Se regenerará.`);
+    } catch (error) {
+      logger.warn('[SSL] El certificado local es ilegible. Se regenerará.', { error: error.message });
+    }
+  }
+
+  static _prepareCertificatesDirectory() {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.mkdirSync(path.dirname(SSLConfig.CERT_PEM), { recursive: true });
+  }
+
+  static _getTemporaryCertificatePaths() {
+    const suffix = `.tmp-${process.pid}`;
+    return {
+      certificate: `${SSLConfig.CERT_PEM}${suffix}`,
+      key: `${SSLConfig.CERT_KEY}${suffix}`
+    };
+  }
+
+  static _replaceCertificates(temporaryPaths) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.rmSync(SSLConfig.CERT_PEM, { force: true });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.rmSync(SSLConfig.CERT_KEY, { force: true });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.renameSync(temporaryPaths.certificate, SSLConfig.CERT_PEM);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.renameSync(temporaryPaths.key, SSLConfig.CERT_KEY);
+  }
+
+  static _removeTemporaryCertificates(temporaryPaths) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.rmSync(temporaryPaths.certificate, { force: true });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.rmSync(temporaryPaths.key, { force: true });
+  }
+
+  static _getDaysRemaining(certificate) {
+    return (new Date(certificate.validTo).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
   }
 }
