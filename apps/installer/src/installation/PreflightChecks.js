@@ -54,6 +54,16 @@ export class PreflightChecks {
   async checkDocker() {
     this.dockerState = await this.dockerProbe.inspect();
     if (this.dockerState.status === DockerRuntimeStatus.ACTIVE) return { ok: true, details: {} };
+    if (this.dockerState.cliOrigin === 'windows-interop') {
+      return {
+        ok: false,
+        details: {
+          missing_docker: true,
+          docker_state: this.dockerState,
+          windows_docker_interop_unavailable: true
+        }
+      };
+    }
     if (this.dockerState.status === DockerRuntimeStatus.MISSING) {
       return { ok: false, details: { missing_docker: true, docker_state: this.dockerState } };
     }
