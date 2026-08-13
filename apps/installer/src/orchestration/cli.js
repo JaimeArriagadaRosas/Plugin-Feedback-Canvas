@@ -1,19 +1,20 @@
-import * as readline from 'node:readline';
 import dotenv from 'dotenv';
 import pc from 'picocolors';
-import { confirm } from '@inquirer/prompts';
+import { confirm, input } from '@inquirer/prompts';
 
 // Cargar .env para que NON_INTERACTIVE/STARTUP_MODE estén disponibles
 dotenv.config({ quiet: true });
 
-export function ask(question, defaultValue) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question('- ' + pc.bold(question) + ': ', (answer) => {
-      rl.close();
-      resolve(answer.trim() || (defaultValue !== undefined ? String(defaultValue) : ''));
+export async function ask(question, defaultValue) {
+  try {
+    const answer = await input({
+      message: '- ' + pc.bold(question) + ':'
     });
-  });
+    const trimmed = answer.trim();
+    return trimmed || (defaultValue !== undefined ? String(defaultValue) : '');
+  } catch {
+    return defaultValue !== undefined ? String(defaultValue) : '';
+  }
 }
 
 export async function showMainMenu() {

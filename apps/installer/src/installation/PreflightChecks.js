@@ -96,6 +96,26 @@ export class PreflightChecks {
     if (!fs.existsSync(assetsMarker)) {
       return { ok: false, details: { missing_canvas_assets: true } };
     }
+
+    // Ping a la base de datos para asegurar que las tablas no se hayan perdido por un "docker compose down"
+    try {
+      await runCommand('docker', ['compose', 'up', '-d', 'postgres'], { cwd: this.canvasDir });
+      // Esperar 2 segundos para asegurar que PostgreSQL acepte conexiones si se acaba de levantar
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      const { success, out } = await runCommand('docker', [
+        'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', 'canvas_development', '-c',
+        "SELECT 1 FROM information_schema.tables WHERE table_name = 'accounts' LIMIT 1;"
+      ], { cwd: this.canvasDir, captureAll: true });
+
+      if (!success || !out.includes('1')) {
+        this.boot.warn('Se detectó que la base de datos de Canvas está vacía (posible volumen destruido).');
+        return { ok: false, details: { missing_canvas_assets: true } };
+      }
+    } catch (err) {
+      this.boot.warn('Error al verificar la base de datos de Canvas, se asumirá que requiere reconstrucción.');
+      return { ok: false, details: { missing_canvas_assets: true } };
+    }
     
     return { ok: true, details: {} };
   }

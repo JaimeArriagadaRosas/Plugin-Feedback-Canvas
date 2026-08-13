@@ -45,8 +45,6 @@ export class DatabaseHealth {
       if (!migrated) {
         throw new Error('Fallo al crear y migrar la base de datos.');
       }
-    } else {
-      this.boot.info('Estructura de la base de datos verificada correctamente.');
     }
     return true;
   }
@@ -151,9 +149,16 @@ export class DatabaseHealth {
   }
 
   async checkMigrations() {
-    this.boot.info('Verificando estructura de la base de datos...');
+    const { createSpinner } = await import('nanospinner');
+    const spinner = createSpinner('Verificando estructura de la base de datos (iniciando Rails Runner)...').start();
     const script = "ActiveRecord::Base.connection.table_exists?('accounts') ? exit(0) : exit(1)";
     const { success } = await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: this.canvasDir });
+    
+    if (success) {
+      spinner.success({ text: 'Estructura de la base de datos verificada correctamente.', mark: '  √' });
+    } else {
+      spinner.warn({ text: 'La base de datos no está inicializada o faltan tablas.', mark: '  !' });
+    }
     return success;
   }
 
