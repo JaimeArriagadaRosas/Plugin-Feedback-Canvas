@@ -34,7 +34,7 @@ export class DockerInstaller {
 
   async isDockerInstalled() {
     const state = await this.getRuntimeState();
-    if (state.cliAvailable) return true;
+    if (state.cliAvailable && state.cliOrigin !== 'windows-interop') return true;
     return this.strategy ? this.strategy.isInstalled() : false;
   }
 

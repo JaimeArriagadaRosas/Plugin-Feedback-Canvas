@@ -10,12 +10,20 @@ import { PostflightSetup } from './PostflightSetup.js';
 import { askConfirm } from '../orchestration/cli.js';
 
 export class EnvironmentSetup {
-  constructor(boot, pluginDir, canvasDir, { confirm = askConfirm } = {}) {
+  constructor(boot, pluginDir, canvasDir, {
+    confirm = askConfirm,
+    dockerInstallerFactory = (logger, logFile) => new DockerInstaller(logger, logFile)
+  } = {}) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
     this.confirm = confirm;
+    this.dockerInstallerFactory = dockerInstallerFactory;
     this.logFile = path.join(this.pluginDir, 'logs', 'canvas_build.log');
+  }
+
+  _createDockerInstaller() {
+    return this.dockerInstallerFactory(this.boot, this.logFile);
   }
 
   _recoverInvalidFastBoot() {
@@ -34,7 +42,7 @@ export class EnvironmentSetup {
 
   async _runFastBoot() {
     this.boot.info('Modo Fast Boot detectado: verificando runtime y contenedores...');
-    const installer = new DockerInstaller(this.boot, this.logFile);
+    const installer = this._createDockerInstaller();
     const state = await installer.getRuntimeState();
     if (!state.daemonAvailable && !(await installer.handleDockerDaemonDown(state))) {
       throw new Error('Docker no está disponible. Corrija la acción indicada y reanude npm start.');
@@ -83,7 +91,7 @@ export class EnvironmentSetup {
 
   async _ensureDocker(missing) {
     if (!missing.missing_docker && !missing.docker_daemon_down && !missing.docker_permission_denied) return;
-    const installer = new DockerInstaller(this.boot, this.logFile);
+    const installer = this._createDockerInstaller();
     const state = missing.docker_state || await installer.getRuntimeState();
 
     if (missing.missing_docker) {
@@ -100,8 +108,14 @@ export class EnvironmentSetup {
 
   async _ensureCompose(missing) {
     if (!missing.missing_compose) return;
-    const installer = new DockerInstaller(this.boot, this.logFile);
-    const state = missing.docker_state || await installer.getRuntimeState();
+    const installer = this._createDockerInstaller();
+    const state = await installer.getRuntimeState();
+    missing.docker_state = state;
+    if (state.composeAvailable) {
+      missing.missing_compose = false;
+      this.boot.success('Docker Compose V2 disponible.');
+      return;
+    }
     this.boot.error('La CLI existe, pero Docker Compose V2 no está disponible.');
     this.boot.action(installer.policy.compose(state));
     throw new Error('Docker Compose V2 es obligatorio para el entorno local.');

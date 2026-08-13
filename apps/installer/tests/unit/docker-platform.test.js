@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { DockerCheck } from '../../src/orchestration/boot/checks/docker.js';
+import { DockerInstaller } from '../../src/installation/installers/DockerInstaller.js';
 import { createDockerPolicy } from '../../src/platform/shared/DockerPolicyFactory.js';
 import {
   classifyDockerCliOrigin,
@@ -153,5 +154,45 @@ describe('DockerCheck y preflight', () => {
       ok: false,
       details: { docker_permission_denied: true, docker_state: state }
     });
+  });
+
+  it('treats an unavailable Windows client as missing Docker for native installation', async () => {
+    const state = {
+      status: DockerRuntimeStatus.DAEMON_DOWN,
+      host: wslHost,
+      cliAvailable: true,
+      cliOrigin: 'windows-interop',
+      composeAvailable: true,
+      daemonAvailable: false
+    };
+    const preflight = new PreflightChecks(createBootLog().log, '/canvas', '/plugin', {
+      dockerProbe: { inspect: vi.fn().mockResolvedValue(state) }
+    });
+
+    await expect(preflight.checkDocker()).resolves.toMatchObject({
+      ok: false,
+      details: {
+        missing_docker: true,
+        windows_docker_interop_unavailable: true,
+        docker_state: state
+      }
+    });
+  });
+
+  it('does not treat the inherited Windows client as a native Engine installation', async () => {
+    const strategy = { isInstalled: vi.fn().mockResolvedValue(false) };
+    const installer = new DockerInstaller(createBootLog().log, null, {
+      platformProbe: { inspect: () => wslHost },
+      probe: {
+        inspect: vi.fn().mockResolvedValue({
+          cliAvailable: true,
+          cliOrigin: 'windows-interop'
+        })
+      },
+      strategy
+    });
+
+    await expect(installer.isDockerInstalled()).resolves.toBe(false);
+    expect(strategy.isInstalled).toHaveBeenCalledOnce();
   });
 });
