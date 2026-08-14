@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CanvasBringup } from '../../src/installation/CanvasBringup.js';
 
+vi.mock('execa', () => ({
+  execa: vi.fn().mockReturnValue({
+    stdout: { on: vi.fn(), removeAllListeners: vi.fn() },
+    kill: vi.fn(),
+    removeAllListeners: vi.fn()
+  })
+}));
+
 function createBoot() {
   return {
     error: vi.fn(),
@@ -72,7 +80,7 @@ describe('CanvasBringup', () => {
     const sleep = vi.fn().mockResolvedValue();
     const bringup = new CanvasBringup(boot, '/canvas', { runner, healthCheck, sleep });
 
-    await expect(bringup.waitForReady(10, 5)).resolves.toBe(true);
+    await expect(bringup.waitForReady(5)).resolves.toBe(true);
 
     expect(healthCheck).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledWith(5000);
