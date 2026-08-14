@@ -66,6 +66,7 @@ export async function startServer(app, PORT) {
 
   registerRoutes(app, services, ltiPublicJwk);
   app.set('permissionsManager', services.permissionsService);
+  app.set('iaConfigManager', services.iaConfigManager);
 
   const frontendDist = resolveFrontendDist(__dirname);
   configureStaticRouting(app, frontendDist);

@@ -26,6 +26,8 @@ export function useSpeedGraderData() {
     },
   });
 
+  const isAiServiceAvailable = meData?.isAiServiceAvailable ?? true;
+
   const { data: assignments = [], isFetching: isAssignmentsLoading } = useQuery({
     queryKey: assignmentKeys.speedgrader(courseId),
     queryFn: async () => {
@@ -96,10 +98,12 @@ export function useSpeedGraderData() {
       }
       return null;
     },
-    enabled: !!courseId && !!currentAssignmentId && !!currentStudent.id && students.length > 0,
+    enabled: !!courseId && !!currentAssignmentId && !!currentStudent.id && students.length > 0 && isAiServiceAvailable,
   });
 
-  const isFetchingSubmission = isFetchingSubmissionQuery || isSubmissionPending;
+  const isFetchingSubmission = isAiServiceAvailable 
+    ? (isFetchingSubmissionQuery || isSubmissionPending) 
+    : false;
 
   // Limpiar estado cuando se cambia la tarea o el estudiante
   useEffect(() => {
@@ -132,6 +136,12 @@ export function useSpeedGraderData() {
   } : null;
 
   useEffect(() => {
+    if (!isAiServiceAvailable) {
+      setGrade(0);
+      setStatusMsg("Modo de solo lectura. API de IA inactiva.");
+      return;
+    }
+    
     if (submission) {
       const body = submission.body || submission.preview_url || "Sin contenido de entrega.";
       queryClient.setQueryData(['submissions', courseId, currentAssignmentId], (old = {}) => ({
@@ -141,7 +151,7 @@ export function useSpeedGraderData() {
       setGrade(submission.score || 0);
       setStatusMsg("Listo para generar feedback.");
     }
-  }, [submission, courseId, currentAssignmentId, currentStudent.id, queryClient]);
+  }, [submission, courseId, currentAssignmentId, currentStudent.id, queryClient, isAiServiceAvailable]);
 
   // Si hay feedback pendiente en la base de datos para este estudiante/tarea, lo inyectamos
   useEffect(() => {
@@ -189,5 +199,6 @@ export function useSpeedGraderData() {
     isFeedbackApproved,
     isFetchingSubmission,
     isAssignmentsLoading,
+    isAiServiceAvailable,
   };
 }

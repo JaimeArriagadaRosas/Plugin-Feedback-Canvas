@@ -11,7 +11,8 @@ export default function AIControls({
   setRating, 
   handleGenerateMassive, 
   handleApprove,
-  isFeedbackApproved
+  isFeedbackApproved,
+  isAiServiceAvailable
 }) {
   return (
     <>
@@ -45,6 +46,7 @@ export default function AIControls({
         handleGenerateMassive={handleGenerateMassive}
         handleApprove={handleApprove}
         isFeedbackApproved={isFeedbackApproved}
+        isAiServiceAvailable={isAiServiceAvailable}
       />
     </>
   );

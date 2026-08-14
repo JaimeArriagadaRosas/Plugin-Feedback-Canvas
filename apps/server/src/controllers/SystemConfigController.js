@@ -95,6 +95,20 @@ export default class SystemConfigController {
         }
       }
 
+      // Obtener manager de IA para verificar disponibilidad (RF64)
+      const iaConfigManager = req.app.get('iaConfigManager');
+      let isAiServiceAvailable = false;
+      if (iaConfigManager) {
+        try {
+          const aiConfig = await iaConfigManager.getGlobalActiveConfig();
+          if (aiConfig && aiConfig.service) {
+            isAiServiceAvailable = true;
+          }
+        } catch (e) {
+          isAiServiceAvailable = false;
+        }
+      }
+
       return res.json({
         exito: true,
         user: identity.ltiUserId, // Mantenemos el LTI UUID como identificador primario para el frontend (legacy)
@@ -107,7 +121,8 @@ export default class SystemConfigController {
         studentId: identity.canonicalUserId || identity.numericUserId || null, // El ID numérico para queries específicas
         isLocalSession: identity.isLocalSession ?? false,
         source: identity.source ?? null,
-        canonicalUserId: identity.canonicalUserId
+        canonicalUserId: identity.canonicalUserId,
+        isAiServiceAvailable
       });
     }
 

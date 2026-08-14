@@ -8,7 +8,8 @@ export const CONTENT_REGISTRY = {
   iframe_preview: lazy(() => import('./strategies/IframePreviewViewer')),
   native_pdf: lazy(() => import('../../views/speedgrader/NativePdfViewer')),
   online_quiz: lazy(() => import('../../views/speedgrader/QuizViewer')),
-  text_entry: lazy(() => import('../../views/speedgrader/TextEntryViewer'))
+  text_entry: lazy(() => import('../../views/speedgrader/TextEntryViewer')),
+  readonly_mode: lazy(() => import('./strategies/ReadOnlyModeViewer'))
 };
 
 export const getContentTypeRenderer = (type) => {

@@ -9,8 +9,22 @@ export default function FeedbackActions({
   setRating,
   handleGenerateMassive,
   handleApprove,
-  isFeedbackApproved
+  isFeedbackApproved,
+  isAiServiceAvailable = true
 }) {
+  if (!isAiServiceAvailable) {
+    return (
+      <Button
+        variant="primary"
+        disabled={true}
+        className={styles.action}
+        style={{ backgroundColor: '#e2e8f0', color: '#718096', border: '1px solid #cbd5e0' }}
+      >
+        GENERAR NUEVO FEEDBACK (Deshabilitado - RF64)
+      </Button>
+    );
+  }
+
   return (
     <>
       {isFeedbackApproved ? (
