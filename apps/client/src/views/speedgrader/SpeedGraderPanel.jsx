@@ -64,6 +64,7 @@ export default function SpeedGraderPanel({ onExit }) {
     quizDetails,
     isFeedbackApproved,
     isAssignmentsLoading,
+    isAiServiceAvailable,
   } = useSpeedGraderData();
 
   const logExit = useButtonLogger();
@@ -141,6 +142,12 @@ export default function SpeedGraderPanel({ onExit }) {
         onShowTutorial={() => setShowTutorial(true)} 
       />
 
+      {!isAiServiceAvailable && (
+        <div style={{ backgroundColor: '#cc0000', color: '#ffffff', padding: '10px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', borderBottom: '2px solid #990000', zIndex: 10 }}>
+          AVISO: SERVICIO DE IA NO DISPONIBLE (RF64). MODO SOLO LECTURA ACTIVADO
+        </div>
+      )}
+
       {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} courseId={courseId} studentId={currentStudent?.id} />}
       {showTrajectoryModal && <TrajectoryModal onClose={() => setShowTrajectoryModal(false)} courseId={courseId} studentId={currentStudent?.id} />}
@@ -170,6 +177,7 @@ export default function SpeedGraderPanel({ onExit }) {
             studentName={currentStudent.name}
             assignmentName={activeAssignment.name}
             isFetchingSubmission={isFetchingSubmission}
+            isAiServiceAvailable={isAiServiceAvailable}
           />
         </div>
 
@@ -207,6 +215,7 @@ export default function SpeedGraderPanel({ onExit }) {
                 handleGenerateMassive={handleGenerateMassive}
                 handleApprove={handleApprove}
                 isFeedbackApproved={isFeedbackApproved}
+                isAiServiceAvailable={isAiServiceAvailable}
               />
             </>
           ) : (

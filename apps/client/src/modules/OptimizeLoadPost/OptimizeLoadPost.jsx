@@ -16,6 +16,7 @@ export default function OptimizeLoadPost({
   assignmentName,
   className = '',
   isFetchingSubmission = false,
+  isAiServiceAvailable = true,
 }) {
   const containerRef = useRef(null);
   const isVisible = useIntersectionObserver(containerRef, {
@@ -26,7 +27,10 @@ export default function OptimizeLoadPost({
   const payload = { submission, quizDetails, studentName, assignmentName };
   
   // 1. Determinar la estrategia
-  const contentType = resolveContentType(submission);
+  let contentType = resolveContentType(submission);
+  if (!isAiServiceAvailable) {
+    contentType = 'readonly_mode';
+  }
   
   // 2. Extraer props limpias a través del adaptador correspondiente
   const adapter = adapters[contentType] || adapters['fallback_empty'];

@@ -12,8 +12,8 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
     isShuttingDown = true;
 
     // Restaurar el comportamiento normal de la terminal para permitir 
-    // el prompt de CMD (Trabajo por lotes) tras finalizar o en el segundo Ctrl+C
-    if (process.platform === 'win32' && process.stdin.isTTY) {
+    // el prompt de CMD (Trabajo por lotes) o bash tras finalizar
+    if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
@@ -46,9 +46,9 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  // Capturar Ctrl+C (0x03) crudo para evitar que CMD pregunte "¿Desea terminar el trabajo por lotes?" 
-  // prematuramente. Esto solo es necesario en Windows.
-  if (process.platform === 'win32' && process.stdin.isTTY) {
+  // Capturar Ctrl+C (0x03) crudo para evitar la impresión de "^C" en pantalla
+  // y, en Windows, evitar que CMD pregunte "¿Desea terminar el trabajo por lotes?" prematuramente.
+  if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding('utf8');

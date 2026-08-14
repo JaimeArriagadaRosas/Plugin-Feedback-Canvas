@@ -116,5 +116,11 @@ export const adapters = {
       ...baseAdapter(payload, type),
       textBody
     };
+  },
+  
+  readonly_mode: (payload, type) => {
+    return {
+      ...baseAdapter(payload, type)
+    };
   }
 };
