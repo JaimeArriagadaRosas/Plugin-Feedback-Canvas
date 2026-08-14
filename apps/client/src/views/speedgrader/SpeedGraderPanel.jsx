@@ -144,7 +144,7 @@ export default function SpeedGraderPanel({ onExit }) {
 
       {!isAiServiceAvailable && (
         <div style={{ backgroundColor: '#cc0000', color: '#ffffff', padding: '10px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', borderBottom: '2px solid #990000', zIndex: 10 }}>
-          AVISO: SERVICIO DE IA NO DISPONIBLE (RF64). MODO SOLO LECTURA ACTIVADO
+          AVISO: SERVICIO DE IA NO DISPONIBLE. MODO SOLO LECTURA ACTIVADO
         </div>
       )}
 
