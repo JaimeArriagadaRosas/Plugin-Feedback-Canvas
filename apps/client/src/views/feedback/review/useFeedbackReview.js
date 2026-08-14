@@ -17,6 +17,7 @@ const STATUS_COLORS = {
   'PENDIENTE': { bg: '#fef9e7', text: '#b58900' },
   'EDITADO': { bg: '#ebf5fb', text: '#1a5276' },
   'APROBADO': { bg: '#e9f7ef', text: '#1d8348' },
+  'ENVIADO': { bg: '#e9f7ef', text: '#1d8348' },
   'RECHAZADO': { bg: '#fdedec', text: '#922b21' }
 };
 

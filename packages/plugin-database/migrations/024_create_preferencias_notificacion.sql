@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS Preferencias_Notificacion_Estudiante (
+    estudiante_id VARCHAR(255) PRIMARY KEY,
+    metodo VARCHAR(50) NOT NULL DEFAULT 'canvas_inapp',
+    frecuencia VARCHAR(50) NOT NULL DEFAULT 'siempre',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
