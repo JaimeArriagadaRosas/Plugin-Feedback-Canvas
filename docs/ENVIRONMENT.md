@@ -60,11 +60,12 @@ El preflight conserva `.env` si ya existe. Si no existe, usa `.env.example` cuan
 | Variable | Propósito |
 |---|---|
 | `CANVAS_BASE_URL` | origen público/base de Canvas |
-| `CANVAS_API_URL` / `CANVAS_API_HOST` | endpoint/host utilizado por adaptadores Canvas |
+| `CANVAS_API_HOST` | hostname/host:port utilizado por `CanvasClient` al construir las URLs de la API REST |
 | `CANVAS_ACCESS_TOKEN` | token API para flujos que lo requieran |
 | `CANVAS_COURSE_ID` | curso local o de prueba seleccionado |
 | `LTI_CLIENT_ID` | client ID de la Developer Key |
-| `LTI_CLIENT_SECRET` | secreto cuando el flujo de registro lo requiera |
+| `LTI_CLIENT_SECRET` | secreto LTI principal para OAuth2 |
+| `CANVAS_CLIENT_SECRET` | alias de `LTI_CLIENT_SECRET` aceptado por `CanvasOAuthController` y `CanvasTokenManager` |
 | `LTI_DEPLOYMENT_IDS` | deployments permitidos |
 | `LTI_ISSUER`, `LTI_OIDC_URL` | plataforma y endpoint OIDC |
 | `LTI_REDIRECT_URI` | callback registrado |

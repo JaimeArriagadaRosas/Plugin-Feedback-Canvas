@@ -78,10 +78,14 @@ apps/server/src/
 ├── controllers/         # adaptación HTTP
 ├── routes/              # composición de endpoints
 ├── security/            # identidad, claves y validaciones
+├── authz/               # autorización por rol y contexto
+├── middlewares/         # middlewares HTTP transversales
 ├── modules/             # capacidades delimitadas (notificaciones, formato, etc.)
-├── orchestration/       # consola, preflight, procesos y setup local
-├── setup/               # configuración LTI/local reutilizable
-└── adapters/            # límites con servicios externos
+├── adapters/            # límites con servicios externos
+├── stores/              # almacenes de sesión (LTI launch, Redis/Map)
+├── local/               # adaptadores de Canvas, TLS y navegador para modo local
+├── data/                # acceso a datos y pool de PostgreSQL
+└── utils/               # utilidades compartidas del servidor
 ```
 
 `package.json` declara workspaces `apps/*` y `packages/*`; en el árbol actual solo `apps/client` y `apps/server` contienen paquetes activos. No documente paquetes compartidos inexistentes.
