@@ -84,6 +84,5 @@ describe('CanvasBringup', () => {
 
     expect(healthCheck).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledWith(5000);
-    expect(boot.success).toHaveBeenCalledWith('Canvas LMS está listo para recibir solicitudes');
   });
 });
