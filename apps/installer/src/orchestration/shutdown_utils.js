@@ -13,7 +13,7 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
 
     // Restaurar el comportamiento normal de la terminal para permitir 
     // el prompt de CMD (Trabajo por lotes) tras finalizar o en el segundo Ctrl+C
-    if (process.stdin.isTTY) {
+    if (process.platform === 'win32' && process.stdin.isTTY) {
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
@@ -47,8 +47,8 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
   process.on('SIGTERM', shutdown);
 
   // Capturar Ctrl+C (0x03) crudo para evitar que CMD pregunte "¿Desea terminar el trabajo por lotes?" 
-  // prematuramente. El primer Ctrl+C es gestionado silenciosamente.
-  if (process.stdin.isTTY) {
+  // prematuramente. Esto solo es necesario en Windows.
+  if (process.platform === 'win32' && process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding('utf8');

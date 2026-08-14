@@ -143,7 +143,8 @@ export default class FileController {
 
   _fetch(url, context) {
     const usesRewrittenHost = context.useProxyFetch && new URL(url).hostname === new URL(context.url).hostname;
-    return usesRewrittenHost ? proxyFetch(url, { ...context.headers }) : fetch(url, { headers: context.headers });
+    const dispatcher = this.canvasService?.httpClient?.dispatcher;
+    return usesRewrittenHost ? proxyFetch(url, { ...context.headers }) : fetch(url, { headers: context.headers, dispatcher });
   }
 
   async _respondWithPreview(res, originalUrl, file) {
