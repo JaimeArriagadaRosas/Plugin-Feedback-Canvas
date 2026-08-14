@@ -28,7 +28,7 @@
       ]
     }
   },
-  "postCreateCommand": "npm ci && echo 'Dependencias instaladas. Ejecute npm start para comenzar.'",
+  "postCreateCommand": "npm ci && echo 'Dependencies installed. Run npm start to begin.'",
   "forwardPorts": [3000, 5173, 5432],
   "remoteUser": "node"
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Simulación de middleware de permisos para LTI
+// LTI permissions middleware simulation
 const requireRole = (allowedRoles) => {
   return (req, res, next) => {
     const userRole = req.lti?.custom_role || 'student';
@@ -11,8 +11,8 @@ const requireRole = (allowedRoles) => {
   };
 };
 
-describe('Suite de Permisos (Authz)', () => {
-  it('Debería permitir a un profesor (teacher) acceder a rutas protegidas de profesores', () => {
+describe('Permissions Suite (Authz)', () => {
+  it('Should allow a teacher to access protected teacher routes', () => {
     const req = { lti: { custom_role: 'teacher' } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
@@ -24,7 +24,7 @@ describe('Suite de Permisos (Authz)', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('Debería bloquear a un estudiante (student) acceder a rutas protegidas de profesores', () => {
+  it('Should block a student from accessing protected teacher routes', () => {
     const req = { lti: { custom_role: 'student' } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();

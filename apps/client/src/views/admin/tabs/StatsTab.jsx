@@ -29,47 +29,47 @@ export default function StatsTab() {
 
   const handleExport = async (format) => {
     try {
-      setToast({ message: `Generando ${format.toUpperCase()}...`, type: 'info' });
+      setToast({ message: `Generating ${format.toUpperCase()}...`, type: 'info' });
       await StatsService.exportReport(format);
-      setToast({ message: `${format.toUpperCase()} exportado exitosamente.`, type: 'success' });
+      setToast({ message: `${format.toUpperCase()} exported successfully.`, type: 'success' });
     } catch (error) {
       logger.error('StatsTab', `Error exporting ${format}`, { error });
-      setToast({ message: `Error al exportar ${format.toUpperCase()}`, type: 'error' });
+      setToast({ message: `Error exporting ${format.toUpperCase()}`, type: 'error' });
     }
   };
 
-  if (loading) return <div>Cargando métricas...</div>;
+  if (loading) return <div>Loading metrics...</div>;
 
   return (
     <div className={styles.section}>
-      <h2 className={styles.sectionTitle}>Reportes y Estadísticas</h2>
+      <h2 className={styles.sectionTitle}>Reports and Statistics</h2>
       <p className={styles.description}>
-        Métricas de uso y utilidad del feedback generado por la IA en todos los cursos.
+        Usage and utility metrics for AI-generated feedback across all courses.
       </p>
 
       {stats && (
         <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
           <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: '8px', minWidth: '200px' }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>Feedbacks Generados</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>Feedback Generated</h3>
             <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#0770a3' }}>{stats.total}</p>
           </div>
           
           <div style={{ padding: '20px', background: '#e6f4ea', borderRadius: '8px', minWidth: '200px' }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>Aprobados</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>Approved</h3>
             <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#137333' }}>
               {stats.byStatus['APROBADO'] || 0} ({stats.percentages['APROBADO'] || 0}%)
             </p>
           </div>
 
           <div style={{ padding: '20px', background: '#fef7e0', borderRadius: '8px', minWidth: '200px' }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>Pendientes</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>Pending</h3>
             <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#b06000' }}>
               {stats.byStatus['PENDIENTE'] || 0} ({stats.percentages['PENDIENTE'] || 0}%)
             </p>
           </div>
 
           <div style={{ padding: '20px', background: '#ebf5fb', borderRadius: '8px', minWidth: '200px' }}>
-            <h3 style={{ margin: '0 0 10px 0' }}>Editados</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>Edited</h3>
             <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#1a5276' }}>
               {stats.byStatus['EDITADO'] || 0} ({stats.percentages['EDITADO'] || 0}%)
             </p>
@@ -82,20 +82,20 @@ export default function StatsTab() {
           onClick={() => handleExport('pdf')}
           style={{ padding: '10px 20px', background: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
         >
-          📄 Exportar Reporte PDF
+          📄 Export PDF Report
         </button>
         <button 
           onClick={() => handleExport('excel')}
           style={{ padding: '10px 20px', background: '#1d8348', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
         >
-          📊 Exportar Datos a Excel
+          📊 Export Data to Excel
         </button>
       </div>
 
-      <h3 style={{ marginTop: '40px' }}>Utilidad del Feedback (Estudiantes) - Histograma</h3>
+      <h3 style={{ marginTop: '40px' }}>Feedback Utility (Students) — Histogram</h3>
       <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', border: '1px solid #ddd' }}>
         {ratings.length === 0 ? (
-          <p>No hay calificaciones registradas.</p>
+          <p>No ratings recorded.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {ratings.sort((a, b) => b.rating - a.rating).map((r, i) => (

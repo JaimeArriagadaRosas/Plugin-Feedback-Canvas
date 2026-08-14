@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// Elimina el script de Theme de Canvas (unida_nav_fix.js) que ocultaba el botón
-// "Unida" manipulando el DOM. Ya no es necesario: la visibilidad la controla
-// Canvas vía placements y el backend bloquea estudiantes en el lanzamiento.
+// Removes the Canvas Theme script (unida_nav_fix.js) which hid the 'Unida' button
+// manipulating the DOM. No longer needed: visibility is controlled by Canvas
+// via placements and the backend blocks students on launch.
 //
-// El JavaScript de Theme se guarda en la "brand config" de la cuenta. Este script
-// lo vacía (brand_config[js]="") para la cuenta indicada.
+// The Theme JavaScript is saved in the account 'brand config'. This script
+// empties it (brand_config[js]="") for the indicated account.
 //
-// Uso:
+// Usage:
 //   CANVAS_BASE_URL=https://tu-instancia.instructure.com \
 //   CANVAS_ACCESS_TOKEN=xxxxx \
 //   CANVAS_ACCOUNT_ID=1 \
 //   node apps/installer/src/commands/maintenance/removeThemeFix.js
 //
-// Variables de entorno:
+// Environment variables:
 //   CANVAS_BASE_URL     (def. https://canvas.instructure.com)
-//   CANVAS_ACCESS_TOKEN  token de cuenta admin
-//   CANVAS_ACCOUNT_ID    id de cuenta (def. 1 = root account)
-//   DRY_RUN              si="true", solo reporta, no modifica
+//   CANVAS_ACCESS_TOKEN  admin account token
+//   CANVAS_ACCOUNT_ID    account id (def. 1 = root account)
+//   DRY_RUN              if="true", only reports, does not modify
 // ─────────────────────────────────────────────────────────────────────────────
 import { boot as logger } from '../../orchestration/boot/logger.js';
 
@@ -34,7 +34,7 @@ async function getCurrentJs() {
   if (!res.ok) {
     if (res.status === 404) return '';
     const text = await res.text();
-    throw new Error(`GET brand_config falló ${res.status}: ${text}`);
+    throw new Error(`GET brand_config failed ${res.status}: ${text}`);
   }
   const data = await res.json();
   return data.js || '';
@@ -52,38 +52,38 @@ async function clearThemeJs() {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`PUT brand_config falló ${res.status}: ${text}`);
+    throw new Error(`PUT brand_config failed ${res.status}: ${text}`);
   }
   return true;
 }
 
 async function main() {
   if (!CANVAS_ACCESS_TOKEN) {
-    logger.error('❌ Falta CANVAS_ACCESS_TOKEN (token admin de cuenta).');
+    logger.error('❌ Missing CANVAS_ACCESS_TOKEN (admin account token).');
     process.exit(1);
   }
 
   const currentJs = await getCurrentJs();
   const snippet = 'unida_nav_fix';
-  const contieneFix = currentJs.includes(snippet);
+  const containsFix = currentJs.includes(snippet);
 
-  if (!contieneFix) {
-    logger.info(`✅ No se encontró "${snippet}" en el JS del Theme de la cuenta ${ACCOUNT_ID}. Nada que hacer.`);
+  if (!containsFix) {
+    logger.info(`✅ "${snippet}" not found in the Theme JS of account ${ACCOUNT_ID}. Nothing to do.`);
     return;
   }
 
-  logger.warn(`⚠️  Se detectó "${snippet}" en el Theme de la cuenta ${ACCOUNT_ID}.`);
+  logger.warn(`⚠️  "${snippet}" detected in the Theme of account ${ACCOUNT_ID}.`);
   if (DRY_RUN) {
-    logger.info('🔍 DRY_RUN=true: no se modificó nada. Ejecuta sin DRY_RUN para limpiar el Theme.');
+    logger.info('🔍 DRY_RUN=true: nothing was modified. Run without DRY_RUN to clear the Theme.');
     return;
   }
 
   await clearThemeJs();
-  logger.info('✅ JS del Theme vaciado. El script unida_nav_fix.js ya no se inyecta.\n' + 
-              '   La visibilidad del botón ahora la controla Canvas vía placements.');
+  logger.info('✅ Theme JS cleared. The unida_nav_fix.js script is no longer injected.\n' + 
+              '   Button visibility is now controlled by Canvas via placements.');
 }
 
 main().catch(err => {
-  logger.error('Error inesperado:', { error: err.message });
+  logger.error('Unexpected error:', { error: err.message });
   process.exit(1);
 });

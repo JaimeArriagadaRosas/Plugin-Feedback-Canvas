@@ -12,7 +12,7 @@ const IFRAME_TIMEOUT_MS = 15000; // 15 segundos antes de declarar fallo del ifra
 export default function SubmissionViewer({
   submission,
   quizDetails,
-  studentName = 'Estudiante',
+  studentName = 'Student',
   assignmentName,
   className = '',
   isFetchingSubmission = false,
@@ -23,7 +23,7 @@ export default function SubmissionViewer({
   let textBody = '';
   let fileName = '';
   let fileUrl = '';
-  let submittedAt = 'Sin fecha';
+  let submittedAt = 'No date';
   let isFile = false;
   let hasBody = false;
 
@@ -61,7 +61,7 @@ export default function SubmissionViewer({
     // Revisar si hay adjuntos (attachments)
     if (submission.attachments && submission.attachments.length > 0) {
       const attachment = submission.attachments[0];
-      fileName = attachment.filename || attachment.display_name || 'documento';
+      fileName = attachment.filename || attachment.display_name || 'document';
       fileUrl = attachment.url || '';
       isFile = true;
       
@@ -80,10 +80,10 @@ export default function SubmissionViewer({
       hasBody = true;
       textBody = submission.body.replace(/<[^>]+>/g, '');
     } else if (!isFile && !hasPreviewUrl) {
-      textBody = "Sin contenido de entrega.";
+      textBody = "No submission content.";
     }
   } else {
-    textBody = "Sin entrega.";
+    textBody = "No submission.";
   }
 
   // Logging de diagnóstico en consola del navegador
@@ -102,7 +102,7 @@ export default function SubmissionViewer({
       return (
         <div className={styles.iframeWrapper}>
           <div className={styles.skeletonContainer}>
-            <span className={styles.loadingText}>Cargando entrega de Canvas...</span>
+            <span className={styles.loadingText}>Loading Canvas submission...</span>
           </div>
         </div>
       );
@@ -122,11 +122,11 @@ export default function SubmissionViewer({
           <div className={styles.fallbackCard}>
             <div className={styles.fallbackHeader} style={{ background: 'linear-gradient(135deg, #4b5563 0%, #374151 100%)' }}>
               <span className={styles.fallbackIcon}>📝</span>
-              <h3 className={styles.fallbackTitle}>Sin Entrega</h3>
+              <h3 className={styles.fallbackTitle}>No Submission</h3>
             </div>
             <div className={styles.fallbackBody}>
               <p className={styles.fallbackMessage}>
-                El estudiante <strong>{studentName}</strong> aún no ha entregado esta tarea.
+                The student <strong>{studentName}</strong> has not submitted this assignment yet.
               </p>
             </div>
           </div>
@@ -141,15 +141,15 @@ export default function SubmissionViewer({
           <div className={styles.fallbackCard}>
             <div className={styles.fallbackHeader}>
               <span className={styles.fallbackIcon}>📦</span>
-              <h3 className={styles.fallbackTitle}>Recepción Confirmada</h3>
+              <h3 className={styles.fallbackTitle}>Receipt Confirmed</h3>
             </div>
             <div className={styles.fallbackBody}>
               <p className={styles.fallbackMessage}>
-                La tarea <strong>{fileName}</strong> entregada por <strong>{studentName}</strong> se ha recibido correctamente.
+                The assignment <strong>{fileName}</strong> submitted by <strong>{studentName}</strong> has been received successfully.
               </p>
               {fileUrl && (
                 <a href={fileUrl} target="_blank" rel="noreferrer" className={styles.downloadBtn}>
-                  Descargar Tarea
+                  Download Assignment
                 </a>
               )}
             </div>
@@ -197,12 +197,12 @@ export default function SubmissionViewer({
             <div className={styles.fallbackCard}>
               <div className={styles.fallbackHeader} style={{ background: 'linear-gradient(135deg, #7c3a12 0%, #b45309 100%)' }}>
                 <span className={styles.fallbackIcon}>⏱️</span>
-                <h3 className={styles.fallbackTitle}>Vista Previa No Disponible</h3>
+                <h3 className={styles.fallbackTitle}>Preview Not Available</h3>
               </div>
               <div className={styles.fallbackBody}>
                 <p className={styles.fallbackMessage}>
-                  El visor de documentos de Canvas (Canvadocs) no respondió a tiempo.
-                  Es posible que el servicio esté experimentando intermitencias o que la conexión a internet sea inestable.
+                  The Canvas document viewer (Canvadocs) did not respond in time.
+                  The service may be experiencing interruptions or your internet connection may be unstable.
                 </p>
               </div>
             </div>
@@ -214,13 +214,13 @@ export default function SubmissionViewer({
         <div className={styles.iframeWrapper}>
           {!iframeLoaded && (
             <div className={styles.skeletonContainer}>
-              <span className={styles.loadingText}>Cargando vista previa de Canvas...</span>
+              <span className={styles.loadingText}>Loading Canvas preview...</span>
             </div>
           )}
           <iframe
             src={previewUrl}
             className={`${styles.iframeViewer} ${!iframeLoaded ? styles.hidden : ''}`}
-            title={`Entrega de ${studentName}`}
+            title={`Submission by ${studentName}`}
             onLoad={() => {
               setIframeLoaded(true);
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -231,17 +231,17 @@ export default function SubmissionViewer({
     }
 
     // 5. Fallback final
-    return renderTextCard(textBody || "Sin contenido de entrega.");
+    return renderTextCard(textBody || "No submission content.");
   };
 
   return (
     <section className={`${styles.viewer} ${className}`}>
       <div className={styles.meta}>
         <div>
-          Entregado el: <strong>{submittedAt}</strong>
+          Submitted on: <strong>{submittedAt}</strong>
         </div>
         <div>
-          Intento: <strong>{submission ? submission.attempt || 1 : 'N/A'}</strong>
+          Attempt: <strong>{submission ? submission.attempt || 1 : 'N/A'}</strong>
         </div>
       </div>
       <div className={styles.content}>

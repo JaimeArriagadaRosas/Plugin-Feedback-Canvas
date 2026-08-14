@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 const TAIL_LINES = 50;
 
-/** Retiene solo las últimas líneas de un proceso con salida masiva. */
+/** Retains only the last lines of a process with massive output. */
 export class TailBuffer {
   constructor(maxLines = TAIL_LINES) {
     this._lines = [];
@@ -25,9 +25,9 @@ export class TailBuffer {
 }
 
 /**
- * Ejecuta un subproceso sin shell y limita el output retenido en memoria.
- * `logMode: 'on-failure'` evita escribir los logs completos de instalaciones
- * exitosas; conserva solo el resumen útil si el proceso falla.
+ * Executes a subprocess without shell and limits the output retained in memory.
+ * `logMode: 'on-failure'` prevents writing full logs of successful
+ * installations; retains only the useful summary if the process fails.
  */
 export async function runCommand(command, args = [], options = {}) {
   const {
@@ -39,7 +39,7 @@ export async function runCommand(command, args = [], options = {}) {
   const shouldWriteFullLog = logFile && logMode !== 'on-failure';
 
   try {
-    if (shouldWriteFullLog) appendLog(logFile, `\n--- Ejecutando: ${command} ${args.join(' ')} ---\n`);
+    if (shouldWriteFullLog) appendLog(logFile, `\n--- Executing: ${command} ${args.join(' ')} ---\n`);
     const child = execa(command, args, {
       cwd,
       env: { ...process.env, ...env },
@@ -87,8 +87,8 @@ export async function runCommand(command, args = [], options = {}) {
 
 function appendFailureSummary(logFile, command, args, out, err) {
   appendLog(logFile, [
-    `\n--- Falló: ${command} ${args.join(' ')} ---`, out, err,
-    '--- Fin del resumen de fallo ---\n'
+    `\n--- Failed: ${command} ${args.join(' ')} ---`, out, err,
+    '--- End of failure summary ---\n'
   ].filter(Boolean).join('\n'));
 }
 
@@ -97,6 +97,6 @@ function appendLog(logFile, content) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.appendFileSync(logFile, content);
   } catch {
-    // No ocultar el resultado del comando si el registro no se puede escribir.
+    // Do not hide the command result if the log cannot be written.
   }
 }

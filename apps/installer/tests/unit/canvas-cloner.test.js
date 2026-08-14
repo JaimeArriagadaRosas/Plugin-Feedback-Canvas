@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('CanvasCloner', () => {
-  it('preserva una clonacion parcial y no la trata como una instalacion correcta', async () => {
+  it('preserves a partial clone and does not treat it as a successful installation', async () => {
     const parent = createTempDirectory();
     const canvasDir = path.join(parent, 'canvas-lms-master');
     const archiveInstaller = { downloadAndExtract: vi.fn() };
@@ -41,7 +41,7 @@ describe('CanvasCloner', () => {
     expect(archiveInstaller.downloadAndExtract).not.toHaveBeenCalled();
   });
 
-  it('usa el instalador de archivo inyectado cuando git falla sin dejar destino parcial', async () => {
+  it('uses the injected archive installer when git fails without leaving a partial destination', async () => {
     const parent = createTempDirectory();
     const canvasDir = path.join(parent, 'canvas-lms-master');
     const archiveInstaller = {
@@ -63,7 +63,7 @@ describe('CanvasCloner', () => {
     expect(fs.existsSync(path.join(canvasDir, '.env'))).toBe(true);
   });
 
-  it('no mezcla una extraccion anterior con un nuevo fallback ZIP', async () => {
+  it('does not mix a previous extraction with a new ZIP fallback', async () => {
     const parent = createTempDirectory();
     const canvasDir = path.join(parent, 'canvas-lms-master');
     fs.mkdirSync(path.join(parent, 'canvas-lms-release-2026-05-20.143'));

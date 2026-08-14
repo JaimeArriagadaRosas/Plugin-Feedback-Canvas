@@ -5,11 +5,11 @@ import OpenAIErrorHandler from './errors/OpenAIErrorHandler.js';
 
 const OUTPUT_GUARDRAILS = `
 ---
-REGLAS DE SALIDA (OBLIGATORIAS):
-1. Entrega SOLO el texto de retroalimentación. No expliques lo que harás, no describas la plantilla, no resumas las preguntas.
-2. Si vas a mencionar números, usa los datos provistos arriba —no inventes calificaciones.
-3. Finaliza con un saludo cordial y tu nombre como profesor.
-4. La respuesta debe estar completamente en el idioma solicitado y lista para enviar al estudiante sin modificaciones.`;
+OUTPUT RULES (MANDATORY):
+1. Deliver ONLY the feedback text. Do not explain what you will do, do not describe the template, do not summarize the questions.
+2. If you are going to mention numbers, use the data provided above —do not invent grades.
+3. End with a cordial greeting and your name as a teacher.
+4. The response must be completely in the requested language and ready to send to the student without modifications.`;
 
 export default class OpenAIProvider extends IAProvider {
   constructor(apiKey, customEndpoint = null) {
@@ -19,11 +19,11 @@ export default class OpenAIProvider extends IAProvider {
   }
 
   async generateFeedback(prompt, config = {}) {
-    logger.info('[IA] Generando feedback con OpenAI (con Exponential Backoff)...');
+    logger.info('[IA] Generating feedback with OpenAI (with Exponential Backoff)...');
 
     const apiKey = config.apiKey || this.apiKey;
     if (!apiKey) {
-      throw new Error('API Key de OpenAI requerida');
+      throw new Error('OpenAI API Key required');
     }
 
     const modelName = config.model || "gpt-4o-mini";
@@ -56,7 +56,7 @@ export default class OpenAIProvider extends IAProvider {
         const text = data.choices?.[0]?.message?.content?.trim();
 
         if (!text) {
-          throw new Error('Respuesta vacía de OpenAI');
+          throw new Error('Empty response from OpenAI');
         }
 
         return text;
@@ -84,7 +84,7 @@ export default class OpenAIProvider extends IAProvider {
         }
         
         const data = await response.json();
-        // Filtrar modelos de chat, comúnmente empiezan con gpt-
+        // Filter chat models, commonly start with gpt-
         return data.data
           .filter(m => m.id.startsWith('gpt-') || m.id.includes('o1') || m.id.includes('o3'))
           .map(m => ({

@@ -4,13 +4,13 @@ import { runDockerCommand } from '../../../platform/shared/dockerRunner.js';
 import { BootResult } from './../result.js';
 
 /**
- * CanvasCheck — Verifica el estado del clon de Canvas LMS, sus Ruby gems,
- * dependencias Yarn, assets compilados, traducciones (i18n) y base de datos.
+ * CanvasCheck — Verifies the state of the Canvas LMS clone, its Ruby gems,
+ * Yarn dependencies, compiled assets, translations (i18n) and database.
  *
- * Solo DETECTA. La instalación/compilación pesada queda delegada a la capa
- * Python de setup (verificar_entorno.py -> instalar_dependencias.py), que ya
- * implementa reintentos y diagnóstico. Aquí no repetimos work ni asumimos
- * estado: cada chequeo consulta al contenedor.
+ * Only DETECTS. Heavy installation/compilation is delegated to the
+ * Python setup layer (verificar_entorno.py -> instalar_dependencias.py), which already
+ * implements retries and diagnosis. Here we do not repeat work or assume
+ * state: each check queries the container.
  */
 export class CanvasCheck {
   constructor(canvasDir) {
@@ -31,7 +31,7 @@ export class CanvasCheck {
     return fs.existsSync(path.join(this.canvasDir, 'docker-compose.yml'));
   }
 
-  /** ¿Canvas está corriendo (contenedor web activo)? */
+  /** Is Canvas running (active web container)? */
   async isRunning() {
     const r = await this._docker(['compose', 'ps', '-q', 'web']);
     return r.ok && r.out.length > 0;
@@ -43,7 +43,7 @@ export class CanvasCheck {
   }
 
   async checkYarn() {
-    // yarn check --verify-resolutions es caro; basta con que node_modules exista.
+    // yarn check --verify-resolutions is expensive; it's enough that node_modules exists.
     const r = await this._docker(['compose', 'exec', '-T', 'web', 'test', '-d', 'node_modules']);
     return r.ok;
   }
@@ -67,31 +67,31 @@ export class CanvasCheck {
   }
 
   /**
-   * Ejecuta todos los chequeos de Canvas. No es crítico que fallen en un
-   * primer arranque: la capa Python de setup los resolverá. Reporta el
-   * subconjunto faltante para información del usuario.
+   * Executes all Canvas checks. It is not critical if they fail on a
+   * first boot: the Python setup layer will resolve them. Reports the
+   * missing subset for user information.
    */
   async run(log) {
     if (!this.isCloned()) {
-      log.warn('Clon de Canvas LMS no encontrado en el workspace.');
-      log.action('El orquestador clonará Canvas LMS automáticamente al elegir el modo local.');
-      return BootResult.warn('Canvas LMS no clonado',
-        'Se clonará automáticamente al iniciar en modo local (Docker).');
+      log.warn('Canvas LMS clone not found in the workspace.');
+      log.action('The orchestrator will automatically clone Canvas LMS when choosing local mode.');
+      return BootResult.warn('Canvas LMS not cloned',
+        'Will be cloned automatically when starting in local mode (Docker).');
     }
 
     const running = await this.isRunning();
     if (!running) {
-      log.warn('Canvas LMS no está corriendo todavía.');
-      return BootResult.warn('Canvas LMS detenido',
-        'El orquestador levantará el stack con `docker compose up -d`.');
+      log.warn('Canvas LMS is not running yet.');
+      return BootResult.warn('Canvas LMS stopped',
+        'The orchestrator will bring up the stack with `docker compose up -d`.');
     }
 
     const checks = [
       ['Ruby gems', () => this.checkRubyGems()],
       ['Yarn deps', () => this.checkYarn()],
-      ['Assets compilados', () => this.checkAssets()],
-      ['Traducciones i18n', () => this.checkI18n()],
-      ['Base de datos', () => this.checkDb()],
+      ['Compiled assets', () => this.checkAssets()],
+      ['i18n translations', () => this.checkI18n()],
+      ['Database', () => this.checkDb()],
     ];
 
     const missing = [];
@@ -99,17 +99,17 @@ export class CanvasCheck {
       try {
         const ok = await fn();
         if (ok) log.success(label);
-        else { missing.push(label); log.warn(`${label}: faltante`); }
+        else { missing.push(label); log.warn(`${label}: missing`); }
       } catch {
         missing.push(label);
-        log.warn(`${label}: no verificable`);
+        log.warn(`${label}: not verifiable`);
       }
     }
 
     if (missing.length === 0) {
       return BootResult.ok({ complete: true });
     }
-    return BootResult.warn(`Canvas LMS parcial (faltan: ${missing.join(', ')})`,
-      'La capa de setup compilará/instalará lo faltante automáticamente.');
+    return BootResult.warn(`Partial Canvas LMS (missing: ${missing.join(', ')})`,
+      'The setup layer will automatically compile/install what is missing.');
   }
 }

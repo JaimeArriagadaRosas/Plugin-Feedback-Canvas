@@ -3,12 +3,12 @@ import { ApiError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 
 export const AUDIT_EVENT_TYPES = {
-  ACCESO_DENEGADO: 'ACCESO_DENEGADO',
-  CONFIGURACION_IA_ALTERADA: 'CONFIGURACION_IA_ALTERADA',
-  VALIDACION_LTI_FALLIDA: 'VALIDACION_LTI_FALLIDA',
-  LIMITE_RATE_EXCEDIDO: 'LIMITE_RATE_EXCEDIDO',
-  ERROR_SISTEMA_CRITICO: 'ERROR_SISTEMA_CRITICO',
-  OTRO: 'OTRO',
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  AI_CONFIGURATION_ALTERED: 'AI_CONFIGURATION_ALTERED',
+  LTI_VALIDATION_FAILED: 'LTI_VALIDATION_FAILED',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  CRITICAL_SYSTEM_ERROR: 'CRITICAL_SYSTEM_ERROR',
+  OTHER: 'OTHER',
 };
 
 class AuditManager {
@@ -22,8 +22,8 @@ class AuditManager {
    */
   async logSecurityEvent(tipo, usuarioId, ip, detalle) {
     if (!Object.values(AUDIT_EVENT_TYPES).includes(tipo)) {
-      logger.warn('AuditManager', `Tipo de evento de auditoría no reconocido: ${tipo}`);
-      tipo = AUDIT_EVENT_TYPES.OTRO;
+      logger.warn('AuditManager', `Unrecognized audit event type: ${tipo}`);
+      tipo = AUDIT_EVENT_TYPES.OTHER;
     }
 
     const detalleStr = typeof detalle === 'object' ? JSON.stringify(detalle) : detalle;
@@ -34,15 +34,15 @@ class AuditManager {
         VALUES ($1, $2, $3, $4, NOW())
         RETURNING *;
       `;
-      const values = [usuarioId || 'SISTEMA', tipo, detalleStr, ip || 'UNKNOWN'];
+      const values = [usuarioId || 'SYSTEM', tipo, detalleStr, ip || 'UNKNOWN'];
       
       const result = await db.query(query, values);
-      logger.info('AuditManager', `Evento de auditoría registrado: ${tipo}`, { logId: result.rows[0].id });
+      logger.info('AuditManager', `Audit event registered: ${tipo}`, { logId: result.rows[0].id });
       
       return result.rows[0];
     } catch (error) {
-      logger.error('AuditManager', 'Error al insertar log de auditoría', { error });
-      // No lanzamos error para que no bloquee la petición original, ya que esto es solo logging
+      logger.error('AuditManager', 'Error inserting audit log', { error });
+      // We don't throw an error so it doesn't block the original request, as this is just logging
     }
   }
 
@@ -71,7 +71,7 @@ class AuditManager {
         }
       };
     } catch (error) {
-      throw new ApiError('Error al recuperar los logs de auditoría de la base de datos', 500);
+      throw new ApiError('Error retrieving audit logs from database', 500);
     }
   }
 
@@ -83,11 +83,11 @@ class AuditManager {
     try {
       const logsRes = await db.query(`
         SELECT * FROM Logs_Auditoria 
-        WHERE accion LIKE '%DENEGADO%' 
-           OR accion LIKE '%FALLIDA%' 
+        WHERE accion LIKE '%DENIED%' 
+           OR accion LIKE '%FAILED%' 
            OR accion LIKE '%ERROR%' 
-           OR accion LIKE '%ALTERADA%' 
-           OR accion LIKE '%EXCEDIDO%'
+           OR accion LIKE '%ALTERED%' 
+           OR accion LIKE '%EXCEEDED%'
            OR accion LIKE '%DENIED%'
         ORDER BY fecha DESC 
         LIMIT $1
@@ -103,7 +103,7 @@ class AuditManager {
         }
       };
     } catch (error) {
-      throw new ApiError('Error al recuperar los logs críticos de auditoría', 500);
+      throw new ApiError('Error retrieving critical audit logs', 500);
     }
   }
 }

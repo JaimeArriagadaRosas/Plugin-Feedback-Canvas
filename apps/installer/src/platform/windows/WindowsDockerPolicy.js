@@ -7,17 +7,17 @@ export class WindowsDockerPolicy {
 
   missing() {
     return {
-      message: 'Docker Desktop no está instalado o su CLI no está en PATH.',
-      action: 'Instale Docker Desktop para Windows y habilite el backend WSL2.',
+      message: 'Docker Desktop is not installed or its CLI is not in PATH.',
+      action: 'Install Docker Desktop for Windows and enable the WSL2 backend.',
       fix: 'Windows: https://docs.docker.com/desktop/setup/install/windows-install/'
     };
   }
 
   daemon() {
     return {
-      message: 'Docker Desktop está instalado, pero su daemon no está disponible.',
-      action: 'Abra Docker Desktop y espere hasta que indique que el Engine está activo.',
-      fix: 'Inicie Docker Desktop y revise el backend WSL2.'
+      message: 'Docker Desktop is installed, but its daemon is not available.',
+      action: 'Open Docker Desktop and wait until it indicates the Engine is active.',
+      fix: 'Start Docker Desktop and check the WSL2 backend.'
     };
   }
 
@@ -27,19 +27,19 @@ export class WindowsDockerPolicy {
 
   memory() {
     return {
-      action: 'Ajuste la memoria del backend WSL2 en `%UserProfile%\\.wslconfig` y reinicie Docker Desktop.'
+      action: 'Adjust the WSL2 backend memory in `%UserProfile%\\.wslconfig` and restart Docker Desktop.'
     };
   }
 
   compose() {
-    return 'Actualice o repare Docker Desktop; Compose V2 debe venir incluido.';
+    return 'Update or repair Docker Desktop; Compose V2 should be included.';
   }
 
   install() {
     return {
       target: 'C:\\Program Files\\Docker\\Docker',
-      prompt: '¿Deseas descargar e instalar Docker Desktop para Windows?',
-      declined: 'Instala Docker Desktop desde https://docs.docker.com/desktop/setup/install/windows-install/ y vuelve a ejecutar npm start.'
+      prompt: 'Do you want to download and install Docker Desktop for Windows?',
+      declined: 'Install Docker Desktop from https://docs.docker.com/desktop/setup/install/windows-install/ and run npm start again.'
     };
   }
 }

@@ -16,7 +16,7 @@ export default class IAConfigController {
     try {
       const { modelo_preferido, prompt_base } = req.body;
       const updated = await this.llmConfigService.updateConfig(modelo_preferido, prompt_base);
-      res.json({ exito: true, mensaje: 'Configuración actualizada', data: updated });
+      res.json({ exito: true, mensaje: 'Configuration updated', data: updated });
     } catch (error) {
       next(error);
     }

@@ -32,7 +32,7 @@ export function startSpinner(label) {
   let x = 0;
   const interval = setInterval(() => {
     // eslint-disable-next-line security/detect-object-injection
-    process.stdout.write(`\r  [⏳] ${label} (esto puede tardar unos minutos) ${frames[x]}`);
+    process.stdout.write(`\r  [⏳] ${label} (this may take a few minutes) ${frames[x]}`);
     x = (x + 1) % frames.length;
   }, 100);
   return {
@@ -55,14 +55,14 @@ class DockerRunner {
 
   static startCanvas() {
     return new Promise((resolve, reject) => {
-      console.log('[DockerRunner] Verificando el runtime de Docker...');
+      console.log('[DockerRunner] Checking Docker runtime...');
       if (!this.checkDocker()) {
-        console.error('[DockerRunner] ERROR: Docker no está en ejecución.');
-        console.error('Inicia el runtime de Docker configurado para este entorno y vuelve a intentarlo.');
-        return reject(new Error('Docker no está en ejecución.'));
+        console.error('[DockerRunner] ERROR: Docker is not running.');
+        console.error('Start the configured Docker runtime for this environment and try again.');
+        return reject(new Error('Docker is not running.'));
       }
 
-      console.log(`[DockerRunner] Levantando contenedores Canvas en segundo plano. Los detalles se guardan en logs/docker_canvas.log...`);
+      console.log(`[DockerRunner] Starting Canvas containers in the background. Details are saved in logs/docker_canvas.log...`);
       
       const dockerProcess = spawn('docker', ['compose', 'up', '-d'], {
         cwd: CANVAS_PATH
@@ -73,16 +73,16 @@ class DockerRunner {
 
       dockerProcess.on('close', (code) => {
         if (code === 0) {
-          console.log('[DockerRunner] Comando docker compose up -d ejecutado con éxito.');
+          console.log('[DockerRunner] Command docker compose up -d executed successfully.');
           resolve(true);
         } else {
-          console.error(`[DockerRunner] El proceso de Docker terminó con código de error ${code}.`);
-          reject(new Error(`docker compose falló con código ${code}`));
+          console.error(`[DockerRunner] The Docker process ended with error code ${code}.`);
+          reject(new Error(`docker compose failed with code ${code}`));
         }
       });
 
       dockerProcess.on('error', (err) => {
-        console.error('[DockerRunner] Error al intentar iniciar docker compose:', err.message);
+        console.error('[DockerRunner] Error attempting to start docker compose:', err.message);
         reject(err);
       });
     });
@@ -90,13 +90,13 @@ class DockerRunner {
 
   static runDockerCommand(args, label) {
     return new Promise((resolve, reject) => {
-      console.log(`\n[DockerRunner] Preparando: ${label}... (Logs en logs/docker_canvas.log)`);
+      console.log(`\n[DockerRunner] Preparing: ${label}... (Logs in logs/docker_canvas.log)`);
       
       const dockerProcess = spawn('docker', args, {
         cwd: CANVAS_PATH
       });
 
-      const spinner = startSpinner(`Ejecutando ${label}`);
+      const spinner = startSpinner(`Executing ${label}`);
 
       dockerProcess.stdout.on('data', (data) => writeDockerLog(`[${label}-Stdout]`, data));
       dockerProcess.stderr.on('data', (data) => writeDockerLog(`[${label}-Stderr]`, data));
@@ -104,17 +104,17 @@ class DockerRunner {
       dockerProcess.on('close', (code) => {
         spinner.stop();
         if (code === 0) {
-          console.log(`[DockerRunner] ✅ Éxito: ${label} completado.`);
+          console.log(`[DockerRunner] ✅ Success: ${label} completed.`);
           resolve(true);
         } else {
-          console.error(`[DockerRunner] ❌ Error: ${label} falló con código ${code}.`);
-          reject(new Error(`${label} falló`));
+          console.error(`[DockerRunner] ❌ Error: ${label} failed with code ${code}.`);
+          reject(new Error(`${label} failed`));
         }
       });
 
       dockerProcess.on('error', (err) => {
         spinner.stop();
-        console.error(`[DockerRunner] ❌ Error ejecutando ${label}:`, err.message);
+        console.error(`[DockerRunner] ❌ Error executing ${label}:`, err.message);
         reject(err);
       });
     });

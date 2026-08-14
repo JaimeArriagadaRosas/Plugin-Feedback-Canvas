@@ -1,7 +1,7 @@
 import db from './db.js';
 
 /**
- * Repositorio de Plantillas (PostgreSQL)
+ * Template Repository (PostgreSQL)
  */
 export default class TemplateRepository {
   async getById(id) {
@@ -59,7 +59,7 @@ export default class TemplateRepository {
   }
 
   async delete(id, profesorId) {
-    // Soft Delete: Marcar como eliminado en lugar de borrar para no romper historial
+    // Soft Delete: Mark as deleted instead of deleting to not break history
     await db.query('UPDATE Plantilla_Feedback SET deleted_at = NOW() WHERE id = $1 AND profesor_id = $2', [id, profesorId]);
     return true;
   }
@@ -69,9 +69,9 @@ export default class TemplateRepository {
     if (parseInt(res.rows[0].count) === 0) {
       await db.query(`
         INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id) VALUES 
-        ('Clase Estándar', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}.\\n\\nLo has hecho muy bien, excelente trabajo.\\n\\nSaludos cordiales,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}.\\n\\nHas hecho un trabajo más o menos adecuado, pero hay aspectos que puedes mejorar.\\n\\nSaludos cordiales,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}.\\n\\nPor favor, es necesario que le pongas mayor esfuerzo. Consulta el material para mejorar.\\n\\nSaludos cordiales,\\nProfesor"}', NULL),
-        ('Feedback Detallado', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. Has demostrado un dominio sobresaliente de los conceptos, con una base muy sólida que demuestra un gran nivel de comprensión y dedicación.\\n\\n¡Sigue así, excelente desempeño!\\n\\nSaludos,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. Tienes una buena base, pero existen áreas específicas que debemos reforzar para alcanzar un dominio completo de los temas tratados en esta evaluación.\\n\\nTe animo a revisar el material de estudio.\\n\\nSaludos,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. Es fundamental que repasemos el contenido visto en clase, ya que se evidencian conceptos clave que aún no están afianzados.\\n\\nPor favor, contáctame para aclarar dudas o asiste a las horas de tutoría.\\n\\nSaludos,\\nProfesor"}', NULL),
-        ('Evaluación Cruzada', '{"alto":"Hola {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. Tus compañeros y yo coincidimos en que tu trabajo es destacado y aporta gran valor a la revisión entre pares.\\n\\n¡Felicidades!\\n\\nSaludos,\\nProfesor","medio":"Hola {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. Según la evaluación cruzada, tu desempeño es promedio, presentando un trabajo adecuado pero con oportunidades de mejora identificadas por tus pares.\\n\\n¡Sigue trabajando!\\n\\nSaludos,\\nProfesor","bajo":"Hola {{nombre_estudiante}},\\n\\nTu calificación es {{calificacion}}. La revisión cruzada indica que hay debilidades importantes en tu entrega que deben ser atendidas, según el consenso de la coevaluación.\\n\\nRevisa los comentarios de tus compañeros.\\n\\nSaludos,\\nProfesor"}', NULL);
+        ('Standard Class', '{"alto":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}.\\n\\nYou have done very well, excellent work.\\n\\nBest regards,\\nTeacher","medio":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}.\\n\\nYou have done a somewhat adequate job, but there are aspects you can improve.\\n\\nBest regards,\\nTeacher","bajo":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}.\\n\\nPlease, you need to put in more effort. Consult the material to improve.\\n\\nBest regards,\\nTeacher"}', NULL),
+        ('Detailed Feedback', '{"alto":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. You have shown an outstanding mastery of the concepts, with a very solid foundation that shows a great level of understanding and dedication.\\n\\nKeep it up, excellent performance!\\n\\nRegards,\\nTeacher","medio":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. You have a good foundation, but there are specific areas we need to reinforce to achieve full mastery of the topics covered in this assessment.\\n\\nI encourage you to review the study material.\\n\\nRegards,\\nTeacher","bajo":"Dear {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. It is essential that we review the content covered in class, as it is evident that key concepts are not yet consolidated.\\n\\nPlease contact me to clarify doubts or attend tutoring hours.\\n\\nRegards,\\nTeacher"}', NULL),
+        ('Peer Review', '{"alto":"Hello {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. Your peers and I agree that your work is outstanding and adds great value to the peer review.\\n\\nCongratulations!\\n\\nRegards,\\nTeacher","medio":"Hello {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. According to the peer review, your performance is average, presenting an adequate job but with improvement opportunities identified by your peers.\\n\\nKeep working!\\n\\nRegards,\\nTeacher","bajo":"Hello {{nombre_estudiante}},\\n\\nYour grade is {{calificacion}}. The peer review indicates there are significant weaknesses in your submission that must be addressed, according to the co-evaluation consensus.\\n\\nReview your peers'' comments.\\n\\nRegards,\\nTeacher"}', NULL);
       `);
     }
 

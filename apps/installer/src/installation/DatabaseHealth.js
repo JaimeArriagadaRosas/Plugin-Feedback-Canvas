@@ -3,15 +3,15 @@ import { createSpinner } from 'nanospinner';
 import { GemInstaller } from './installers/GemInstaller.js';
 
 /**
- * DatabaseHealth — Verificación resiliente de PostgreSQL.
+ * DatabaseHealth — Resilient PostgreSQL verification.
  *
- * Estrategia:
- *  1. Usa `pg_isready` (no healthcheck de Docker) para sondear la disponibilidad.
- *  2. Exponential backoff: espera progresivamente más entre reintentos.
- *  3. Detección de corrupción: lee los logs del contenedor buscando patrones
- *     de PANIC/FATAL irrecuperables y, si los encuentra, se detiene sin borrar datos.
- *  4. Sin timeout rígido: el bucle corre hasta que Postgres responde o se
- *     detecta un bloqueo irrecuperable (máx ~15 min con backoff).
+ * Strategy:
+ *  1. Uses `pg_isready` (not Docker healthcheck) to poll availability.
+ *  2. Exponential backoff: waits progressively longer between retries.
+ *  3. Corruption detection: reads container logs looking for patterns
+ *     of unrecoverable PANIC/FATAL, and if found, stops without deleting data.
+ *  4. No strict timeout: the loop runs until Postgres responds or an
+ *     unrecoverable blockage is detected (max ~15 min with backoff).
  */
 export class DatabaseHealth {
   constructor(boot, canvasDir) {
@@ -20,30 +20,30 @@ export class DatabaseHealth {
   }
 
   async ensureDatabaseReady() {
-    this.boot.info('Verificando estado de la base de datos PostgreSQL...');
+    this.boot.info('Checking PostgreSQL database status...');
     
-    // Primero verificar/instalar plugins de Bundler
+    // First verify/install Bundler plugins
     const gemInstaller = new GemInstaller(this.boot, this.canvasDir);
     if (!(await gemInstaller.ensureBundlerPlugins())) {
-      throw new Error('Fallo al instalar plugins de Bundler requeridos.');
+      throw new Error('Failed to install required Bundler plugins.');
     }
     
     const serviceName = await this._detectPgService();
     if (serviceName) {
       const dbHealthy = await this.waitForPostgres(serviceName);
       if (!dbHealthy) {
-        throw new Error(`No se pudo establecer conexión con PostgreSQL (${serviceName}).`);
+        throw new Error(`Could not establish connection with PostgreSQL (${serviceName}).`);
       }
     } else {
-      this.boot.warn('No se pudo detectar el servicio de Postgres en docker-compose, asumiendo listo.');
+      this.boot.warn('Could not detect Postgres service in docker-compose, assuming ready.');
     }
 
     const migrationsDone = await this.checkMigrations();
     if (!migrationsDone) {
-      this.boot.warn('La base de datos no está migrada. Ejecutando migraciones (esto tomará varios minutos)...');
+      this.boot.warn('Database is not migrated. Running migrations (this will take several minutes)...');
       const migrated = await this.runMigrations();
       if (!migrated) {
-        throw new Error('Fallo al crear y migrar la base de datos.');
+        throw new Error('Failed to create and migrate database.');
       }
     }
     return true;
@@ -60,68 +60,68 @@ export class DatabaseHealth {
   }
 
   /**
-   * Espera a que Postgres acepte conexiones usando `pg_isready`.
-   * Usa exponential backoff (3s → 6s → 12s → ... hasta 30s) con un
-   * máximo de 30 intentos (~15 min en el peor caso).
+   * Waits for Postgres to accept connections using `pg_isready`.
+   * Uses exponential backoff (3s → 6s → 12s → ... up to 30s) with a
+   * maximum of 30 attempts (~15 min in the worst case).
    * 
-   * En cada ciclo revisa los logs del contenedor buscando indicios de
-   * corrupción irrecuperable. Si los encuentra, exige intervención explícita.
+   * In each cycle, checks container logs for signs of
+   * unrecoverable corruption. If found, demands explicit intervention.
    */
   async waitForPostgres(serviceName, maxAttempts = 30) {
-    const spinner = createSpinner(`Esperando a que ${serviceName} acepte conexiones...`).start();
+    const spinner = createSpinner(`Waiting for ${serviceName} to accept connections...`).start();
 
     const { success: psSuccess, out: psOut } = await runCommand(
       'docker', ['compose', 'ps', '-q', serviceName], { cwd: this.canvasDir, captureAll: true }
     );
     
     if (!psSuccess || !psOut.trim()) {
-      spinner.error({ text: `No se encontró el contenedor para el servicio ${serviceName}` });
+      spinner.error({ text: `Container not found for service ${serviceName}` });
       return false;
     }
     const containerId = psOut.trim();
 
-    let waitMs = 3000; // Empieza en 3s
-    const MAX_WAIT = 30000; // Cap en 30s
+    let waitMs = 3000; // Starts at 3s
+    const MAX_WAIT = 30000; // Caps at 30s
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      // --- Sondeo con pg_isready ---
+      // --- Polling with pg_isready ---
       const { success } = await runCommand(
         'docker', ['exec', containerId, 'pg_isready', '-U', 'postgres'],
         { cwd: this.canvasDir, timeout: 10000, captureAll: true }
       );
 
       if (success) {
-        spinner.success({ text: `${serviceName} está listo y aceptando conexiones.`, mark: '  √' });
+        spinner.success({ text: `${serviceName} is ready and accepting connections.`, mark: '  √' });
         return true;
       }
 
-      // --- Detección de corrupción en logs ---
+      // --- Corruption detection in logs ---
       const corruption = await this._detectCorruption(containerId);
       if (corruption) {
-        spinner.error({ text: `Posible corrupción detectada en ${serviceName}.` });
-        this.boot.error(`[DATA-SAFETY] Patrón detectado: ${corruption}`);
-        this.boot.action('Detenga el setup, haga backup del volumen y ejecute un runbook explícito de restore/reset.');
+        spinner.error({ text: `Possible corruption detected in ${serviceName}.` });
+        this.boot.error(`[DATA-SAFETY] Pattern detected: ${corruption}`);
+        this.boot.action('Stop the setup, backup the volume, and execute an explicit restore/reset runbook.');
         return false;
       }
 
-      // --- Backoff exponencial ---
+      // --- Exponential backoff ---
       spinner.update({
-        text: `Esperando a que ${serviceName} acepte conexiones... (intento ${attempt}/${maxAttempts}, próximo en ${(waitMs / 1000).toFixed(0)}s)`
+        text: `Waiting for ${serviceName} to accept connections... (attempt ${attempt}/${maxAttempts}, next in ${(waitMs / 1000).toFixed(0)}s)`
       });
       await new Promise(r => setTimeout(r, waitMs));
       waitMs = Math.min(waitMs * 1.5, MAX_WAIT);
     }
 
-    spinner.error({ text: `${serviceName} no respondió tras ${maxAttempts} intentos.` });
-    this.boot.error('PostgreSQL no logró aceptar conexiones. Posibles causas:');
-    this.boot.error('  - Docker tiene muy poca RAM asignada y Postgres no logra arrancar.');
-    this.boot.error('  - El volumen de datos puede estar dañado; no será eliminado automáticamente.');
+    spinner.error({ text: `${serviceName} did not respond after ${maxAttempts} attempts.` });
+    this.boot.error('PostgreSQL failed to accept connections. Possible causes:');
+    this.boot.error('  - Docker has too little RAM assigned and Postgres fails to start.');
+    this.boot.error('  - The data volume may be corrupted; it will not be deleted automatically.');
     return false;
   }
 
   /**
-   * Lee los últimos logs del contenedor de Postgres y busca patrones
-   * de corrupción irrecuperable (PANIC, FATAL con checkpoint, WAL corruption).
+   * Reads the latest Postgres container logs and looks for patterns
+   * of unrecoverable corruption (PANIC, FATAL with checkpoint, WAL corruption).
    */
   async _detectCorruption(containerId) {
     const { success, out } = await runCommand(
@@ -150,14 +150,14 @@ export class DatabaseHealth {
 
   async checkMigrations() {
     const { createSpinner } = await import('nanospinner');
-    const spinner = createSpinner('Verificando estructura de la base de datos (iniciando Rails Runner)...').start();
+    const spinner = createSpinner('Checking database structure (starting Rails Runner)...').start();
     const script = "ActiveRecord::Base.connection.table_exists?('accounts') ? exit(0) : exit(1)";
     const { success } = await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: this.canvasDir });
     
     if (success) {
-      spinner.success({ text: 'Estructura de la base de datos verificada correctamente.', mark: '  √' });
+      spinner.success({ text: 'Database structure successfully verified.', mark: '  √' });
     } else {
-      spinner.warn({ text: 'La base de datos no está inicializada o faltan tablas.', mark: '  !' });
+      spinner.warn({ text: 'Database is not initialized or tables are missing.', mark: '  !' });
     }
     return success;
   }
@@ -165,7 +165,7 @@ export class DatabaseHealth {
   async runMigrations() {
     const { spawn } = await import('node:child_process');
     const { TailBuffer } = await import('./utils/Runner.js');
-    const spinner = createSpinner('Ejecutando db:create db:migrate...').start();
+    const spinner = createSpinner('Running db:create db:migrate...').start();
     
     return new Promise((resolve) => {
       const child = spawn('docker', ['compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'], {
@@ -179,17 +179,17 @@ export class DatabaseHealth {
 
       child.on('close', (code) => {
         if (code === 0) {
-          spinner.success({ text: 'Migraciones completadas exitosamente.', mark: '  √' });
+          spinner.success({ text: 'Migrations successfully completed.', mark: '  √' });
           resolve(true);
         } else {
-          spinner.error({ text: `Falló la ejecución de las migraciones (código ${code})`, mark: '  X' });
-          this.boot.error(`Código de salida ${code}. Últimas líneas:\n${tailLines.toString()}`);
+          spinner.error({ text: `Migration execution failed (code ${code})`, mark: '  X' });
+          this.boot.error(`Exit code ${code}. Last lines:\n${tailLines.toString()}`);
           resolve(false);
         }
       });
       
       child.on('error', (err) => {
-        spinner.error({ text: 'Fallo al invocar el proceso docker compose', mark: '  !' });
+        spinner.error({ text: 'Failed to invoke docker compose process', mark: '  !' });
         this.boot.error(err.message);
         resolve(false);
       });

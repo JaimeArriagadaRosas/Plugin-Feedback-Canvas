@@ -18,24 +18,24 @@ export class DataSeeder {
 
   async seedData() {
     this.boot.plain('');
-    this.boot.plain('--- Inicializando datos de prueba en Canvas LMS ---');
+    this.boot.plain('--- Initializing test data in Canvas LMS ---');
     const runnerFile = path.join(this.pluginDir, 'tools', 'canvas-local', 'seeds', 'runner.rb');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(runnerFile)) {
-      this.boot.error(`No se encontro el script de semilla principal: ${runnerFile}`);
+      this.boot.error(`Could not find the main seed script: ${runnerFile}`);
       return false;
     }
     if (!(await this._copySeedFiles())) return false;
 
-    const spinner = createSpinner('Inyectando datos de prueba (puede tardar varios minutos)...').start();
+    const spinner = createSpinner('Injecting test data (this may take several minutes)...').start();
     return new Promise((resolve) => {
       const child = this.spawnProcess('docker', [
         'compose', 'exec', '-i', 'web', 'bundle', 'exec', 'rails', 'runner', '/tmp/seeds/runner.rb'
       ], { cwd: this.canvasDir, stdio: ['pipe', 'pipe', 'pipe'] });
       const tailLines = new TailBuffer(50);
       const timeoutId = setTimeout(() => {
-        spinner.error({ text: 'Tiempo de espera agotado al inyectar datos (10 min).' });
-        this.boot.error('El subproceso se colgo o fallo silenciosamente. Abortando.');
+        spinner.error({ text: 'Timeout exceeded while injecting data (10 min).' });
+        this.boot.error('The subprocess hung or failed silently. Aborting.');
         child.kill('SIGKILL');
         resolve(false);
       }, 600000);
@@ -45,38 +45,38 @@ export class DataSeeder {
       child.on('close', (code) => this._finishSeed(code, spinner, tailLines, timeoutId, resolve));
       child.on('error', (error) => {
         clearTimeout(timeoutId);
-        spinner.error({ text: 'Fallo al iniciar inyeccion de datos.' });
-        this.boot.error(`Error al iniciar docker compose: ${error.message}`);
+        spinner.error({ text: 'Failed to start data injection.' });
+        this.boot.error(`Error starting docker compose: ${error.message}`);
         resolve(false);
       });
     });
   }
 
   async _copySeedFiles() {
-    this.boot.info('Copiando directorio de semillas al contenedor Canvas...');
+    this.boot.info('Copying seeds directory to the Canvas container...');
     const seedsDir = path.join(this.pluginDir, 'tools', 'canvas-local', 'seeds');
     const result = await this.runner('docker', ['compose', 'cp', seedsDir, 'web:/tmp/seeds'], {
       cwd: this.canvasDir
     });
     if (result.success) return true;
-    this.boot.error(`No se pudo copiar el directorio de semillas al contenedor: ${result.err}`);
+    this.boot.error(`Could not copy the seeds directory to the container: ${result.err}`);
     return false;
   }
 
   _finishSeed(code, spinner, tailLines, timeoutId, resolve) {
     clearTimeout(timeoutId);
     if (code !== 0) {
-      spinner.error({ text: 'Error al ejecutar el script de semilla.', mark: '  ×' });
-      this.boot.error(`Código de salida ${code}. Últimas líneas:\n${tailLines.toString()}`);
+      spinner.error({ text: 'Error executing the seed script.', mark: '  ×' });
+      this.boot.error(`Exit code ${code}. Last lines:\n${tailLines.toString()}`);
       resolve(false);
       return;
     }
-    spinner.success({ text: 'Base de datos poblada exitosamente.', mark: '  √' });
+    spinner.success({ text: 'Database populated successfully.', mark: '  √' });
     this.synchronizeLocalToken().then(() => resolve(true)).catch(() => resolve(true));
   }
 
   async synchronizeLocalToken() {
-    this.boot.info('Extrayendo perfiles y tokens completos desde el contenedor de Canvas...');
+    this.boot.info('Extracting complete profiles and tokens from the Canvas container...');
     const { success, out } = await this.runner('docker', [
       'compose', 'exec', '-T', 'web', 'cat', '/usr/src/app/tmp/perfiles_data.json'
     ], { cwd: this.canvasDir, captureAll: true });
@@ -89,14 +89,14 @@ export class DataSeeder {
       if (!fs.existsSync(path.dirname(localPath))) fs.mkdirSync(path.dirname(localPath), { recursive: true });
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.writeFileSync(localPath, JSON.stringify(perfiles, null, 2));
-      this.boot.info(`Usuarios y tokens exportados a ${localPath}`);
+      this.boot.info(`Users and tokens exported to ${localPath}`);
 
       const teacher = perfiles.usuarios?.find((user) => user.rol === 'teacher');
       if (teacher?.token) this._writeTokenToEnv(teacher.token);
-      else this.boot.warn('No se encontro token de profesor en perfiles_data.json');
+      else this.boot.warn('Could not find teacher token in perfiles_data.json');
       await this._migrateAndSyncUsers(localPath);
     } catch (error) {
-      this.boot.warn(`Error parseando perfiles_data.json: ${error.message}`);
+      this.boot.warn(`Error parsing perfiles_data.json: ${error.message}`);
     }
   }
 
@@ -104,20 +104,20 @@ export class DataSeeder {
     try {
       const { runMigrations } = await import('@plugin-feedback/plugin-database');
       await runMigrations();
-      this.boot.info('Migraciones incrementales aplicadas localmente antes del seed.');
+      this.boot.info('Incremental migrations applied locally before seeding.');
     } catch (error) {
-      this.boot.warn(`Error ejecutando migraciones pre-seed: ${error.message}`);
+      this.boot.warn(`Error executing pre-seed migrations: ${error.message}`);
     }
 
     const seedPath = path.join(this.pluginDir, 'packages', 'plugin-database', 'seeds', 'seedLocalUsers.js');
     const result = await this.runner('node', [seedPath, localPath], { cwd: this.pluginDir });
     if (result.success) {
-      this.boot.info('Usuarios locales sincronizados con exito en la BD PostgreSQL del plugin.');
+      this.boot.info('Local users successfully synchronized in the plugin\'s PostgreSQL DB.');
       return;
     }
     const output = (result.out || result.err || '').split('\n')
       .filter((line) => line.trim().length > 0).slice(-3).join('\n    ');
-    this.boot.error(`Error al sincronizar usuarios locales en la BD PostgreSQL del plugin:\n    ${output}`);
+    this.boot.error(`Error synchronizing local users in the plugin\'s PostgreSQL DB:\n    ${output}`);
   }
 
   _writeTokenToEnv(token) {
@@ -133,6 +133,6 @@ export class DataSeeder {
 
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.writeFileSync(this.envFile, `${lines.join('\n').replace(/\n+$/, '')}\n`);
-    this.boot.info('CANVAS_ACCESS_TOKEN actualizado en .env correctamente.');
+    this.boot.info('CANVAS_ACCESS_TOKEN successfully updated in .env.');
   }
 }

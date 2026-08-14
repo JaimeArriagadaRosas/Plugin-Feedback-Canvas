@@ -11,8 +11,8 @@ export default class StudentEntryProfileResolver extends BaseVariableResolver {
     if (!student || !student.id) return '';
 
     try {
-      // Simulación de llamada a la base de datos de admisión de la universidad.
-      // Comportamiento Fallback: si no hay datos, retornamos string vacío (se ignora en el prompt).
+      // Simulation of call to the university admissions database.
+      // Fallback behavior: if there is no data, return empty string (ignored in the prompt).
       const mockAdmissionsData = await this._fetchMockData(student.id);
       
       if (!mockAdmissionsData) {
@@ -21,35 +21,35 @@ export default class StudentEntryProfileResolver extends BaseVariableResolver {
 
       const { isFirstGeneration, highSchoolType } = mockAdmissionsData;
 
-      let description = 'El estudiante proviene de un establecimiento educativo de tipo ' + (highSchoolType || 'particular') + '.';
+      let description = 'The student comes from a ' + (highSchoolType || 'private') + ' high school.';
       if (isFirstGeneration) {
-        description += ' Además, es primera generación en la educación superior en su familia.';
+        description += ' Additionally, they are first-generation in higher education in their family.';
       }
 
       return this.sanitize(description);
 
     } catch (err) {
-      logger.error(`[StudentEntryProfileResolver] Error resolviendo variable para ${student.id}: ${err.message}`);
-      return ''; // Fallback silencioso
+      logger.error(`[StudentEntryProfileResolver] Error resolving variable for ${student.id}: ${err.message}`);
+      return ''; // Silent fallback
     }
   }
 
   async _fetchMockData(studentId) {
-    // Simular latencia de red
+    // Simulate network latency
     return new Promise(resolve => {
       setTimeout(() => {
-        // En producción, aquí se haría un fetch() al API real de admisión.
-        // Simularemos algunos casos según el último dígito del studentId.
+        // In production, a fetch() to the real admissions API would be made here.
+        // We will simulate some cases according to the last digit of studentId.
         const idLastDigit = parseInt(String(studentId).slice(-1), 10);
         
         if (isNaN(idLastDigit) || idLastDigit % 4 === 0) {
-           return resolve(null); // Caso sin datos (Fallback test)
+           return resolve(null); // Case without data (Fallback test)
         }
 
         resolve({
           studentId,
           isFirstGeneration: (idLastDigit % 2 === 0),
-          highSchoolType: (idLastDigit <= 3) ? 'público' : 'subvencionado'
+          highSchoolType: (idLastDigit <= 3) ? 'public' : 'subsidized'
         });
       }, 100);
     });

@@ -22,8 +22,8 @@ afterEach(() => {
   while (temporaryDirectories.length) fs.rmSync(temporaryDirectories.pop(), { recursive: true, force: true });
 });
 
-describe('seguridad de setup', () => {
-  it('copia semillas de Canvas sin interpolar rutas en un shell', async () => {
+describe('setup safety', () => {
+  it('copies Canvas seeds without interpolating paths in a shell', async () => {
     const runner = vi.fn().mockResolvedValue({ success: true, err: '' });
     const seeder = new DataSeeder(createBootLog(), '/plugin path', '/canvas path', { runner });
 
@@ -33,7 +33,7 @@ describe('seguridad de setup', () => {
     ], { cwd: '/canvas path' });
   });
 
-  it('detiene el seed antes de ejecutar Rails si no puede copiar los archivos', async () => {
+  it('stops the seed before executing Rails if it cannot copy the files', async () => {
     const runner = vi.fn().mockResolvedValue({ success: false, err: 'copy denied' });
     const boot = createBootLog();
     const seeder = new DataSeeder(boot, '/plugin', '/canvas', { runner });
@@ -42,7 +42,7 @@ describe('seguridad de setup', () => {
     expect(boot.error).toHaveBeenCalledWith(expect.stringContaining('copy denied'));
   });
 
-  it('no ejecuta npm install cuando falta Playwright', () => {
+  it('does not run npm install when Playwright is missing', () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dependency-check-'));
     temporaryDirectories.push(directory);
     fs.writeFileSync(path.join(directory, 'package.json'), '{}');

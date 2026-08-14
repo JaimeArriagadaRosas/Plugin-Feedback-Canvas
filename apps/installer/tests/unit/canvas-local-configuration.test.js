@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe('CanvasLocalConfiguration', () => {
-  it('solo crea configuracion ausente y conserva la configuracion local existente', () => {
+  it('only creates missing configuration and preserves existing local configuration', () => {
     const canvasDir = createCanvasDirectory();
     const configDir = path.join(canvasDir, 'config');
     fs.writeFileSync(path.join(configDir, 'database.yml'), 'development:\n  host: custom-db\n');
@@ -51,7 +51,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(override.volumes).toMatchObject({ 'canvas-log': null, 'canvas-tmp': null });
   });
 
-  it('no reemplaza un override que no puede interpretar', () => {
+  it('does not replace an override it cannot interpret', () => {
     const canvasDir = createCanvasDirectory();
     const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
     fs.writeFileSync(overrideFile, 'services: [invalid');
@@ -63,7 +63,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(boot.warn).toHaveBeenCalledOnce();
   });
 
-  it('conserva la clave de cifrado existente y la comparte con jobs', () => {
+  it('preserves the existing encryption key and shares it with jobs', () => {
     const canvasDir = createCanvasDirectory();
     const key = 'a'.repeat(64);
     fs.writeFileSync(path.join(canvasDir, 'docker-compose.override.yml'), yaml.dump({
@@ -77,7 +77,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(override.services.jobs.environment.ENCRYPTION_KEY).toBe(key);
   });
 
-  it('prefiere las plantillas Docker oficiales y reemplaza solo una copia intacta del ejemplo', () => {
+  it('prefers official Docker templates and only replaces an intact copy of the example', () => {
     const canvasDir = createCanvasDirectory();
     const configDir = path.join(canvasDir, 'config');
     const dockerConfigDir = path.join(canvasDir, 'docker-compose', 'config');

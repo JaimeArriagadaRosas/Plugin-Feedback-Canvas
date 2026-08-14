@@ -12,7 +12,7 @@ export default class SystemNotificationRepository {
       const result = await db.query(query, [profesorId, tipoError, detalle, JSON.stringify(contexto)]);
       return result.rows[0];
     } catch (error) {
-      logger.error('[SystemNotificationRepository] Error guardando notificación', { error: error.message });
+      logger.error('[SystemNotificationRepository] Error saving notification', { error: error.message });
       throw error;
     }
   }
@@ -28,7 +28,7 @@ export default class SystemNotificationRepository {
       const result = await db.query(query, [profesorId]);
       return result.rows; // [{ tipo_error: 'CANVAS_CONNECTION_FAILED', cantidad: 2 }, ...]
     } catch (error) {
-      logger.error('[SystemNotificationRepository] Error obteniendo pendientes', { error: error.message });
+      logger.error('[SystemNotificationRepository] Error getting pending', { error: error.message });
       return [];
     }
   }
@@ -43,15 +43,15 @@ export default class SystemNotificationRepository {
       await db.query(query, [profesorId, tipoError]);
       return true;
     } catch (error) {
-      logger.error('[SystemNotificationRepository] Error limpiando pendientes', { error: error.message });
+      logger.error('[SystemNotificationRepository] Error clearing pending', { error: error.message });
       throw error;
     }
   }
 
   async getForCourse(profesorId, courseId) {
     try {
-      // Si el contexto incluye el courseId, se podría filtrar, 
-      // pero para simplificar traeremos todas las notificaciones de ese profe
+      // If the context includes the courseId, it could be filtered, 
+      // but to simplify we will fetch all notifications for that teacher
       const query = `
         SELECT *
         FROM Notificaciones_Sistema
@@ -61,7 +61,7 @@ export default class SystemNotificationRepository {
       const result = await db.query(query, [profesorId]);
       return result.rows;
     } catch (error) {
-      logger.error('[SystemNotificationRepository] Error obteniendo historial', { error: error.message });
+      logger.error('[SystemNotificationRepository] Error getting history', { error: error.message });
       return [];
     }
   }

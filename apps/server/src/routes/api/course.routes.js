@@ -6,7 +6,7 @@ import logger from '../../utils/logger.js';
 export function createCourseRoutes(courseCtrl, fileCtrl, canvasOAuth) {
   const router = express.Router();
 
-  router.use(canvasOAuth); // Canvas OAuth es requerido para estas rutas
+  router.use(canvasOAuth); // Canvas OAuth is required for these routes
 
   router.get('/', authorizeRole(['teacher']), handleValidationErrors, (req, res, next) => {
     logger.debug('GET /courses', { user: req.appIdentity?.canonicalUserId });
@@ -38,7 +38,7 @@ export function createCourseRoutes(courseCtrl, fileCtrl, canvasOAuth) {
     courseCtrl.togglePlugin(req, res, next);
   });
 
-  // Ruta de utilería vinculada a cursos (file preview)
+  // Utility route linked to courses (file preview)
   router.get('/file/preview', authorizeRole(['teacher']), handleValidationErrors, (req, res, next) => {
     fileCtrl.preview(req, res, next);
   });

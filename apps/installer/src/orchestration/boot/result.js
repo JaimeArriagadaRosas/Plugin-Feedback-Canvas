@@ -1,19 +1,19 @@
 /**
- * BootResult — Tipo de resultado uniforme para cada verificación/etapa.
+ * BootResult — Uniform result type for each verification/stage.
  *
- * Centraliza el modelo de "éxito / advertencia / fallo" y la capacidad de
- * auto-corrección y degradación, de modo que el orquestador (main.js) pueda
- * tomar decisiones de forma declarativa en lugar de mirar banderas dispersas.
+ * Centralizes the 'success / warning / failure' model and the ability
+ * to auto-correct and degrade, so that the orchestrator (main.js) can
+ * make declarative decisions instead of looking at scattered flags.
  */
 export class BootResult {
   constructor({ ok, critical = false, message = '', fix = '', autoFixed = false, data = {}, degraded = false }) {
-    this.ok = ok;            // ¿la etapa pasó o se corrigió?
-    this.critical = critical; // ¿detiene el arranque si falla?
-    this.degraded = degraded; // pasó pero con funcionalidad reducida (no bloquea)
-    this.message = message;   // mensaje legible del resultado
-    this.fix = fix;           // instrucción para el usuario si falla
-    this.autoFixed = autoFixed; // el orquestador corrigió automáticamente
-    this.data = data;         // datos derivados (rutas, versiones, ids, etc.)
+    this.ok = ok;            // did the stage pass or was it fixed?
+    this.critical = critical; // does it stop the boot if it fails?
+    this.degraded = degraded; // passed but with reduced functionality (does not block)
+    this.message = message;   // readable result message
+    this.fix = fix;           // instruction for the user if it fails
+    this.autoFixed = autoFixed; // the orchestrator fixed it automatically
+    this.data = data;         // derived data (paths, versions, ids, etc.)
   }
 
   static ok(data = {}, message = '')  { return new BootResult({ ok: true, data, message }); }

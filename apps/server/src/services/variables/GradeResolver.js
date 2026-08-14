@@ -3,7 +3,7 @@ import { DomainError } from '../../utils/errors.js';
 
 /**
  * GradeResolver
- * TODO (Deuda Técnica): Las variables matemáticas asumen una escala chilena al 60% por defecto. Referencia: docs/TECHNICAL_DEBT.md
+ * TODO (Technical Debt): Math variables assume a 60% Chilean scale by default. Reference: docs/TECHNICAL_DEBT.md
  */
 export default class GradeResolver extends BaseVariableResolver {
   constructor() {
@@ -13,26 +13,26 @@ export default class GradeResolver extends BaseVariableResolver {
   async resolve(context) {
     const { currentGrade, submission } = context;
 
-    // Plan A: Nota explícita (convertida a texto semántico)
+    // Plan A: Explicit grade (converted to semantic text)
     if (currentGrade !== undefined && currentGrade !== null) {
       const parsedGrade = parseFloat(currentGrade);
       if (!isNaN(parsedGrade)) {
-        return this.sanitize(`una nota de ${parsedGrade.toFixed(1)}`);
+        return this.sanitize(`a grade of ${parsedGrade.toFixed(1)}`);
       }
     }
 
-    // Plan B: Puntaje de la tarea
+    // Plan B: Assignment score
     const rawScore = submission?.score ?? submission?.entered_score ?? submission?.unposted_score;
     if (submission && rawScore !== undefined && rawScore !== null) {
       const parsedScore = parseFloat(rawScore);
       if (!isNaN(parsedScore)) {
         const possible = submission.assignment?.points_possible || 100;
         const formattedScore = Number(parsedScore.toFixed(1));
-        return this.sanitize(`un puntaje de ${formattedScore} sobre ${possible}`);
+        return this.sanitize(`a score of ${formattedScore} out of ${possible}`);
       }
     }
 
-    // Plan C: Sin nota ni puntaje -> Bloquear
-    throw new DomainError('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada.', 422);
+    // Plan C: No grade or score -> Block
+    throw new DomainError('Feedback cannot be generated because the submission has no assigned score or grade.', 422);
   }
 }

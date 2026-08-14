@@ -22,13 +22,13 @@ export default function TemplateEditor({ template, onSave, onClose }) {
   const handleSave = useCallback(
     async (e) => {
       if (!editor.name?.trim()) {
-        setToast({ message: "La plantilla debe tener un nombre.", type: "error" });
+        setToast({ message: "The template must have a name.", type: "error" });
         return;
       }
       
       const { alto, medio, bajo } = editor.content;
       if (!alto?.trim() || !medio?.trim() || !bajo?.trim()) {
-        setToast({ message: "No puedes guardar una plantilla con un rango en blanco. Completa el rango Alto, Medio y Bajo.", type: "error" });
+        setToast({ message: "You cannot save a template with a blank range. Complete the High, Medium, and Low ranges.", type: "error" });
         return;
       }
 
@@ -52,7 +52,7 @@ export default function TemplateEditor({ template, onSave, onClose }) {
 
   const handleDelete = useCallback(
     async (e) => {
-      await logDelete('TEMPLATE_EDITOR_DELETE', () => setToast({ message: "Función de borrado protegida", type: "info" }))(e);
+      await logDelete('TEMPLATE_EDITOR_DELETE', () => setToast({ message: "Delete function is protected", type: "info" }))(e);
     },
     [logDelete]
   );
@@ -61,25 +61,25 @@ export default function TemplateEditor({ template, onSave, onClose }) {
     <div className={styles.wrapper}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          {template ? "MODIFICAR PLANTILLA DE FEEDBACK" : "CREAR NUEVA PLANTILLA DE FEEDBACK"}
+          {template ? "EDIT FEEDBACK TEMPLATE" : "CREATE NEW FEEDBACK TEMPLATE"}
         </h1>
         <div className={styles.breadcrumb}>
-          <span>GESTIÓN PLANTILLAS</span>
+          <span>TEMPLATE MANAGEMENT</span>
           <span>/</span>
-          <span className={styles.breadcrumbActive}>{template ? "EDITAR" : "NUEVA"}</span>
+          <span className={styles.breadcrumbActive}>{template ? "EDIT" : "NEW"}</span>
         </div>
       </header>
 
       <main className={styles.main}>
         <section className={styles.leftCol}>
-          <Card title="⚙️ CONFIGURACIÓN BÁSICA">
+          <Card title="⚙️ BASIC SETTINGS">
             <TemplateForm
               name={editor.name}
               setName={editor.setName}
             />
           </Card>
 
-          <Card title="👁️ VISTA PREVIA (LOCAL)">
+          <Card title="👁️ LIVE PREVIEW (LOCAL)">
             <LivePreview text={editor.preview} />
           </Card>
         </section>
@@ -88,8 +88,8 @@ export default function TemplateEditor({ template, onSave, onClose }) {
           <Card
             title={
               <>
-                <span>✍️ EDITOR DE TEXTO INTEGRADO</span>
-                <span style={{ fontSize: 11, fontWeight: 'normal', color: '#718096' }}>Soporta Markdown Básico</span>
+                <span>✍️ INTEGRATED TEXT EDITOR</span>
+                <span style={{ fontSize: 11, fontWeight: 'normal', color: '#718096' }}>Supports Basic Markdown</span>
               </>
             }
           >
@@ -101,28 +101,28 @@ export default function TemplateEditor({ template, onSave, onClose }) {
               <button 
                 onClick={() => editor.setCurrentTab('alto')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'alto' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'alto' ? 'bold' : 'normal' }}
-              >Rango Alto</button>
+              >High Range</button>
               <button 
                 onClick={() => editor.setCurrentTab('medio')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'medio' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'medio' ? 'bold' : 'normal' }}
-              >Rango Medio</button>
+              >Medium Range</button>
               <button 
                 onClick={() => editor.setCurrentTab('bajo')}
                 style={{ padding: '8px 16px', border: 'none', background: editor.currentTab === 'bajo' ? '#e2e8f0' : 'transparent', cursor: 'pointer', fontWeight: editor.currentTab === 'bajo' ? 'bold' : 'normal' }}
-              >Rango Bajo</button>
+              >Low Range</button>
             </div>
             <textarea
               ref={editor.editorRef}
               className={styles.editor}
               value={editor.content[editor.currentTab] || ""}
               onChange={(e) => editor.setContent(e.target.value)}
-              placeholder="Escribe tu plantilla aquí..."
+              placeholder="Write your template here..."
             />
           </Card>
 
-          <Card title="🧩 VARIABLES DINÁMICAS">
+          <Card title="🧩 DYNAMIC VARIABLES">
             <p className={styles.variableHint}>
-              Inserta estas etiquetas para que la IA las reemplace con datos reales del curso:
+              Insert these tags so the AI replaces them with real course data:
             </p>
             <VariableInserter onInsert={editor.insertVariable} />
           </Card>

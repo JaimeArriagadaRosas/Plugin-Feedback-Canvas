@@ -78,8 +78,8 @@ describe('Políticas Docker por plataforma', () => {
 
   it('WSL detecta el cliente heredado de Windows y evita instalar un segundo Engine', () => {
     const guidance = createDockerPolicy(wslHost).daemon({ cliOrigin: 'windows-interop' });
-    expect(guidance.action).toContain('habilite la integración');
-    expect(guidance.action).toContain('no instale un segundo Engine automáticamente');
+    expect(guidance.action).toContain('enable integration');
+    expect(guidance.action).toContain('do not install a second Engine automatically');
   });
 });
 

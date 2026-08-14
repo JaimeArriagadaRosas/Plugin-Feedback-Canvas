@@ -15,7 +15,7 @@ export default function GradeInput({ grade, maxPoints, onChange, className = '' 
 
   return (
     <div className={`${styles.wrapper} ${className}`}>
-      <label className={styles.label}>Calificación</label>
+      <label className={styles.label}>Grade</label>
       <div className={styles.row}>
         <Input
           type="number"
@@ -26,7 +26,7 @@ export default function GradeInput({ grade, maxPoints, onChange, className = '' 
         />
         <span className={styles.max}>/ {maxPoints}</span>
       </div>
-      <span className={styles.hint}>Sincronizado con Canvas</span>
+      <span className={styles.hint}>Synchronized with Canvas</span>
     </div>
   );
 }

@@ -1,16 +1,16 @@
 import pc from 'picocolors';
 
 /**
- * BootLogger — Sistema de salida jerárquico y consistente para el arranque.
+ * BootLogger — Hierarchical and consistent output system for booting.
  *
- * Responsabilidades (SRP):
- *  - Emitir mensajes con nivel semántico (info, progress, success, warn,
- *    error, auto = acción automática, action = acción requerida por el usuario).
- *  - Agrupar la salida por "etapa" (stage) de forma visual y colapsable.
- *  - Evitar spam mediante un caché de deduplicación de líneas idénticas.
+ * Responsibilities (SRP):
+ *  - Emit messages with semantic level (info, progress, success, warn,
+ *    error, auto = automatic action, action = user required action).
+ *  - Group the output by 'stage' visually and collapsibly.
+ *  - Avoid spam through a deduplication cache of identical lines.
  *
- * No toma decisiones de negocio: solo presenta. La lógica de verificación
- * vive en los módulos check/*.
+ * Does not make business decisions: only presents. The verification logic
+ * lives in the check/* modules.
  */
 
 const LEVELS = {
@@ -18,9 +18,9 @@ const LEVELS = {
   progress: { tag: pc.blue('…'),  plain: '.... ' },
   success:  { tag: pc.green('√'),  plain: 'OK   ' },
   warn:     { tag: pc.yellow('!'),  plain: 'WARN ' },
-  error:    { tag: pc.red('!'),  plain: 'ERROR' }, // Error unificado a admiración roja
+  error:    { tag: pc.red('!'),  plain: 'ERROR' }, // Error unified to red exclamation
   auto:     { tag: pc.cyan('·'), plain: 'AUTO ' },
-  action:   { tag: pc.cyan('·') + pc.yellow(' Guía:'), plain: 'ACTION' },
+  action:   { tag: pc.cyan('·') + pc.yellow(' Guide:'), plain: 'ACTION' },
 };
 
 const STAGE_COLORS = [
@@ -77,13 +77,13 @@ export class BootLogger {
   error(msg, opts)    { this.log('error', msg, opts); }
   debug(msg, opts)    { if (this.verbosity === 'debug') this.log('info', pc.gray(msg), opts); }
 
-  /** Acción realizada automáticamente por el orquestador para corregir. */
+  /** Action performed automatically by the orchestrator to fix. */
   auto(msg, opts) { this.log('auto', msg, opts); }
 
-  /** Acción que el usuario debe realizar manualmente. */
+  /** Action that the user must perform manually. */
   action(msg, opts) { this.log('action', msg, opts); }
 
-  /** Inicia una etapa visual (línea de cabecera + nivel de indentación). */
+  /** Starts a visual stage (header line + indentation level). */
   stage(name) {
     this.stageStack.push(name);
     const color = STAGE_COLORS[this.stageIndex % STAGE_COLORS.length];
@@ -97,7 +97,7 @@ export class BootLogger {
     this.stageStack.pop();
   }
 
-  /** Ejecuta fn dentro de una etapa y la cierra siempre (éxito o error). */
+  /** Executes fn within a stage and always closes it (success or error). */
   async withStage(name, fn) {
     this.stage(name);
     try {

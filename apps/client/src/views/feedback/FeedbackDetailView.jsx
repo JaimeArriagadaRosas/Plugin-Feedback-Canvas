@@ -23,11 +23,11 @@ export default function FeedbackDetailView({ feedback, onBack }) {
   return (
     <RequirePermission 
       permission="view_feedback" 
-      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Functionality disabled by the administrator.</h2></div>}
     >
       <div className={styles.wrapper}>
         <header className={styles.header}>
-        <h1 className={styles.title}>VISTA DETALLADA DEL FEEDBACK</h1>
+        <h1 className={styles.title}>DETAILED FEEDBACK VIEW</h1>
       </header>
 
       <main className={styles.main}>
@@ -45,12 +45,12 @@ export default function FeedbackDetailView({ feedback, onBack }) {
       </main>
 
       <footer style={{ background: "#eee", padding: "10px 30px", fontSize: 12, borderTop: "1px solid #ddd" }}>
-        Visualizando feedback de {feedback?.student ?? 'Estudiante'} (ID: {feedback?.studentId ?? '-'}). Datos sincronizados de la base de datos local y Canvas API.
+        Viewing feedback for {feedback?.student ?? 'Student'} (ID: {feedback?.studentId ?? '-'}). Data synchronized from the local database and Canvas API.
       </footer>
       {showConfirm && (
         <ConfirmDialog
-          title="Confirmar Publicación"
-          message="El feedback será publicado en SpeedGrader y el alumno será notificado. Esta acción no se puede deshacer. ¿Deseas continuar?"
+          title="Confirm Publication"
+          message="The feedback will be published to SpeedGrader and the student will be notified. This action cannot be undone. Do you wish to continue?"
           onConfirm={handleApprove}
           onCancel={() => setShowConfirm(false)}
         />

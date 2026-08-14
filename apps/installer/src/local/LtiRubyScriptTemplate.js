@@ -12,7 +12,7 @@ const LTI_CONFIGURATION_SCRIPT = `
     end
 
     key = DeveloperKey.where(name: 'Plugin Feedback LTI').first_or_initialize
-    key.email = 'soporte@pluginfeedback.local'
+    key.email = 'support@pluginfeedback.local'
     key.workflow_state = 'active'
     key.vendor_code = 'pluginfeedback'
     key.visible = true
@@ -45,7 +45,7 @@ const LTI_CONFIGURATION_SCRIPT = `
     tool_config = key.tool_configuration || key.build_tool_configuration
     tool_config.settings = nil if tool_config.respond_to?(:settings=)
     tool_config.title = 'Feedback'
-    tool_config.description = 'Provee encuestas y feedback sobre la experiencia del curso'
+    tool_config.description = 'Provides surveys and feedback on the course experience'
     tool_config.target_link_uri = "#{plugin_url}/api/lti/callback"
     tool_config.public_jwk_url = "#{internal_plugin_url}/api/lti/jwks"
     tool_config.oidc_initiation_url = "#{plugin_url}/api/lti/login"
@@ -85,7 +85,7 @@ const LTI_CONFIGURATION_SCRIPT = `
 
     tool = ContextExternalTool.where(context_id: account.id, context_type: 'Account', developer_key_id: key.id).first_or_initialize
     tool.name = "Feedback"
-    tool.description = "Provee encuestas y feedback sobre la experiencia del curso"
+    tool.description = "Provides surveys and feedback on the course experience"
     tool.consumer_key = "Oauth2"
     tool.shared_secret = "secret"
     tool.workflow_state = 'public'

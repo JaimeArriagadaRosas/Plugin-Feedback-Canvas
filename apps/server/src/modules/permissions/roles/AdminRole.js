@@ -10,7 +10,7 @@ export default class AdminRole extends BaseRole {
       config_llm: true
     };
 
-    // Al admin no se le pueden quitar permisos globalmente desde la UI para evitar lock-out
+    // Admin cannot have permissions removed globally from UI to prevent lock-out
     this.mutablePermissions = [];
   }
 }

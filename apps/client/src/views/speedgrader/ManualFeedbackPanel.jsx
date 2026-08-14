@@ -3,7 +3,7 @@ import Button from '../../components/atoms/Button';
 import aiStyles from './SpeedGraderAIPanel.module.css';
 import actionStyles from './FeedbackGenerator.module.css';
 import TextToolbar from '../../components/molecules/TextToolbar';
-import LivePreview from '../plantillas/editor/LivePreview';
+import LivePreview from '../templates/editor/LivePreview';
 
 export default function ManualFeedbackPanel({ 
   onSubmit, 
@@ -44,7 +44,7 @@ export default function ManualFeedbackPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1 }}>
       <section className={aiStyles.feedbackAdaptivePanel} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '200px' }}>
         <div className={aiStyles.feedbackAdaptiveHeader}>
-          FEEDBACK MANUAL
+          MANUAL FEEDBACK
         </div>
         <div className={aiStyles.feedbackAdaptiveBody} style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <TextToolbar
@@ -55,7 +55,7 @@ export default function ManualFeedbackPanel({
             ref={editorRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Escribe el feedback para el estudiante aquí..."
+            placeholder="Write feedback for the student here..."
             disabled={loading}
             style={{
               flex: 1,
@@ -86,7 +86,7 @@ export default function ManualFeedbackPanel({
         disabled={loading || !text.trim()}
         className={actionStyles.action}
       >
-        {loading ? "GUARDANDO..." : "GUARDAR"}
+        {loading ? "SAVING..." : "SAVE"}
       </Button>
     </div>
   );

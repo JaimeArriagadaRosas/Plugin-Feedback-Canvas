@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { localEnvSchema } from '../src/config/localEnvironmentSchema.js';
 
-describe('Suite de Validación LTI y Entorno (Vitest)', () => {
-  it('Debería definir el esquema local crítico sin depender de un .env preexistente', () => {
+describe('LTI and Environment Validation Suite (Vitest)', () => {
+  it('Should define the critical local schema without depending on a preexisting .env', () => {
     expect(localEnvSchema).toMatchObject({
       PORT: { type: 'input' },
       DATABASE_URL: { type: 'input' },
@@ -17,14 +17,14 @@ describe('Suite de Validación LTI y Entorno (Vitest)', () => {
     }
   });
 
-  it('Debería verificar que el sistema criptográfico tiene soporte', () => {
-    // Si bien no instanciamos la BBDD, validamos que la lógica está presente
+  it('Should verify that the cryptographic system has support', () => {
+    // Although we do not instantiate the DB, we validate that the logic is present
     const cryptoSupport = typeof crypto !== 'undefined';
     expect(cryptoSupport).toBe(true);
   });
   
-  it('Debería definir la estructura correcta del servidor Express', () => {
-    // A medida que importemos routers aquí, validaremos que no crasheen por sintaxis.
-    expect(true).toBe(true); // Placeholder para tests de controllers
+  it('Should define the correct structure of the Express server', () => {
+    // As we import routers here, we will validate that they do not crash due to syntax.
+    expect(true).toBe(true); // Placeholder for controller tests
   });
 });

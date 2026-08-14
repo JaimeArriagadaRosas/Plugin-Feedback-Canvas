@@ -63,7 +63,7 @@ export default function UserMenu({ mode = 'fixed' }) {
       >
         <button
           onClick={toggleMenu}
-          title="MenÃº de opciones"
+          title="Options Menu"
           style={{
             background: '#ffffff',
             color: '#2d3b45',
@@ -108,7 +108,7 @@ export default function UserMenu({ mode = 'fixed' }) {
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
-                <span>🛡️</span> Panel de Administración
+                <span>🛡️</span> Administration Panel
               </button>
             )}
 
@@ -123,7 +123,7 @@ export default function UserMenu({ mode = 'fixed' }) {
                 onMouseEnter={e => (e.currentTarget.style.background = '#f0f4f7')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
               >
-                <span>📋</span> Revisión de Feedbacks
+                <span>📋</span> Feedback Review
               </button>
             )}
 
@@ -137,7 +137,7 @@ export default function UserMenu({ mode = 'fixed' }) {
                 onMouseEnter={e => (e.currentTarget.style.background = '#f0f4f7')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
               >
-                <span>⚙️</span> Variables de Personalización
+                <span>⚙️</span> Customization Variables
               </button>
             )}
 
@@ -163,7 +163,7 @@ export default function UserMenu({ mode = 'fixed' }) {
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f4f7'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
-                <span>↩️</span> Volver
+                <span>↩️</span> Back
               </button>
             )}
           </div>

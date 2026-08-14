@@ -11,7 +11,7 @@ vi.mock('../../src/security/envGuard.js', () => ({
 import { createServerInstance } from '../../src/services/server/tlsSetup.js';
 
 describe('createServerInstance', () => {
-  it('crea un servidor HTTP de Node cuando TLS no está habilitado', async () => {
+  it('creates a Node HTTP server when TLS is not enabled', async () => {
     const server = await createServerInstance((_request, response) => response.end('ok'));
 
     expect(typeof server.listen).toBe('function');

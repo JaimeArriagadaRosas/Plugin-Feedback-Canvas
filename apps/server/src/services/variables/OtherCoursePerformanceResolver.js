@@ -11,8 +11,8 @@ export default class OtherCoursePerformanceResolver extends BaseVariableResolver
     if (!student || !student.id) return '';
 
     try {
-      // Simulación de llamada al SIS de la universidad.
-      // Comportamiento Fallback: si no hay datos, retornamos string vacío (se ignora en el prompt).
+      // Simulation of university SIS call.
+      // Fallback behavior: if there is no data, return empty string (ignored in the prompt).
       const mockSISData = await this._fetchMockData(student.id);
       
       if (!mockSISData) {
@@ -26,28 +26,28 @@ export default class OtherCoursePerformanceResolver extends BaseVariableResolver
       if (isNaN(numericAverage)) return '';
 
       let qualitativeDesc = '';
-      if (numericAverage >= 5.5) qualitativeDesc = 'muy bueno';
-      else if (numericAverage >= 4.0) qualitativeDesc = 'promedio regular';
-      else qualitativeDesc = 'con dificultades';
+      if (numericAverage >= 5.5) qualitativeDesc = 'very good';
+      else if (numericAverage >= 4.0) qualitativeDesc = 'average';
+      else qualitativeDesc = 'with difficulties';
 
-      return this.sanitize(`En el resto de sus asignaturas este semestre, el estudiante presenta un rendimiento ${qualitativeDesc} (promedio ${numericAverage.toFixed(1)}).`);
+      return this.sanitize(`In the rest of their courses this semester, the student shows a ${qualitativeDesc} performance (average ${numericAverage.toFixed(1)}).`);
 
     } catch (err) {
-      logger.error(`[OtherCoursePerformanceResolver] Error resolviendo variable para ${student.id}: ${err.message}`);
-      return ''; // Fallback silencioso
+      logger.error(`[OtherCoursePerformanceResolver] Error resolving variable for ${student.id}: ${err.message}`);
+      return ''; // Silent fallback
     }
   }
 
   async _fetchMockData(studentId) {
-    // Simular latencia de red
+    // Simulate network latency
     return new Promise(resolve => {
       setTimeout(() => {
-        // En producción, aquí se haría un fetch() al API real.
-        // Simularemos algunos casos según el último dígito del studentId.
+        // In production, a fetch() to the real API would be made here.
+        // We will simulate some cases according to the last digit of studentId.
         const idLastDigit = parseInt(String(studentId).slice(-1), 10);
         
         if (isNaN(idLastDigit) || idLastDigit % 3 === 0) {
-           return resolve(null); // Caso sin datos en el SIS (Fallback test)
+           return resolve(null); // Case without data in the SIS (Fallback test)
         }
 
         resolve({

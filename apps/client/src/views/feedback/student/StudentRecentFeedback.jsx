@@ -59,9 +59,9 @@ export default function StudentRecentFeedback({
             <div className={styles.feedbackSplit}>
               <div className={styles.feedbackMain}>
                 <div className={styles.teacherHeader}>
-                  <Avatar name={assignment.feedback.teacherName || "Profesor del Curso"} size="md" />
+                  <Avatar name={assignment.feedback.teacherName || "Course Teacher"} size="md" />
                   <div className={styles.teacherInfo}>
-                    <div className={styles.teacherName}>{assignment.feedback.teacherName || "Profesor del Curso"}</div>
+                    <div className={styles.teacherName}>{assignment.feedback.teacherName || "Course Teacher"}</div>
                     <div className={styles.teacherDate}>
                       {new Date(assignment.feedback.fecha_generacion).toLocaleString()}
                     </div>
@@ -74,7 +74,7 @@ export default function StudentRecentFeedback({
               </div>
 
               <div className={styles.ratingAreaSide}>
-                <h3 className={styles.ratingTitle}>Califica el feedback</h3>
+                <h3 className={styles.ratingTitle}>Rate the feedback</h3>
                 <div className={styles.ratingControls} style={{ marginBottom: '1.5rem' }}>
                   <StarRating 
                     value={studentRating} 
@@ -83,29 +83,29 @@ export default function StudentRecentFeedback({
                   />
                 </div>
 
-                <h3 className={styles.ratingTitle}>¿Te fue útil este feedback?</h3>
+                <h3 className={styles.ratingTitle}>Was this feedback useful?</h3>
                 <div className={styles.utilControls} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
                   <Button 
                     variant={studentEsUtil === true ? 'primary' : 'outline'} 
                     onClick={() => handleUtilChange(true)}
                   >
-                    Sí, fue útil
+                    Yes, it was useful
                   </Button>
                   <Button 
                     variant={studentEsUtil === false ? 'danger' : 'outline'} 
                     onClick={() => handleUtilChange(false)}
                   >
-                    No me sirvió
+                    It wasn't useful
                   </Button>
                 </div>
 
-                {ratingSaved && <span className={styles.ratingSavedMsg}>✓ ¡Gracias por tu valoración!</span>}
+                {ratingSaved && <span className={styles.ratingSavedMsg}>✓ Thank you for your rating!</span>}
               </div>
             </div>
           </div>
         ) : (
           <div className={styles.noFeedback}>
-            No hay comentarios disponibles para esta tarea.
+            No feedback available for this assignment.
           </div>
         )}
       </div>

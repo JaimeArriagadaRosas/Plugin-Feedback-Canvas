@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import TextToolbar from "../../components/molecules/TextToolbar";
-import LivePreview from "../plantillas/editor/LivePreview";
+import LivePreview from "../templates/editor/LivePreview";
 
 const styles = {
   overlay: {
@@ -124,17 +124,17 @@ export default function EditFeedbackModal({ feedback, onSave, onClose, isOpen })
     <div style={styles.overlay}>
       <div style={styles.content}>
         <div style={styles.header}>
-          <span>EDITAR FEEDBACK DE {feedback?.student?.toUpperCase()}</span>
+          <span>EDIT FEEDBACK FOR {feedback?.student?.toUpperCase()}</span>
           <button style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }} onClick={onClose}>&times;</button>
         </div>
         
         <div style={styles.body}>
-          <div style={styles.sectionTitle}>EDITOR DE TEXTO INTEGRADO (SOPORTA MARKDOWN BÁSICO)</div>
+          <div style={styles.sectionTitle}>INTEGRATED TEXT EDITOR (SUPPORTS BASIC MARKDOWN)</div>
           
           <div style={{ marginBottom: "15px", display: "flex", gap: "10px", background: "#f5f5f5", padding: "10px", borderRadius: "4px" }}>
-            <strong>Estudiante:</strong> {feedback?.student} <br />
-            <strong>Calificación:</strong> {feedback?.grade} <br />
-            <strong>Perfil (IA):</strong> {feedback?.profile}
+            <strong>Student:</strong> {feedback?.student} <br />
+            <strong>Grade:</strong> {feedback?.grade} <br />
+            <strong>Profile (AI):</strong> {feedback?.profile}
           </div>
 
           <div style={{ display: "flex", gap: "20px" }}>
@@ -148,19 +148,19 @@ export default function EditFeedbackModal({ feedback, onSave, onClose, isOpen })
                 style={styles.textarea}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Escribe el feedback aquí..."
+                placeholder="Write the feedback here..."
               />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={styles.sectionTitle}>VISTA PREVIA</div>
+              <div style={styles.sectionTitle}>PREVIEW</div>
               <LivePreview text={content} />
             </div>
           </div>
         </div>
 
         <div style={styles.footer}>
-          <button style={styles.btnConfirm} onClick={() => onSave(content)}>Actualizar Feedback</button>
-          <button style={styles.btnCancel} onClick={onClose}>Cancelar Cambios</button>
+          <button style={styles.btnConfirm} onClick={() => onSave(content)}>Update Feedback</button>
+          <button style={styles.btnCancel} onClick={onClose}>Cancel Changes</button>
         </div>
       </div>
     </div>

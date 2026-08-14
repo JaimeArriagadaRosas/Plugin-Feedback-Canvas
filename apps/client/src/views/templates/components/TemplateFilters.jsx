@@ -6,7 +6,7 @@ export default function TemplateFilters({ searchTerm, onSearchChange }) {
       <span>🔍</span>
       <input 
         type="text" 
-        placeholder="Buscar plantilla..." 
+        placeholder="Search template..." 
         className={styles.searchInput}
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}

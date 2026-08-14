@@ -16,28 +16,28 @@ function getPackageManagerSpec() {
 
 function installLockedDependencies() {
   if (process.env.PLUGIN_DEP_REPAIR_ATTEMPTED === 'true') {
-    console.error('\n[X] La reparación de dependencias ya se intentó una vez. Revise package-lock.json y el log de npm.');
+    console.error('\n[X] Dependency repair has already been attempted once. Please check package-lock.json and the npm log.');
     process.exit(1);
   }
 
   const manager = getPackageManagerSpec();
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  console.warn(`\n[!] Instalando dependencias bloqueadas con ${manager}. Esto puede tardar unos minutos...`);
+  console.warn(`\n[!] Installing locked dependencies with ${manager}. This may take a few minutes...`);
   const result = spawnSync(npx, [
     '--yes', manager, 'ci', '--no-fund', '--no-audit', '--loglevel=error'
   ], { cwd: rootDir, stdio: 'inherit', shell: false });
   if (result.error) {
-    console.error('\n[X] Falló la ejecución del gestor de paquetes:', result.error.message);
+    console.error('\n[X] Package manager execution failed:', result.error.message);
     process.exit(1);
   }
   if (result.status !== 0) {
-    console.error('\n[X] Falló la instalación de dependencias.');
+    console.error('\n[X] Dependency installation failed.');
     process.exit(1);
   }
-  console.log('\n[√] Dependencias instaladas correctamente desde package-lock.json.\n');
+  console.log('\n[√] Dependencies installed successfully from package-lock.json.\n');
 }
 
-// 1. Verificación estática inicial rápida
+// 1. Fast initial static check
 import { createRequire } from 'node:module';
 const requireLocal = createRequire(import.meta.url);
 
@@ -60,14 +60,14 @@ function isFastCheckPassing() {
       const json = JSON.parse(fs.readFileSync(p, 'utf8'));
       if (json.dependencies) {
         for (const dep of Object.keys(json.dependencies)) {
-          if (dep.startsWith('@') && !dep.includes('/')) continue; // Ignorar alias internos simples
+          if (dep.startsWith('@') && !dep.includes('/')) continue; // Skip simple internal aliases
           const depName = dep.startsWith('@') ? dep.split('/').slice(0,2).join('/') : dep.split('/')[0];
           
           try {
-            // Evaluamos exactamente como Node.js resolvería este módulo desde el directorio de su respectivo package.json
+            // Resolve exactly as Node.js would from the package.json directory
             requireLocal.resolve(depName, { paths: [path.dirname(p)] });
           } catch (err) {
-            console.warn(`\n[!] Dependencia faltante detectada antes de arrancar: ${depName}`);
+            console.warn(`\n[!] Missing dependency detected before startup: ${depName}`);
             return false;
           }
         }
@@ -75,13 +75,13 @@ function isFastCheckPassing() {
     }
     return true;
   } catch (e) {
-    return true; // Fallback al import dinámico si algo falla al leer los JSON
+    return true; // Fallback to dynamic import if reading JSONs fails
   }
 }
 
 if (!fs.existsSync(nmPath) || !isFastCheckPassing()) {
   installLockedDependencies();
-  restartApp(); // Reiniciar para que Node limpie su caché de módulos tras instalar
+  restartApp(); // Restart so Node clears its module cache after install
 }
 
 function restartApp() {
@@ -94,11 +94,11 @@ function restartApp() {
   process.exit(result.status ?? 1);
 }
 
-// 2. Interceptar errores asíncronos de módulos corruptos (ej: hilos de Pino)
+// 2. Intercept async errors from corrupt modules (e.g. Pino worker threads)
 process.on('uncaughtException', (err) => {
   if (err.message && (err.message.includes('Cannot find module') || err.message.includes('ERR_MODULE_NOT_FOUND'))) {
-    console.warn('\n[!] Dependencia corrupta detectada en ejecución asíncrona.');
-    console.warn(`[!] Error original: ${err.message}`);
+    console.warn('\n[!] Corrupt dependency detected during async execution.');
+    console.warn(`[!] Original error: ${err.message}`);
     installLockedDependencies();
     restartApp();
   } else {
@@ -107,14 +107,14 @@ process.on('uncaughtException', (err) => {
   }
 });
 
-// 3. Ejecutar aplicación principal
+// 3. Launch main application
 async function boot() {
   try {
     await import('./index.js');
   } catch (err) {
     if (err.code === 'ERR_MODULE_NOT_FOUND' || (err.message && err.message.includes('Cannot find module'))) {
-       console.warn('\n[!] Dependencia faltante detectada al cargar módulos.');
-       console.warn(`[!] Error original: ${err.message}`);
+       console.warn('\n[!] Missing dependency detected while loading modules.');
+       console.warn(`[!] Original error: ${err.message}`);
        installLockedDependencies();
        restartApp();
     } else {

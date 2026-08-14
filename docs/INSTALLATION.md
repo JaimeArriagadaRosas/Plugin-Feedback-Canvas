@@ -1,47 +1,47 @@
-# Instalación multiplataforma
+# Multi-platform Installation
 
-Esta guía prepara el repositorio y su runtime de contenedores. El instalador está escrito en Node.js, por lo que Node y Git son prerrequisitos; el setup puede ayudar con Docker, pero no puede arrancar sin su propio runtime.
+This guide prepares the repository and its container runtime. The installer is written in Node.js, so Node and Git are prerequisites; the setup can help with Docker, but cannot start without its own runtime.
 
-## 1. Abrir una terminal
+## 1. Open a terminal
 
 ### Windows
 
-Abra **PowerShell**, **Windows Terminal** o **Símbolo del sistema** desde Inicio. Si usa PowerShell y `npm.ps1` está bloqueado, prefiera `npm.cmd` o cambie únicamente la política de la sesión conforme a las reglas de su organización.
+Open **PowerShell**, **Windows Terminal**, or **Command Prompt** from the Start menu. If you use PowerShell and `npm.ps1` is blocked, prefer `npm.cmd` or change only the session policy according to your organization's rules.
 
-### Ubuntu sobre WSL2
+### Ubuntu on WSL2
 
-Abra directamente la aplicación **Ubuntu**. Ya estará dentro de Linux; no ejecute `wsl -d Ubuntu` allí. Los comandos `wsl --status`, `wsl --list --verbose` y `wsl --shutdown` pertenecen a PowerShell/CMD de Windows.
+Directly open the **Ubuntu** application. You will already be inside Linux; do not run `wsl -d Ubuntu` there. The commands `wsl --status`, `wsl --list --verbose`, and `wsl --shutdown` belong to Windows PowerShell/CMD.
 
-### Linux nativo
+### Native Linux
 
-Abra la terminal de su distribución; en muchos escritorios se usa `Ctrl+Alt+T`.
+Open your distribution's terminal; in many desktops, `Ctrl+Alt+T` is used.
 
 ### macOS
 
-Abra **Terminal** desde Spotlight (`Cmd+Espacio`) o Aplicaciones > Utilidades.
+Open **Terminal** from Spotlight (`Cmd+Space`) or Applications > Utilities.
 
-## 2. Sintaxis mínima
+## 2. Minimum syntax
 
 ```bash
-pwd                         # muestra la carpeta actual
-ls -la                      # lista archivos, incluidos los ocultos
-cd "ruta con espacios"      # entra a una carpeta
-cd ..                       # sube un nivel
-node --version              # --version es una opción; "node version" es incorrecto
+pwd                         # shows the current folder
+ls -la                      # lists files, including hidden ones
+cd "path with spaces"       # enters a folder
+cd ..                       # goes up one level
+node --version              # --version is an option; "node version" is incorrect
 ```
 
-En Bash, `~` representa `/home/<usuario>`. Linux distingue mayúsculas de minúsculas y usa `/` como separador.
+In Bash, `~` represents `/home/<user>`. Linux is case-sensitive and uses `/` as a separator.
 
-## 3. Versiones requeridas
+## 3. Required versions
 
-| Componente | Requisito del repositorio | Referencia usada |
+| Component | Repository requirement | Used reference |
 |---|---|---|
-| Node.js | `^20.19.0` o `>=22.12.0` | CI: 22.12; imagen: 24 |
-| npm | `11.8.0` | fijado en `packageManager` |
-| Git | versión moderna con soporte TLS | requerido para clonar Canvas |
-| Docker Compose | V2 (`docker compose`) | no se admite el binario legado `docker-compose` como única interfaz |
+| Node.js | `^20.19.0` or `>=22.12.0` | CI: 22.12; image: 24 |
+| npm | `11.8.0` | pinned in `packageManager` |
+| Git | modern version with TLS support | required to clone Canvas |
+| Docker Compose | V2 (`docker compose`) | legacy `docker-compose` binary not supported as sole interface |
 
-Compruebe:
+Check:
 
 ```bash
 node --version
@@ -49,23 +49,23 @@ npm --version
 git --version
 ```
 
-La versión global de npm puede diferir. Use el gestor fijado al instalar:
+The global version of npm may differ. Use the pinned manager when installing:
 
 ```bash
 npx --yes npm@11.8.0 ci
 ```
 
-`npm ci` elimina y reconstruye `node_modules` a partir de `package-lock.json`. No use `npm install` para reparar una instalación limpia, porque puede recalcular el lockfile.
+`npm ci` deletes and rebuilds `node_modules` from `package-lock.json`. Do not use `npm install` to repair a clean installation, because it may recalculate the lockfile.
 
-### Qué crea la instalación de npm
+### What the npm installation creates
 
-- `package.json` declara workspaces, scripts y dependencias directas.
-- `package-lock.json` fija el árbol resuelto y sus integridades.
-- `node_modules/` contiene las librerías descargadas y ejecutables locales como Vite, Vitest y ESLint.
+- `package.json` declares workspaces, scripts, and direct dependencies.
+- `package-lock.json` pins the resolved tree and its integrities.
+- `node_modules/` contains the downloaded libraries and local executables like Vite, Vitest, and ESLint.
 
-`node_modules` es un artefacto generado, grande y no versionado. No se edita manualmente. Puede reconstruirse con `npm ci`, pero eliminarlo innecesariamente pierde caché y obliga a descargar todo otra vez.
+`node_modules` is a generated, large, and non-versioned artifact. It is not edited manually. It can be rebuilt with `npm ci`, but deleting it unnecessarily loses cache and forces downloading everything again.
 
-## 4. Obtener el repositorio
+## 4. Obtain the repository
 
 ```bash
 git clone https://github.com/JaimeArriagadaRosas/Plugin-Feedback-Canvas.git
@@ -73,14 +73,14 @@ cd Plugin-Feedback-Canvas
 npx --yes npm@11.8.0 ci
 ```
 
-Si trabaja desde una rama concreta:
+If working from a specific branch:
 
 ```bash
 git clone --branch fix/linux-native-setup-hardening --single-branch \
   https://github.com/JaimeArriagadaRosas/Plugin-Feedback-Canvas.git
 ```
 
-Antes de ejecutar cualquier setup:
+Before running any setup:
 
 ```bash
 pwd
@@ -88,25 +88,25 @@ git status
 git branch --show-current
 ```
 
-## 5. Runtime de contenedores
+## 5. Container runtime
 
-Docker es necesario para Canvas local, PostgreSQL de integración, Gotenberg y Testcontainers. No es necesario para lint ni para el build del cliente.
+Docker is required for local Canvas, integration PostgreSQL, Gotenberg, and Testcontainers. It is not required for linting or building the client.
 
-| Plataforma | Runtime recomendado | Automatización del proyecto |
+| Platform | Recommended runtime | Project automation |
 |---|---|---|
-| Windows | Docker Desktop con backend WSL2 | adaptador `WinDockerInstaller` |
-| Ubuntu/WSL2 | Docker Engine nativo rootless para la matriz Linux; alternativamente integración Docker Desktop | adaptadores `Linux…`; no mezclar ambos sin elegir contexto/socket |
-| Linux APT | Docker CE del repositorio oficial y rootless | configura keyring/repositorio oficial tras consentimiento `sudo` |
-| Linux DNF/Pacman | paquetes de la distribución y rootless cuando esté disponible | comandos específicos del gestor |
-| macOS | OrbStack o Docker Desktop | adaptador `MacDockerInstaller`; requiere interacción de Gatekeeper |
+| Windows | Docker Desktop with WSL2 backend | `WinDockerInstaller` adapter |
+| Ubuntu/WSL2 | Native rootless Docker Engine for Linux matrix; alternatively Docker Desktop integration | `Linux…` adapters; do not mix both without choosing context/socket |
+| Linux APT | Docker CE from official repository and rootless | configures keyring/official repository after `sudo` consent |
+| Linux DNF/Pacman | Distribution packages and rootless when available | specific package manager commands |
+| macOS | OrbStack or Docker Desktop | `MacDockerInstaller` adapter; requires Gatekeeper interaction |
 
-El preflight distingue cuatro estados: CLI ausente, daemon apagado, permiso denegado y daemon activo. Encontrar el ejecutable `docker` no demuestra que exista un servidor accesible; `docker info` sí lo comprueba.
+The preflight distinguishes four states: missing CLI, stopped daemon, permission denied, and active daemon. Finding the `docker` executable does not prove an accessible server exists; `docker info` does check it.
 
 ## 6. Windows
 
-1. Instale Node compatible y Git.
-2. Instale/abra Docker Desktop con backend WSL2.
-3. Compruebe en la terminal donde ejecutará el plugin:
+1. Install compatible Node and Git.
+2. Install/open Docker Desktop with WSL2 backend.
+3. Check in the terminal where you will run the plugin:
 
 ```powershell
 docker info
@@ -114,13 +114,13 @@ docker compose version
 npx --yes npm@11.8.0 ci
 ```
 
-El instalador Windows puede descargar Docker Desktop y solicitar UAC. Un reinicio o cierre de sesión puede ser necesario después de instalarlo.
+The Windows installer can download Docker Desktop and prompt UAC. A restart or logoff may be required after installing it.
 
-No termine automáticamente procesos que ocupan un puerto; identifique su propietario antes de actuar.
+Do not automatically kill processes occupying a port; identify its owner before acting.
 
-## 7. Linux nativo
+## 7. Native Linux
 
-El flujo APT actual usa el repositorio oficial de Docker CE e instala:
+The current APT flow uses the official Docker CE repository and installs:
 
 - `docker-ce`;
 - `docker-ce-cli`;
@@ -128,11 +128,11 @@ El flujo APT actual usa el repositorio oficial de Docker CE e instala:
 - `docker-buildx-plugin`;
 - `docker-compose-plugin`.
 
-Antes de modificar el sistema, el setup muestra la acción y `sudo` solicita autorización. Si detecta paquetes conflictivos (`docker.io`, `podman-docker`, `containerd`, etc.), se detiene en vez de eliminarlos silenciosamente.
+Before modifying the system, the setup shows the action and `sudo` requests authorization. If it detects conflicting packages (`docker.io`, `podman-docker`, `containerd`, etc.), it stops instead of deleting them silently.
 
-Después recomienda Docker rootless. Este modo evita dar al usuario acceso equivalente a `root` mediante el grupo `docker`. Si rootless falla, agregar el usuario al grupo es una alternativa separada que exige confirmación explícita y una sesión nueva.
+Afterwards, it recommends rootless Docker. This mode avoids giving the user access equivalent to `root` via the `docker` group. If rootless fails, adding the user to the group is a separate alternative that requires explicit confirmation and a new session.
 
-Comprobación final:
+Final check:
 
 ```bash
 docker context show
@@ -140,29 +140,29 @@ docker info
 docker compose version
 ```
 
-En rootless, `docker info` debe incluir `rootless` en `Security Options`.
+In rootless, `docker info` must include `rootless` under `Security Options`.
 
-## 8. Ubuntu sobre WSL2
+## 8. Ubuntu on WSL2
 
-Hay dos arquitecturas válidas, pero debe elegirse una:
+There are two valid architectures, but one must be chosen:
 
-### Engine nativo dentro de Ubuntu
+### Native Engine inside Ubuntu
 
-Es el modo usado para probar la rama Linux. Docker y sus datos viven dentro de Ubuntu; el contexto habitual es `rootless` y el socket está bajo `/run/user/<uid>/docker.sock`.
+This is the mode used to test the Linux branch. Docker and its data live inside Ubuntu; the usual context is `rootless` and the socket is under `/run/user/<uid>/docker.sock`.
 
-Mantenga el proyecto en ext4:
+Keep the project on ext4:
 
 ```text
-/home/<usuario>/proyectos/Plugin-Feedback
+/home/<user>/projects/Plugin-Feedback
 ```
 
-No ejecute builds intensivos desde `/mnt/c/...` o `/mnt/d/...`: son discos Windows montados y pueden producir peor rendimiento y diferencias de permisos con bind mounts.
+Do not run intensive builds from `/mnt/c/...` or `/mnt/d/...`: they are mounted Windows disks and can yield worse performance and permission differences with bind mounts.
 
-### Integración de Docker Desktop
+### Docker Desktop Integration
 
-Active la distribución en Docker Desktop > Settings > Resources > WSL Integration y compruebe `docker info` desde Ubuntu. En este modo el daemon lo administra Docker Desktop.
+Enable the distribution in Docker Desktop > Settings > Resources > WSL Integration and check `docker info` from Ubuntu. In this mode, the daemon is managed by Docker Desktop.
 
-No active ambos de forma implícita. Revise:
+Do not enable both implicitly. Check:
 
 ```bash
 which docker
@@ -171,20 +171,20 @@ docker context show
 docker info
 ```
 
-Una ruta de CLI bajo `/mnt/c/Program Files/Docker/...` corresponde a interoperabilidad Windows, no a una instalación Linux nativa.
+A CLI path under `/mnt/c/Program Files/Docker/...` corresponds to Windows interoperability, not a native Linux installation.
 
 ## 9. macOS
 
-El setup permite OrbStack o Docker Desktop. Homebrew, el montaje de imágenes y Gatekeeper pueden abrir ventanas y pedir confirmación. Compruebe al terminar:
+The setup allows OrbStack or Docker Desktop. Homebrew, image mounting, and Gatekeeper can open windows and ask for confirmation. Check when finished:
 
 ```bash
 docker info
 docker compose version
 ```
 
-## 10. Disposición de carpetas
+## 10. Folder layout
 
-El modo 3 calcula `canvas-lms-master` como carpeta hermana del plugin:
+Mode 3 calculates `canvas-lms-master` as a sibling folder of the plugin:
 
 ```text
 workspace/
@@ -192,49 +192,49 @@ workspace/
 └── canvas-lms-master/
 ```
 
-El setup fija Canvas en `release/2026-05-20.143`. Si el destino existe pero no parece una instalación reconocible, se detiene: no lo borra ni sobrescribe automáticamente.
+The setup pins Canvas to `release/2026-05-20.143`. If the destination exists but does not look like a recognizable installation, it stops: it does not delete or overwrite it automatically.
 
-## 11. Iniciar
+## 11. Start
 
 ```bash
 npm start
 ```
 
-Seleccione la opción 3 para Canvas local, o use:
+Select option 3 for local Canvas, or use:
 
 ```bash
 NON_INTERACTIVE=true STARTUP_MODE=3 npm start
 ```
 
-La primera ejecución puede descargar varios gigabytes y compilar assets durante un periodo prolongado. Mantenga la consola abierta y no inicie dos setups sobre la misma carpeta.
+The first execution may download several gigabytes and compile assets over a prolonged period. Keep the console open and do not start two setups on the same folder.
 
-La diferencia con una repetición se explica por el trabajo inicial:
+The difference from a repeat run is explained by the initial work:
 
-1. descarga del checkout y las imágenes base de Canvas;
-2. instalación de gems de Ruby y paquetes JavaScript;
-3. migraciones e inicialización de PostgreSQL;
-4. compilación de traducciones y assets de Canvas;
-5. creación de volúmenes, seeds y configuración LTI local.
+1. downloading the checkout and base Canvas images;
+2. installing Ruby gems and JavaScript packages;
+3. PostgreSQL migrations and initialization;
+4. compiling translations and Canvas assets;
+5. creating volumes, seeds, and local LTI configuration.
 
-Las ejecuciones posteriores reutilizan checkout, imágenes, volúmenes y marcadores reanudables. Aun así, el fast boot vuelve a comprobar el runtime; no garantiza «menos de un minuto» ni debe ocultar un contenedor degradado.
+Subsequent executions reuse checkout, images, volumes, and resumable markers. Even so, the fast boot re-checks the runtime; it does not guarantee "under a minute" nor should it hide a degraded container.
 
-## 12. Acciones privilegiadas
+## 12. Privileged actions
 
-El setup puede solicitar permiso para instalar paquetes, habilitar servicios, configurar rootless o modificar el archivo hosts. No debe:
+The setup may request permission to install packages, enable services, configure rootless, or modify the hosts file. It must not:
 
-- ejecutar instaladores de otro sistema operativo;
-- eliminar paquetes conflictivos sin decisión explícita;
-- agregar usuarios al grupo `docker` de forma oculta;
-- borrar volúmenes, carpetas Canvas o procesos ajenos;
-- ejecutar scripts remotos arbitrarios como sustituto del instalador versionado.
+- run installers for another operating system;
+- delete conflicting packages without explicit decision;
+- add users to the `docker` group hiddenly;
+- delete volumes, Canvas folders, or foreign processes;
+- run arbitrary remote scripts as a substitute for the versioned installer.
 
-Para errores de instalación consulte [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+For installation errors see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
-## 13. Referencias oficiales
+## 13. Official references
 
-- [Microsoft: qué es WSL](https://learn.microsoft.com/windows/wsl/about)
-- [Microsoft: comandos de WSL](https://learn.microsoft.com/windows/wsl/basic-commands)
-- [Microsoft: trabajo entre filesystems Windows/Linux](https://learn.microsoft.com/windows/wsl/filesystems)
-- [Docker Engine: instalación](https://docs.docker.com/engine/install/)
-- [Docker: modo rootless](https://docs.docker.com/engine/security/rootless/)
-- [npm: instalación limpia con `npm ci`](https://docs.npmjs.com/cli/v11/commands/npm-ci/)
+- [Microsoft: what is WSL](https://learn.microsoft.com/windows/wsl/about)
+- [Microsoft: WSL commands](https://learn.microsoft.com/windows/wsl/basic-commands)
+- [Microsoft: working across Windows/Linux filesystems](https://learn.microsoft.com/windows/wsl/filesystems)
+- [Docker Engine: installation](https://docs.docker.com/engine/install/)
+- [Docker: rootless mode](https://docs.docker.com/engine/security/rootless/)
+- [npm: clean install with `npm ci`](https://docs.npmjs.com/cli/v11/commands/npm-ci/)

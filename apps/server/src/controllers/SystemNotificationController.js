@@ -42,11 +42,11 @@ export default class SystemNotificationController {
       const { tipo_error } = req.body;
       
       if (!profesorId) {
-        return res.status(401).json({ exito: false, error: { mensaje: 'No autenticado' } });
+        return res.status(401).json({ exito: false, error: { mensaje: 'Not authenticated' } });
       }
       
       if (!tipo_error) {
-        return res.status(400).json({ exito: false, error: { mensaje: 'Falta tipo_error' } });
+        return res.status(400).json({ exito: false, error: { mensaje: 'Missing tipo_error' } });
       }
 
       await this.systemNotificationService.clearPending(profesorId, tipo_error);
@@ -60,26 +60,26 @@ export default class SystemNotificationController {
     try {
       const { profesor_id, tipo_error, mensaje_error } = req.body;
       if (!profesor_id || !tipo_error) {
-        return res.status(400).json({ exito: false, error: { mensaje: 'Faltan parámetros' } });
+        return res.status(400).json({ exito: false, error: { mensaje: 'Missing parameters' } });
       }
 
       // 1. CHOCAR EN CONSOLA: Esto hará que el usuario lo vea en su CMD
-      logger.error('💥 [SIMULACIÓN DE FALLO] 💥', {
+      logger.error('💥 [FAILURE SIMULATION] 💥', {
         event: 'simulated_crash',
         tipo_error,
         profesor_id,
-        mensaje_error: mensaje_error || 'Fallo simulado por script'
+        mensaje_error: mensaje_error || 'Simulated failure by script'
       });
       console.error(`\n======================================================`);
-      console.error(`❌ ERROR CRÍTICO SIMULADO: ${tipo_error}`);
-      console.error(`📝 Detalle: ${mensaje_error || 'N/A'}`);
-      console.error(`👤 Afectado: Profesor ${profesor_id}`);
+      console.error(`❌ SIMULATED CRITICAL ERROR: ${tipo_error}`);
+      console.error(`📝 Detail: ${mensaje_error || 'N/A'}`);
+      console.error(`👤 Affected: Teacher ${profesor_id}`);
       console.error(`======================================================\n`);
 
-      // 2. Insertar en base de datos
-      await this.systemNotificationService.saveNotification(profesor_id, tipo_error, mensaje_error || 'Fallo simulado');
+      // 2. Insert into database
+      await this.systemNotificationService.saveNotification(profesor_id, tipo_error, mensaje_error || 'Simulated failure');
       
-      res.json({ exito: true, mensaje: 'Error simulado correctamente en el servidor' });
+      res.json({ exito: true, mensaje: 'Error simulated successfully on the server' });
     } catch (error) {
       next(error);
     }

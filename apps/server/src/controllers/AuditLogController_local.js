@@ -17,13 +17,13 @@ export default class AuditLogControllerLocal {
 
       res.json({
         exito: true,
-        data: data // Contiene { logs: [], pagination: {} }
+        data: data // Contains { logs: [], pagination: {} }
       });
     } catch (error) {
       if (error instanceof ApiError) {
         next(error);
       } else {
-        next(new ApiError('Error inesperado obteniendo logs en entorno local', 500));
+        next(new ApiError('Unexpected error fetching logs in local environment', 500));
       }
     }
   }
@@ -34,33 +34,33 @@ export default class AuditLogControllerLocal {
       const count = parseInt(countRes.rows[0].count, 10);
 
       if (count === 0) {
-        logger.info('AuditLogControllerLocal', 'La base de datos local está vacía. Sembrando datos de prueba reales en Logs_Auditoria...');
+        logger.info('AuditLogControllerLocal', 'Local database is empty. Seeding real test data into Audit_Logs...');
         
         await AuditManager.logSecurityEvent(
           AUDIT_EVENT_TYPES.ACCESO_DENEGADO, 
           'student_123', 
           '192.168.1.5', 
-          'Intento de acceso a panel de configuración'
+          'Attempt to access configuration panel'
         );
         
         await AuditManager.logSecurityEvent(
           AUDIT_EVENT_TYPES.VALIDACION_LTI_FALLIDA, 
           null, 
           '192.168.1.10', 
-          'Firma de token LTI inválida o expirada'
+          'Invalid or expired LTI token signature'
         );
         
         await AuditManager.logSecurityEvent(
           AUDIT_EVENT_TYPES.CONFIGURACION_IA_ALTERADA, 
           'admin_456', 
           '127.0.0.1', 
-          'Se actualizó el token de OpenAI'
+          'OpenAI token was updated'
         );
         
-        logger.info('AuditLogControllerLocal', 'Datos sembrados con éxito.');
+        logger.info('AuditLogControllerLocal', 'Data seeded successfully.');
       }
     } catch (error) {
-      logger.error('AuditLogControllerLocal', 'No se pudieron sembrar datos locales', { error });
+      logger.error('AuditLogControllerLocal', 'Could not seed local data', { error });
     }
   }
 }

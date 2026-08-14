@@ -6,38 +6,38 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
   
   const shutdown = async () => {
     if (isShuttingDown) {
-      // Si ya está apagándose y recibe otra señal (ej. segundo Ctrl+C), salir inmediatamente
+      // If it is already shutting down and receives another signal (e.g. second Ctrl+C), exit immediately
       process.exit(1);
     }
     isShuttingDown = true;
 
-    // Restaurar el comportamiento normal de la terminal para permitir 
-    // el prompt de CMD (Trabajo por lotes) o bash tras finalizar
+    // Restore normal terminal behavior to allow
+    // the CMD prompt (Batch job) or bash after finishing
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
 
-    // Mostrar los mensajes INMEDIATAMENTE para que no se desordenen con nada externo
+    // Show the messages IMMEDIATELY so they don't get messed up with anything external
     process.stdout.write('\n');
-    boot.stage('Apagando sistema (Graceful Shutdown)');
-    boot.info('Recibida señal de apagado. Cerrando servicios...');
+    boot.stage('Shutting down system (Graceful Shutdown)');
+    boot.info('Shutdown signal received. Closing services...');
 
     if (localOrchestrator && typeof localOrchestrator.stopTlsProxy === 'function') {
       await localOrchestrator.stopTlsProxy();
-      boot.info('Proxy TLS detenido.');
+      boot.info('TLS Proxy stopped.');
     }
     
     if (backend) {
       try { 
         await stopBackend(backend); 
-        boot.info('Servidor HTTP y Pool de PostgreSQL cerrados.');
+        boot.info('HTTP Server and PostgreSQL Pool closed.');
       } catch { /* ignore */ }
     }
     await stopVite();
-    boot.info('Procesos Vite iniciados por el plugin detenidos.');
+    boot.info('Vite processes started by the plugin stopped.');
     
-    boot.success('Proceso terminado correctamente.');
+    boot.success('Process terminated correctly.');
     boot.endStage();
     
     process.exit(0);
@@ -46,8 +46,8 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  // Capturar Ctrl+C (0x03) crudo para evitar la impresión de "^C" en pantalla
-  // y, en Windows, evitar que CMD pregunte "¿Desea terminar el trabajo por lotes?" prematuramente.
+  // Capture raw Ctrl+C (0x03) to prevent printing "^C" on screen
+  // and, in Windows, prevent CMD from asking "Terminate batch job?" prematurely.
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();

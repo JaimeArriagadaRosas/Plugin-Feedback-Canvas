@@ -1,8 +1,8 @@
 import IAProviderFactory from './ia/factories/IAProviderFactory.js';
 
 /**
- * Gestor de Configuración IA
- * Maneja la selección de modelos y la recuperación segura de llaves de API.
+ * AI Configuration Manager
+ * Handles model selection and secure retrieval of API keys.
  */
 export default class IAConfigManager {
   constructor(tokenRepo, configRepo) {
@@ -11,7 +11,7 @@ export default class IAConfigManager {
   }
 
   /**
-   * Obtiene la configuración activa global usando la DB como fuente de la verdad
+   * Gets the global active configuration using the DB as the source of truth
    */
   async getGlobalActiveConfig() {
     const config = this.configRepo ? await this.configRepo.getConfigIA() : null;
@@ -20,14 +20,14 @@ export default class IAConfigManager {
   }
 
   /**
-   * Obtiene la configuración activa para un servicio dado
+   * Gets the active configuration for a given service
    */
   async getActiveConfig(serviceName) {
     const keyData = await this.tokenRepo.getActiveKey(serviceName);
     
-    // Si se solicitó un proveedor específico y no tiene llave, fallamos
+    // If a specific provider was requested and does not have a key, we fail
     if (!keyData || !keyData.apiKey) {
-      throw new Error(`No se encontró una llave de API activa para el servicio: ${serviceName}`);
+      throw new Error(`No active API key found for the service: ${serviceName}`);
     }
 
     const config = this.configRepo ? await this.configRepo.getConfigIA() : null;
@@ -43,7 +43,7 @@ export default class IAConfigManager {
   }
 
   /**
-   * Devuelve el proveedor instanciado para el servicio dado
+   * Returns the instantiated provider for the given service
    */
   async getProvider(serviceName) {
     const config = await this.getActiveConfig(serviceName);
@@ -51,10 +51,10 @@ export default class IAConfigManager {
   }
 
   /**
-   * Cambia el estado de una llave de API
+   * Changes the state of an API key
    */
   async updateServiceStatus(serviceName, isActive) {
-    // Lógica para activar/desactivar servicios
+    // Logic to activate/deactivate services
     return { success: true, service: serviceName, active: isActive };
   }
 }

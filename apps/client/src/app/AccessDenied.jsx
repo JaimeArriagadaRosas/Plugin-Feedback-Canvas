@@ -13,7 +13,7 @@ export default function AccessDenied({ apiError }) {
   const [localError, setLocalError] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tokenStatus, setTokenStatus] = useState('Verificando...');
+  const [tokenStatus, setTokenStatus] = useState('Verifying...');
 
   useEffect(() => {
     async function checkToken() {
@@ -42,14 +42,14 @@ export default function AccessDenied({ apiError }) {
       const response = await api.post('/auth/local-login', { email, password });
       if (response.success && response.devToken) {
         setToken(response.devToken);
-        log.info('Login local exitoso. Recargando...');
+        log.info('Local login successful. Reloading...');
         window.location.reload();
       } else {
-        setLocalError('Credenciales inválidas');
+        setLocalError('Invalid credentials');
       }
     } catch (e) {
       log.error('Error en login local:', { message: e.message });
-      setLocalError(e.response?.data?.error || 'Error del servidor');
+      setLocalError(e.response?.data?.error || 'Server error');
     } finally {
       setLoading(false);
     }
@@ -59,10 +59,10 @@ export default function AccessDenied({ apiError }) {
     <div style={{ padding: '60px 40px', fontFamily: "'Lato', sans-serif", textAlign: 'center', background: '#fdfefe', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ maxWidth: '640px', background: '#ffffff', border: '1px solid #c7cdd1', borderRadius: '8px', padding: '40px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
         <h2 style={{ color: '#c0392b', fontSize: '24px', fontWeight: '700', margin: '0 0 10px 0' }}>
-          Acceso LTI Restringido
+          LTI Access Restricted
         </h2>
         <p style={{ color: '#2d3b45', fontSize: '15px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
-          No se detectó una sesión LTI válida o hubo un problema temporal de conexión.
+          No valid LTI session was detected, or there was a temporary connection issue.
         </p>
 
         <div style={{ marginBottom: '25px' }}>
@@ -86,24 +86,24 @@ export default function AccessDenied({ apiError }) {
               gap: '8px'
             }}
           >
-            🔄 Reintentar Conexión LTI / Refrescar Sesión
+            🔄 Retry LTI Connection / Refresh Session
           </button>
         </div>
 
         {/* Panel de información de depuración */}
         <div style={{ padding: '12px 16px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', textAlign: 'left', marginBottom: '20px', fontFamily: 'monospace' }}>
-          <strong>ℹ️ DIAGNÓSTICO:</strong><br />
-          API Error: {apiError || 'Sin error de API reportado'}<br />
+          <strong>ℹ️ DIAGNOSTICS:</strong><br />
+          API Error: {apiError || 'No API error reported'}<br />
           URL Actual: {window.location.href}<br />
           Token en LocalStorage: {tokenStatus}<br />
           Cookie LTI: {(() => {
             try {
-              return document.cookie.includes('lti_token') ? '✅ Presente' : '❌ Ausente';
+              return document.cookie.includes('lti_token') ? '✅ Present' : '❌ Absent';
             } catch {
               return '⚠️ Bloqueado';
             }
           })()}<br />
-          Entorno: {import.meta.env.DEV ? 'Desarrollo (DEV)' : 'Producción'}
+          Environment: {import.meta.env.DEV ? 'Development (DEV)' : 'Production'}
         </div>
 
         {localError && (
@@ -116,15 +116,15 @@ export default function AccessDenied({ apiError }) {
         {import.meta.env.DEV && !isIframe && (
           <div style={{ marginTop: '30px', borderTop: '2px dashed #c7cdd1', paddingTop: '30px', background: '#f0f7ff', borderRadius: '6px', padding: '20px' }}>
             <h3 style={{ color: '#0770a3', fontSize: '16px', margin: '0 0 10px 0', fontWeight: '700' }}>
-              🖥️ ENTORNO LOCAL DETECTADO
+              🖥️ LOCAL ENVIRONMENT DETECTED
             </h3>
             <p style={{ fontSize: '13px', color: '#444', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-              Ingrese sus credenciales locales para continuar:
+              Enter your local credentials to continue:
             </p>
             <form onSubmit={handleLocalLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '320px', margin: '0 auto' }}>
               <input
                 type="email"
-                placeholder="Email (ej: profesor@canvas.local)"
+                placeholder="Email (e.g.: teacher@canvas.local)"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -143,11 +143,11 @@ export default function AccessDenied({ apiError }) {
                 disabled={loading}
                 style={{ background: '#0770a3', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
               >
-                {loading ? 'Ingresando...' : 'Ingresar'}
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
             <p style={{ fontSize: '12px', color: '#666', marginTop: '12px' }}>
-              Usuarios de prueba: profesor@canvas.local, estudiante1@canvas.local, admin@canvas.local (password: password123)
+              Test accounts: teacher@canvas.local, student1@canvas.local, admin@canvas.local (password: password123)
             </p>
           </div>
         )}
@@ -156,7 +156,7 @@ export default function AccessDenied({ apiError }) {
         {isIframe && (
           <div style={{ marginTop: '30px', padding: '15px', background: '#f8f9fa', borderLeft: '4px solid #e74c3c', borderRadius: '4px', textAlign: 'left' }}>
             <p style={{ margin: 0, fontSize: '13px', color: '#555', lineHeight: '1.5' }}>
-              <strong>🔒 Seguridad LTI:</strong> Esta sesión ha sido bloqueada. Por motivos de seguridad, no se permite el acceso manual ni la simulación de roles cuando el plugin se ejecuta embebido dentro del LMS.
+              <strong>🔒 LTI Security:</strong> This session has been blocked. For security reasons, manual access and role simulation are not allowed when the plugin runs embedded within the LMS.
             </p>
           </div>
         )}

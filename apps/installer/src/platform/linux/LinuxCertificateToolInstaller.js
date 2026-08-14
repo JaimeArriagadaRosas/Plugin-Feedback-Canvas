@@ -23,40 +23,40 @@ export class LinuxCertificateToolInstaller {
   async ensureTool() {
     if (await this._isMkcertAvailable()) return true;
     const accepted = await this.confirm(
-      'HTTPS local requiere instalar mkcert y libnss3-tools con sudo. ¿Continuar?',
+      'Local HTTPS requires installing mkcert and libnss3-tools with sudo. Continue?',
       false
     );
     if (!accepted) {
-      this.boot.action('Instale mkcert y libnss3-tools para habilitar HTTPS local.');
+      this.boot.action('Install mkcert and libnss3-tools to enable local HTTPS.');
       return false;
     }
     if (!(await this._isAptAvailable())) {
-      this.boot.error('No se encontró apt-get; instale mkcert según el gestor de paquetes de su distribución.');
+      this.boot.error('apt-get not found; install mkcert using your distribution\'s package manager.');
       return false;
     }
 
-    this.boot.info('Se solicitará la contraseña sudo una sola vez para instalar las herramientas TLS.');
+    this.boot.info('The sudo password will be requested once to install TLS tools.');
     if (!(await this.interactiveRunner('sudo', ['-v']))) return this._reportInstallFailure();
 
-    const spinner = this.spinnerFactory('Actualizando índice de paquetes TLS...').start();
+    const spinner = this.spinnerFactory('Updating TLS package index...').start();
     const updated = await this.runner('sudo', ['-n', 'apt-get', 'update', '-qq']);
     if (!updated.success) return this._reportInstallFailure(spinner, updated);
 
-    spinner.update({ text: 'Instalando mkcert y soporte para Firefox...' });
+    spinner.update({ text: 'Installing mkcert and Firefox support...' });
     const installed = await this.runner('sudo', [
       '-n', 'env', 'DEBIAN_FRONTEND=noninteractive', 'apt-get', 'install', '-y', '-qq', ...LINUX_PACKAGES
     ]);
     if (!installed.success) return this._reportInstallFailure(spinner, installed);
 
     const available = await this._isMkcertAvailable();
-    if (available) spinner.success({ text: 'Herramientas TLS de Ubuntu instaladas.', mark: '  √' });
-    else spinner.error({ text: 'mkcert no quedó disponible tras la instalación.', mark: '  ×' });
+    if (available) spinner.success({ text: 'Ubuntu TLS tools installed.', mark: '  √' });
+    else spinner.error({ text: 'mkcert was not available after installation.', mark: '  ×' });
     return available;
   }
 
   async confirmCertificateAuthority() {
     return this.confirm(
-      'mkcert creará e instalará una CA local de desarrollo. ¿Desea continuar?',
+      'mkcert will create and install a local development CA. Do you want to continue?',
       false
     );
   }
@@ -74,8 +74,8 @@ export class LinuxCertificateToolInstaller {
   }
 
   _reportInstallFailure(spinner, result = {}) {
-    spinner?.error({ text: 'No se pudieron instalar las herramientas TLS.', mark: '  ×' });
-    this.boot.error('Revise la contraseña sudo y la conexión de APT.');
+    spinner?.error({ text: 'Could not install TLS tools.', mark: '  ×' });
+    this.boot.error('Check the sudo password and APT connection.');
     const detail = String(result.err || result.out || '').trim().split('\n').at(-1);
     if (detail) this.boot.debug(detail);
     return false;

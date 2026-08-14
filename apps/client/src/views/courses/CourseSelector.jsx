@@ -8,7 +8,7 @@ const SKELETON_ROWS = 5;
 
 export default function CourseSelector({
   onCourseSelected,
-  userName = "Usuario de Canvas",
+  userName = "Canvas User",
   onApiError
 }) {
   const { courses, loading, error, retrying, retryCountdown, syncTime, usingCache, invalidateCache } = useCourseData(onApiError);
@@ -24,7 +24,7 @@ export default function CourseSelector({
   return (
     <div className={styles.wrapper}>
       <main className={styles.main}>
-        <h1 className={styles.pageTitle}>CONFIGURACIÓN - SELECCIONAR CURSO</h1>
+        <h1 className={styles.pageTitle}>CONFIGURATION — SELECT COURSE</h1>
 
         {error && (
           <div style={{ background: "#f8d7da", color: "#721c24", padding: "10px", borderRadius: "4px", marginBottom: "20px", border: "1px solid #f5c6cb" }}>
@@ -34,23 +34,23 @@ export default function CourseSelector({
 
         {usingCache && !error && (
           <div style={{ background: "#fff3cd", color: "#856404", padding: "10px", borderRadius: "4px", marginBottom: "20px", border: "1px solid #ffeaa7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Mostrando datos guardados. Última sincronización: {syncTime}</span>
+            <span>Showing cached data. Last synchronized: {syncTime}</span>
             <button onClick={invalidateCache} style={{ background: "#856404", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}>
-              Actualizar
+              Refresh
             </button>
           </div>
         )}
 
         <p className={styles.sectionHeading}>
-          CURSOS ACTIVOS DE LA API DE CANVAS
+          ACTIVE COURSES FROM THE CANVAS API
         </p>
 
         <div className={styles.tableWrapper}>
           <div className={styles.tableHeader}>
-            <div className={styles.colNombre}>Nombre del Curso</div>
-            <div className={styles.colId}>ID de Canvas</div>
-            <div className={styles.colCodigo}>Periodo / Código</div>
-            <div className={styles.colAccion}>Acción</div>
+            <div className={styles.colNombre}>Course Name</div>
+            <div className={styles.colId}>Canvas ID</div>
+            <div className={styles.colCodigo}>Term / Code</div>
+            <div className={styles.colAccion}>Action</div>
           </div>
 
           <div className={styles.tableBody}>
@@ -66,8 +66,8 @@ export default function CourseSelector({
             ) : courses.length === 0 ? (
               <div className={styles.emptyState}>
                 {role === 'admin'
-                  ? "No se encontraron cursos activos asociados a su cuenta."
-                  : "No se encontraron cursos activos donde usted es el Instructor."}
+                  ? "No active courses were found associated with your account."
+                  : "No active courses were found where you are the Instructor."}
               </div>
             ) : (
               courses.map((course) => (
@@ -95,7 +95,7 @@ export default function CourseSelector({
                       onMouseLeave={() => setHoverBtn(null)}
                       onClick={() => handleCourseSelected(course)}
                     >
-                      Seleccionar para Aplicar Plugin
+                      Select to Apply Plugin
                     </button>
                   </div>
                 </div>
@@ -106,13 +106,13 @@ export default function CourseSelector({
 
         {retrying && (
           <p style={{ textAlign: "center", color: "#0770a3", marginTop: "15px", fontSize: "13px" }}>
-            Reintentando conexión con la API de Canvas... {retryCountdown !== null ? `(${retryCountdown}s)` : ''}
+            Retrying connection to the Canvas API... {retryCountdown !== null ? `(${retryCountdown}s)` : ''}
           </p>
         )}
 
         {!loading && !error && courses.length === 0 && (
           <p style={{ textAlign: "center", color: "#666", marginTop: "15px", fontSize: "13px" }}>
-            No hay cursos para mostrar.
+            No courses to display.
           </p>
         )}
 
@@ -125,19 +125,19 @@ export default function CourseSelector({
               }}
               style={{ background: "#0770a3", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "4px", cursor: "pointer", fontWeight: "600", fontSize: "14px" }}
             >
-              Reintentar ahora
+              Retry Now
             </button>
           </div>
         )}
 
         <p className={styles.footnote}>
           {role === 'admin'
-            ? "Mostrando cursos activos asociados a su cuenta."
-            : "Mostrando cursos activos donde usted es el Instructor."}
+            ? "Showing active courses associated with your account."
+            : "Showing active courses where you are the Instructor."}
         </p>
       </main>
 
-      {/* Barra sticky inferior */}
+      {/* Bottom sticky bar */}
       <div className={styles.stickyBar}>
         <WizardProgress currentStep={0} />
       </div>

@@ -10,17 +10,17 @@ const variablesDir = path.resolve(__dirname, '../../services/variables');
 
 /* eslint-disable security/detect-object-injection */
 export const DEFAULT_VARIABLES = {
-  trayectoria_academica: { activa: true, ponderacion: 20, nombre: 'Trayectoria académica en el curso' },
-  calificaciones_previas: { activa: true, ponderacion: 20, nombre: 'Calificaciones previas' },
-  desempeno_otras_asignaturas: { activa: true, ponderacion: 20, nombre: 'Desempeño en otras asignaturas' },
-  perfil_ingreso: { activa: true, ponderacion: 20, nombre: 'Perfil de ingreso' },
-  situacion_academica_anterior: { activa: true, ponderacion: 20, nombre: 'Situación académica anterior' }
+  trayectoria_academica: { activa: true, ponderacion: 20, nombre: 'Academic trajectory in the course' },
+  calificaciones_previas: { activa: true, ponderacion: 20, nombre: 'Previous grades' },
+  desempeno_otras_asignaturas: { activa: true, ponderacion: 20, nombre: 'Performance in other courses' },
+  perfil_ingreso: { activa: true, ponderacion: 20, nombre: 'Entry profile' },
+  situacion_academica_anterior: { activa: true, ponderacion: 20, nombre: 'Previous academic status' }
 };
 
-// Variables del sistema o de plantilla que NO deben aparecer en la configuración de ponderación
-const EXCLUDED_VARIABLES = ['promedio_curso', 'calificacion', 'nombre_estudiante'];
+// System or template variables that MUST NOT appear in the weight configuration
+const EXCLUDED_VARIABLES = ['promedio_curso', 'calificacion', 'nombre_student'];
 
-// Carga dinámica de variables adicionales (RF06)
+// Dynamic loading of additional variables (RF06)
 export function loadDynamicVariables() {
   try {
     const files = fs.readdirSync(variablesDir);
@@ -32,7 +32,7 @@ export function loadDynamicVariables() {
         if (match && match[1]) {
           const key = match[1];
           if (!DEFAULT_VARIABLES[key] && !EXCLUDED_VARIABLES.includes(key)) {
-            // Extraer nombre de un comentario si existe, o usar el formato capitalizado
+            // Extract name from a comment if it exists, or use the capitalized format
             const nameMatch = content.match(/\/\/\s*NAME:\s*(.*)/);
             const nombre = nameMatch ? nameMatch[1].trim() : key.replace(/_/g, ' ');
             DEFAULT_VARIABLES[key] = { activa: true, ponderacion: 20, nombre };
@@ -41,7 +41,7 @@ export function loadDynamicVariables() {
       }
     }
   } catch (error) {
-    console.error('[CourseVariables] Error cargando variables dinámicas:', error.message);
+    console.error('[CourseVariables] Error loading dynamic variables:', error.message);
   }
 }
 
@@ -57,7 +57,7 @@ export class CourseVariables {
    */
   static validate(variablesObj) {
     if (!variablesObj || typeof variablesObj !== 'object') {
-      throw new DomainError('El formato de las variables es inválido.', 400);
+      throw new DomainError('The format of the variables is invalid.', 400);
     }
 
     const validatedVariables = {};
@@ -75,7 +75,7 @@ export class CourseVariables {
 
       if (activa) {
         if (ponderacion < 0 || ponderacion > 100) {
-          throw new DomainError(`La ponderación para '${key}' debe estar entre 0 y 100.`, 400);
+          throw new DomainError(`The weight for '${key}' must be between 0 and 100.`, 400);
         }
         totalPonderacion += ponderacion;
       }

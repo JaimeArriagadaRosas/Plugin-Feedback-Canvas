@@ -5,7 +5,7 @@ import { useSpeedGraderData } from './hooks/useSpeedGraderData';
 import OptimizeLoadPost from '../../modules/OptimizeLoadPost/OptimizeLoadPost';
 import FeedbackActions from './FeedbackActions';
 import { useSpeedGraderActions } from './hooks/useSpeedGraderActions';
-import WizardProgress from '../cursos/WizardProgress';
+import WizardProgress from '../courses/WizardProgress';
 import TutorialModal from '../components/TutorialModal';
 import HistoryModal from '../components/HistoryModal';
 import TrajectoryModal from '../components/TrajectoryModal';
@@ -116,18 +116,18 @@ export default function SpeedGraderPanel({ onExit }) {
     
   const hasSubmitted = submission && submission.workflow_state !== 'unsubmitted' && !submission.missing;
 
-  let gradeRange = 'Rango Bajo';
+  let gradeRange = 'Low Range';
   if (!hasSubmitted) {
     gradeRange = '-';
   } else if (scaledGrade >= 6.0) {
-    gradeRange = 'Rango Alto';
+    gradeRange = 'High Range';
   } else if (scaledGrade >= 4.0) {
-    gradeRange = 'Rango Medio';
+    gradeRange = 'Medium Range';
   }
 
-  let templateName = 'Sin plantilla activada';
+  let templateName = 'No template active';
   if (!hasSubmitted) {
-    templateName = 'Sin plantilla';
+    templateName = 'No template';
   } else if (activeAssignment?.templateName) {
     templateName = activeAssignment.templateName;
   }
@@ -144,7 +144,7 @@ export default function SpeedGraderPanel({ onExit }) {
 
       {!isAiServiceAvailable && (
         <div style={{ backgroundColor: '#cc0000', color: '#ffffff', padding: '10px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', borderBottom: '2px solid #990000', zIndex: 10 }}>
-          AVISO: SERVICIO DE IA NO DISPONIBLE. MODO SOLO LECTURA ACTIVADO
+          NOTICE: AI SERVICE UNAVAILABLE. READ-ONLY MODE ACTIVATED
         </div>
       )}
 

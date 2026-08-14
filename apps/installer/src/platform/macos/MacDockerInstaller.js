@@ -17,51 +17,51 @@ export class MacDockerInstaller {
 
   async install() {
     this.boot.info('');
-    this.boot.warn('Recomendación para macOS: OrbStack es una alternativa a Docker más rápida, que consume menos batería y RAM.');
+    this.boot.warn('Recommendation for macOS: OrbStack is a faster alternative to Docker that consumes less battery and RAM.');
     
     const hasBrew = (await runCommand('brew', ['--version'])).success;
     
     if (hasBrew) {
-      const useOrbstack = await askConfirm('¿Deseas instalar OrbStack vía Homebrew en lugar de Docker Desktop?');
+      const useOrbstack = await askConfirm('Do you want to install OrbStack via Homebrew instead of Docker Desktop?');
       
       if (useOrbstack) {
-        this.boot.info('Descargando e instalando OrbStack (Homebrew)...');
+        this.boot.info('Downloading and installing OrbStack (Homebrew)...');
         const { success, err } = await runCommand('brew', ['install', '--cask', 'orbstack'], { logFile: this.logFile });
         if (!success) {
-          this.boot.error(`Fallo instalando OrbStack vía brew: ${err}`);
-          this.boot.action('Por favor instálalo manualmente desde https://orbstack.dev/');
+          this.boot.error(`Failed installing OrbStack via brew: ${err}`);
+          this.boot.action('Please install it manually from https://orbstack.dev/');
           return false;
         }
-        this.boot.info('Iniciando OrbStack...');
+        this.boot.info('Starting OrbStack...');
         runCommand('open', ['-a', 'OrbStack']);
-        this.boot.warn('IMPORTANTE: Finaliza la configuración guiada en la ventana de OrbStack.');
+        this.boot.warn('IMPORTANT: Finish the guided configuration in the OrbStack window.');
         return true;
       }
     } else {
-      this.boot.info('Nota: Homebrew no está instalado. OrbStack requiere instalación manual. Procediendo con Docker Desktop.');
+      this.boot.info('Note: Homebrew is not installed. OrbStack requires manual installation. Proceeding with Docker Desktop.');
     }
 
-    // Mitigación: Detectar arquitectura dinámicamente para Apple Silicon (M1/M2/M3)
+    // Mitigation: Dynamically detect architecture for Apple Silicon (M1/M2/M3)
     const arch = os.arch() === 'arm64' ? 'arm64' : 'amd64';
-    this.boot.info(`Descargando Docker Desktop para macOS (Arquitectura: ${arch})...`);
+    this.boot.info(`Downloading Docker Desktop for macOS (Architecture: ${arch})...`);
     
     const url = `https://desktop.docker.com/mac/main/${arch}/Docker.dmg`;
     const dest = path.join(os.tmpdir(), 'Docker.dmg');
     
     const { success, err } = await runCommand('curl', ['-L', '-o', dest, url], { logFile: this.logFile });
     if (!success) {
-      this.boot.error(`No se pudo descargar Docker Desktop: ${err}`);
+      this.boot.error(`Could not download Docker Desktop: ${err}`);
       return false;
     }
 
-    this.boot.info('Montando e instalando Docker Desktop en /Applications...');
+    this.boot.info('Mounting and installing Docker Desktop in /Applications...');
     await runCommand('hdiutil', ['attach', dest]);
     await runCommand('cp', ['-R', '/Volumes/Docker/Docker.app', '/Applications']);
     await runCommand('hdiutil', ['detach', '/Volumes/Docker']);
     
-    // Mitigación: Advertencia de Gatekeeper (imposibilidad de install silenciosa real)
-    this.boot.warn('ATENCIÓN: macOS bloqueará la ejecución silenciosa por seguridad (Gatekeeper).');
-    this.boot.action('Docker se abrirá ahora. DEBES confirmar los cuadros de diálogo de seguridad del sistema para completar la instalación.');
+    // Mitigation: Gatekeeper warning (impossibility of real silent install)
+    this.boot.warn('ATTENTION: macOS will block silent execution for security (Gatekeeper).');
+    this.boot.action('Docker will open now. YOU MUST confirm the system security dialogs to complete the installation.');
     
     runCommand('open', ['-a', 'Docker']);
     return true;

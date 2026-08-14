@@ -19,7 +19,7 @@ export default function SpeedGraderHeader({ courseId, onBack, onShowTutorial }) 
   return (
     <header className={styles.header}>
       <button className={styles.backButton} onClick={onBack}>
-        ← Volver
+        ← Back
       </button>
 
       <div ref={menuRef} className={styles.headerMenu}>
@@ -27,7 +27,7 @@ export default function SpeedGraderHeader({ courseId, onBack, onShowTutorial }) 
           className={styles.backButton}
           onClick={() => setMenuOpen(o => !o)}
         >
-          Opciones
+          Options
         </button>
         {menuOpen && (
           <div className={styles.headerDropdown}>
@@ -35,13 +35,13 @@ export default function SpeedGraderHeader({ courseId, onBack, onShowTutorial }) 
               className={styles.headerDropdownItem}
               onClick={() => { setMenuOpen(false); navigate('/teacher/review'); }}
             >
-              📋 Revisión de Feedbacks
+              📋 Feedback Review
             </button>
             <button
               className={styles.headerDropdownItem}
               onClick={() => { setMenuOpen(false); navigate('/teacher/variables', { state: { course: { id: courseId } } }); }}
             >
-              ⚙️ Variables de Personalización
+              ⚙️ Customization Variables
             </button>
             <button
               className={styles.headerDropdownItem}

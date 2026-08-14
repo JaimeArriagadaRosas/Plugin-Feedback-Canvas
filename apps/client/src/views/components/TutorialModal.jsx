@@ -31,11 +31,11 @@ export default function TutorialModal({ onClose }) {
           backgroundColor: '#f5f5f5'
         }}>
           <h2 style={{ margin: 0, fontSize: '18px', color: '#2d3b45', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🎥</span> Tutorial del Plugin
+            <span>🎥</span> Plugin Tutorial
           </h2>
           <button 
             onClick={onClose}
-            title="Cerrar Tutorial"
+            title="Close Tutorial"
             style={{
               background: 'transparent',
               border: 'none',
@@ -51,7 +51,7 @@ export default function TutorialModal({ onClose }) {
         </div>
         <div style={{ padding: '20px', backgroundColor: '#fff' }}>
           <p style={{ margin: '0 0 15px 0', color: '#555', fontSize: '14px' }}>
-            Bienvenido al tutorial del Plugin de Feedback. A continuación se presenta un video institucional introductorio de la Universidad Andrés Bello.
+            Welcome to the Feedback Plugin tutorial. Below is an introductory institutional video from Andrés Bello University.
           </p>
           <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '4px' }}>
             {/* Placeholder de YouTube sugerido (UNAB) */}
@@ -86,7 +86,7 @@ export default function TutorialModal({ onClose }) {
               fontSize: '14px'
             }}
           >
-            Entendido
+            Understood
           </button>
         </div>
       </div>

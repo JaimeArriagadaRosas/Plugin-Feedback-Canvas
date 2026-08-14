@@ -10,21 +10,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_DIR = path.resolve(__dirname, '..', '..', '..', '..');
 
 /**
- * Punto de entrada principal para el Flujo de Despliegue Automatizado LTI.
+ * Main entry point for the Automated LTI Deployment Flow.
  */
 export async function runDeploymentSetup() {
   try {
-    // 1. Recopilar datos interactivos del usuario
+    // 1. Collect interactive data from the user
     const configData = await promptDeployConfig();
 
-    // 2. Si el usuario no tiene llave y provee el token, realizamos el handshake con la API de Canvas
+    // 2. If the user does not have a key and provides the token, we perform the handshake with the Canvas API
     if (!configData.hasKey) {
       if (!configData.canvasToken) {
-        throw new Error('No se proporcionó un API Token, no es posible continuar con el registro automatizado.');
+        throw new Error('No API Token was provided, it is not possible to continue with the automated registration.');
       }
 
       console.log('\n' + pc.cyan('========================================================='));
-      console.log('  ' + pc.bold(pc.white('REGISTRANDO HERRAMIENTA EN CANVAS LTI 1.3')));
+      console.log('  ' + pc.bold(pc.white('REGISTERING TOOL IN CANVAS LTI 1.3')));
       console.log(pc.cyan('========================================================='));
 
       const deployment = new CanvasDeploymentService({
@@ -32,42 +32,42 @@ export async function runDeploymentSetup() {
         token: configData.canvasToken,
       });
 
-      // 2.1 Armar el JSON dinámico
+      // 2.1 Build dynamic JSON
       const ltiJson = await buildDynamicLtiConfig(PLUGIN_DIR, configData.domain);
 
-      // 2.2 Crear Developer Key
+      // 2.2 Create Developer Key
       const devKeyId = await deployment.ensureDeveloperKey(configData.accountId, ltiJson);
       configData.developerKeyId = devKeyId;
 
-      // 2.3 Activar la Developer Key (pasa de OFF a ON)
+      // 2.3 Activate the Developer Key (switches from OFF to ON)
       await deployment.enableDeveloperKey(devKeyId);
 
-      // 2.4 Instalar la app (External Tool) en la cuenta
+      // 2.4 Install the app (External Tool) in the account
       await deployment.ensureExternalTool(configData.accountId, devKeyId);
     }
 
-    // 3. Escribir/Actualizar .env con las credenciales finales y secrets
+    // 3. Write/Update .env with final credentials and secrets
     console.log('\n' + pc.cyan('========================================================='));
-    console.log('  ' + pc.bold(pc.white('CONFIGURANDO ENTORNO LOCAL (.ENV)')));
+    console.log('  ' + pc.bold(pc.white('CONFIGURING LOCAL ENVIRONMENT (.ENV)')));
     console.log(pc.cyan('========================================================='));
     
     await ensureEnvConfigured(PLUGIN_DIR, configData);
 
-    console.log('\n' + pc.green('🎉 ¡Setup de Despliegue LTI completado exitosamente!'));
-    console.log(pc.white('El plugin está completamente enlazado a tu entorno Canvas.'));
-    console.log(pc.gray('Para iniciar en producción, asegúrate de compilar primero (`npm run build`) y usar la Opción 1 del Orquestador.'));
+    console.log('\n' + pc.green('🎉 LTI Deployment Setup completed successfully!'));
+    console.log(pc.white('The plugin is fully linked to your Canvas environment.'));
+    console.log(pc.gray('To start in production, make sure to build first (`npm run build`) and use Option 1 in the Orchestrator.'));
     
-    await ask('\nPresione Enter para regresar al menú principal o salir...');
+    await ask('\nPress Enter to return to the main menu or exit...');
 
   } catch (err) {
-    console.error('\n' + pc.red('❌ Ocurrió un error crítico durante el despliegue:'));
+    console.error('\n' + pc.red('❌ A critical error occurred during deployment:'));
     console.error(pc.red(err.message));
-    console.log(pc.gray('Revisa la documentación y asegúrate de contar con los permisos y rutas correctas.'));
-    await ask('\nPresione Enter para regresar...');
+    console.log(pc.gray('Check the documentation and make sure you have the correct permissions and paths.'));
+    await ask('\nPress Enter to return...');
   }
 }
 
-// Permitir ejecución directa por CLI
+// Allow direct execution via CLI
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runDeploymentSetup().then(() => process.exit(0));
 }

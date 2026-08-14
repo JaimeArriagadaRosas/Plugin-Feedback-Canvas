@@ -29,7 +29,7 @@ describe('EnvironmentSetup', () => {
 
     expect(installer.getRuntimeState).toHaveBeenCalledOnce();
     expect(missing).toMatchObject({ missing_compose: false, docker_state: freshState });
-    expect(boot.success).toHaveBeenCalledWith('Docker Compose V2 disponible.');
+    expect(boot.success).toHaveBeenCalledWith('Docker Compose V2 available.');
     expect(boot.error).not.toHaveBeenCalled();
   });
 

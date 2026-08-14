@@ -61,10 +61,10 @@ export async function validateCerts() {
   const cert = path.join(certDir, 'localhost.pem');
   const key = path.join(certDir, 'localhost-key.pem');
   if (fileExists(cert) && fileExists(key)) {
-    ok('Certificado y clave TLS locales encontrados', path.relative(PLUGIN_DIR, certDir));
+    ok('Local TLS certificate and key found', path.relative(PLUGIN_DIR, certDir));
     return true;
   }
-  fail('Certificados TLS locales incompletos', path.relative(PLUGIN_DIR, certDir), 'El servidor local no puede iniciar HTTPS.', 'ALTO');
+  fail('Incomplete local TLS certificates', path.relative(PLUGIN_DIR, certDir), 'The local server cannot start HTTPS.', 'HIGH');
   return false;
 }
 
@@ -72,18 +72,18 @@ export function validateEnv() {
   const envPath = path.join(PLUGIN_DIR, '.env');
   const env = readEnvObj(envPath);
   if (!fileExists(envPath)) {
-    warn('.env no existe', 'Se validarán solamente defaults y configuración versionada.');
+    warn('.env does not exist', 'Only defaults and versioned configuration will be validated.');
     return false;
   }
 
   const urlKeys = ['CANVAS_BASE_URL', 'CANVAS_ISSUER', 'LTI_REDIRECT_URI', 'LTI_OIDC_URL'];
   const invalid = urlKeys.filter(key => env[key] && !localHttpsUrl(env[key]));
   if (invalid.length) {
-    fail('Variables locales usan HTTP', invalid.join(', '), 'Canvas/LTI puede bloquear contenido mixto.', 'ALTO');
+    fail('Local variables use HTTP', invalid.join(', '), 'Canvas/LTI may block mixed content.', 'HIGH');
     return false;
   }
-  if (env.HTTPS === 'false') warn('HTTPS está desactivado en .env', 'No es compatible con el flujo LTI local completo.');
-  else ok('Variables locales compatibles con HTTPS');
+  if (env.HTTPS === 'false') warn('HTTPS is disabled in .env', 'Not compatible with the full local LTI flow.');
+  else ok('Local variables compatible with HTTPS');
   return true;
 }
 
@@ -91,7 +91,7 @@ export function validateLtiPlacement() {
   const file = path.join(PLUGIN_DIR, 'config', 'lti_placement.json');
   const config = readJson(file);
   if (!config) {
-    fail('Configuración LTI inválida o ausente', path.relative(PLUGIN_DIR, file), 'No puede registrarse la herramienta.', 'ALTO');
+    fail('Invalid or missing LTI configuration', path.relative(PLUGIN_DIR, file), 'The tool cannot be registered.', 'HIGH');
     return false;
   }
   const urls = [config.public_jwk_url, config.target_link_uri, config.oidc_initiation_url];
@@ -100,10 +100,10 @@ export function validateLtiPlacement() {
     ...(extension?.settings?.placements || []).map(placement => placement.target_link_uri)
   ]);
   if ([...urls, ...extensionUrls].filter(Boolean).every(localHttpsUrl)) {
-    ok('Placement LTI usa HTTPS en URLs locales');
+    ok('LTI placement uses HTTPS in local URLs');
     return true;
   }
-  fail('Placement LTI contiene una URL local HTTP', path.relative(PLUGIN_DIR, file), 'El navegador puede bloquear el launch.', 'ALTO');
+  fail('LTI placement contains a local HTTP URL', path.relative(PLUGIN_DIR, file), 'The browser may block the launch.', 'HIGH');
   return false;
 }
 
@@ -112,8 +112,8 @@ export function validateSecurityHeaders() {
   const content = readFileSafe(file);
   const hasCsp = content.includes('contentSecurityPolicy') && content.includes('frameAncestors');
   const hasHsts = content.includes('hsts:');
-  if (hasCsp && hasHsts) ok('CSP frame-ancestors y HSTS están configurados');
-  else fail('Cabeceras HTTPS incompletas', path.relative(PLUGIN_DIR, file), 'Se debilita la protección del tool LTI.', 'ALTO');
+  if (hasCsp && hasHsts) ok('CSP frame-ancestors and HSTS are configured');
+  else fail('Incomplete HTTPS headers', path.relative(PLUGIN_DIR, file), 'LTI tool protection is weakened.', 'HIGH');
   return hasCsp && hasHsts;
 }
 
@@ -123,10 +123,10 @@ export function validateCodeDefaults(files) {
     LOCAL_HTTP_RE.test(hit.url) && !isExpectedInternalHttp(hit)
   ));
   if (!insecure.length) {
-    ok('Defaults locales sin referencias HTTP relevantes');
+    ok('Local defaults without relevant HTTP references');
     return true;
   }
-  warn('Persisten defaults HTTP locales', `${insecure.length} referencia(s); revisar el listado anterior.`);
+  warn('Local HTTP defaults persist', `${insecure.length} reference(s); check the list above.`);
   return false;
 }
 
@@ -158,12 +158,12 @@ function requestHttps(port) {
 export async function validateConnectivity() {
   for (const port of [3000, 8443]) {
     if (!(await portOpen(port))) {
-      warn(`Puerto HTTPS ${port} no está escuchando`, 'Inicie el entorno local para validar conectividad real.');
+      warn(`HTTPS port ${port} is not listening`, 'Start the local environment to validate actual connectivity.');
       continue;
     }
     const status = await requestHttps(port);
-    if (status) ok(`HTTPS responde en localhost:${port}`, `HTTP ${status}`);
-    else fail(`El puerto ${port} está abierto, pero TLS no responde`, '', 'Puede existir un servicio HTTP plano en el puerto HTTPS.', 'ALTO');
+    if (status) ok(`HTTPS responding on localhost:${port}`, `HTTP ${status}`);
+    else fail(`Port ${port} is open, but TLS is not responding`, '', 'A plain HTTP service may exist on the HTTPS port.', 'HIGH');
   }
 }
 
@@ -174,20 +174,20 @@ export function validateDocker() {
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 5000
     }).trim();
-    ok('Daemon Docker accesible', output ? `Server ${output}` : 'activo');
+    ok('Docker daemon accessible', output ? `Server ${output}` : 'active');
     return true;
   } catch {
-    warn('Docker no está disponible', 'La configuración HTTPS puede revisarse, pero Canvas local no puede validarse.');
+    warn('Docker is not available', 'HTTPS configuration can be reviewed, but local Canvas cannot be validated.');
     return false;
   }
 }
 
 export function applyFixes() {
   if (!state.fix) return;
-  info('Modo --fix', 'No se aplicaron cambios automáticos: URLs, certificados y hosts requieren revisión explícita.');
+  info('--fix mode', 'No automatic changes applied: URLs, certificates, and hosts require explicit review.');
 }
 
 export function validateHosts() {
-  if (hostsResolves('canvas.docker')) ok('canvas.docker resuelve a loopback en hosts');
-  else warn('canvas.docker no está mapeado a 127.0.0.1', 'Ejecute npm run setup:hosts con privilegios explícitos.');
+  if (hostsResolves('canvas.docker')) ok('canvas.docker resolves to loopback in hosts');
+  else warn('canvas.docker is not mapped to 127.0.0.1', 'Run npm run setup:hosts with explicit privileges.');
 }

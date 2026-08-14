@@ -2,8 +2,8 @@ import React from 'react';
 import logger from '../utils/logger';
 
 /**
- * ErrorBoundary — Captura errores de render de React y muestra un fallback
- * con la traza, evitando que la app quede en blanco.
+ * ErrorBoundary — Catches React render errors and shows a fallback
+ * with the trace, preventing a blank app.
  */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -27,9 +27,9 @@ export default class ErrorBoundary extends React.Component {
       if (isOAuthError) {
         return (
           <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center', backgroundColor: '#f9fafb', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <h2 style={{ color: '#111827', marginBottom: '16px' }}>Conexión Requerida</h2>
+            <h2 style={{ color: '#111827', marginBottom: '16px' }}>Connection Required</h2>
             <p style={{ color: '#4b5563', marginBottom: '24px', maxWidth: '400px' }}>
-              El plugin necesita permisos de Canvas para cargar tus cursos y datos. Haz clic en el botón de abajo para autorizar la conexión.
+              The plugin needs Canvas permissions to load your courses and data. Click the button below to authorize the connection.
             </p>
             <a
               href={this.state.error.payload.oauthUrl || '/api/oauth2/canvas/login'}
@@ -44,7 +44,7 @@ export default class ErrorBoundary extends React.Component {
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
               }}
             >
-              Conectar con Canvas
+              Connect to Canvas
             </a>
           </div>
         );
@@ -52,7 +52,7 @@ export default class ErrorBoundary extends React.Component {
 
       return (
         <div style={{ padding: '40px', fontFamily: 'sans-serif', color: 'red' }}>
-          <h2>Algo salió mal en el Frontend (React Crash)</h2>
+          <h2>Something went wrong in the Frontend (React Crash)</h2>
           <pre
             style={{
               background: '#f8d7da',
@@ -82,7 +82,7 @@ export default class ErrorBoundary extends React.Component {
             onClick={() => window.location.reload()}
             style={{ marginTop: '20px', padding: '10px 20px' }}
           >
-            Recargar página
+            Reload Page
           </button>
         </div>
       );

@@ -4,7 +4,7 @@ title = "Plugin Feedback Canvas secret scanning policy"
 useDefault = true
 
 [allowlist]
-description = "Solo fixtures y artefactos no ejecutables con falsos positivos conocidos."
+description = "Only fixtures and non-executable artifacts with known false positives."
 paths = [
   '''(^|/)package-lock\.json$''',
   '''(^|/)\.env(\.[^.]+)?\.example$''',

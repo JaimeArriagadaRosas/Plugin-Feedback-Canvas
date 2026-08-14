@@ -20,12 +20,12 @@ const styles = {
 export default function StatusFooter({ 
   lastSync = "---", 
   count = 0,
-  label = "Plantillas locales",
+  label = "Local Templates",
   isConnected = false 
 }) {
   const statusMessage = isConnected 
-    ? `Conectado a la API REST de Canvas. Última sincronización: ${lastSync}.` 
-    : "La API REST de Canvas no está disponible actualmente.";
+    ? `Connected to the Canvas REST API. Last synchronized: ${lastSync}.` 
+    : "The Canvas REST API is currently unavailable.";
 
   return (
     <footer style={styles.statusbar}>

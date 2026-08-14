@@ -12,18 +12,18 @@ export default class FeedbackWorkflowService {
   }
 
   /**
-   * Rechaza un feedback y solicita su regeneración (RF27, RF67)
+   * Rejects a feedback and requests its regeneration (RF27, RF67)
    */
   async rejectAndRegenerate(feedbackId, newVariables) {
     // Obtener el feedback original ANTES de modificarlo
     const fb = await this.feedbackRepo.getById(feedbackId);
     if (!fb) {
-      throw new Error(`Feedback ${feedbackId} no encontrado`);
+      throw new Error(`Feedback ${feedbackId} not found`);
     }
     const contenidoOriginal = fb.contenido_generado;
 
     // 1. Cambiar estado a RECHAZADO
-    await this.feedbackRepo.updateStatusAndContent(feedbackId, 'RECHAZADO', 'Esperando regeneración...');
+    await this.feedbackRepo.updateStatusAndContent(feedbackId, 'RECHAZADO', 'Waiting for regeneration...');
 
     try {
       // 2. Regenerar el feedback (RF67)
@@ -37,19 +37,19 @@ export default class FeedbackWorkflowService {
       return regenerated;
     } catch (error) {
       // Si la regeneración falla, restaurar el estado y contenido original para no perderlo
-      logger.warn(`[Workflow] Regeneración fallida para feedback ${feedbackId}. Restaurando estado original.`, { error: error.message });
+      logger.warn(`[Workflow] Regeneration failed for feedback ${feedbackId}. Restoring original state.`, { error: error.message });
       await this.feedbackRepo.updateStatusAndContent(feedbackId, fb.estado, contenidoOriginal);
       throw error;
     }
   }
 
   /**
-   * Aprueba y publica masivamente una lista de feedbacks (RF28)
+   * Massively approves and publishes a list of feedbacks (RF28)
    */
   async bulkApproveAndSend(feedbackIds, currentTeacherId = 'system') {
     let feedbacksToProcess = [];
     
-    // 1. Fase A: Síncrona - Actualización masiva instantánea
+    // 1. Phase A: Synchronous - Instant massive update
     await this.feedbackRepo.executeTransaction(async (client) => {
       const queryParams = feedbackIds.map((_, i) => `$${i + 1}`).join(',');
       const queryValues = [...feedbackIds];
@@ -75,13 +75,13 @@ export default class FeedbackWorkflowService {
       }
     });
 
-    // 2. Fase B: Asíncrona - Subida a Canvas
+    // 2. Phase B: Asynchronous - Upload to Canvas
     if (feedbacksToProcess.length > 0) {
       if (this.diagnosticsService) {
         this.diagnosticsService.logBulkApproval(feedbacksToProcess, currentTeacherId);
       }
       this._processCanvasUploadsInBackground(feedbacksToProcess, currentTeacherId)
-        .catch(err => logger.error('[Workflow] Error fatal en proceso de fondo Canvas:', { error: err.message }));
+        .catch(err => logger.error('[Workflow] Fatal error in background Canvas process:', { error: err.message }));
     }
 
     return { status: 'processing', count: feedbacksToProcess.length };
@@ -102,7 +102,7 @@ export default class FeedbackWorkflowService {
          canvasPublished = true;
          await this.feedbackRepo.updateStatusAndContent(fb.id, 'ENVIADO', fb.contenido_generado);
 
-         // Obtener preferencia (RF43)
+         // Get preference (RF43)
          let metodo = 'canvas_inapp';
          if (this.preferencesService) {
             const prefs = await this.preferencesService.getStudentPreference(fb.estudiante_id);
@@ -111,7 +111,7 @@ export default class FeedbackWorkflowService {
 
          let notificationSuccess = false;
 
-         // Enviar notificación (RF42)
+         // Send notification (RF42)
          const sendInApp = metodo === 'canvas_inapp' || metodo === 'both';
          const sendEmail = metodo === 'email' || metodo === 'both';
          
@@ -122,26 +122,26 @@ export default class FeedbackWorkflowService {
             try {
               await this.canvasService.pushInAppMessage(
                 fb.curso_id, fb.estudiante_id, teacherToUse,
-                'Nuevo Feedback Disponible',
-                'Se ha publicado un nuevo feedback para tu entrega.'
+                'New Feedback Available',
+                'A new feedback has been published for your submission.'
               );
               inAppSuccess = true;
             } catch (msgErr) {
-              logger.warn(`[Workflow] Error enviando In-App Msg para feedback ${fb.id}`, { error: msgErr.message });
+              logger.warn(`[Workflow] Error sending In-App Msg for feedback ${fb.id}`, { error: msgErr.message });
             }
          }
          
          if (sendEmail) {
             try {
-               if (!this.emailService) throw new Error('Proveedor de correo no configurado');
-               await this.emailService.sendNotification(fb.estudiante_id, fb.curso_id, 'Nuevo Feedback Disponible');
+               if (!this.emailService) throw new Error('Email provider not configured');
+               await this.emailService.sendNotification(fb.estudiante_id, fb.curso_id, 'New Feedback Available');
                emailSuccess = true;
             } catch (e) {
-               logger.warn(`[Workflow] Error enviando correo para feedback ${fb.id}`, { error: e.message });
+               logger.warn(`[Workflow] Error sending email for feedback ${fb.id}`, { error: e.message });
             }
          }
 
-         // Registrar notificación (RF44)
+         // Record notification (RF44)
          if (metodo !== 'none') {
             let metodoUsado = metodo;
             if (metodo === 'both') {
@@ -154,20 +154,20 @@ export default class FeedbackWorkflowService {
             await this.feedbackRepo.saveNotification(
               fb.estudiante_id, 
               fb.id, 
-              `Tienes un nuevo feedback aprobado en el curso ${fb.curso_id}`,
+              `You have a new approved feedback in course ${fb.curso_id}`,
               metodoUsado
             );
          }
        } catch (error) {
          if (canvasPublished) {
-           logger.error(`[Workflow] Canvas recibió el feedback ${fb.id}, pero falló una operación posterior. Se conserva ENVIADO para evitar duplicados.`, { error: error.message });
+           logger.error(`[Workflow] Canvas received feedback ${fb.id}, but a subsequent operation failed. Kept as SENT to avoid duplicates.`, { error: error.message });
            continue;
          }
-         logger.error(`[Workflow] Error subiendo a Canvas feedback ${fb.id}. Restaurando ${fb.estado}...`, { error: error.message });
+         logger.error(`[Workflow] Error uploading feedback ${fb.id} to Canvas. Restoring ${fb.estado}...`, { error: error.message });
          try {
            await this.feedbackRepo.updateStatusAndContent(fb.id, fb.estado, fb.contenido_generado);
          } catch(rollbackErr) {
-           logger.error(`[Workflow] Error crítico revirtiendo estado para feedback ${fb.id}`, { error: rollbackErr.message });
+           logger.error(`[Workflow] Critical error reverting state for feedback ${fb.id}`, { error: rollbackErr.message });
          }
        }
     }

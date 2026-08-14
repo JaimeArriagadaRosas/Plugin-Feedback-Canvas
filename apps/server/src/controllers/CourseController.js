@@ -1,5 +1,5 @@
 /**
- * Controlador de Cursos y Tareas (RF38, RF39, RF40)
+ * Courses and Assignments Controller (RF38, RF39, RF40)
  */
 import { AppError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
@@ -16,14 +16,14 @@ export default class CourseController {
     try {
       const userId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
       if (!userId) {
-        throw new AppError('No se pudo determinar el usuario (sub) desde el contexto LTI', 401);
+        throw new AppError('Could not determine the user (sub) from the LTI context', 401);
       }
       
       const courses = await this.canvasGateway.getCourses(userId);
-      logger.info(`[COURSES] Retornados ${courses?.length ?? 0} cursos para el usuario: ${userId?.substring(0,8)}...`);
+      logger.info(`[COURSES] Returned ${courses?.length ?? 0} courses for user: ${userId?.substring(0,8)}...`);
       res.json({ exito: true, data: courses });
     } catch (error) {
-      logger.error(`[CourseController] Error al obtener cursos: ${error.message}`, { stack: error.stack });
+      logger.error(`[CourseController] Error fetching courses: ${error.message}`, { stack: error.stack });
       next(error);
     }
   }
@@ -63,7 +63,7 @@ export default class CourseController {
 
       res.json({ exito: true, data: assignments });
     } catch (error) {
-      logger.error('Error al obtener assignments', { error: error.message, courseId: req.params.courseId });
+      logger.error('Error fetching assignments', { error: error.message, courseId: req.params.courseId });
       next(error);
     }
   }
@@ -75,7 +75,7 @@ export default class CourseController {
       const students = await this.canvasGateway.getStudents(courseId, teacherId);
       res.json({ exito: true, data: students });
     } catch (error) {
-      logger.error('Error al obtener estudiantes', { error: error.message, courseId: req.params.courseId });
+      logger.error('Error fetching students', { error: error.message, courseId: req.params.courseId });
       next(error);
     }
   }
@@ -86,7 +86,7 @@ export default class CourseController {
       const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
       const submission = await this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId);
       
-      // Diagnóstico: loguear campos críticos de la submission para depuración de renderizado
+      // Diagnostic: log critical submission fields for rendering debugging
       const diagAttachments = submission.attachments?.length || 0;
       const diagType = submission.submission_type || 'N/A';
       const diagHasBody = !!submission.body;
@@ -95,7 +95,7 @@ export default class CourseController {
       
       res.json({ exito: true, data: submission });
     } catch (error) {
-      logger.error('Error al obtener entrega', { error: error.message, courseId: req.params.courseId, studentId: req.params.studentId });
+      logger.error('Error fetching submission', { error: error.message, courseId: req.params.courseId, studentId: req.params.studentId });
       next(error);
     }
   }
@@ -105,14 +105,14 @@ export default class CourseController {
       const { courseId, assignmentId, studentId } = req.params;
       const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
       
-      // Obtener la entrega del estudiante (para saber la versión del quiz_submission)
+      // Get student submission (to know the quiz_submission version)
       const submission = await this.canvasGateway.getSubmission(courseId, assignmentId, studentId, teacherId);
       
-      // Obtener las preguntas del quiz (usando el gateway existente)
+      // Get quiz questions (using existing gateway)
       const questions = await this.canvasGateway.getQuizQuestions(courseId, assignmentId, teacherId);
 
-      // Extraer datos útiles del historial de envíos de la entrega para relacionarlos con las preguntas
-      // Si el historial existe, mapeamos las respuestas del estudiante
+      // Extract useful data from the submission history to relate to questions
+      // If history exists, map student responses
       const history = submission?.submission_history || [];
       const latestAttempt = history.length > 0 ? history[history.length - 1] : null;
 
@@ -136,14 +136,14 @@ export default class CourseController {
       const { activo, plantilla_id, variables } = req.body;
 
       if (!courseId || !assignmentId) {
-        return next(new AppError('courseId y assignmentId son requeridos', 400));
+        return next(new AppError('courseId and assignmentId are required', 400));
       }
 
-      // Identidad real del usuario LTI en lugar de un ID fijo.
-      // En modo local ltiContext.user es "local-user-<rol>"; en LTI real es el sub de Canvas.
+      // Real LTI user identity instead of a fixed ID.
+      // In local mode ltiContext.user is "local-user-<role>"; in real LTI it is the Canvas sub.
       const profesorId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || req.body.profesorId || null;
       if (!profesorId) {
-        return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
+        return next(new AppError('Could not determine the user from the LTI context', 401));
       }
 
 
@@ -154,7 +154,7 @@ export default class CourseController {
 
       res.json({
         exito: true,
-        mensaje: `Plugin ${activo ? 'activado' : 'desactivado'} para la tarea`,
+        mensaje: `Plugin ${activo ? 'activated' : 'deactivated'} for the assignment`,
         data: fullConfig
       });
     } catch (error) {
@@ -168,16 +168,16 @@ export default class CourseController {
       const { courseId } = req.params;
       const profesorId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || req.body.profesorId || null;
       if (!profesorId) {
-        return next(new AppError('No se pudo determinar el usuario desde el contexto LTI', 401));
+        return next(new AppError('Could not determine the user from the LTI context', 401));
       }
 
       if (this.courseService) {
         await this.courseService.resetActiveAssignments(courseId, profesorId);
       }
 
-      res.json({ exito: true, mensaje: 'Sesión iniciada: tareas desactivadas por defecto en esta sesión.' });
+      res.json({ exito: true, mensaje: 'Session started: assignments deactivated by default in this session.' });
     } catch (error) {
-      logger.error(`[CourseController] Error al reiniciar estado de tareas: ${error.message}`);
+      logger.error(`[CourseController] Error resetting assignments state: ${error.message}`);
       next(error);
     }
   }

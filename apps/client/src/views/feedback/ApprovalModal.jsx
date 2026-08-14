@@ -128,39 +128,39 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
   return (
     <div style={styles.overlay}>
       <div style={styles.content}>
-        <div style={styles.header}>{isApproved ? 'VALORACIÓN Y NOTAS' : 'APROBACIÓN Y REGISTRO DE FEEDBACK'}</div>
+        <div style={styles.header}>{isApproved ? 'RATING AND NOTES' : 'FEEDBACK APPROVAL AND REGISTRATION'}</div>
         <div style={styles.body}>
           <div style={styles.leftCol}>
-            <div style={styles.sectionTitle}>NOTAS PRIVADAS (SOLO PARA TI)</div>
+            <div style={styles.sectionTitle}>PRIVATE NOTES (FOR YOUR EYES ONLY)</div>
             <textarea 
               style={{ width: "100%", height: "200px", padding: "10px", fontSize: "12px", border: "1px solid #c7cdd1", borderRadius: "4px", resize: "none" }}
-              placeholder="Escribe aquí notas privadas sobre este estudiante o feedback. Esto NO se enviará a Canvas."
+              placeholder="Write private notes about this student or feedback here. This will NOT be sent to Canvas."
               value={privateNote}
               onChange={(e) => setPrivateNote(e.target.value)}
             />
             <div style={{ marginTop: "10px", fontSize: "11px", color: "#666" }}>
-                <strong>Acción:</strong> {isApproved ? 'Valoración Post-Envío' : 'Aprobación y Publicación en Canvas'}<br/>
-                <strong>Usuario:</strong> {userName || user || "No disponible"}<br/>
-                <strong>Fecha/Hora:</strong> {now}
+                <strong>Action:</strong> {isApproved ? 'Post-Send Rating' : 'Approval and Publication in Canvas'}<br/>
+                <strong>User:</strong> {userName || user || "Not available"}<br/>
+                <strong>Date/Time:</strong> {now}
             </div>
           </div>
           <div style={styles.rightCol}>
-            <div style={styles.sectionTitle}>DESTINO DEL FEEDBACK (Canvas)</div>
+            <div style={styles.sectionTitle}>FEEDBACK DESTINATION (Canvas)</div>
             {!isRejecting ? (
               <>
                 <div style={styles.canvasPreview}>
                   <div style={styles.rubricLocal}>
-                    <div style={{ borderBottom: "1px solid #eee", paddingBottom: "2px", marginBottom: "5px", fontWeight: "bold" }}>Mejor comentario</div>
-                    <div style={{ fontSize: "11px", color: "#666" }}>Comentarios:</div>
+                    <div style={{ borderBottom: "1px solid #eee", paddingBottom: "2px", marginBottom: "5px", fontWeight: "bold" }}>Best comment</div>
+                    <div style={{ fontSize: "11px", color: "#666" }}>Comments:</div>
                     <div style={{ fontWeight: "bold", whiteSpace: "pre-wrap" }}>✓ {feedback?.feedback || feedback?.contenido_generado}</div>
                   </div>
                   <div style={{ fontSize: "10px", fontStyle: "italic", color: "#27ae60" }}>
-                    Feedback guardado como comentario de rúbrica en Canvas.
+                    Feedback saved as rubric comment in Canvas.
                   </div>
                 </div>
                 
                 <div style={{ marginTop: "20px", fontSize: 13, fontWeight: "bold" }}>
-                  ¿Qué tan útil o preciso te parece este feedback?
+                  How useful or accurate do you find this feedback?
                   <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
                     {[1, 2, 3, 4, 5].map(star => (
                       <span 
@@ -177,30 +177,30 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
             ) : (
               <div style={styles.canvasPreview}>
                 <div style={{ fontWeight: "bold", marginBottom: "15px", color: "#c0392b", fontSize: "13px" }}>
-                  Rechazar feedback y regenerar uno nuevo
+                  Reject feedback and regenerate a new one
                 </div>
                 <div style={{ marginBottom: "15px" }}>
-                  <div style={{ fontSize: "11px", color: "#666", marginBottom: "5px" }}>Plantilla a utilizar:</div>
+                  <div style={{ fontSize: "11px", color: "#666", marginBottom: "5px" }}>Template to use:</div>
                   <select 
                     value={selectedTemplate} 
                     onChange={(e) => setSelectedTemplate(e.target.value)}
                     style={{ width: "100%", padding: "8px", border: "1px solid #c7cdd1", borderRadius: "4px", backgroundColor: "#fff" }}
                   >
-                    <option value="" disabled>-- Selecciona una plantilla --</option>
+                    <option value="" disabled>-- Select a template --</option>
                     {templates.map(t => (
                       <option key={t.id} value={t.id}>{t.nombre || t.name}</option>
                     ))}
                   </select>
                 </div>
                 <div style={{ fontSize: "11px", color: "#666" }}>
-                  Al hacer clic en "Generar Nuevo Feedback", el feedback actual se marcará como rechazado y se creará uno nuevo automáticamente utilizando la plantilla seleccionada.
+                  By clicking "Generate New Feedback", the current feedback will be marked as rejected and a new one will be created automatically using the selected template.
                 </div>
               </div>
             )}
           </div>
         </div>
         <div style={{ padding: "0 20px", fontSize: 11, color: "#666", marginBottom: "15px" }}>
-          Las notas privadas se guardan de forma aislada en la base de datos local y nunca se sincronizan con Canvas.
+          Private notes are stored in isolation in the local database and are never synced to Canvas.
         </div>
         <div style={styles.footer}>
           {!isRejecting ? (
@@ -211,7 +211,7 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
                   onClick={() => setIsRejecting(true)}
                   disabled={isSubmitting}
                 >
-                  Rechazar Feedback
+                  Reject Feedback
                 </button>
               )}
               <button
@@ -219,9 +219,9 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
                 disabled={isSubmitting}
                 onClick={() => onApprove(rating, privateNote)}
               >
-                {isSubmitting ? 'Procesando…' : (isApproved ? 'Guardar Cambios' : 'Confirmar Aprobación')}
+                {isSubmitting ? 'Processing…' : (isApproved ? 'Save Changes' : 'Confirm Approval')}
               </button>
-              <button style={styles.btnCancel} onClick={onClose} disabled={isSubmitting}>Cancelar</button>
+              <button style={styles.btnCancel} onClick={onClose} disabled={isSubmitting}>Cancel</button>
             </>
           ) : (
             <>
@@ -230,9 +230,9 @@ export default function ApprovalModal({ feedback, onApprove, onReject, onClose, 
                 disabled={!selectedTemplate || isSubmitting}
                 onClick={() => onReject(Number(selectedTemplate))}
               >
-                Generar Nuevo Feedback
+                Generate New Feedback
               </button>
-              <button style={styles.btnCancel} onClick={() => setIsRejecting(false)} disabled={isSubmitting}>Volver</button>
+              <button style={styles.btnCancel} onClick={() => setIsRejecting(false)} disabled={isSubmitting}>Back</button>
             </>
           )}
         </div>

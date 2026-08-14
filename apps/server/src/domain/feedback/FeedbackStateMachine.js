@@ -6,13 +6,13 @@ export class FeedbackStateMachine {
 
   static validateCanApprove(currentState) {
     if (currentState === this.STATES.APPROVED || currentState === this.STATES.SENT) {
-      throw new AppError('Este feedback ya ha sido aprobado y enviado previamente.', 400);
+      throw new AppError('This feedback has already been approved and sent previously.', 400);
     }
   }
 
   static validateCanEdit(currentState) {
     if (currentState === this.STATES.SENT) {
-      throw new AppError('No se puede editar un feedback que ya ha sido enviado.', 400);
+      throw new AppError('You cannot edit a feedback that has already been sent.', 400);
     }
   }
 }

@@ -12,8 +12,8 @@ const request = {
   logFile: '/tmp/setup.log'
 };
 
-describe('instaladores de archivo Canvas por plataforma', () => {
-  it('usa curl y unzip exclusivamente en Linux', async () => {
+describe('Canvas archive installers by platform', () => {
+  it('uses curl and unzip exclusively on Linux', async () => {
     const runner = vi.fn().mockResolvedValue({ success: true });
     const installer = new LinuxCanvasArchiveInstaller({ runner });
 
@@ -26,7 +26,7 @@ describe('instaladores de archivo Canvas por plataforma', () => {
     ], { logFile: request.logFile });
   });
 
-  it('no intenta extraer si la descarga Linux falla', async () => {
+  it('does not attempt to extract if Linux download fails', async () => {
     const runner = vi.fn().mockResolvedValue({ success: false });
     const installer = new LinuxCanvasArchiveInstaller({ runner });
 
@@ -34,7 +34,7 @@ describe('instaladores de archivo Canvas por plataforma', () => {
     expect(runner).toHaveBeenCalledOnce();
   });
 
-  it('usa PowerShell con rutas literales y escapadas en Windows', async () => {
+  it('uses PowerShell with literal and escaped paths on Windows', async () => {
     const runner = vi.fn().mockResolvedValue({ success: true });
     const installer = new WindowsCanvasArchiveInstaller({ runner });
 
@@ -47,12 +47,12 @@ describe('instaladores de archivo Canvas por plataforma', () => {
     expect(commands[1].join(' ')).toContain('Expand-Archive -LiteralPath');
   });
 
-  it('selecciona el instalador nativo correspondiente', () => {
+  it('selects the corresponding native installer', () => {
     expect(createCanvasArchiveInstaller('win32', { runner: vi.fn() })).toBeInstanceOf(WindowsCanvasArchiveInstaller);
     expect(createCanvasArchiveInstaller('linux', { runner: vi.fn() })).toBeInstanceOf(LinuxCanvasArchiveInstaller);
   });
 
-  it('elige la version mas reciente de GitHub Desktop en Windows', () => {
+  it('chooses the most recent version of GitHub Desktop on Windows', () => {
     const fileSystem = {
       existsSync: vi.fn(() => true),
       readdirSync: () => ['app-3.9.0', 'app-3.10.0']

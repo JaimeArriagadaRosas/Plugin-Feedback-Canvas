@@ -10,7 +10,7 @@ export default class StudentRole extends BaseRole {
       config_llm: false
     };
 
-    // Para el estudiante, la mayoría de permisos no son mutables para proteger la integridad.
+    // Para el student, la mayoría de permisos no son mutables para proteger la integridad.
     // La vista está activa por defecto, pero el administrador puede deshabilitarla.
     this.mutablePermissions = [
       'view_feedback'

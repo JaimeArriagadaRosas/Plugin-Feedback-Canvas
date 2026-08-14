@@ -11,31 +11,31 @@ export default {
 
 export const EmojisSimples = {
   args: {
-    text: 'Hola 👋 mundo 🌍!',
+    text: 'Hello 👋 world 🌍!',
     maxLength: 6,
   },
 };
 
 export const ZWJSequence = {
   args: {
-    // Familia: Hombre, Mujer, Niña, Niño (usando Zero Width Joiner)
-    // Clásico truncará y mostrará piezas separadas o símbolos rotos.
-    text: 'Familia: 👨‍👩‍👧‍👦 terminada',
+    // Family: Man, Woman, Girl, Boy (using Zero Width Joiner)
+    // Classic will truncate and show separate pieces or broken symbols.
+    text: 'Family: 👨‍👩‍👧‍👦 finished',
     maxLength: 10,
   },
 };
 
 export const Banderas = {
   args: {
-    // Las banderas se componen de 2 caracteres regionales
-    text: 'Banderas: 🇨🇱🇲🇽🇪🇸🇦🇷',
+    // Flags are composed of 2 regional characters
+    text: 'Flags: 🇨🇱🇲🇽🇪🇸🇦🇷',
     maxLength: 12,
   },
 };
 
 export const TextoInternacional = {
   args: {
-    text: 'こんにちは世界 (Japonés) / مرحبا بالعالم (Árabe)',
+    text: 'こんにちは世界 (Japanese) / مرحبا بالعالم (Arabic)',
     maxLength: 8,
   },
 };

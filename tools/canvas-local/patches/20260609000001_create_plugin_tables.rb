@@ -6,7 +6,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
   tag :predeploy
 
   def change
-    # 1. Tabla de Plantillas de Feedback
+    # 1. Feedback Templates Table
     create_table :plantilla_feedbacks do |t|
       t.string :nombre, null: false
       t.text :contenido, null: false
@@ -14,7 +14,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.datetime :actualizado_en, default: -> { 'CURRENT_TIMESTAMP' }
     end
 
-    # 2. Historial de Feedbacks Generados
+    # 2. Generated Feedback History
     create_table :historial_feedback_generados do |t|
       t.string :estudiante_id, limit: 50, null: false
       t.string :curso_id, limit: 50, null: false
@@ -33,7 +33,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
     add_index :historial_feedback_generados, :estudiante_id, name: 'idx_historial_estudiante'
     add_index :historial_feedback_generados, :curso_id, name: 'idx_historial_curso'
 
-    # 3. Configuraciones por Curso y Asignación
+    # 3. Configurations by Course and Assignment
     create_table :configuracion_curso_tareas do |t|
       t.string :contexto_tipo, limit: 20, null: false
       t.string :contexto_id, limit: 50, null: false
@@ -42,7 +42,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
     end
     add_index :configuracion_curso_tareas, [:contexto_tipo, :contexto_id], unique: true, name: 'idx_config_curso_tareas'
 
-    # 4. Tokens y Llaves de API de Servicios IA
+    # 4. Tokens and API Keys for AI Services
     create_table :llaves_api_ia do |t|
       t.string :servicio, limit: 50, null: false
       t.text :api_key_encriptada, null: false
@@ -50,7 +50,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.datetime :ultima_verificacion
     end
 
-    # 5. Historial Académico de Estudiantes (Cache Local)
+    # 5. Student Academic History (Local Cache)
     create_table :historial_academico_locales do |t|
       t.string :estudiante_id, limit: 50, null: false
       t.string :curso_id, limit: 50, null: false
@@ -59,7 +59,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
     end
     add_index :historial_academico_locales, [:estudiante_id, :curso_id], unique: true, name: 'idx_historial_academico_loc'
 
-    # 6. Logs de Auditoría
+    # 6. Audit Logs
     create_table :logs_auditoria do |t|
       t.string :usuario_id, limit: 50, null: false
       t.string :accion, limit: 100, null: false
@@ -67,7 +67,7 @@ class CreatePluginTables < ActiveRecord::Migration[7.0]
       t.datetime :fecha, default: -> { 'CURRENT_TIMESTAMP' }
     end
 
-    # 7. Historial de Notificaciones
+    # 7. Notification History
     create_table :notificaciones_feedbacks do |t|
       t.string :estudiante_id, limit: 50, null: false
       t.bigint :historial_feedback_generado_id

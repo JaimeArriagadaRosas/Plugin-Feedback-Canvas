@@ -1,16 +1,16 @@
 /**
  * TeacherTokenGenerator.js
  *
- * Responsable único de gestionar el token de API del profesor para el entorno local.
+ * Single responsible for managing the teacher's API token for the local environment.
  *
- * Estrategia aplicada (alineada con producción):
- * - Primero valida el token existente (diferenciando error de red vs. token inválido).
- * - Si Canvas no está disponible (ECONNREFUSED), reintenta con backoff en lugar de
- *   destruir y regenerar el token innecesariamente.
- * - Si el token es genuinamente inválido (401), lo regenera usando la estrategia
- *   de archivo de handoff Docker (no stdout/Regex).
- * - Persiste el token ÚNICAMENTE en PostgreSQL vía CanvasTokenRepository (cifrado).
- *   Se elimina la copia en texto plano de perfiles_data.json.
+ * Strategy applied (aligned with production):
+ * - First validates the existing token (differentiating network error vs. invalid token).
+ * - If Canvas is not available (ECONNREFUSED), retries with backoff instead of
+ *   destroying and regenerating the token unnecessarily.
+ * - If the token is genuinely invalid (401), regenerates it using the Docker handoff file
+ *   strategy (not stdout/Regex).
+ * - Persists the token ONLY in PostgreSQL via CanvasTokenRepository (encrypted).
+ *   The plain text copy in perfiles_data.json is eliminated.
  */
 
 import path from 'node:path';
@@ -22,7 +22,7 @@ import { LocalTokenStore } from './LocalTokenStore.js';
 const CANVAS_DIR = getCanvasDirectory();
 const PLUGIN_ENV_PATH = path.join(getPluginDirectory(), '.env');
 
-// Validez del token local: 1 año (entorno de desarrollo)
+// Local token validity: 1 year (development environment)
 const LOCAL_TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 365;
 
 export class TeacherTokenGenerator {
@@ -32,9 +32,9 @@ export class TeacherTokenGenerator {
     const error = (msg) => { if (spinner) spinner.clear(); console.log(`  × ${msg}`); };
 
     try {
-      if (spinner) spinner.update({ text: 'Verificando token de API del profesor...' });
+      if (spinner) spinner.update({ text: 'Verifying teacher API token...' });
 
-      const teacherEmail = process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local';
+      const teacherEmail = process.env.CANVAS_TEACHER_EMAIL || 'teacher@canvas.local';
       const teacherFallbackName = process.env.CANVAS_TEACHER_NAME || 'Dr. Elena Ramirez';
       const existingToken = process.env.CANVAS_ACCESS_TOKEN || null;
 
@@ -50,55 +50,55 @@ export class TeacherTokenGenerator {
 
       if (spinner) {
         if (tokenSynchronized) {
-          spinner.success({ text: 'Configuración de token de profesor completada.', mark: '  √' });
+          spinner.success({ text: 'Teacher token setup completed.', mark: '  √' });
         } else {
           spinner.warn({
-            text: 'Token válido; sincronización en PostgreSQL pendiente.',
+            text: 'Valid token; PostgreSQL synchronization pending.',
             mark: '  !'
           });
         }
       }
 
     } catch (e) {
-      error(`Error fatal al gestionar el token del profesor: ${e.message}`);
+      error(`Fatal error managing teacher token: ${e.message}`);
       if (spinner) {
-        spinner.warn({ text: `Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`, mark: '  !' });
+        spinner.warn({ text: `Warning: Could not manage teacher token. Error: ${e.message}`, mark: '  !' });
       } else {
-        console.log(`  ! Advertencia: No se pudo gestionar el token del profesor. Error: ${e.message}`);
+        console.log(`  ! Warning: Could not manage teacher token. Error: ${e.message}`);
       }
     }
   }
 
   static async _validateExistingToken(existingToken, teacherEmail, spinner, log, warn) {
     if (!existingToken) {
-      log(`No hay token en CANVAS_ACCESS_TOKEN. Generando por primera vez.`);
+      log(`No token in CANVAS_ACCESS_TOKEN. Generating for the first time.`);
       return null;
     }
 
-    log(`Validando token existente para ${teacherEmail}...`);
+    log(`Validating existing token for ${teacherEmail}...`);
     const validation = await withRetry(
       () => validateToken(existingToken),
       3, 2000,
       (attempt, total, waitMs) => {
-        if (spinner) spinner.update({ text: `Verificando token... (intento ${attempt}/${total})` });
-        log(`Reintentando validación de token en ${waitMs}ms (intento ${attempt}/${total})`);
+        if (spinner) spinner.update({ text: `Verifying token... (attempt ${attempt}/${total})` });
+        log(`Retrying token validation in ${waitMs}ms (attempt ${attempt}/${total})`);
       }
     ).catch(e => ({ valid: false, reason: 'NETWORK_ERROR', error: e.message }));
 
     if (validation.reason === 'NETWORK_ERROR') {
-      warn(`Canvas no responde (${validation.error}). Se asumirá que el token existente es válido.`);
+      warn(`Canvas is not responding (${validation.error}). Assuming existing token is valid.`);
       return { token: existingToken, canvas_sub: null, user_id: null, reused: true, networkError: true };
     } else if (validation.valid) {
-      log(`Token existente validado correctamente (HTTP 200).`);
+      log(`Existing token validated successfully (HTTP 200).`);
       return { token: existingToken, canvas_sub: null, user_id: null, reused: true };
     }
     
-    log(`Token inválido (${validation.reason}, HTTP ${validation.status}). Procediendo a regenerar.`);
+    log(`Invalid token (${validation.reason}, HTTP ${validation.status}). Proceeding to regenerate.`);
     return null;
   }
 
   static async _regenerateToken(teacherEmail, teacherFallbackName, existingToken, spinner, log, warn) {
-    if (spinner) spinner.update({ text: 'Iniciando nueva sesión, regenerando token...' });
+    if (spinner) spinner.update({ text: 'Starting new session, regenerating token...' });
 
     const healed = await healTokenViaFile(
       CANVAS_DIR, teacherEmail, teacherFallbackName, existingToken, true
@@ -106,7 +106,7 @@ export class TeacherTokenGenerator {
 
     await safeUpdateEnvVariable(PLUGIN_ENV_PATH, 'CANVAS_ACCESS_TOKEN', healed.token, warn);
     process.env.CANVAS_ACCESS_TOKEN = healed.token;
-    log(`Token regenerado y guardado en .env.`);
+    log(`Token regenerated and saved to .env.`);
     
     return healed;
   }
@@ -114,7 +114,7 @@ export class TeacherTokenGenerator {
   static async _syncToDatabase(tokenData, teacherEmail, teacherFallbackName, spinner, log, warn) {
     if (tokenData.networkError || !tokenData.token) {
       if (tokenData.networkError && spinner) {
-        spinner.warn({ text: `Token asumido válido (Canvas no respondía). Se sincronizará en la próxima petición autenticada.`, mark: '  !' });
+        spinner.warn({ text: `Token assumed valid (Canvas not responding). Will synchronize on the next authenticated request.`, mark: '  !' });
       }
       return false;
     }
@@ -137,23 +137,23 @@ export class TeacherTokenGenerator {
           const expiresAt = new Date(Date.now() + LOCAL_TOKEN_EXPIRY_MS);
           const tokenKey = userId ? String(userId) : canvasSub;
           await store.saveToken(tokenKey, tokenData.token, null, expiresAt);
-          log(`Token sincronizado en PostgreSQL (token_key: ${tokenKey}, canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
+          log(`Token synchronized in PostgreSQL (token_key: ${tokenKey}, canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
 
           if (!spinner) {
-            console.log(`  √ Token sincronizado en PostgreSQL (canvas_user_id=${userId}).`);
+            console.log(`  √ Token synchronized in PostgreSQL (canvas_user_id=${userId}).`);
           }
           return true;
         } finally {
           await store.close();
         }
       }
-      warn('No se pudo extraer canvas_sub para sincronizar en BD.');
+      warn('Could not extract canvas_sub to synchronize in DB.');
       return false;
     } catch (e) {
       if (e.message && e.message.includes('does not exist')) {
-        log('Migraciones pendientes. Se sincronizará el token luego.');
+        log('Pending migrations. Token will be synchronized later.');
       } else {
-        warn('No se pudo sincronizar el token del profesor. Se reintentará en el próximo arranque.');
+        warn('Could not synchronize the teacher token. Will retry on the next boot.');
       }
       return false;
     }

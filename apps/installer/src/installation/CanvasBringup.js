@@ -43,7 +43,7 @@ export class CanvasBringup {
   }
 
   async bringup() {
-    this.boot.info('Iniciando stack de Canvas LMS...');
+    this.boot.info('Starting Canvas LMS stack...');
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
     if (!(await this.ensureRubyDependencies())) return false;
@@ -51,33 +51,33 @@ export class CanvasBringup {
   }
 
   async startStack() {
-    this.boot.info('Iniciando contenedores de Canvas LMS...');
+    this.boot.info('Starting Canvas LMS containers...');
     const result = await this.runner('docker', ['compose', 'up', '-d'], { cwd: this.canvasDir });
     if (!result.success) {
-      this.boot.error(`Error al iniciar Docker Compose: ${result.err}`);
+      this.boot.error(`Error starting Docker Compose: ${result.err}`);
       return false;
     }
-    this.boot.success('Contenedores de Canvas LMS iniciados');
+    this.boot.success('Canvas LMS containers started');
     return true;
   }
 
   async ensureRubyDependencies() {
-    this.boot.info('Verificando dependencias Ruby de Canvas...');
+    this.boot.info('Checking Canvas Ruby dependencies...');
     const check = await this._runWebCommand(['bundle', 'check']);
     if (check.success) {
-      this.boot.success('Dependencias Ruby listas');
+      this.boot.success('Ruby dependencies ready');
       return true;
     }
 
-    this.boot.info('Dependencias Ruby incompletas. Instalando gems...');
+    this.boot.info('Incomplete Ruby dependencies. Installing gems...');
     if (!(await this._installBundlerPlugin())) return false;
 
     const install = await this._runWebCommand(['bundle', 'install', '--jobs=2'], {
       extraExecArgs: ['-e', 'BUNDLE_FROZEN=false']
     });
     if (!install.success) {
-      this.boot.error('Error instalando dependencias Ruby (bundle install)');
-      this.boot.error(`bundle install falló: ${install.out} ${install.err}`);
+      this.boot.error('Error installing Ruby dependencies (bundle install)');
+      this.boot.error(`bundle install failed: ${install.out} ${install.err}`);
       return false;
     }
 
@@ -85,17 +85,17 @@ export class CanvasBringup {
       cwd: this.canvasDir
     });
     if (!restarted.success) {
-      this.boot.error(`No se pudieron reiniciar los servicios de Canvas: ${restarted.err}`);
+      this.boot.error(`Could not restart Canvas services: ${restarted.err}`);
       return false;
     }
 
-    this.boot.success('Dependencias Ruby instaladas y servicios reiniciados');
+    this.boot.success('Ruby dependencies installed and services restarted');
     return true;
   }
 
   async waitForReady(interval = 5) {
     const { createSpinner } = await import('nanospinner');
-    const spinner = createSpinner('Iniciando lectura de logs de Canvas...').start();
+    const spinner = createSpinner('Starting Canvas logs reading...').start();
     
     const tailProcess = execa('docker', ['compose', 'logs', '-f', '--tail=0', 'web', 'jobs', 'postgres', 'redis'], {
       cwd: this.canvasDir,
@@ -121,7 +121,7 @@ export class CanvasBringup {
       });
       if (web.success && web.out.trim() && await this.healthCheck(this.healthUrl)) {
         tailProcess.kill();
-        spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
+        spinner.success({ text: 'Canvas LMS is ready to receive requests', mark: '  √' });
         return true;
       }
       await this.sleep(interval * 1000);
@@ -145,7 +145,7 @@ export class CanvasBringup {
       { useWorkspacePermissions: false }
     );
     if (plugin.success) return true;
-    this.boot.error(`No se pudo instalar bundler-multilock: ${plugin.err}`);
+    this.boot.error(`Could not install bundler-multilock: ${plugin.err}`);
     return false;
   }
 

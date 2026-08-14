@@ -2,33 +2,33 @@ import { describe, it, expect, vi } from 'vitest';
 import IAProviderFactory from '../../src/services/ia/factories/IAProviderFactory.js';
 import GeminiProvider from '../../src/services/ia/GeminiProvider.js';
 
-describe('Suite de Inteligencia Artificial (IAProviderFactory)', () => {
-  it('Debería retornar un GeminiProvider cuando el servicio es "gemini"', () => {
+describe('Artificial Intelligence Suite (IAProviderFactory)', () => {
+  it('Should return a GeminiProvider when the service is "gemini"', () => {
     const provider = IAProviderFactory.createProvider('gemini', 'TEST_KEY');
     expect(provider).toBeInstanceOf(GeminiProvider);
     expect(provider.apiKey).toBe('TEST_KEY');
   });
 
-  it('Debería lanzar error si el proveedor no está soportado', () => {
+  it('Should throw an error if the provider is not supported', () => {
     expect(() => IAProviderFactory.createProvider('unknown_ai', 'key'))
-      .toThrow('Proveedor de IA no soportado: unknown_ai');
+      .toThrow('Unsupported AI provider: unknown_ai');
   });
 
-  it('Debería simular la generación de feedback usando Gemini', async () => {
-    // Mockeando el comportamiento de generateFeedback de Gemini
+  it('Should simulate feedback generation using Gemini', async () => {
+    // Mocking the behavior of Gemini's generateFeedback
     const provider = IAProviderFactory.createProvider('gemini', 'TEST_KEY');
     
-    // Suponiendo que GeminiProvider tiene un método generateFeedback
-    // Usamos vi.spyOn para espiarlo y simular una respuesta sin gastar tokens
+    // Assuming GeminiProvider has a generateFeedback method
+    // We use vi.spyOn to spy on it and simulate a response without spending tokens
     provider.generateFeedback = vi.fn().mockResolvedValue({
-      feedback: 'Buen trabajo',
+      feedback: 'Good job',
       score: 95
     });
 
-    const result = await provider.generateFeedback('Hola, este es mi ensayo');
+    const result = await provider.generateFeedback('Hello, this is my essay');
     
-    expect(provider.generateFeedback).toHaveBeenCalledWith('Hola, este es mi ensayo');
-    expect(result.feedback).toBe('Buen trabajo');
+    expect(provider.generateFeedback).toHaveBeenCalledWith('Hello, this is my essay');
+    expect(result.feedback).toBe('Good job');
     expect(result.score).toBe(95);
   });
 });

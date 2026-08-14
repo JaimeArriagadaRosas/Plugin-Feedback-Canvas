@@ -14,10 +14,10 @@ export class PreflightChecks {
   }
 
   async runChecks() {
-    this.boot.info('Iniciando verificación de componentes estáticos');
+    this.boot.info('Starting static component verification');
     this.boot.plain('');
     this.boot.plain('=========================================================');
-    this.boot.plain('   VERIFICACION DE COMPONENTES - CANVAS LMS LOCAL');
+    this.boot.plain('   COMPONENT VERIFICATION - LOCAL CANVAS LMS');
     this.boot.plain('=========================================================');
 
     const checks = [
@@ -35,19 +35,19 @@ export class PreflightChecks {
     for (let i = 0; i < checks.length; i++) {
       // eslint-disable-next-line security/detect-object-injection
       const check = checks[i];
-      this.boot.info(`[${i + 1}/6] Verificando ${check.name}...`);
+      this.boot.info(`[${i + 1}/6] Verifying ${check.name}...`);
       const { ok, details } = await check.fn();
       
       if (!ok) {
         allOk = false;
         Object.assign(missing, details);
-        this.boot.error(`${check.name}: no disponible`);
+        this.boot.error(`${check.name}: not available`);
       } else {
         this.boot.success(check.name);
       }
     }
 
-    this.boot.info(`Verificación completada.`);
+    this.boot.info(`Verification completed.`);
     return { allOk, missing };
   }
 
@@ -90,17 +90,17 @@ export class PreflightChecks {
       return { ok: false, details: { missing_canvas_clone: true } };
     }
     
-    // Si existe el clon, verificar que se haya completado el AssetBuilder exitosamente
+    // If clone exists, verify that AssetBuilder completed successfully
     const assetsMarker = path.join(this.canvasDir, '.assets_built');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(assetsMarker)) {
       return { ok: false, details: { missing_canvas_assets: true } };
     }
 
-    // Ping a la base de datos para asegurar que las tablas no se hayan perdido por un "docker compose down"
+    // Ping the database to ensure tables were not lost due to a "docker compose down"
     try {
       await runCommand('docker', ['compose', 'up', '-d', 'postgres'], { cwd: this.canvasDir });
-      // Esperar 2 segundos para asegurar que PostgreSQL acepte conexiones si se acaba de levantar
+      // Wait 2 seconds to ensure PostgreSQL accepts connections if it just started
       await new Promise((resolve) => setTimeout(resolve, 2000));
       
       const { success, out } = await runCommand('docker', [
@@ -109,11 +109,11 @@ export class PreflightChecks {
       ], { cwd: this.canvasDir, captureAll: true });
 
       if (!success || !out.includes('1')) {
-        this.boot.warn('Se detectó que la base de datos de Canvas está vacía (posible volumen destruido).');
+        this.boot.warn('Detected that the Canvas database is empty (possible destroyed volume).');
         return { ok: false, details: { missing_canvas_assets: true } };
       }
     } catch (err) {
-      this.boot.warn('Error al verificar la base de datos de Canvas, se asumirá que requiere reconstrucción.');
+      this.boot.warn('Error verifying the Canvas database, assuming reconstruction is required.');
       return { ok: false, details: { missing_canvas_assets: true } };
     }
     
@@ -122,8 +122,8 @@ export class PreflightChecks {
 
   async checkPluginDb() {
     if (process.env.KEYS_REGENERATED === 'true') {
-      this.boot.warn('Se regeneraron llaves locales; los volúmenes Docker NO se eliminarán automáticamente.');
-      this.boot.action('Si necesita reiniciar datos, use un procedimiento explícito de backup/reset después de verificar el entorno.');
+      this.boot.warn('Local keys were regenerated; Docker volumes will NOT be automatically deleted.');
+      this.boot.action('If you need to reset data, use an explicit backup/reset procedure after verifying the environment.');
     }
 
     const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir, captureAll: true });

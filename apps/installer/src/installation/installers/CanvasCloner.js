@@ -27,7 +27,7 @@ export class CanvasCloner {
   }
 
   async cloneCanvas() {
-    this.boot.info(`Clonando repositorio Canvas LMS en: ${this.canvasDir}`);
+    this.boot.info(`Cloning Canvas LMS repository to: ${this.canvasDir}`);
     const directoryState = this._getDirectoryState();
     if (directoryState === 'ready') return this._reuseCanvasDirectory();
     if (directoryState === 'unsafe-existing-directory') return this._reportUnsafeDirectory();
@@ -37,7 +37,7 @@ export class CanvasCloner {
       if (!cloneOutcome.canUseArchiveFallback || !(await this._downloadArchiveFallback())) return false;
     }
 
-    this.boot.info('Canvas LMS clonado correctamente.');
+    this.boot.info('Canvas LMS cloned correctly.');
     this._configureBasicEnv();
     this._configureDockerOverride();
     this._fixCRLF();
@@ -54,7 +54,7 @@ export class CanvasCloner {
   }
 
   _reuseCanvasDirectory() {
-    this.boot.info('La carpeta canvas-lms-master ya tiene el codigo base. Se omitira la clonacion.');
+    this.boot.info('The canvas-lms-master folder already has the codebase. Cloning will be skipped.');
     this._configureBasicEnv();
     this._configureDockerOverride();
     this._fixCRLF();
@@ -62,8 +62,8 @@ export class CanvasCloner {
   }
 
   _reportUnsafeDirectory() {
-    this.boot.error('La carpeta de Canvas existe, pero no contiene un docker-compose.yml reconocible.');
-    this.boot.action('No se eliminara automaticamente. Revise, respalde o renombre la carpeta antes de reintentar el setup.');
+    this.boot.error('The Canvas folder exists, but does not contain a recognizable docker-compose.yml.');
+    this.boot.action('It will not be automatically deleted. Review, backup or rename the folder before retrying the setup.');
     return false;
   }
 
@@ -75,11 +75,11 @@ export class CanvasCloner {
     ], { logFile: this.logFile });
     if (result.success) return { success: true, canUseArchiveFallback: false };
 
-    this.boot.warn(`No se pudo clonar con git: ${result.err}`);
+    this.boot.warn(`Could not clone with git: ${result.err}`);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(this.canvasDir)) {
-      this.boot.error('Git dejo una carpeta de Canvas parcial. Se preservara para diagnostico.');
-      this.boot.action('Revise o elimine manualmente la carpeta parcial antes de usar el fallback ZIP.');
+      this.boot.error('Git left a partial Canvas folder. It will be preserved for diagnosis.');
+      this.boot.action('Review or manually delete the partial folder before using the ZIP fallback.');
       return { success: false, canUseArchiveFallback: false };
     }
     return { success: false, canUseArchiveFallback: true };
@@ -92,20 +92,20 @@ export class CanvasCloner {
 
     const embeddedGit = this.gitCommandLocator.find();
     if (embeddedGit) {
-      this.boot.info(`Usando git embebido desde GitHub Desktop: ${embeddedGit}`);
+      this.boot.info(`Using embedded git from GitHub Desktop: ${embeddedGit}`);
       return embeddedGit;
     }
     return globalGit;
   }
 
   async _downloadArchiveFallback() {
-    this.boot.info('Intentando fallback: descargando ZIP nativamente...');
+    this.boot.info('Attempting fallback: downloading ZIP natively...');
     const zipFile = path.join(process.env.TEMP || '/tmp', 'canvas-lms-release.zip');
     const extractedDir = path.join(path.dirname(this.canvasDir), CANVAS_ZIP_DIRECTORY);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(extractedDir)) {
-      this.boot.error('Ya existe un directorio extraido de Canvas. No se combinara con una descarga nueva.');
-      this.boot.action('Revise o renombre el directorio extraido antes de reintentar el fallback ZIP.');
+      this.boot.error('An extracted Canvas directory already exists. It will not be merged with a new download.');
+      this.boot.action('Review or rename the extracted directory before retrying the ZIP fallback.');
       return false;
     }
     const extracted = await this.archiveInstaller.downloadAndExtract({
@@ -115,19 +115,19 @@ export class CanvasCloner {
       logFile: this.logFile
     });
     if (!extracted) {
-      this.boot.error('Fallo la descarga o extraccion del ZIP de respaldo.');
+      this.boot.error('Failed to download or extract the backup ZIP.');
       return false;
     }
 
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(extractedDir)) {
-      this.boot.error('El ZIP no contenia el directorio esperado de Canvas.');
+      this.boot.error('The ZIP did not contain the expected Canvas directory.');
       return false;
     }
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(this.canvasDir)) {
-      this.boot.error('El fallback ZIP encontro un destino Canvas existente y no lo reemplazara.');
-      this.boot.action('Revise o renombre el destino existente y el directorio extraido antes de reintentar.');
+      this.boot.error('The ZIP fallback found an existing Canvas destination and will not replace it.');
+      this.boot.action('Review or rename the existing destination and the extracted directory before retrying.');
       return false;
     }
     // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -136,23 +136,23 @@ export class CanvasCloner {
   }
 
   async _startCanvasServices() {
-    this.boot.info('Iniciando servicios base de Canvas (Docker Compose up -d)...');
+    this.boot.info('Starting base Canvas services (Docker Compose up -d)...');
     let result = await this.runner('docker', ['compose', 'up', '-d'], {
       cwd: this.canvasDir, logFile: this.logFile
     });
     if (result.success) return true;
 
-    this.boot.warn('Fallo al iniciar Docker Compose. Intentando reinicio sin destruir volumenes...');
+    this.boot.warn('Failed to start Docker Compose. Attempting restart without destroying volumes...');
     await this.runner('docker', ['compose', 'down'], { cwd: this.canvasDir, logFile: this.logFile });
     result = await this.runner('docker', ['compose', 'up', '-d'], {
       cwd: this.canvasDir, logFile: this.logFile
     });
     if (!result.success) {
-      this.boot.error('El reinicio suave fallo; no se eliminaran volumenes automaticamente.');
-      this.boot.action('Revise `docker compose logs`, haga backup y autorice cualquier reset de datos por separado.');
+      this.boot.error('The soft restart failed; volumes will not be automatically deleted.');
+      this.boot.action('Review `docker compose logs`, backup and authorize any data reset separately.');
       return false;
     }
-    this.boot.success('Docker Compose inicio correctamente tras un reinicio no destructivo.');
+    this.boot.success('Docker Compose started correctly after a non-destructive restart.');
     return true;
   }
 
@@ -161,13 +161,13 @@ export class CanvasCloner {
     const envExample = path.join(this.canvasDir, '.env.example');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(envFile)) {
-      this.boot.info('Se conserva el .env existente de Canvas.');
+      this.boot.info('The existing Canvas .env is preserved.');
       return;
     }
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (fs.existsSync(envExample)) {
       fs.copyFileSync(envExample, envFile);
-      this.boot.info('Copiando .env.example a .env...');
+      this.boot.info('Copying .env.example to .env...');
       return;
     }
     // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -176,7 +176,7 @@ CANVAS_LMS_ADMIN_EMAIL=admin@example.com
 CANVAS_LMS_ADMIN_PASSWORD=password123
 CANVAS_LMS_HOST=localhost:8080
 `);
-    this.boot.info('Creando archivo .env basico...');
+    this.boot.info('Creating basic .env file...');
   }
 
   _configureDockerOverride() {
@@ -212,7 +212,7 @@ CANVAS_LMS_HOST=localhost:8080
 volumes:
   canvas-bundle-gems:
 `);
-    this.boot.info('Optimizaciones de recursos aplicadas (docker-compose.override.yml).');
+    this.boot.info('Resource optimizations applied (docker-compose.override.yml).');
   }
 
   _fixCRLF() {
@@ -224,6 +224,6 @@ volumes:
     const lfContent = Buffer.from(content.toString('binary').replace(/\r\n/g, '\n'), 'binary');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.writeFileSync(shFile, lfContent);
-    this.boot.info('Corrigiendo CRLF en script de BD.');
+    this.boot.info('Fixing CRLF in DB script.');
   }
 }

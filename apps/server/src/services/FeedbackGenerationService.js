@@ -15,9 +15,9 @@ import logger from '../utils/logger.js';
 import IAProviderFactory from './ia/factories/IAProviderFactory.js';
 
 /**
- * Servicio para generar feedback interactuando con Canvas y LLMs.
+ * Service to generate feedback interacting with Canvas and LLMs.
  *
- * Separtado de FeedbackService para cumplir SRP. Usa dependency injection.
+ * Separated from FeedbackService to comply with SRP. Uses dependency injection.
  */
 export default class FeedbackGenerationService {
   constructor(canvasGateway, feedbackRepo, templateRepo, academicHistoryService, validadorAcademico, configRepo, iaConfigManager) {
@@ -61,9 +61,9 @@ export default class FeedbackGenerationService {
       const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
       const { assignment, assignmentName, student, questions, rubric } = canvasData;
 
-      const finalCourseName = metadata.courseName || `Curso ${courseId}`;
-      const finalAssignmentName = metadata.assignmentName || assignmentName || assignment?.name || `Tarea ${assignmentId}`;
-      const finalStudentName = metadata.studentName || student?.name || 'Estudiante';
+      const finalCourseName = metadata.courseName || `Course ${courseId}`;
+      const finalAssignmentName = metadata.assignmentName || assignmentName || assignment?.name || `Assignment ${assignmentId}`;
+      const finalStudentName = metadata.studentName || student?.name || 'Student';
 
       let chileGrade, approved, canvasScore;
       try {
@@ -73,8 +73,8 @@ export default class FeedbackGenerationService {
         canvasScore = gradeResult.canvasScore;
       } catch (err) {
         if (err.statusCode === 422) {
-          logger.debug(`Este estudiante no ha entregado (Estudiante: ${studentId})`);
-          return { exito: false, omitido: true, data: null, mensaje: 'Este estudiante no ha entregado', razon: err.errorCode || 'INSUFFICIENT_DATA' };
+          logger.debug(`This student has not submitted (Student: ${studentId})`);
+          return { exito: false, omitido: true, data: null, mensaje: 'This student has not submitted', razon: err.errorCode || 'INSUFFICIENT_DATA' };
         }
         throw new DomainError(err.message, err.statusCode || 400, err.errorCode);
       }
@@ -102,12 +102,12 @@ export default class FeedbackGenerationService {
       );
 
       const template = await this.templateRepo.getById(templateId);
-      if (!template || !template.contenido) throw new DomainError('Plantilla no encontrada o sin contenido', 404);
+      if (!template || !template.contenido) throw new DomainError('Template not found or without content', 404);
 
       context.instructionIA = context.instructionIA + activeVariablesInfo.text;
       await this._appendActiveVariableData(context, activeVariablesInfo.activeVars);
 
-      // Inyección modular de variables usando el Patrón Strategy
+      // Modular variable injection using Strategy Pattern
       const prompt = await PromptManager.buildPrompt(template.contenido, context, this.resolvers);
 
       let aiConfig = {};
@@ -115,10 +115,10 @@ export default class FeedbackGenerationService {
         try {
           aiConfig = await this.iaConfigManager.getGlobalActiveConfig();
         } catch (e) {
-          throw new DomainError(`Error obteniendo configuración de IA: ${e.message}`, 500, 'AI_CONFIG_ERROR');
+          throw new DomainError(`Error getting AI configuration: ${e.message}`, 500, 'AI_CONFIG_ERROR');
         }
       } else {
-        throw new DomainError('IAConfigManager no está inyectado', 500, 'SERVER_ERROR');
+        throw new DomainError('IAConfigManager is not injected', 500, 'SERVER_ERROR');
       }
 
       const provider = IAProviderFactory.createProvider(aiConfig.service, aiConfig.apiKey, aiConfig.customEndpoint);
@@ -133,7 +133,7 @@ export default class FeedbackGenerationService {
           systemInstruction: context.instructionIA
         });
       } catch (aiErr) {
-        throw new DomainError(`Error de IA: ${aiErr.message}`, 502, 'AI_GENERATION_FAILED');
+        throw new DomainError(`AI Error: ${aiErr.message}`, 502, 'AI_GENERATION_FAILED');
       }
 
       const saved = await this.persistenceHandler.saveGeneratedFeedback({
@@ -172,7 +172,7 @@ export default class FeedbackGenerationService {
       }
     }
     if (lines.length > 0) {
-      context.instructionIA += `\\nDatos del estudiante correspondientes a las variables activas:\\n${lines.join('\\n')}\\n`;
+      context.instructionIA += `\\nStudent data corresponding to the active variables:\\n${lines.join('\\n')}\\n`;
     }
   }
 
@@ -184,10 +184,10 @@ export default class FeedbackGenerationService {
       this.canvasGateway.getStudents(courseId, teacherId)
     ]);
 
-    const student = students.find(s => s.id === studentId) || { name: 'Estudiante' };
+    const student = students.find(s => s.id === studentId) || { name: 'Student' };
     const assignment = (this.canvasGateway.getAssignment && (await this.canvasGateway.getAssignment(courseId, assignmentId, teacherId)))
       || (await this.canvasGateway.getAssignments(courseId, teacherId)).find(a => a.id === assignmentId)
-      || { name: `Tarea ${assignmentId}` };
+      || { name: `Assignment ${assignmentId}` };
 
     return { submission, questions, rubric, students, student, assignment };
   }
@@ -209,10 +209,10 @@ export default class FeedbackGenerationService {
 
       let tendenciaPrompt = '';
       if (isTrayectoriaActiva) {
-        tendenciaPrompt = `El estudiante tiene un nivel ${profile.level}. `;
-        if (profile.trend === 'Mejora') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido mejora en el semestre. ";
-        else if (profile.trend === 'Retroceso') tendenciaPrompt += "Menciona explícitamente al estudiante: Has tenido un pequeño retroceso. ";
-        else tendenciaPrompt += "Menciona explícitamente al estudiante: Has mantenido un rendimiento constante. ";
+        tendenciaPrompt = `The student has a level of ${profile.level}. `;
+        if (profile.trend === 'Mejora') tendenciaPrompt += "Explicitly mention to the student: You have improved during the semester. ";
+        else if (profile.trend === 'Retroceso') tendenciaPrompt += "Explicitly mention to the student: You have had a slight setback. ";
+        else tendenciaPrompt += "Explicitly mention to the student: You have maintained a constant performance. ";
       }
 
       const context = {
@@ -237,8 +237,8 @@ export default class FeedbackGenerationService {
         rubric,
         profile,
         instructionIA: tendenciaPrompt +
-          `Genera la respuesta estrictamente en el idioma que solicite la plantilla o el profesor, si no se especifica, usa español. ` +
-          `IMPORTANTE: Si la plantilla contiene formato de texto enriquecido como **negrita**, *cursiva*, <u>subrayado</u> o listas (- o 1.), debes preservar y replicar exactamente ese mismo formato en tu respuesta. Usa la misma sintaxis Markdown y etiquetas HTML que aparezcan en la plantilla.`
+          `Generate the response strictly in the language requested by the template or teacher, if not specified, use English. ` +
+          `IMPORTANT: If the template contains rich text formatting such as **bold**, *italic*, <u>underline</u> or lists (- or 1.), you must preserve and exactly replicate that same formatting in your response. Use the same Markdown syntax and HTML tags that appear in the template.`
       };
 
     return { context };
@@ -256,11 +256,11 @@ export default class FeedbackGenerationService {
     
     let activeVariablesText = "";
     if (activeVars.length > 0) {
-      activeVariablesText = "\\nAdicionalmente, ten en cuenta las siguientes variables de personalización solicitadas por el profesor:\\n";
+      activeVariablesText = "\\nAdditionally, consider the following customization variables requested by the teacher:\\n";
       activeVars.forEach(v => {
-        activeVariablesText += `- ${v.nombre} (Relevancia: ${v.ponderacion}%)\\n`;
+        activeVariablesText += `- ${v.nombre} (Relevance: ${v.ponderacion}%)\\n`;
       });
-      activeVariablesText += "Debes dedicar proporcionalmente más espacio, profundidad y atención en tu respuesta a aquellas variables que tengan mayor ponderación.\\n";
+      activeVariablesText += "You must dedicate proportionally more space, depth, and attention in your response to those variables with greater weight.\\n";
     }
     return {
       text: activeVariablesText,

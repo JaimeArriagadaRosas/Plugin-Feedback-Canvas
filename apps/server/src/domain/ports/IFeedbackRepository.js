@@ -24,13 +24,13 @@ export class IFeedbackRepository {
   async updateStatusAndContent(id, estado, contenido) {
     throw new Error('Method not implemented');
   }
-  async updateProfesorRating(id, rating) {
+  async updateTeacherRating(id, rating) {
     throw new Error('Method not implemented');
   }
-  async updateEstudianteRating(id, rating) {
+  async updateStudentRating(id, rating) {
     throw new Error('Method not implemented');
   }
-  async saveNotification(estudianteId, feedbackId, mensaje, metodo = 'email') {
+  async saveNotification(studentId, feedbackId, mensaje, metodo = 'email') {
     throw new Error('Method not implemented');
   }
 }

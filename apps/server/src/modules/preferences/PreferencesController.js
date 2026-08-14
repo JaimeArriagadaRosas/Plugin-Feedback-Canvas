@@ -9,22 +9,22 @@ export default class PreferencesController {
   }
 
   async getPreferences(req, res) {
-    // El estudiante solicita sus propias preferencias
-    const estudianteId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
+    // El student solicita sus propias preferencias
+    const studentId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
     
-    if (!estudianteId) {
-      throw new ApiError('Usuario no autenticado o ID de estudiante no disponible', 401);
+    if (!studentId) {
+      throw new ApiError('Usuario no autenticado o ID de student no disponible', 401);
     }
 
-    const data = await this.preferencesService.getStudentPreference(estudianteId);
+    const data = await this.preferencesService.getStudentPreference(studentId);
     res.json({ exito: true, data });
   }
 
   async updatePreferences(req, res) {
-    const estudianteId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
+    const studentId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
     
-    if (!estudianteId) {
-      throw new ApiError('Usuario no autenticado o ID de estudiante no disponible', 401);
+    if (!studentId) {
+      throw new ApiError('Usuario no autenticado o ID de student no disponible', 401);
     }
 
     const { metodo, frecuencia } = req.body;
@@ -33,7 +33,7 @@ export default class PreferencesController {
       throw new ApiError('Debe proporcionar método y frecuencia', 400);
     }
 
-    const data = await this.preferencesService.saveStudentPreference(estudianteId, metodo, frecuencia);
+    const data = await this.preferencesService.saveStudentPreference(studentId, metodo, frecuencia);
     res.json({ exito: true, mensaje: 'Preferencias actualizadas correctamente', data });
   }
 }

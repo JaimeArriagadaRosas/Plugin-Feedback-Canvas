@@ -1,15 +1,15 @@
 /**
  * TokenManager.js
  *
- * Módulo central de gestión de tokens de API de Canvas para el entorno local.
+ * Central Canvas API token management module for the local environment.
  * 
- * Estrategia de producción aplicada localmente:
- * - Se diferencia entre "Canvas no está listo" (ECONNREFUSED) y "token inválido" (401).
- * - La comunicación con el contenedor Ruby NO usa stdout/Regex. En cambio, el script
- *   de Ruby escribe un archivo JSON en el volumen Docker compartido (/usr/src/app/tmp/)
- *   que Node.js lee y elimina de forma atómica. Esto es equivalente al patrón de
- *   "credential handoff via shared volume" usado en pipelines CI/CD modernos.
- * - Se usa reintentos con backoff exponencial para errores de red transitoria.
+ * Production strategy applied locally:
+ * - It differentiates between 'Canvas is not ready' (ECONNREFUSED) and 'invalid token' (401).
+ * - Communication with the Ruby container does NOT use stdout/Regex. Instead, the script
+ *   writes a JSON file in the shared Docker volume (/usr/src/app/tmp/)
+ *   which Node.js reads and atomically deletes. This is equivalent to the pattern of
+ *   "credential handoff via shared volume" used in modern CI/CD pipelines.
+ * - It uses retries with exponential backoff for transient network errors.
  */
 
 import fs from 'node:fs/promises';
@@ -19,18 +19,18 @@ import { runCommand } from './Runner.js';
 const CANVAS_LOCAL_URL = 'http://127.0.0.1:8080';
 const CANVAS_VALIDATION_ENDPOINT = '/api/v1/users/self/profile';
 const CANVAS_PING_ENDPOINT = '/api/v1/brand_variables';
-// Usamos la raíz del proyecto para evitar que la carpeta 'tmp' (que es un volumen Docker separado) 
-// intercepte la escritura y oculte el archivo del host (Path shadowing).
+// We use the root of the project to prevent the 'tmp' folder (which is a separate Docker volume) 
+// from intercepting the write and hiding the file from the host (Path shadowing).
 const TOKEN_HANDOFF_PATH_IN_CONTAINER = '/usr/src/app/.token_handoff.json';
 
-// --- Utilidades ---
+// --- Utilities ---
 
 /**
- * Utilidad genérica de reintentos con espera exponencial.
- * @param {Function} asyncFn - Función async a reintentar.
- * @param {number} retries - Número de reintentos.
- * @param {number} baseWaitMs - Espera base en ms (se duplica en cada intento).
- * @param {Function} [onRetry] - Callback opcional llamado antes de cada reintento.
+ * Generic retry utility with exponential backoff.
+ * @param {Function} asyncFn - Async function to retry.
+ * @param {number} retries - Number of retries.
+ * @param {number} baseWaitMs - Base wait in ms (doubles on each attempt).
+ * @param {Function} [onRetry] - Optional callback called before each retry.
  * @returns {Promise<any>}
  */
 export async function withRetry(asyncFn, retries = 3, baseWaitMs = 2000, onRetry = null) {
@@ -50,11 +50,11 @@ export async function withRetry(asyncFn, retries = 3, baseWaitMs = 2000, onRetry
   throw lastError;
 }
 
-// --- Validación de Canvas ---
+// --- Canvas Validation ---
 
 /**
- * Verifica si el servidor web de Canvas está listo para recibir peticiones.
- * Usa un endpoint público (brand_variables) que no requiere autenticación.
+ * Checks if the Canvas web server is ready to receive requests.
+ * Uses a public endpoint (brand_variables) that does not require authentication.
  * 
  * @returns {Promise<{ ready: boolean, error?: string }>}
  */
@@ -65,7 +65,7 @@ export async function pingCanvasAPI() {
       redirect: 'manual',
       headers: { 'Host': 'localhost:8443', 'X-Forwarded-Proto': 'https' }
     });
-    // Canvas puede devolver 401 en este endpoint pero al menos está respondiendo.
+    // Canvas may return 401 on this endpoint but at least it is responding.
     return { ready: response.status !== 0 };
   } catch (e) {
     const isNetworkError = e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET' ||
@@ -76,8 +76,8 @@ export async function pingCanvasAPI() {
 }
 
 /**
- * Valida un token de API de Canvas haciendo una petición autenticada.
- * Diferencia entre error de red (Canvas no listo) y token inválido (401).
+ * Validates a Canvas API token by making an authenticated request.
+ * Differentiates between network error (Canvas not ready) and invalid token (401).
  *
  * @param {string} token
  * @returns {Promise<{ valid: boolean, reason: 'OK'|'UNAUTHORIZED'|'NETWORK_ERROR'|'UNKNOWN', status?: number }>}
@@ -104,26 +104,26 @@ export async function validateToken(token) {
   }
 }
 
-// --- Sanación de Token vía Archivo Docker (patrón production-safe) ---
+// --- Token Healing via Docker File (production-safe pattern) ---
 
 /**
- * Regenera el token del profesor en Canvas ejecutando un script de Ruby que
- * escribe el resultado en un archivo JSON dentro del volumen Docker compartido.
- * Node.js lee y elimina el archivo de forma atómica.
+ * Regenerates the teacher's token in Canvas by executing a Ruby script that
+ * writes the result in a JSON file inside the shared Docker volume.
+ * Node.js reads and atomically deletes the file.
  *
- * Este patrón (credential handoff via shared volume) es el estándar de la industria
- * para comunicación segura entre contenedores Docker y el host, ya que evita
- * exponer tokens en stdout (susceptibles a Warnings de Ruby, logs de CI/CD, etc.).
+ * This pattern (credential handoff via shared volume) is the industry standard
+ * for secure communication between Docker containers and the host, as it prevents
+ * exposing tokens in stdout (susceptible to Ruby Warnings, CI/CD logs, etc.).
  *
- * @param {string} canvasDir - Ruta al directorio de Canvas LMS.
- * @param {string} teacherEmail - Email del profesor (CANVAS_TEACHER_EMAIL).
- * @param {string} [fallbackName] - Nombre como fallback si no se encuentra por email.
- * @param {string} [existingToken] - Token actual (si existe) para reutilizar si es válido.
- * @param {boolean} [forceRegenerate=false] - Forzar regeneración aunque el token sea válido.
+ * @param {string} canvasDir - Path to the Canvas LMS directory.
+ * @param {string} teacherEmail - Teacher's email (CANVAS_TEACHER_EMAIL).
+ * @param {string} [fallbackName] - Fallback name if not found by email.
+ * @param {string} [existingToken] - Current token (if it exists) to reuse if valid.
+ * @param {boolean} [forceRegenerate=false] - Force regeneration even if token is valid.
  * @returns {Promise<{ user_id: number, email: string, token: string, canvas_sub: string }>}
  */
 export async function healTokenViaFile(canvasDir, teacherEmail, fallbackName = 'Dr. Elena Ramirez', existingToken = null, forceRegenerate = false) {
-  // Limpiar archivo de handoff previo si existe (por si el proceso anterior falló a medias)
+  // Clean up previous handoff file if it exists (in case the previous process failed halfway)
   const cleanupScript = `File.delete('${TOKEN_HANDOFF_PATH_IN_CONTAINER}') rescue nil`;
   await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', cleanupScript], { cwd: canvasDir });
 
@@ -171,20 +171,20 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
   );
 
   if (!success) {
-    throw new Error(`[TOKEN-MANAGER] Rails runner falló. Stderr: ${err?.slice(0, 500)}`);
+    throw new Error(`[TOKEN-MANAGER] Rails runner failed. Stderr: ${err?.slice(0, 500)}`);
   }
 
-  // Leer el archivo de handoff desde el host (volumen compartido)
+  // Read the handoff file from the host (shared volume)
   const hostHandoffPath = path.join(canvasDir, '.token_handoff.json');
   let raw;
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     raw = await fs.readFile(hostHandoffPath, 'utf-8');
   } catch (e) {
-    throw new Error(`[TOKEN-MANAGER] No se encontró el archivo de handoff en ${hostHandoffPath}. El script de Ruby puede haber fallado silenciosamente.`);
+    throw new Error(`[TOKEN-MANAGER] Could not find the handoff file at ${hostHandoffPath}. The Ruby script may have failed silently.`);
   }
 
-  // Eliminar el archivo inmediatamente (no dejar tokens en disco más de lo necesario)
+  // Delete the file immediately (do not leave tokens on disk longer than necessary)
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.unlink(hostHandoffPath).catch(e => { console.debug('Error unlinking handoff file', e.message); });
 
@@ -192,15 +192,15 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
   try {
     data = JSON.parse(raw);
   } catch (e) {
-    throw new Error(`[TOKEN-MANAGER] El archivo de handoff contiene JSON inválido: ${raw.slice(0, 200)}`);
+    throw new Error(`[TOKEN-MANAGER] The handoff file contains invalid JSON: ${raw.slice(0, 200)}`);
   }
 
   if (data.error) {
-    throw new Error(`[TOKEN-MANAGER] Error en Ruby: ${data.error} (email: ${data.email}, name: ${data.name})`);
+    throw new Error(`[TOKEN-MANAGER] Ruby error: ${data.error} (email: ${data.email}, name: ${data.name})`);
   }
 
   if (!data.token) {
-    throw new Error(`[TOKEN-MANAGER] El archivo de handoff no contiene token. Datos recibidos: ${JSON.stringify(data)}`);
+    throw new Error(`[TOKEN-MANAGER] The handoff file does not contain a token. Data received: ${JSON.stringify(data)}`);
   }
 
   return data;

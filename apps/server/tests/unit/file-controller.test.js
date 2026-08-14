@@ -5,17 +5,17 @@ import FileController from '../../src/controllers/FileController.js';
 describe('FileController', () => {
   const controller = new FileController();
 
-  it('acepta subdominios reales de Canvas y rechaza sufijos engañosos', () => {
+  it('accepts real Canvas subdomains and rejects deceptive suffixes', () => {
     expect(controller._isTrustedHost('canvas.instructure.com')).toBe(true);
     expect(controller._isTrustedHost('evilinstructure.com')).toBe(false);
   });
 
-  it('solo permite esquemas HTTP(S) para la vista previa', () => {
-    expect(() => controller._validateUrl('file:///etc/passwd')).toThrow('Dominio de origen no permitido');
-    expect(() => controller._validateUrl('no-es-url')).toThrow('URL inválida');
+  it('only allows HTTP(S) schemes for preview', () => {
+    expect(() => controller._validateUrl('file:///etc/passwd')).toThrow('Origin domain not allowed');
+    expect(() => controller._validateUrl('no-es-url')).toThrow('Invalid URL');
   });
 
-  it('usa el endpoint vigente de Gotenberg', () => {
+  it('uses the current Gotenberg endpoint', () => {
     const originalUrl = process.env.GOTENBERG_URL;
     process.env.GOTENBERG_URL = 'http://localhost:3001';
     expect(controller._gotenbergEndpoint()).toBe('http://localhost:3001/forms/libreoffice/convert');

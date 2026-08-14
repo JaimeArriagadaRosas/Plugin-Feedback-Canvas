@@ -40,7 +40,7 @@ async function getAuthCookie() {
   const response = await fetch(loginUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'profesor@canvas.local', password: 'password123' })
+    body: JSON.stringify({ email: 'teacher@canvas.local', password: 'password123' })
   });
 
   if (!response.ok) {

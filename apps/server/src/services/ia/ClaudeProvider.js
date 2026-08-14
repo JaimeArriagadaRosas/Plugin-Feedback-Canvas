@@ -5,11 +5,11 @@ import ClaudeErrorHandler from './errors/ClaudeErrorHandler.js';
 
 const OUTPUT_GUARDRAILS = `
 ---
-REGLAS DE SALIDA (OBLIGATORIAS):
-1. Entrega SOLO el texto de retroalimentación. No expliques lo que harás, no describas la plantilla, no resumas las preguntas.
-2. Si vas a mencionar números, usa los datos provistos arriba —no inventes calificaciones.
-3. Finaliza con un saludo cordial y tu nombre como profesor.
-4. La respuesta debe estar completamente en el idioma solicitado y lista para enviar al estudiante sin modificaciones.`;
+OUTPUT RULES (MANDATORY):
+1. Deliver ONLY the feedback text. Do not explain what you will do, do not describe the template, do not summarize the questions.
+2. If you are going to mention numbers, use the data provided above —do not invent grades.
+3. End with a cordial greeting and your name as a teacher.
+4. The response must be completely in the requested language and ready to send to the student without modifications.`;
 
 export default class ClaudeProvider extends IAProvider {
   constructor(apiKey, customEndpoint = null) {
@@ -19,11 +19,11 @@ export default class ClaudeProvider extends IAProvider {
   }
 
   async generateFeedback(prompt, config = {}) {
-    logger.info('[IA] Generando feedback con Claude (con Exponential Backoff)...');
+    logger.info('[IA] Generating feedback with Claude (with Exponential Backoff)...');
 
     const apiKey = config.apiKey || this.apiKey;
     if (!apiKey) {
-      throw new Error('API Key de Claude requerida');
+      throw new Error('Claude API Key required');
     }
 
     const modelName = config.model || "claude-3-5-sonnet-latest";
@@ -61,7 +61,7 @@ export default class ClaudeProvider extends IAProvider {
         const text = data.content?.[0]?.text?.trim();
 
         if (!text) {
-          throw new Error('Respuesta vacía de Claude');
+          throw new Error('Empty response from Claude');
         }
 
         return text;
@@ -72,9 +72,9 @@ export default class ClaudeProvider extends IAProvider {
   }
 
   async fetchAvailableModels(apiKey) {
-    // Anthropic API no provee un endpoint público de /models oficial similar a OpenAI 
-    // en la versión 2023-06-01. Sin embargo, recientemente incluyeron un endpoint en beta.
-    // Si falla, caemos a un listado estático conocido.
+    // Anthropic API does not provide an official public /models endpoint similar to OpenAI 
+    // in version 2023-06-01. However, they recently included a beta endpoint.
+    // If it fails, we fall back to a known static list.
     return await ExponentialBackoff.execute(async () => {
       try {
         const targetKey = apiKey || this.apiKey;
@@ -86,7 +86,7 @@ export default class ClaudeProvider extends IAProvider {
         });
         
         if (!response.ok) {
-           // Fallback a modelos estáticos si el endpoint falla (ej. por versión)
+           // Fallback to static models if the endpoint fails (e.g. due to version)
            if (response.status === 404 || response.status === 401) {
               if (response.status === 401) throw new Error("Invalid API Key");
               return [

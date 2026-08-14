@@ -23,9 +23,9 @@ export default function HistoryPagination({ page, setPage, totalPages }) {
           borderRadius: '4px'
         }}
       >
-        Ant
+        Prev
       </button>
-      <span style={{ fontSize: '12px', color: 'var(--color-text)' }}>Página {page} de {totalPages}</span>
+      <span style={{ fontSize: '12px', color: 'var(--color-text)' }}>Page {page} of {totalPages}</span>
       <button 
         disabled={page === totalPages}
         onClick={() => setPage(page + 1)}
@@ -37,7 +37,7 @@ export default function HistoryPagination({ page, setPage, totalPages }) {
           borderRadius: '4px'
         }}
       >
-        Sig
+        Next
       </button>
     </div>
   );

@@ -29,6 +29,6 @@ export default class CourseService {
     if (this.configRepo && typeof this.configRepo.resetActiveByCourse === 'function') {
       await this.configRepo.resetActiveByCourse(courseId, profesorId);
     }
-    logger.info(`[CourseService] Estado activo de tareas reiniciado a false para curso ${courseId} y profesor ${profesorId}`);
+    logger.info(`[CourseService] Active status of assignments reset to false for course ${courseId} and teacher ${profesorId}`);
   }
 }

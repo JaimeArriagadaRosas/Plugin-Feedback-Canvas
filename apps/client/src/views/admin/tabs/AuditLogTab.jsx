@@ -4,13 +4,13 @@ import { useAuditLogs } from '../../../hooks/useAuditLogs';
 export default function AuditLogTab() {
   const { logs, loading, error, fetchLogs } = useAuditLogs(50);
 
-  if (loading) return <div>Cargando logs de auditoría...</div>;
+  if (loading) return <div>Loading audit logs...</div>;
 
   return (
     <div className={styles.section}>
-      <h2 className={styles.sectionTitle}>Logs de Auditoría de Seguridad</h2>
+      <h2 className={styles.sectionTitle}>Security Audit Logs</h2>
       <p className={styles.description}>
-        Visualiza el registro de accesos no autorizados, cambios de configuración y otras acciones de seguridad relevantes.
+        View the log of unauthorized accesses, configuration changes, and other relevant security actions.
       </p>
 
       {error && (
@@ -33,21 +33,21 @@ export default function AuditLogTab() {
             transition: 'background 0.2s ease'
           }}
         >
-          {loading ? '⏳ Refrescando...' : '🔄 Refrescar'}
+          {loading ? '⏳ Refreshing...' : '🔄 Refresh'}
         </button>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #c7cdd1', borderRadius: '8px', overflowX: 'auto' }}>
         {logs.length === 0 ? (
-          <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No hay registros de auditoría disponibles.</p>
+          <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No audit logs available.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
             <thead style={{ background: '#f5f5f5', borderBottom: '2px solid #c7cdd1' }}>
               <tr>
-                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Fecha</th>
-                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Usuario</th>
-                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Acción</th>
-                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Detalle / IP</th>
+                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Date</th>
+                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>User</th>
+                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Action</th>
+                <th style={{ padding: '12px 16px', fontWeight: 'bold' }}>Detail / IP</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +58,7 @@ export default function AuditLogTab() {
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{ background: '#e1f5fe', color: '#0277bd', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                      {log.usuario_id || 'SISTEMA'}
+                      {log.usuario_id || 'SYSTEM'}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>

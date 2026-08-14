@@ -2,20 +2,20 @@ require 'fileutils'
 
 module SubmissionFactory
   def self.create_assignments_and_submissions(courses, admin, students)
-    puts "Creando tareas dinámicas y entregas para los cursos..."
+    puts "Creating dynamic assignments and submissions for courses..."
     
     courses.each do |c|
       teacher_for_course = c.teachers.first || admin
       
-      # Tarea 1: Quiz (Aislado para comportamiento nativo de Canvas)
+      # Assignment 1: Quiz (Isolated for native Canvas behavior)
       t1 = create_quiz_assignment(c)
       
-      # Tarea 2: Documento (Subida enriquecida)
-      t2 = c.assignments.where(title: "Ensayo de Investigación: #{c.name}").first_or_create!
+      # Assignment 2: Document (Rich upload)
+      t2 = c.assignments.where(title: "Research Essay: #{c.name}").first_or_create!
       t2.update!(points_possible: 50, workflow_state: 'published', submission_types: 'online_upload', due_at: 10.days.from_now)
       
-      # Tarea 3: Desarrollo Práctico (Texto)
-      t3 = c.assignments.where(title: "Desarrollo Práctico: #{c.name}").first_or_create!
+      # Assignment 3: Practical Development (Text)
+      t3 = c.assignments.where(title: "Practical Development: #{c.name}").first_or_create!
       t3.update!(points_possible: nil, workflow_state: 'published', submission_types: 'online_text_entry', due_at: 14.days.from_now)
       
       create_rubric(c, [t1, t2, t3])
@@ -32,7 +32,7 @@ module SubmissionFactory
   private
 
   def self.create_quiz_assignment(c)
-    quiz = c.quizzes.where(title: "Control de Conceptos: #{c.name}").first_or_create!
+    quiz = c.quizzes.where(title: "Concept Check: #{c.name}").first_or_create!
     quiz.update!(
       quiz_type: 'assignment',
       points_possible: 100,
@@ -41,10 +41,10 @@ module SubmissionFactory
     )
     
     if quiz.quiz_questions.count == 0
-      quiz.quiz_questions.create!(question_data: { question_name: "Pregunta 1", question_text: "¿Qué es MVC?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "Un patrón de diseño", weight: 100, id: 1}, {answer_text: "Una base de datos", weight: 0, id: 2}] })
-      quiz.quiz_questions.create!(question_data: { question_name: "Pregunta 2", question_text: "¿Qué significa API?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "Application Programming Interface", weight: 100, id: 3}, {answer_text: "Apple Protocol Interface", weight: 0, id: 4}] })
-      quiz.quiz_questions.create!(question_data: { question_name: "Pregunta 3", question_text: "¿Qué es HTTP?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "Un protocolo de transferencia", weight: 100, id: 5}, {answer_text: "Un lenguaje de marcas", weight: 0, id: 6}] })
-      quiz.quiz_questions.create!(question_data: { question_name: "Pregunta 4", question_text: "¿Qué es JSON?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "JavaScript Object Notation", weight: 100, id: 7}, {answer_text: "Java Serialized Object Network", weight: 0, id: 8}] })
+      quiz.quiz_questions.create!(question_data: { question_name: "Question 1", question_text: "What is MVC?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "A design pattern", weight: 100, id: 1}, {answer_text: "A database", weight: 0, id: 2}] })
+      quiz.quiz_questions.create!(question_data: { question_name: "Question 2", question_text: "What does API stand for?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "Application Programming Interface", weight: 100, id: 3}, {answer_text: "Apple Protocol Interface", weight: 0, id: 4}] })
+      quiz.quiz_questions.create!(question_data: { question_name: "Question 3", question_text: "What is HTTP?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "A transfer protocol", weight: 100, id: 5}, {answer_text: "A markup language", weight: 0, id: 6}] })
+      quiz.quiz_questions.create!(question_data: { question_name: "Question 4", question_text: "What is JSON?", question_type: "multiple_choice_question", points_possible: 25, answers: [{answer_text: "JavaScript Object Notation", weight: 100, id: 7}, {answer_text: "Java Serialized Object Network", weight: 0, id: 8}] })
       quiz.generate_quiz_data
       quiz.save!
     end
@@ -55,30 +55,30 @@ module SubmissionFactory
     rubric_data = [
       {
         id: "crit1",
-        description: "Comprensión y Contenido",
-        long_description: "Evalúa si el estudiante domina los conceptos clave.",
+        description: "Understanding and Content",
+        long_description: "Evaluates whether the student demonstrates mastery of key concepts.",
         points: 50,
         ratings: [
-          { description: "Excelente", points: 50, id: "rat1" },
-          { description: "Suficiente", points: 25, id: "rat2" },
-          { description: "Insuficiente", points: 0, id: "rat3" }
+          { description: "Excellent", points: 50, id: "rat1" },
+          { description: "Satisfactory", points: 25, id: "rat2" },
+          { description: "Insufficient", points: 0, id: "rat3" }
         ]
       },
       {
         id: "crit2",
-        description: "Desarrollo y Estructura",
-        long_description: "Evalúa la claridad y el formato de la entrega.",
+        description: "Development and Structure",
+        long_description: "Evaluates the clarity and format of the submission.",
         points: 50,
         ratings: [
-          { description: "Excelente", points: 50, id: "rat4" },
-          { description: "Insuficiente", points: 0, id: "rat5" }
+          { description: "Excellent", points: 50, id: "rat4" },
+          { description: "Insufficient", points: 0, id: "rat5" }
         ]
       }
     ]
 
     rubric = Rubric.create!(
       context: c,
-      title: "Rúbrica General - #{c.name}",
+      title: "General Rubric - #{c.name}",
       data: rubric_data
     )
 
@@ -131,7 +131,7 @@ module SubmissionFactory
       sub = assignment.submissions.find_or_create_by!(user_id: student_user.id)
       sub.update!(
         submission_type: 'online_quiz',
-        body: "Resultados automáticos: El alumno completó el quiz.",
+        body: "Automatic results: student completed the quiz.",
         submitted_at: qs.finished_at,
         workflow_state: 'graded',
         grade: score.to_s,
@@ -141,11 +141,11 @@ module SubmissionFactory
       )
 
     elsif type_index == 1
-      # UPLOAD (Copiar dinámica de master)
+      # UPLOAD (Copy from master template)
       sub = assignment.submissions.find_or_create_by!(user_id: student_user.id)
       extensions = ['.pdf', '.pptx', '.xlsx', '.zip']
       chosen_ext = extensions.sample
-      filename = "#{student_user.name.gsub(' ', '_').downcase}_entrega#{chosen_ext}"
+      filename = "#{student_user.name.gsub(' ', '_').downcase}_submission#{chosen_ext}"
       
       attachment_ids = nil
       body_text = ""
@@ -189,11 +189,11 @@ module SubmissionFactory
           workflow_state: 'unattached'
         )
         attachment_ids = att.id.to_s
-        body_text = "Se ha adjuntado el archivo #{filename}."
+        body_text = "File #{filename} has been attached."
         
       rescue => e
         attachment_ids = nil
-        body_text = "[SIMULA SER UN ARCHIVO ADJUNTO: #{filename}]\n\nFallback visual: No se puede leer este tipo de archivo #{chosen_ext} debido a un error: #{e.message}"
+        body_text = "[SIMULATES A FILE ATTACHMENT: #{filename}]\n\nVisual fallback: Cannot read this file type #{chosen_ext} due to an error: #{e.message}"
       end
 
       is_graded = rand > 0.5
@@ -208,7 +208,7 @@ module SubmissionFactory
           workflow_state: is_graded ? 'graded' : 'submitted'
         )
       rescue => save_err
-        puts "Error guardando entrega upload: #{save_err.message}"
+        puts "Error saving upload submission: #{save_err.message}"
       end
       
       if is_graded && sub.workflow_state == 'graded'
@@ -221,7 +221,7 @@ module SubmissionFactory
       is_graded = rand > 0.3 
       score = is_graded ? rand(min_pts..max_pts) : nil
       
-      detailed_text = "Para la implementación del desarrollo práctico solicitado, he considerado los siguientes puntos clave:<br/><br/>1. Diseño de Arquitectura: Se utilizó un enfoque basado en microservicios, asegurando la escalabilidad horizontal. Se incluyó un API Gateway para centralizar el enrutamiento y la autenticación.<br/><br/>2. Base de Datos: Se optó por una arquitectura políglota, utilizando PostgreSQL para datos transaccionales y MongoDB para el catálogo de productos no estructurado.<br/><br/>3. Seguridad: Se implementaron tokens JWT con rotación asimétrica (RSA-256) y validación de scopes por rol. Todas las comunicaciones internas están cifradas mediante mTLS.<br/><br/>El repositorio con el código fuente se encuentra alojado en GitHub y los pipelines de CI/CD están configurados usando GitHub Actions. A continuación presento los fragmentos principales del modelo de dominio..."
+      detailed_text = "For the practical development implementation requested, I have considered the following key points:<br/><br/>1. Architecture Design: A microservices-based approach was used, ensuring horizontal scalability. An API Gateway was included to centralize routing and authentication.<br/><br/>2. Database: A polyglot architecture was chosen, using PostgreSQL for transactional data and MongoDB for the unstructured product catalog.<br/><br/>3. Security: JWT tokens with asymmetric rotation (RSA-256) and role-based scope validation were implemented. All internal communications are encrypted using mTLS.<br/><br/>The repository with the source code is hosted on GitHub and the CI/CD pipelines are configured using GitHub Actions. The main fragments of the domain model are presented below..."
       
       begin
         sub.update!(
@@ -231,7 +231,7 @@ module SubmissionFactory
           workflow_state: is_graded ? 'graded' : 'submitted'
         )
       rescue => save_err
-        puts "Error guardando entrega text: #{save_err.message}"
+        puts "Error saving text submission: #{save_err.message}"
       end
 
       if is_graded && sub.workflow_state == 'graded'

@@ -7,8 +7,8 @@ export default class EmailServiceLocal {
     this.logFilePath = path.join(process.cwd(), 'local-emails.log');
   }
 
-  async sendNotification(estudianteId, courseId, asunto) {
-    const message = `[MOCK EMAIL] To: Estudiante ${estudianteId} | Course: ${courseId} | Asunto: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
+  async sendNotification(studentId, courseId, asunto) {
+    const message = `[MOCK EMAIL] To: Student ${studentId} | Course: ${courseId} | Asunto: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
     
     // Loguear en consola
     logger.info(message.trim());

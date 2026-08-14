@@ -10,7 +10,7 @@ export default class TeacherRole extends BaseRole {
       config_llm: false // Por defecto un profe no configura el LLM general
     };
 
-    // Estos permisos pueden ser alterados por el admin para el rol de profesor
+    // Estos permisos pueden ser alterados por el admin para el rol de teacher
     this.mutablePermissions = [
       'view_feedback',
       'edit_feedback',

@@ -15,8 +15,8 @@ export default class NotificationDiagnosticsLocal {
       feedbacks: feedbacksToProcess.map(fb => ({
         id: fb.id,
         courseId: fb.curso_id,
-        studentId: fb.estudiante_id,
-        teacherId: fb.profesor_id,
+        studentId: fb.student_id,
+        teacherId: fb.teacher_id,
       }))
     };
     

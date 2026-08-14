@@ -59,7 +59,7 @@ export class AppIdentity {
   }
 
   /**
-   * Evalúa si el usuario activo es un estudiante.
+   * Evalúa si el usuario activo es un student.
    * @returns {boolean}
    */
   isStudent() {
@@ -69,7 +69,7 @@ export class AppIdentity {
   }
 
   /**
-   * Evalúa si el usuario activo es un profesor.
+   * Evalúa si el usuario activo es un teacher.
    * @returns {boolean}
    */
   isTeacher() {

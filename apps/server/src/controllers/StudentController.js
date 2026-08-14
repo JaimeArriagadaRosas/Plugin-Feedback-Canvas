@@ -2,10 +2,10 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { assertOwnStudent } from '../authz/requireOwnStudent.js';
 
 /**
- * Controlador de Estudiante (RF31, RF32, RF33)
+ * Student Controller (RF31, RF32, RF33)
  *
- * Maneja exclusivamente las peticiones que realizan los estudiantes
- * sobre su propio feedback y valoraciones (SRP).
+ * Exclusively handles requests made by students
+ * on their own feedback and ratings (SRP).
  */
 export default class StudentController {
   constructor(feedbackService) {
@@ -22,10 +22,10 @@ export default class StudentController {
 
     const courseId = req.query.courseId ? String(req.query.courseId) : undefined;
     
-    // Aquí el req.appIdentity será del propio estudiante
+    // Here req.appIdentity will be of the student themselves
     const currentUserId = req.appIdentity?.canonicalUserId || 'system';
 
-    // Se delega al servicio
+    // Delegated to the service
     const data = await this.feedbackService.getStudentView(studentId, courseId, currentUserId);
     res.json({ exito: true, data });
   }
@@ -33,8 +33,8 @@ export default class StudentController {
   async rateByStudent(req, res) {
     const { id, rating, esUtil } = req.body;
     
-    // El servicio deberá usar el appIdentity para saber que es el estudiante calificando
+    // The service must use appIdentity to know it is the student rating
     await this.feedbackService.rateByStudent(id, rating, esUtil, req.appIdentity);
-    res.json({ exito: true, mensaje: 'Calificación de utilidad guardada correctamente' });
+    res.json({ exito: true, mensaje: 'Utility rating saved successfully' });
   }
 }

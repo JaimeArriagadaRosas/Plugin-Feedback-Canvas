@@ -7,37 +7,37 @@ export default function AdminTabs({ activeTab, setActiveTab }) {
         className={`${styles.tabButton} ${activeTab === 'RF56' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('RF56')}
       >
-        Gestión de Tokens IA
+        AI Token Management
       </button>
       <button
         className={`${styles.tabButton} ${activeTab === 'RF06' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('RF06')}
       >
-        Variables Globales
+        Global Variables
       </button>
       <button
         className={`${styles.tabButton} ${activeTab === 'RF55' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('RF55')}
       >
-        Configuración Motor IA
+        AI Engine Configuration
       </button>
       <button
         className={`${styles.tabButton} ${activeTab === 'RF52' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('RF52')}
       >
-        Roles y Permisos
+        Roles and Permissions
       </button>
       <button
         className={`${styles.tabButton} ${activeTab === 'reports' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('reports')}
       >
-        Reportes y Métricas
+        Reports and Metrics
       </button>
       <button
         className={`${styles.tabButton} ${activeTab === 'audit_logs' ? styles.tabActive : ''}`}
         onClick={() => setActiveTab('audit_logs')}
       >
-        Logs de Auditoría
+        Audit Logs
       </button>
     </div>
   );

@@ -4,20 +4,20 @@ import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './DeactivateModal.module.css';
 
-export default function ActivateModal({ assignment, isOpen, onClose, onConfirm }) {
+export default function DeactivateModal({ assignment, isOpen, onClose, onConfirm }) {
   const logConfirm = useButtonLogger();
   const logCancel = useButtonLogger();
 
   const handleConfirm = useCallback(
     async (e) => {
-      await logConfirm('ASSIGNMENT_ACTIVATE_CONFIRM', () => onConfirm?.())(e);
+      await logConfirm('ASSIGNMENT_DEACTIVATE_CONFIRM', () => onConfirm?.())(e);
     },
     [onConfirm, logConfirm]
   );
 
   const handleCancel = useCallback(
     async (e) => {
-      await logCancel('ASSIGNMENT_ACTIVATE_CANCEL', () => onClose?.())(e);
+      await logCancel('ASSIGNMENT_DEACTIVATE_CANCEL', () => onClose?.())(e);
     },
     [onClose, logCancel]
   );
@@ -25,21 +25,21 @@ export default function ActivateModal({ assignment, isOpen, onClose, onConfirm }
   if (!assignment) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCancel} title="Confirmar Activación del Plugin">
+    <Modal isOpen={isOpen} onClose={handleCancel} title="Confirm Plugin Deactivation">
       <div className={styles.body}>
         <p>
-          ¿Está seguro de que desea activar el plugin de feedback para la tarea: <strong>"{assignment.name}"</strong>?
+          Are you sure you want to deactivate the feedback plugin for the assignment: <strong>"{assignment.name}"</strong>?
         </p>
         <p className={styles.note}>
-          <strong>Nota:</strong> Ya se ha seleccionado una plantilla para esta tarea. Todas las entregas de estudiantes sin un feedback generado ya no recibirán una automáticamente. Ninguna nueva entrega activará un feedback hasta que se reactive. Se requiere una confirmación según el requerimiento.
+          <strong>Note:</strong> A template has already been selected for this assignment. All student submissions without generated feedback will no longer receive one automatically. No new submissions will trigger feedback until reactivated.
         </p>
       </div>
       <div className={styles.footer}>
         <Button variant="secondary" onClick={handleCancel}>
-          Cancelar
+          Cancel
         </Button>
-        <Button variant="primary" onClick={handleConfirm}>
-          Confirmar
+        <Button variant="danger" onClick={handleConfirm}>
+          Confirm
         </Button>
       </div>
     </Modal>

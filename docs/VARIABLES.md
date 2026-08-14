@@ -1,98 +1,98 @@
-# Variables globales y por curso (RF06)
+# Global and Course Variables (RF06)
 
-## 1. Estado
+## 1. Status
 
-La vista, rutas y descubrimiento dinámico están implementados. La creación de una variable nueva no cuenta todavía con una aceptación E2E productiva y su estrategia de escribir código al filesystem es incompatible con despliegues inmutables/escalados sin trabajo adicional.
+The view, routes, and dynamic discovery are implemented. The creation of a new variable does not yet have a production E2E acceptance, and its strategy of writing code to the filesystem is incompatible with immutable/scaled deployments without additional work.
 
-Por tanto, RF06 se clasifica como **implementado experimentalmente; pendiente de validación y rediseño operacional**.
+Therefore, RF06 is classified as **experimentally implemented; pending validation and operational redesign**.
 
-## 2. Variables base
+## 2. Base variables
 
-`CourseVariables.js` registra:
+`CourseVariables.js` registers:
 
-| Identificador | Nombre |
+| Identifier | Name |
 |---|---|
-| `trayectoria_academica` | Trayectoria académica en el curso |
-| `calificaciones_previas` | Calificaciones previas |
-| `desempeno_otras_asignaturas` | Desempeño en otras asignaturas |
-| `perfil_ingreso` | Perfil de ingreso |
-| `situacion_academica_anterior` | Situación académica anterior |
+| `trayectoria_academica` | Academic trajectory in the course |
+| `calificaciones_previas` | Previous grades |
+| `desempeno_otras_asignaturas` | Performance in other subjects |
+| `perfil_ingreso` | Entry profile |
+| `situacion_academica_anterior` | Previous academic situation |
 
-`promedio_curso`, `calificacion` y `nombre_estudiante` son variables de sistema/plantilla excluidas de la ponderación configurable.
+`promedio_curso`, `calificacion`, and `nombre_estudiante` are system/template variables excluded from configurable weighting.
 
-## 3. Configuración por curso
+## 3. Configuration by course
 
-El profesor habilita variables y asigna ponderaciones. El dominio valida:
+The teacher enables variables and assigns weights. The domain validates:
 
-- objeto de entrada válido;
-- ponderación individual entre 0 y 100;
-- suma de variables activas igual a 100% (tolerancia 0,01);
-- variables ausentes quedan desactivadas;
-- nombres/descripciones provienen del catálogo del servidor.
+- valid input object;
+- individual weight between 0 and 100;
+- sum of active variables equals 100% (tolerance 0.01);
+- absent variables remain disabled;
+- names/descriptions come from the server catalog.
 
-La configuración se persiste mediante `CourseVariablesService` y las rutas del curso.
+The configuration is persisted via `CourseVariablesService` and the course routes.
 
-## 4. Creación global actual
+## 4. Current global creation
 
 ```mermaid
 sequenceDiagram
-    participant A as Administrador
+    participant A as Administrator
     participant UI as VariablesGlobalView
     participant API as POST /api/global-variables
     participant FS as services/variables
     participant R as DEFAULT_VARIABLES
 
-    A->>UI: nombre + descripción
-    UI->>API: solicitud autenticada
-    API->>API: authorizeRole(admin) y valida identificador
-    API->>FS: escribe <Nombre>Resolver.js
+    A->>UI: name + description
+    UI->>API: authenticated request
+    API->>API: authorizeRole(admin) and validates identifier
+    API->>FS: writes <Name>Resolver.js
     API->>R: loadDynamicVariables()
     API-->>UI: 201
 ```
 
-La ruta solo acepta letras, números y guion bajo, evita sobrescribir claves registradas y genera una clase que hereda `BaseVariableResolver`.
+The route only accepts letters, numbers, and underscores, avoids overwriting registered keys, and generates a class that inherits from `BaseVariableResolver`.
 
-## 5. Descubrimiento
+## 5. Discovery
 
-Al cargar el módulo, `loadDynamicVariables()` recorre `apps/server/src/services/variables/*Resolver.js`, extrae la clave desde `super('{{variable}}')` y la descripción desde `// NAME:`. Añade lo encontrado al registro en memoria.
+When loading the module, `loadDynamicVariables()` iterates through `apps/server/src/services/variables/*Resolver.js`, extracts the key from `super('{{variable}}')` and the description from `// NAME:`. It adds what it finds to the in-memory registry.
 
-El resolver generado devuelve actualmente un dato simulado basado en el estudiante. Crear el archivo no integra automáticamente una fuente institucional real.
+The generated resolver currently returns a simulated data point based on the student. Creating the file does not automatically integrate a real institutional source.
 
-## 6. Restricciones y riesgos
+## 6. Constraints and risks
 
-- La imagen de producción ejecuta como usuario `node` y su código debería ser inmutable.
-- Varias réplicas no comparten automáticamente el archivo generado.
-- Reinicios/redeploys pueden perder cambios si no existe volumen/commit.
-- Escribir JavaScript desde una petición aumenta superficie de seguridad y auditoría.
-- El parser por regex depende de la forma textual de la clase.
-- No hay flujo formal de revisión, versionado, rollback o prueba del resolver.
-- Los datos simulados pueden presentarse erróneamente como datos reales.
+- The production image runs as the `node` user and its code should be immutable.
+- Multiple replicas do not automatically share the generated file.
+- Restarts/redeploys can lose changes if no volume/commit exists.
+- Writing JavaScript from a request increases the security and audit surface.
+- The regex parser depends on the textual shape of the class.
+- There is no formal review, versioning, rollback, or testing flow for the resolver.
+- Simulated data can be mistakenly presented as real data.
 
-No resuelva esto otorgando escritura global a `apps/server/src` en producción.
+Do not solve this by granting global write access to `apps/server/src` in production.
 
-## 7. Dirección recomendada
+## 7. Recommended direction
 
-Separar dos conceptos:
+Separate two concepts:
 
-1. **Catálogo de tipos de resolver:** código revisado/versionado que sabe obtener una métrica.
-2. **Definición/configuración de variable:** registro PostgreSQL que selecciona tipo, etiqueta, parámetros, estado y alcance.
+1. **Resolver types catalog:** reviewed/versioned code that knows how to fetch a metric.
+2. **Variable definition/configuration:** PostgreSQL record that selects type, label, parameters, status, and scope.
 
-Un administrador podría crear configuraciones a partir de tipos aprobados sin generar código. Nuevas integraciones requerirían pull request/deploy, o un DSL declarativo estrictamente validado y sandboxed.
+An administrator could create configurations from approved types without generating code. New integrations would require a pull request/deploy, or a strictly validated and sandboxed declarative DSL.
 
-Para múltiples réplicas, el catálogo/configuración debe ser consistente, cacheable e invalidable sin reiniciar todos los procesos.
+For multiple replicas, the catalog/configuration must be consistent, cacheable, and invalidatable without restarting all processes.
 
-## 8. Criterios de aceptación RF06
+## 8. RF06 Acceptance criteria
 
-- [ ] solo administrador puede crear/desactivar una variable global;
-- [ ] nombres inválidos, duplicados y payloads maliciosos se rechazan;
-- [ ] la variable persiste tras reinicio y despliegue;
-- [ ] todas las réplicas observan la misma versión;
-- [ ] se registra autor, fecha, fuente y cambios;
-- [ ] resolver usa una fuente real aprobada o se marca claramente como simulado;
-- [ ] fallos/timeouts no rompen la generación completa;
-- [ ] configuración por curso conserva suma y permisos;
-- [ ] existe rollback/eliminación segura;
-- [ ] E2E verifica creación, asignación, generación y renderizado;
-- [ ] producción mantiene filesystem de código de solo lectura.
+- [ ] only an administrator can create/disable a global variable;
+- [ ] invalid names, duplicates, and malicious payloads are rejected;
+- [ ] the variable persists across restarts and deployments;
+- [ ] all replicas observe the same version;
+- [ ] author, date, source, and changes are logged;
+- [ ] resolver uses an approved real source or is clearly marked as simulated;
+- [ ] failures/timeouts do not break the entire generation;
+- [ ] course configuration preserves sum and permissions;
+- [ ] secure rollback/deletion exists;
+- [ ] E2E verifies creation, assignment, generation, and rendering;
+- [ ] production maintains a read-only code filesystem.
 
-Hasta completar estos criterios, no habilite creación dinámica en un entorno institucional.
+Until these criteria are completed, do not enable dynamic creation in an institutional environment.

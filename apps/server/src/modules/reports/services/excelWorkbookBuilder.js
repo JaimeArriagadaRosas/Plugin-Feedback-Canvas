@@ -32,8 +32,8 @@ function updateMetrics(metrics, row) {
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;
-  addRating(metrics.teacherRating, row.calificacion_profesor);
-  addRating(metrics.studentRating, row.calificacion_estudiante);
+  addRating(metrics.teacherRating, row.calificacion_teacher);
+  addRating(metrics.studentRating, row.calificacion_student);
   if (row.es_util !== null && row.es_util !== undefined) {
     metrics.usefulness.count += 1;
     if (row.es_util) metrics.usefulness.useful += 1;
@@ -61,67 +61,67 @@ function updateCourseMetrics(courses, row, status) {
   const course = courses.get(key);
   course.total += 1;
   if (status === 'APROBADO') course.approved += 1;
-  addRating(course.teacherRating, row.calificacion_profesor);
-  addRating(course.studentRating, row.calificacion_estudiante);
+  addRating(course.teacherRating, row.calificacion_teacher);
+  addRating(course.studentRating, row.calificacion_student);
 }
 
 function addGlobalSheets(workbook, metrics) {
   const teacherAverage = formatAverage(metrics.teacherRating);
   const studentAverage = formatAverage(metrics.studentRating);
-  addRowsSheet(workbook, 'Métricas Globales', metricColumns(), [
-    ['Total de Feedbacks Generados', metrics.total],
-    ['Tasa de Aprobación Global', formatPercentage(metrics.approved, metrics.total)],
-    ['Promedio Valoración Profesores', withStars(teacherAverage)],
-    ['Promedio Valoración Estudiantes', withStars(studentAverage)],
-    ['---', '---'], ['Total Aprobados', metrics.approved], ['Total Editados', metrics.edited],
-    ['Total Pendientes', metrics.pending], ['Total Rechazados', metrics.rejected]
+  addRowsSheet(workbook, 'Global Metrics', metricColumns(), [
+    ['Total Feedbacks Generated', metrics.total],
+    ['Global Approval Rate', formatPercentage(metrics.approved, metrics.total)],
+    ['Average Teacher Rating', withStars(teacherAverage)],
+    ['Average Student Rating', withStars(studentAverage)],
+    ['---', '---'], ['Total Approved', metrics.approved], ['Total Edited', metrics.edited],
+    ['Total Pending', metrics.pending], ['Total Rejected', metrics.rejected]
   ].map(([metrica, valor]) => ({ metrica, valor })));
-  addRowsSheet(workbook, 'Utilidad del Feedback', metricColumns('Métrica de Utilidad (Estudiantes)'), [
-    ['Total de Evaluaciones de Utilidad', metrics.usefulness.count],
-    ['Total de Feedbacks Considerados Útiles', metrics.usefulness.useful],
-    ['Porcentaje de Utilidad', formatPercentage(metrics.usefulness.useful, metrics.usefulness.count)],
-    ['Promedio Valoración (Escala 1-5)', withStars(studentAverage)]
+  addRowsSheet(workbook, 'Feedback Usefulness', metricColumns('Usefulness Metric (Students)'), [
+    ['Total Usefulness Evaluations', metrics.usefulness.count],
+    ['Total Feedbacks Considered Useful', metrics.usefulness.useful],
+    ['Usefulness Percentage', formatPercentage(metrics.usefulness.useful, metrics.usefulness.count)],
+    ['Average Rating (1-5 Scale)', withStars(studentAverage)]
   ].map(([metrica, valor]) => ({ metrica, valor })));
 }
 
 function addCourseSheet(workbook, courses) {
   const columns = [
-    column('Nombre Curso', 'curso', 35), column('Total Feedbacks', 'total', 15),
-    column('Aprobados', 'aprobados', 15), column('Valoración Profesor', 'valProf', 20),
-    column('Valoración Estudiante', 'valEst', 20)
+    column('Course Name', 'curso', 35), column('Total Feedbacks', 'total', 15),
+    column('Approved', 'aprobados', 15), column('Teacher Rating', 'valProf', 20),
+    column('Student Rating', 'valEst', 20)
   ];
   const rows = [...courses.values()].map((course) => ({
     curso: course.name, total: course.total, aprobados: course.approved,
     valProf: withStars(formatAverage(course.teacherRating)),
     valEst: withStars(formatAverage(course.studentRating))
   }));
-  addRowsSheet(workbook, 'Métricas por Curso', columns, rows);
+  addRowsSheet(workbook, 'Course Metrics', columns, rows);
 }
 
 function addDetailSheet(workbook, data) {
   const columns = [
-    column('Fecha de Generación', 'fecha_generacion', 25), column('Nombre Curso', 'curso', 30),
-    column('Nombre Tarea', 'asignacion', 30), column('Nombre Estudiante', 'estudiante', 30),
-    column('ID Profesor', 'profesor_id', 15), column('Estado', 'estado', 15),
-    column('Nota Original', 'nota_canvas', 15), column('Calificación IA', 'nota_chile', 15),
-    column('¿Fue Útil? (Sí/No)', 'es_util', 20), column('Valoración Profesor', 'val_prof', 20),
-    column('Valoración Estudiante', 'val_est', 20)
+    column('Generation Date', 'fecha_generacion', 25), column('Course Name', 'curso', 30),
+    column('Assignment Name', 'asignacion', 30), column('Student Name', 'student', 30),
+    column('Teacher ID', 'teacher_id', 15), column('Status', 'estado', 15),
+    column('Original Grade', 'nota_canvas', 15), column('AI Grade', 'nota_chile', 15),
+    column('Was Useful? (Yes/No)', 'es_util', 20), column('Teacher Rating', 'val_prof', 20),
+    column('Student Rating', 'val_est', 20)
   ];
   const rows = data.map((row) => ({
     fecha_generacion: formatDate(row.fecha_generacion), curso: row.nombre_curso || `Curso ${row.curso_id}`,
-    asignacion: row.nombre_tarea || `Tarea ${row.tarea_id}`, estudiante: row.nombre_estudiante || `Estudiante ${row.estudiante_id}`,
-    profesor_id: row.profesor_id || 'N/A', estado: row.estado || 'PENDIENTE', nota_canvas: valueOrNa(row.nota_canvas),
-    nota_chile: valueOrNa(row.nota_chile), es_util: row.es_util == null ? 'N/A' : row.es_util ? 'Sí' : 'No',
-    val_prof: withStars(row.calificacion_profesor), val_est: withStars(row.calificacion_estudiante)
+    asignacion: row.nombre_tarea || `Tarea ${row.tarea_id}`, student: row.nombre_student || `Student ${row.student_id}`,
+    teacher_id: row.teacher_id || 'N/A', estado: row.estado || 'PENDIENTE', nota_canvas: valueOrNa(row.nota_canvas),
+    nota_chile: valueOrNa(row.nota_chile), es_util: row.es_util == null ? 'N/A' : row.es_util ? 'Yes' : 'No',
+    val_prof: withStars(row.calificacion_teacher), val_est: withStars(row.calificacion_student)
   }));
-  addRowsSheet(workbook, 'Detalle Histórico', columns, rows);
+  addRowsSheet(workbook, 'Historical Detail', columns, rows);
 }
 
 function addOperationalSheets(workbook, sources) {
-  addRecordsSheet(workbook, 'Auditoría (Críticos)', auditSheetConfig(), sources.auditLogs);
-  addRecordsSheet(workbook, 'Métricas de Despliegue', migrationSheetConfig(), sources.migrationLogs);
-  addRecordsSheet(workbook, 'Notificaciones de Sistema', notificationSheetConfig(), sources.systemNotifications);
-  addRecordsSheet(workbook, 'Historial de Plantillas', templateSheetConfig(), sources.templatesHistory);
+  addRecordsSheet(workbook, 'Audit (Critical)', auditSheetConfig(), sources.auditLogs);
+  addRecordsSheet(workbook, 'Deployment Metrics', migrationSheetConfig(), sources.migrationLogs);
+  addRecordsSheet(workbook, 'System Notifications', notificationSheetConfig(), sources.systemNotifications);
+  addRecordsSheet(workbook, 'Template History', templateSheetConfig(), sources.templatesHistory);
 }
 
 function addRecordsSheet(workbook, title, config, records = []) {
@@ -147,15 +147,15 @@ function migrationSheetConfig() {
 
 function notificationSheetConfig() {
   return {
-    columns: [column('ID Profesor', 'profesor_id', 20), column('Tipo Error', 'tipo_error', 30), column('Mensaje Error', 'mensaje_error', 60), column('Fecha Detección', 'creado_en', 25), column('Resuelto', 'resuelto', 15)],
-    map: (item) => ({ profesor_id: item.profesor_id || 'N/A', tipo_error: item.tipo_error || 'N/A', mensaje_error: item.mensaje_error || 'Sin mensaje', creado_en: formatDate(item.creado_en), resuelto: item.resuelto ? 'Sí' : 'No' }),
-    empty: { profesor_id: 'N/A', tipo_error: 'N/A', mensaje_error: 'No hay notificaciones de sistema.', creado_en: 'N/A', resuelto: 'N/A' }
+    columns: [column('ID Teacher', 'teacher_id', 20), column('Tipo Error', 'tipo_error', 30), column('Mensaje Error', 'mensaje_error', 60), column('Fecha Detección', 'creado_en', 25), column('Resuelto', 'resuelto', 15)],
+    map: (item) => ({ teacher_id: item.teacher_id || 'N/A', tipo_error: item.tipo_error || 'N/A', mensaje_error: item.mensaje_error || 'Sin mensaje', creado_en: formatDate(item.creado_en), resuelto: item.resuelto ? 'Sí' : 'No' }),
+    empty: { teacher_id: 'N/A', tipo_error: 'N/A', mensaje_error: 'No hay notificaciones de sistema.', creado_en: 'N/A', resuelto: 'N/A' }
   };
 }
 
 function templateSheetConfig() {
   return {
-    columns: [column('Nombre Plantilla', 'nombre', 35), column('Autor (Profesor ID)', 'autor', 25), column('Fecha de Creación', 'fecha_creacion', 25), column('Última Modificación', 'ultima_modificacion', 25), column('Frecuencia de Uso', 'frecuencia_uso', 20)],
+    columns: [column('Nombre Plantilla', 'nombre', 35), column('Autor (Teacher ID)', 'autor', 25), column('Fecha de Creación', 'fecha_creacion', 25), column('Última Modificación', 'ultima_modificacion', 25), column('Frecuencia de Uso', 'frecuencia_uso', 20)],
     map: (item) => ({ nombre: item.nombre || 'Sin nombre', autor: item.autor || 'Sistema (Global)', fecha_creacion: formatDate(item.fecha_creacion), ultima_modificacion: formatDate(item.ultima_modificacion), frecuencia_uso: item.frecuencia_uso || 0 }),
     empty: { nombre: 'No hay plantillas registradas.', autor: 'N/A', fecha_creacion: 'N/A', ultima_modificacion: 'N/A', frecuencia_uso: 0 }
   };

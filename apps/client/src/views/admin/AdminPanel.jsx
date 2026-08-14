@@ -20,8 +20,8 @@ export default function AdminPanel({ onExit }) {
   const logDiscard = useButtonLogger();
 
   useEffect(() => {
-    // Ping proactivo para asegurar que el admin tenga token OAuth
-    api.get('/courses').catch(() => { /* ignorar otros errores */ });
+    // Proactive ping to ensure the admin has an OAuth token
+    api.get('/courses').catch(() => { /* ignore other errors */ });
   }, []);
 
   const handleSave = useCallback(
@@ -44,10 +44,10 @@ export default function AdminPanel({ onExit }) {
   return (
     <RequirePermission 
       permission="config_llm" 
-      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>No tienes permisos para acceder a la configuración del sistema.</h2></div>}
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>You do not have permission to access the system configuration.</h2></div>}
     >
       <div className={styles.wrapper}>
-        <ConfigHeader title="PANEL DE ADMINISTRACIÓN" onExit={onExit} activeTab={config.activeTab} />
+        <ConfigHeader title="ADMINISTRATION PANEL" onExit={onExit} activeTab={config.activeTab} />
 
       <main className={styles.main}>
         <AdminTabs activeTab={config.activeTab} setActiveTab={config.setActiveTab} />
@@ -95,7 +95,7 @@ export default function AdminPanel({ onExit }) {
         <ConfigFooter 
           onSave={handleSave} 
           onDiscard={handleDiscard} 
-          saveLabel={config.activeTab === 'RF56' ? 'Sincronizar Token' : 'Actualizar Motor'}
+          saveLabel={config.activeTab === 'RF56' ? 'Sync Token' : 'Update Engine'}
         />
       )}
     </div>

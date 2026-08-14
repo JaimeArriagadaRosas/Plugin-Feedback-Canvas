@@ -1,127 +1,127 @@
-# Registro de deuda técnica
+# Technical Debt Register
 
-Este registro separa funcionalidades implementadas de preparación operativa. Las prioridades son: **P0** bloquea producción, **P1** debe cerrarse antes de ampliar un piloto y **P2** mejora mantenibilidad/experiencia.
+This register separates implemented features from operational readiness. The priorities are: **P0** blocks production, **P1** must be closed before expanding a pilot, and **P2** improves maintainability/experience.
 
-## Resumen
+## Summary
 
-| ID | Prioridad | Estado | Tema |
+| ID | Priority | Status | Theme |
 |---|---:|---|---|
-| TD-01 | P0 | abierto | certificación LTI institucional |
-| TD-02 | P0 | abierto | jobs masivos no durables |
-| TD-03 | P0 | abierto | correo productivo ausente |
-| TD-04 | P0 | abierto | rotación de claves históricas |
-| TD-05 | P1 | abierto | E2E débiles/incompletos |
-| TD-06 | P1 | abierto | RF06 escribe código al filesystem |
-| TD-07 | P1 | parcial | matriz multiplataforma final |
-| TD-08 | P1 | abierto | despliegue/operación productiva |
-| TD-09 | P2 | abierto | variables SIS simuladas |
-| TD-10 | P2 | abierto | exigencia de calificación fija |
-| TD-11 | P2 | abierto | formato enriquecido limitado |
-| TD-12 | P2 | abierto | rendimiento del frontend |
-| TD-13 | P2 | abierto | scripts heredados y límites SOLID |
-| TD-14 | P2 | abierto | diseño de notificaciones |
+| TD-01 | P0 | open | institutional LTI certification |
+| TD-02 | P0 | open | non-durable massive jobs |
+| TD-03 | P0 | open | production email absent |
+| TD-04 | P0 | open | historical keys rotation |
+| TD-05 | P1 | open | weak/incomplete E2Es |
+| TD-06 | P1 | open | RF06 writes code to filesystem |
+| TD-07 | P1 | partial | final cross-platform matrix |
+| TD-08 | P1 | open | production deployment/operation |
+| TD-09 | P2 | open | simulated SIS variables |
+| TD-10 | P2 | open | fixed grade requirement |
+| TD-11 | P2 | open | limited rich formatting |
+| TD-12 | P2 | open | frontend performance |
+| TD-13 | P2 | open | legacy scripts and SOLID limits |
+| TD-14 | P2 | open | notifications design |
 
-## TD-01 — Certificación LTI institucional
+## TD-01 — Institutional LTI Certification
 
-**Problema:** modos 1/2 y la configuración LTI no se han probado de extremo a extremo contra un Canvas institucional/staging con Developer Key, deployments, scopes y roles reales de prueba.
+**Issue:** modes 1/2 and LTI configuration have not been tested end-to-end against an institutional/staging Canvas with real Developer Key, deployments, scopes, and test roles.
 
-**Riesgo:** fallos OIDC/JWKS, cookies iframe, scopes, account/subaccount, identidad o endpoints al desplegar.
+**Risk:** OIDC/JWKS, iframe cookies, scopes, account/subaccount, identity, or endpoints failures when deploying.
 
-**Cierre:** E2E por rol en staging, pruebas negativas de issuer/audience/nonce/deployment, revisión administrativa del placement y rollback documentado.
+**Closure:** E2E by role in staging, negative tests for issuer/audience/nonce/deployment, administrative placement review, and documented rollback.
 
-## TD-02 — Jobs masivos no durables
+## TD-02 — Non-durable massive jobs
 
-**Problema:** `MassiveGenerationOrchestrator` usa `setTimeout(..., 0)` y bucles dentro del proceso Node.
+**Issue:** `MassiveGenerationOrchestrator` uses `setTimeout(..., 0)` and loops within the Node process.
 
-**Riesgo:** reiniciar/crashear pierde trabajo; no hay lease, reanudación, estado durable, coordinación de réplicas ni dead-letter.
+**Risk:** restarting/crashing loses work; there is no lease, resumption, durable state, replica coordination, or dead-letter.
 
-**Cierre:** cola durable con idempotencia, estados por estudiante/tarea, retries con backoff, cancelación, observabilidad y recuperación demostrada tras reinicio.
+**Closure:** durable queue with idempotency, states per student/assignment, retries with backoff, cancellation, observability, and demonstrated recovery after restart.
 
-## TD-03 — Correo productivo
+## TD-03 — Production email
 
-**Problema:** `EmailService.local.js` escribe `local-emails.log`; no existe adaptador SMTP/API institucional.
+**Issue:** `EmailService.local.js` writes `local-emails.log`; there is no institutional SMTP/API adapter.
 
-**Riesgo:** RF42/RF44 y preferencias de correo no funcionan realmente en producción.
+**Risk:** RF42/RF44 and email preferences do not actually work in production.
 
-**Cierre:** proveedor aprobado, plantillas, secretos, idempotencia/retries, métricas de entrega y prueba masiva con cuentas de staging.
+**Closure:** approved provider, templates, secrets, idempotency/retries, delivery metrics, and mass testing with staging accounts.
 
-## TD-04 — Claves históricas
+## TD-04 — Historical keys
 
-**Problema:** la línea base de Gitleaks contiene dos claves privadas antiguas presentes en commits públicos.
+**Issue:** the Gitleaks baseline contains two old private keys present in public commits.
 
-**Riesgo:** cualquier sistema que aún confíe en ellas puede quedar comprometido.
+**Risk:** any system that still trusts them may be compromised.
 
-**Cierre:** inventario, revocación/rotación confirmada y decisión coordinada sobre reescritura de historial. Ignorar fingerprints no cierra el riesgo.
+**Closure:** inventory, confirmed revocation/rotation, and coordinated decision on history rewrite. Ignoring fingerprints does not close the risk.
 
-## TD-05 — Cobertura E2E
+## TD-05 — E2E Coverage
 
-**Problema:** `login.spec.js` y `massive-feedback.spec.js` terminan con asserts triviales; el segundo captura errores de título. El LTI local omite iframe si no ve el enlace.
+**Issue:** `login.spec.js` and `massive-feedback.spec.js` end with trivial asserts; the second catches title errors. Local LTI skips iframe if it does not see the link.
 
-**Riesgo:** CI verde sin probar acciones críticas ni integración real.
+**Risk:** green CI without testing critical actions or real integration.
 
-**Cierre:** selectores estables, aserciones de estado/Canvas/BD, escenarios individuales y masivos, y una suite staging obligatoria antes de release.
+**Closure:** stable selectors, state/Canvas/DB assertions, individual and massive scenarios, and a mandatory staging suite before release.
 
-## TD-06 — Variables dinámicas RF06
+## TD-06 — RF06 dynamic variables
 
-**Problema:** crear una variable genera JavaScript bajo `services/variables` y modifica un registro en memoria.
+**Issue:** creating a variable generates JavaScript under `services/variables` and modifies an in-memory record.
 
-**Riesgo:** filesystem mutable, divergencia entre réplicas, pérdida en redeploy, auditoría/rollback débiles y superficie de generación de código.
+**Risk:** mutable filesystem, divergence between replicas, loss on redeploy, weak audit/rollback, and code generation surface.
 
-**Cierre:** catálogo versionado de resolvers + configuración persistida/declarativa. Véase [VARIABLES.md](VARIABLES.md).
+**Closure:** versioned resolvers catalog + persisted/declarative configuration. See [VARIABLES.md](VARIABLES.md).
 
-## TD-07 — Matriz multiplataforma
+## TD-07 — Cross-platform matrix
 
-**Avance:** setup completo validado en Ubuntu/WSL2 rootless; adaptadores Linux/Windows separados y tests unitarios disponibles.
+**Progress:** full setup validated on rootless Ubuntu/WSL2; separate Linux/Windows adapters and unit tests available.
 
-**Pendiente:** ejecución limpia en VM/host Linux independiente, otro Windows, macOS y estrategias DNF/Pacman. Registrar permisos, tiempos, disco, reinicio y limpieza.
+**Pending:** clean run on independent Linux host/VM, another Windows, macOS, and DNF/Pacman strategies. Log permissions, times, disk, restart, and cleanup.
 
-## TD-08 — Operación productiva
+## TD-08 — Production operation
 
-**Problema:** los compose y modo 1 son referencias, no una plataforma certificada.
+**Issue:** compose files and mode 1 are references, not a certified platform.
 
-**Pendiente:** TLS/ingress, imágenes inmutables, secretos, health/readiness, observabilidad, backups, restore, migración, HA, límites, runbooks, rollback y prueba de carga reproducible.
+**Pending:** TLS/ingress, immutable images, secrets, health/readiness, observability, backups, restore, migration, HA, limits, runbooks, rollback, and reproducible load testing.
 
-## TD-09 — Variables institucionales simuladas
+## TD-09 — Simulated institutional variables
 
-`OtherCoursePerformanceResolver`, `StudentEntryProfileResolver` y `PreviousAcademicStatusResolver` usan datos locales/simulados hasta contar con APIs SIS aprobadas.
+`OtherCoursePerformanceResolver`, `StudentEntryProfileResolver`, and `PreviousAcademicStatusResolver` use local/simulated data until approved SIS APIs are available.
 
-**Cierre:** contratos, privacidad, timeouts, cache, fallback y pruebas con staging institucional.
+**Closure:** contracts, privacy, timeouts, cache, fallback, and tests with institutional staging.
 
-## TD-10 — Exigencia de calificación fija
+## TD-10 — Fixed grade requirement
 
-Algunos cálculos asumen una escala chilena con 60% de exigencia.
+Some calculations assume a Chilean scale with 60% requirement.
 
-**Cierre:** configuración por institución/curso/tarea, persistencia, validación y regresiones para varias escalas.
+**Closure:** configuration per institution/course/assignment, persistence, validation, and regressions for various scales.
 
-## TD-11 — Texto enriquecido de Canvas
+## TD-11 — Canvas rich text
 
-Los comentarios Canvas no aceptan el HTML/Markdown requerido; `RichTextProcessor` usa caracteres Unicode para simular formato.
+Canvas comments do not accept the required HTML/Markdown; `RichTextProcessor` uses Unicode characters to simulate formatting.
 
-**Riesgo:** accesibilidad, búsqueda, copy/paste y renderizado dependiente de fuente.
+**Risk:** accessibility, search, copy/paste, and font-dependent rendering.
 
-**Cierre:** validar una vía oficial Canvas compatible o documentar formalmente la degradación a texto plano/accesible.
+**Closure:** validate a compatible Canvas official way or formally document the degradation to plain/accessible text.
 
-## TD-12 — Rendimiento frontend
+## TD-12 — Frontend performance
 
-El build advierte chunks grandes asociados a `exceljs` y visor PDF. No hay baseline reproducible de carga/transferencia.
+The build warns about large chunks associated with `exceljs` and PDF viewer. There is no reproducible load/transfer baseline.
 
-**Cierre:** medir bundle y navegación, lazy-load por ruta/capacidad, presupuesto de rendimiento y regresión automatizada.
+**Closure:** measure bundle and navigation, lazy-load by route/capability, performance budget, and automated regression.
 
-## TD-13 — Scripts y SOLID
+## TD-13 — Scripts and SOLID
 
-Persisten scripts sueltos de reparación/diagnóstico y módulos heredados con nomenclatura/responsabilidad desigual.
+Loose repair/diagnostic scripts and legacy modules with uneven nomenclature/responsibility persist.
 
-**Cierre:** inventariar consumidores, mover lógica reutilizable a `apps/server/src`, dejar entrypoints finos y retirar scripts sin flujo soportado. Mantener 300 líneas/archivo y 100/función salvo excepción documentada.
+**Closure:** inventory consumers, move reusable logic to `apps/server/src`, leave thin entrypoints, and retire scripts without a supported flow. Maintain 300 lines/file and 100/function unless documented exception.
 
-## TD-14 — Diseño de notificaciones
+## TD-14 — Notifications design
 
-Toasts, banners, avisos persistentes y notificaciones no comparten todavía un sistema visual/semántico completo.
+Toasts, banners, persistent alerts, and notifications do not yet share a complete visual/semantic system.
 
-**Cierre:** estados, accesibilidad, severidades y componentes comunes; pruebas visuales y de lector de pantalla.
+**Closure:** states, accessibility, severities, and common components; visual and screen reader tests.
 
-## Reglas de mantenimiento
+## Maintenance rules
 
-- Toda deuda nueva incluye evidencia, riesgo, prioridad y criterio verificable de cierre.
-- «Hay código» no equivale a «funciona en producción».
-- Al cerrar una deuda, enlace pruebas/commit/artefacto y actualice [README](README.md), [TESTING](TESTING.md) o [DEPLOYMENT](DEPLOYMENT.md) según corresponda.
-- No se guardan secretos ni informes privados en este documento.
+- Any new debt includes evidence, risk, priority, and verifiable closing criteria.
+- "There is code" does not equal "it works in production".
+- When closing a debt, link tests/commit/artifact and update [README](README.md), [TESTING](TESTING.md), or [DEPLOYMENT](DEPLOYMENT.md) as appropriate.
+- Secrets or private reports are not kept in this document.

@@ -1,101 +1,101 @@
-# Desarrollo local y Canvas LMS
+# Local Development and Canvas LMS
 
-Esta guía describe el ciclo local del plugin. `canvas-lms-master` es una dependencia externa de simulación: no pertenece al dominio del plugin ni debe incorporarse al repositorio.
+This guide describes the plugin's local cycle. `canvas-lms-master` is an external simulation dependency: it does not belong to the plugin's domain nor should it be incorporated into the repository.
 
-## 1. Modos del orquestador
+## 1. Orchestrator modes
 
-Ejecute desde la raíz:
+Run from the root:
 
 ```bash
 npm start
 ```
 
-| Modo | Uso | Estado |
+| Mode | Use | Status |
 |---:|---|---|
-| 1 | Runtime LTI 1.3 para Canvas externo | implementado; pendiente de validación institucional completa |
-| 2 | Asistente de registro/despliegue LTI | implementado; requiere token/Developer Key y staging controlado |
-| 3 | Canvas LMS local en Docker | flujo principal de desarrollo y QA local |
-| 4 | Validaciones de caja negra | ejecuta el runner actual y propaga el código de error |
+| 1 | LTI 1.3 runtime for external Canvas | implemented; pending full institutional validation |
+| 2 | LTI deployment/registration assistant | implemented; requires token/Developer Key and controlled staging |
+| 3 | Local Canvas LMS in Docker | main local development and QA flow |
+| 4 | Black box validations | runs current runner and propagates error code |
 
-Para automatizar la elección:
+To automate the choice:
 
 ```bash
 NON_INTERACTIVE=true STARTUP_MODE=3 npm start
 ```
 
-Las variables solo se aplican a ese proceso. No convierten permanentemente el shell al modo 3.
+Variables only apply to that process. They do not permanently convert the shell to mode 3.
 
-## 2. Qué hace el modo 3
+## 2. What mode 3 does
 
-1. Comprueba Node, npm, plataforma, Docker, Compose, memoria y puertos.
-2. Crea/conserva `.env` y genera claves locales faltantes.
-3. Clona o instala Canvas `release/2026-05-20.143` como carpeta hermana.
-4. Prepara configuración Docker de Canvas mediante overrides.
-5. Instala Bundler/Yarn y compila assets con pasos reanudables.
-6. Levanta PostgreSQL, Redis, `web` y `jobs` de Canvas.
-7. Ejecuta seeds sintéticos e instala la herramienta LTI local.
-8. Levanta PostgreSQL y Gotenberg del plugin, ejecuta migraciones y sincroniza usuarios.
-9. Arranca backend, frontend y proxy TLS local.
-10. Comprueba readiness y abre el navegador cuando corresponde.
+1. Checks Node, npm, platform, Docker, Compose, memory, and ports.
+2. Creates/preserves `.env` and generates missing local keys.
+3. Clones or installs Canvas `release/2026-05-20.143` as a sibling folder.
+4. Prepares Canvas Docker configuration via overrides.
+5. Installs Bundler/Yarn and compiles assets with resumable steps.
+6. Starts Canvas PostgreSQL, Redis, `web`, and `jobs`.
+7. Runs synthetic seeds and installs the local LTI tool.
+8. Starts plugin PostgreSQL and Gotenberg, runs migrations, and synchronizes users.
+9. Starts backend, frontend, and local TLS proxy.
+10. Checks readiness and opens the browser when appropriate.
 
-Los marcadores `.assets_built` y `.setup_complete` aceleran repeticiones, pero el preflight vuelve a comprobar dependencias críticas.
+The `.assets_built` and `.setup_complete` markers speed up repeats, but the preflight re-checks critical dependencies.
 
-## 3. Recursos locales
+## 3. Local resources
 
-| Recurso | Dirección/ubicación |
+| Resource | Address/location |
 |---|---|
-| Backend del plugin | `https://localhost:3000` |
-| Frontend Vite | `https://localhost:5173` |
-| Canvas por proxy TLS | `https://localhost:8443` |
-| Canvas HTTP | `http://localhost:8080` |
-| Alias de Canvas en hosts | `canvas.docker -> 127.0.0.1` |
-| Gotenberg del plugin | `http://localhost:3001` |
-| Usuarios/tokens exportados | `tmp/canvas_local_users.json` (generado, no versionado) |
+| Plugin backend | `https://localhost:3000` |
+| Vite frontend | `https://localhost:5173` |
+| Canvas via TLS proxy | `https://localhost:8443` |
+| HTTP Canvas | `http://localhost:8080` |
+| Canvas alias in hosts | `canvas.docker -> 127.0.0.1` |
+| Plugin Gotenberg | `http://localhost:3001` |
+| Exported users/tokens | `tmp/canvas_local_users.json` (generated, not versioned) |
 
-Para añadir el alias local:
+To add the local alias:
 
 ```bash
 npm run setup:hosts
 ```
 
-El comando modifica el archivo hosts y requiere privilegios. Para revertir:
+The command modifies the hosts file and requires privileges. To revert:
 
 ```bash
 npm run setup:hosts -- --remove
 ```
 
-## 4. Cuentas sintéticas
+## 4. Synthetic accounts
 
-| Perfil | Correo | Contraseña inicial |
+| Profile | Email | Initial password |
 |---|---|---|
-| Administrador | `admin@canvas.local` | `password123` |
-| Profesor principal | `profesor@canvas.local` | `password123` |
-| Profesor adicional | `profesor2@canvas.local` | `password123` |
-| Profesor adicional | `profesor3@canvas.local` | `password123` |
-| Juan Pérez | `estudiante1@canvas.local` | `password123` |
-| María García | `estudiante2@canvas.local` | `password123` |
-| Pedro López | `estudiante3@canvas.local` | `password123` |
-| Ana Torres | `estudiante4@canvas.local` | `password123` |
-| Carlos Méndez | `estudiante5@canvas.local` | `password123` |
+| Administrator | `admin@canvas.local` | `password123` |
+| Main teacher | `teacher@canvas.local` | `password123` |
+| Additional teacher | `teacher2@canvas.local` | `password123` |
+| Additional teacher | `teacher3@canvas.local` | `password123` |
+| Juan Pérez | `student1@canvas.local` | `password123` |
+| María García | `student2@canvas.local` | `password123` |
+| Pedro López | `student3@canvas.local` | `password123` |
+| Ana Torres | `student4@canvas.local` | `password123` |
+| Carlos Méndez | `student5@canvas.local` | `password123` |
 
-Estas credenciales están hardcodeadas como fixtures públicos. Nunca las use en staging o producción.
+These credentials are hardcoded as public fixtures. Never use them in staging or production.
 
-## 5. LTI real local y autenticación de desarrollo
+## 5. Local real LTI and development authentication
 
-El flujo preferido inicia desde Canvas local y ejecuta OIDC/LTI 1.3, incluyendo validación de JWT, `state`, `nonce`, roles y contexto de curso.
+The preferred flow starts from local Canvas and executes OIDC/LTI 1.3, including validation of JWT, `state`, `nonce`, roles, and course context.
 
-Existe además un proveedor de identidad local para desarrollo rápido. Solo acepta el modo local permitido o `ENABLE_TEST_AUTH_BYPASS=true`, y los `dev-token` deben estar firmados con `DEV_TOKEN_SECRET`. No documentamos cookies fabricadas manualmente porque una firma inválida debe rechazarse.
+There is also a local identity provider for rapid development. It only accepts the allowed local mode or `ENABLE_TEST_AUTH_BYPASS=true`, and the `dev-token`s must be signed with `DEV_TOKEN_SECRET`. We do not document manually crafted cookies because an invalid signature must be rejected.
 
-Reglas de seguridad:
+Security rules:
 
-- `ENABLE_TEST_AUTH_BYPASS` no debe estar activo en producción.
-- `USE_LOCAL_DATA` y `VITE_USE_LOCAL_DATA` deben ser `false` en producción.
-- Los roles locales (`admin`, `teacher`, `student-N`) no sustituyen una prueba LTI real.
-- No copie a producción `.env`, tokens exportados, certificados ni usuarios del seed.
+- `ENABLE_TEST_AUTH_BYPASS` must not be active in production.
+- `USE_LOCAL_DATA` and `VITE_USE_LOCAL_DATA` must be `false` in production.
+- Local roles (`admin`, `teacher`, `student-N`) do not replace a real LTI test.
+- Do not copy `.env`, exported tokens, certificates, or seed users to production.
 
-## 6. Desarrollo por procesos separados
+## 6. Separate process development
 
-Para cambios rápidos de interfaz puede ejecutar componentes por separado:
+For rapid UI changes you can run components separately:
 
 Terminal 1:
 
@@ -109,13 +109,13 @@ Terminal 2:
 npm run dev
 ```
 
-El script del backend usa `node`, no Nodemon: los cambios del servidor requieren reiniciarlo. Vite sí ofrece recarga del frontend.
+The backend script uses `node`, not Nodemon: server changes require restarting it. Vite does offer frontend reloading.
 
-Este modo no prepara Canvas, Docker, seeds ni el proxy completo. Úselo solo cuando esas dependencias ya existan o cuando trabaje con datos locales controlados.
+This mode does not prepare Canvas, Docker, seeds, or the full proxy. Use it only when those dependencies already exist or when working with controlled local data.
 
-## 7. Observar el stack
+## 7. Observe the stack
 
-Desde la carpeta de Canvas:
+From the Canvas folder:
 
 ```bash
 docker compose ps
@@ -124,39 +124,39 @@ docker compose logs --tail=100 jobs
 curl -I http://localhost:8080/login
 ```
 
-Un `302` al consultar `/login` suele ser una redirección normal de Canvas.
+A `302` when requesting `/login` is usually a normal Canvas redirect.
 
-Desde la raíz del plugin:
+From the plugin root:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
 ```
 
-No mezcle comandos Compose de Canvas con los del plugin; confirme primero `pwd`.
+Do not mix Canvas Compose commands with plugin ones; confirm `pwd` first.
 
-## 8. Detener y reanudar
+## 8. Stop and resume
 
-`Ctrl+C` solicita el cierre ordenado del orquestador y de sus procesos hijo. Para pausar un stack Compose concreto:
+`Ctrl+C` requests orderly shutdown of the orchestrator and its child processes. To pause a specific Compose stack:
 
 ```bash
 docker compose stop
 docker compose start
 ```
 
-`docker compose down` elimina contenedores/redes del stack. `docker compose down -v` también elimina volúmenes y datos: no lo ejecute como troubleshooting rutinario.
+`docker compose down` removes containers/networks of the stack. `docker compose down -v` also removes volumes and data: do not run it as routine troubleshooting.
 
-El setup no debe borrar automáticamente una carpeta Canvas desconocida ni volúmenes persistentes. Ante un conflicto, respalde y decida el reset de forma explícita.
+The setup must not automatically delete an unknown Canvas folder or persistent volumes. In case of conflict, back up and explicitly decide the reset.
 
-## 9. Flujo diario sugerido
+## 9. Suggested daily flow
 
 ```bash
-cd /ruta/al/Plugin-Feedback
+cd /path/to/Plugin-Feedback
 git status
 docker info
 npm start
 ```
 
-Antes de cerrar un cambio:
+Before committing a change:
 
 ```bash
 npx --yes npm@11.8.0 run lint
@@ -164,4 +164,4 @@ npx --yes npm@11.8.0 test
 npx --yes npm@11.8.0 run build
 ```
 
-Consulte [TESTING.md](TESTING.md) para las pruebas de cliente, integración y E2E.
+See [TESTING.md](TESTING.md) for client, integration, and E2E tests.

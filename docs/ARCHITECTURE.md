@@ -1,57 +1,57 @@
-# Arquitectura del sistema
+# System Architecture
 
-Este documento describe la arquitectura observada en el código actual. El proyecto es una herramienta LTI 1.3; Canvas local es infraestructura de pruebas externa, no un módulo del producto.
+This document describes the architecture observed in the current code. The project is an LTI 1.3 tool; local Canvas is external testing infrastructure, not a product module.
 
-## 1. Contexto
+## 1. Context
 
 ```mermaid
 flowchart LR
-    Admin[Administrador] --> Canvas[Canvas LMS]
-    Teacher[Profesor] --> Canvas
-    Student[Estudiante] --> Canvas
-    Canvas <-->|OIDC y mensajes LTI 1.3| Plugin[Plugin Feedback]
-    Plugin <-->|REST y servicios LTI Advantage| Canvas
-    Plugin -->|Prompts configurados| AI[Proveedor de IA]
-    Plugin -->|Lectura y escritura| DB[(PostgreSQL)]
-    Plugin -->|Conversión de documentos| Gotenberg[Gotenberg]
-    Plugin -.->|Pendiente de adaptador productivo| Mail[Correo institucional]
-    Plugin -.->|Integraciones futuras| SIS[SIS / datos institucionales]
+    Admin[Administrator] --> Canvas[Canvas LMS]
+    Teacher[Teacher] --> Canvas
+    Student[Student] --> Canvas
+    Canvas <-->|OIDC and LTI 1.3 messages| Plugin[Feedback Plugin]
+    Plugin <-->|REST and LTI Advantage services| Canvas
+    Plugin -->|Configured prompts| AI[AI Provider]
+    Plugin -->|Read and write| DB[(PostgreSQL)]
+    Plugin -->|Document conversion| Gotenberg[Gotenberg]
+    Plugin -.->|Pending production adapter| Mail[Institutional email]
+    Plugin -.->|Future integrations| SIS[SIS / institutional data]
 ```
 
-### Actores
+### Actors
 
-- **Administrador:** configura proveedores, permisos, variables globales y auditoría.
-- **Profesor:** configura plantillas/variables, genera, revisa y envía feedback.
-- **Estudiante:** consulta feedback, notas y preferencias permitidas.
-- **Operaciones:** administra despliegue, secretos, migraciones, logs y recuperación.
+- **Administrator:** configures providers, permissions, global variables, and auditing.
+- **Teacher:** configures templates/variables, generates, reviews, and sends feedback.
+- **Student:** checks feedback, grades, and permitted preferences.
+- **Operations:** manages deployment, secrets, migrations, logs, and recovery.
 
-## 2. Contenedores lógicos
+## 2. Logical containers
 
 ```mermaid
 flowchart TB
-    subgraph Browser[Navegador dentro o fuera de Canvas]
+    subgraph Browser[Browser inside or outside Canvas]
       UI[React SPA]
     end
 
-    subgraph Plugin[Plugin Feedback]
+    subgraph Plugin[Feedback Plugin]
       API[Node.js / Express API]
-      Domain[Dominio y servicios de aplicación]
-      Setup[Orquestación, setup y adaptadores de plataforma]
+      Domain[Domain and application services]
+      Setup[Orchestration, setup, and platform adapters]
     end
 
     UI <-->|HTTPS / JSON| API
     API --> Domain
-    API --> PG[(PostgreSQL del plugin)]
+    API --> PG[(Plugin PostgreSQL)]
     Domain --> CanvasAPI[Canvas REST / LTI Advantage]
     Domain --> AI[Gemini / OpenAI / Claude / Custom]
     Domain --> Gotenberg
     Setup --> Docker[Docker Engine / Compose]
 
-    subgraph LocalOnly[Entorno local opcional]
-      TLS[Proxy TLS :8443]
+    subgraph LocalOnly[Optional local environment]
+      TLS[TLS proxy :8443]
       CanvasWeb[Canvas web :8080]
       CanvasJobs[Canvas jobs]
-      CanvasDB[(PostgreSQL Canvas)]
+      CanvasDB[(Canvas PostgreSQL)]
       Redis[(Redis)]
     end
 
@@ -59,117 +59,121 @@ flowchart TB
     TLS --> CanvasWeb
 ```
 
-En desarrollo, Vite sirve la SPA en `:5173`. En modo 1 o en la imagen de runtime, el backend sirve el build `dist` y expone la API en el mismo proceso/origen configurado.
+In development, Vite serves the SPA on `:5173`. In mode 1 or in the runtime image, the backend serves the `dist` build and exposes the API on the same configured process/origin.
 
-## 3. Estructura del monorepo
+## 3. Monorepo structure
 
 ```text
 apps/client/src/
-├── app/                 # composición React y boundaries globales
-├── components/          # átomos/moléculas reutilizables
-├── modules/             # módulos funcionales y estrategias de carga
-├── services/            # clientes HTTP del frontend
-└── views/               # vistas por rol y flujo
+├── app/                 # React composition and global boundaries
+├── components/          # reusable atoms/molecules
+├── modules/             # functional modules and loading strategies
+├── services/            # frontend HTTP clients
+└── views/               # views by role and flow
 
 apps/server/src/
-├── domain/              # entidades, identidad y reglas centrales
-├── services/            # casos de uso e integraciones
-├── repositories/        # persistencia PostgreSQL
-├── controllers/         # adaptación HTTP
-├── routes/              # composición de endpoints
-├── security/            # identidad, claves y validaciones
-├── modules/             # capacidades delimitadas (notificaciones, formato, etc.)
-├── orchestration/       # consola, preflight, procesos y setup local
-├── setup/               # configuración LTI/local reutilizable
-└── adapters/            # límites con servicios externos
+├── domain/              # entities, identity, and core rules
+├── services/            # use cases and integrations
+├── repositories/        # PostgreSQL persistence
+├── controllers/         # HTTP adaptation
+├── routes/              # endpoint composition
+├── security/            # identity, keys, and validations
+├── authz/               # authorization by role and context
+├── middlewares/         # cross-cutting HTTP middlewares
+├── modules/             # bounded capabilities (notifications, formatting, etc.)
+├── adapters/            # boundaries with external services
+├── stores/              # session stores (LTI launch, Redis/Map)
+├── local/               # adapters for Canvas, TLS, and browser for local mode
+├── data/                # data access and PostgreSQL pool
+└── utils/               # shared server utilities
 ```
 
-`package.json` declara workspaces `apps/*` y `packages/*`; en el árbol actual solo `apps/client` y `apps/server` contienen paquetes activos. No documente paquetes compartidos inexistentes.
+`package.json` declares workspaces `apps/*` and `packages/*`; in the current tree, only `apps/client` and `apps/server` contain active packages. Do not document non-existent shared packages.
 
-## 4. Flujo de lanzamiento LTI 1.3
+## 4. LTI 1.3 launch flow
 
 ```mermaid
 sequenceDiagram
-    participant U as Usuario
+    participant U as User
     participant C as Canvas
     participant P as Plugin
     participant D as PostgreSQL
 
-    U->>C: Abre Feedback en el curso
+    U->>C: Opens Feedback in the course
     C->>P: OIDC login initiation
-    P->>D: Registra/verifica state y nonce
-    P-->>C: Redirección de autorización
-    C->>P: id_token firmado + contexto LTI
-    P->>P: Valida issuer, audience, nonce, firma y deployment
-    P->>D: Resuelve identidad, rol, curso y sesión
-    P-->>U: Sirve la aplicación autorizada
+    P->>D: Registers/verifies state and nonce
+    P-->>C: Authorization redirection
+    C->>P: signed id_token + LTI context
+    P->>P: Validates issuer, audience, nonce, signature, and deployment
+    P->>D: Resolves identity, role, course, and session
+    P-->>U: Serves the authorized application
 ```
 
-Rutas/configuración relevantes:
+Relevant routes/configuration:
 
-- inicio OIDC: `/api/lti/login`;
+- OIDC initiation: `/api/lti/login`;
 - callback/target: `/api/lti/callback`;
-- JWKS público: `/api/lti/jwks`;
-- placement local: `config/lti_placement.json`.
+- public JWKS: `/api/lti/jwks`;
+- local placement: `config/lti_placement.json`.
 
-Cambiar host, rutas o scopes exige actualizar la Developer Key/configuración de Canvas.
+Changing host, paths, or scopes requires updating the Canvas Developer Key/configuration.
 
-## 5. Flujo de generación de feedback
+## 5. Feedback generation flow
 
-1. La identidad autorizada selecciona curso, tarea y estudiantes.
-2. El backend obtiene entregas, notas, rúbricas y contexto autorizado desde Canvas/BD.
-3. Los resolvers calculan variables habilitadas para el curso.
-4. La plantilla compone el prompt y la factoría selecciona el proveedor de IA.
-5. El resultado se persiste con estado de revisión.
-6. El profesor puede editar, aprobar o descartar.
-7. El envío publica el comentario/feedback en Canvas y registra auditoría/notificación.
+1. The authorized identity selects course, assignment, and students.
+2. The backend gets submissions, grades, rubrics, and authorized context from Canvas/DB.
+3. The resolvers compute variables enabled for the course.
+4. The template composes the prompt and the factory selects the AI provider.
+5. The result is persisted with a review status.
+6. The teacher can edit, approve, or discard it.
+7. Sending publishes the comment/feedback in Canvas and registers audit/notification.
 
-La generación no debe conceder permiso de envío: autorización, estado y pertenencia al curso se validan nuevamente en el borde de cada acción.
+Generation must not grant sending permission: authorization, state, and course membership are validated again at the edge of each action.
 
-## 6. Datos y persistencia
+## 6. Data and persistence
 
-- Las migraciones versionadas del plugin viven en `packages/plugin-database/migrations/`.
-- `npm run db:migrate` es el punto de entrada explícito.
-- `AUTO_MIGRATE=true` permite migrar al arrancar, pero producción debe decidir conscientemente si separa migración y runtime.
-- El compose productivo incluye un servicio `migrate` antes de `app`; esa composición aún requiere validación de staging.
-- Canvas local posee su propia base y volúmenes; no se mezcla con PostgreSQL del plugin.
+- The versioned plugin migrations live in `packages/plugin-database/migrations/`.
+- `npm run db:migrate` is the explicit entry point.
+- `AUTO_MIGRATE=true` allows migrating at startup, but production must consciously decide whether to separate migration and runtime.
+- The production compose includes a `migrate` service before `app`; this composition still requires staging validation.
+- Local Canvas has its own database and volumes; it does not mix with the plugin's PostgreSQL.
 
-## 7. Instalación y plataforma
+## 7. Installation and platform
 
-La orquestación aplica separación por responsabilidades:
+Orchestration applies separation of concerns:
 
-- probes observan plataforma, CLI, daemon, contexto y permisos sin mutar;
-- políticas convierten evidencia en decisiones/mensajes;
-- instaladores `Win…`, `Mac…` y `Linux…` contienen acciones nativas;
-- Linux separa distribución APT, estrategia rootless, permisos de workspace y archivo Canvas;
-- `EnvironmentSetup` coordina, pero no debe acumular comandos de todos los sistemas.
+- probes observe platform, CLI, daemon, context, and permissions without mutating;
+- policies convert evidence into decisions/messages;
+- installers `Win…`, `Mac…`, and `Linux…` contain native actions;
+- Linux separates APT distribution, rootless strategy, workspace permissions, and Canvas archive;
+- `EnvironmentSetup` coordinates, but must not accumulate commands from all systems.
 
-La lógica específica de Windows no debe ejecutarse en Linux y viceversa. El nombre del adaptador comunica esa frontera; la lógica compartida permanece sin prefijo de plataforma.
+Windows-specific logic must not run on Linux and vice versa. The adapter name communicates that boundary; shared logic remains without a platform prefix.
 
-## 8. Separación local/productivo
+## 8. Local/production separation
 
-Los archivos con sufijo `.local.js` o variantes `_local.js` son módulos versionados destinados al composition root local. El sufijo no significa «archivo secreto». Deben cumplir dos reglas:
+Files with the `.local.js` suffix or `_local.js` variants are versioned modules intended for the local composition root. The suffix does not mean "secret file". They must follow two rules:
 
-1. no contener credenciales reales;
-2. no ser alcanzables en producción salvo mediante una habilitación local explícita y validada.
+1. they do not contain real credentials;
+2. they are not reachable in production except through explicit and validated local enablement.
 
-La preferencia arquitectónica es compartir dominio/casos de uso y sustituir adaptadores. No duplique lógica funcional completa para crear una edición local.
+The architectural preference is to share domain/use cases and substitute adapters. Do not duplicate complete functional logic to create a local edition.
 
-## 9. Seguridad y límites de confianza
+## 9. Security and trust boundaries
 
-- Canvas, proveedores de IA, archivos de estudiantes y parámetros HTTP son entradas no confiables.
-- LTI exige validar firma, issuer, audience, deployment, `state`, `nonce`, roles y contexto.
-- Los tokens Canvas y claves IA deben cifrarse/persistirse fuera de logs y respuestas.
-- El bypass de identidad local requiere modo local y tokens firmados; debe permanecer desactivado en producción.
-- Gotenberg procesa documentos no confiables y debe permanecer aislado, con timeouts y límites.
-- Docker rootless reduce privilegios locales, pero no convierte imágenes desconocidas en seguras.
+- Canvas, AI providers, student files, and HTTP parameters are untrusted inputs.
+- LTI requires validating signature, issuer, audience, deployment, `state`, `nonce`, roles, and context.
+- Canvas tokens and AI keys must be encrypted/persisted outside of logs and responses.
+- Local identity bypass requires local mode and signed tokens; it must remain disabled in production.
+- Gotenberg processes untrusted documents and must remain isolated, with timeouts and limits.
+- Rootless Docker reduces local privileges, but it does not make unknown images safe.
 
-## 10. Restricciones conocidas
+## 10. Known constraints
 
-- El registro LTI y el runtime institucional todavía no tienen certificación E2E en staging real.
-- El correo productivo no está implementado; el adaptador local registra simulaciones.
-- La creación de resolvers desde la UI escribe código al filesystem y requiere rediseño para despliegues inmutables/escalados.
-- La carpeta de scripts heredados fue eliminada y los comandos consolidados en las aplicaciones correspondientes.
-- Los E2E actuales no cubren todavía de forma sólida todos los flujos críticos.
+- LTI registration and the institutional runtime do not yet have E2E certification in real staging.
+- Production email is not implemented; the local adapter logs simulations.
+- Creating resolvers from the UI writes code to the filesystem and requires a redesign for immutable/scaled deployments.
+- The legacy scripts folder was deleted and the commands consolidated in the corresponding applications.
+- Current E2E tests do not yet solidly cover all critical flows.
 
-Consulte [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) para responsables y criterios de cierre.
+See [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) for owners and closing criteria.

@@ -22,7 +22,7 @@ const CANVAS_ADMIN_EMAIL = process.env.CANVAS_ADMIN_EMAIL || 'admin@canvas.local
 // semgrep-ignore
 // eslint-disable-next-line
 const CANVAS_ADMIN_PASS = 'password123'; 
-const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_EMAIL || 'profesor@canvas.local';
+const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_EMAIL || 'teacher@canvas.local';
 // semgrep-ignore
 // eslint-disable-next-line
 const CANVAS_TEACHER_PASS = 'password123';
@@ -31,21 +31,21 @@ const CANVAS_TEACHER_PASS = 'password123';
 const CANVAS_STUDENT_PASS = 'password123';
 
 if (!process.env.CANVAS_ADMIN_PASS) {
-  boot.info('Usando contraseñas por defecto para cuentas de prueba locales.');
+  boot.info('Using default passwords for local test accounts.');
 }
 
 function printCanvasCredentials() {
-  boot.withStage('Credenciales de Canvas LMS', () => {
-    boot.info(`[Administrador] ${CANVAS_ADMIN_EMAIL} / ${CANVAS_ADMIN_PASS}`);
-    boot.info(`[Profesores]    ${CANVAS_TEACHER_EMAIL} … profesor3@canvas.local / ${CANVAS_TEACHER_PASS}`);
-    boot.info(`[Estudiantes]   estudiante1@canvas.local … estudiante5@canvas.local / ${CANVAS_STUDENT_PASS}`);
+  boot.withStage('Canvas LMS Credentials', () => {
+    boot.info(`[Administrator] ${CANVAS_ADMIN_EMAIL} / ${CANVAS_ADMIN_PASS}`);
+    boot.info(`[Teachers]      ${CANVAS_TEACHER_EMAIL} … teacher3@canvas.local / ${CANVAS_TEACHER_PASS}`);
+    boot.info(`[Students]      student1@canvas.local … student5@canvas.local / ${CANVAS_STUDENT_PASS}`);
   });
 }
 
 async function handleSpecialModes(mode) {
   if (mode === '4') {
-    const passed = await boot.withStage('Validaciones de caja negra', async () => runBlackBoxTests(PLUGIN_DIR));
-    await ask('\nPresione Enter para salir...');
+    const passed = await boot.withStage('Black-Box Validation', async () => runBlackBoxTests(PLUGIN_DIR));
+    await ask('\nPress Enter to exit...');
     process.exit(passed ? 0 : 1);
   }
 
@@ -71,11 +71,11 @@ async function configureMode(mode, localOrchestrator, checker) {
     await localOrchestrator.setupLocalCanvas(mode);
     printCanvasCredentials();
   } else {
-    boot.info('Esperando lanzamiento LTI 1.3 desde Canvas.');
+    boot.info('Waiting for LTI 1.3 launch from Canvas.');
     boot.info('OIDC: https://localhost:8080/api/lti/authorize_redirect · Callback: https://localhost:3000/api/lti/callback');
-    boot.info('El navegador no se abrirá automáticamente.');
+    boot.info('The browser will not open automatically.');
 
-    await checker.runCheck('Verificación LTI (no local)', async () => {
+    await checker.runCheck('LTI Verification (non-local)', async () => {
       const lti = new LtiBootstrap({ mode, log: boot });
       return lti.run();
     });
@@ -84,37 +84,37 @@ async function configureMode(mode, localOrchestrator, checker) {
 
 async function startServices(mode, localOrchestrator) {
   let backend;
-  await boot.withStage('Arranque del backend y proxy', async () => {
+  await boot.withStage('Backend and proxy startup', async () => {
     const requiredPorts = mode === '1' ? [SERVER_PORT] : [VITE_PORT, SERVER_PORT];
     await assertPortsAvailable(...requiredPorts);
-    boot.success('Puertos requeridos disponibles.');
-    boot.info('Iniciando servicios de backend y base de datos...');
+    boot.success('Required ports are available.');
+    boot.info('Starting backend and database services...');
     try {
       backend = spawnBackend();
       await waitForBackend(backend);
-      boot.success('Conexión a PostgreSQL y migraciones completadas.');
-      boot.info('Generando claves LTI y cargando certificados TLS (mkcert)...');
-      boot.success('Autoconfiguración HTTPS Completada.');
-      boot.success('Backend principal escuchando en el puerto 3000.');
+      boot.success('PostgreSQL connection established and migrations complete.');
+      boot.info('Generating LTI keys and loading TLS certificates (mkcert)...');
+      boot.success('HTTPS auto-configuration complete.');
+      boot.success('Main backend listening on port 3000.');
       
       if (mode === '3' && localOrchestrator) {
         const proxyStarted = await localOrchestrator.startTlsProxy();
-        if (!proxyStarted) throw new Error('No se pudo iniciar el proxy TLS requerido para Canvas Local.');
-        boot.success('Proxy TLS interno activo (https://localhost:8443 -> HTTP 8080).');
+        if (!proxyStarted) throw new Error('Failed to start the TLS proxy required for local Canvas.');
+        boot.success('Internal TLS proxy active (https://localhost:8443 -> HTTP 8080).');
       }
     } catch (err) {
-      boot.error(`No se pudo iniciar el backend: ${err.message}`);
-      if (process.env.NON_INTERACTIVE !== 'true') await ask('Presione Enter para salir...');
+      boot.error(`Failed to start backend: ${err.message}`);
+      if (process.env.NON_INTERACTIVE !== 'true') await ask('Press Enter to exit...');
       throw err;
     }
 
     if (mode !== '1') {
-      const viteSpinner = (await import('nanospinner')).createSpinner('Iniciando frontend (Vite)...');
+      const viteSpinner = (await import('nanospinner')).createSpinner('Starting frontend (Vite)...');
       viteSpinner.start();
       spawnVite();
-      viteSpinner.success({ text: `Proceso de desarrollo Vite iniciado (puerto ${VITE_PORT}).`, mark: '  √' });
+      viteSpinner.success({ text: `Vite development process started (port ${VITE_PORT}).`, mark: '  √' });
     } else {
-      boot.info('Modo de Producción: Sirviendo frontend desde /dist (Requiere ejecución previa de npm run build)');
+      boot.info('Production Mode: Serving frontend from /dist (requires prior execution of npm run build)');
     }
   });
   return backend;
@@ -129,7 +129,7 @@ export async function main({ mode: requestedMode } = {}) {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
     if (fs.existsSync(setupCompletePath)) {
       process.env.FAST_BOOT = 'true';
-      boot.plain('  · Modo Fast Boot detectado (.setup_complete presente).');
+      boot.plain('  · Fast Boot mode detected (.setup_complete present).');
     }
 
     const mode = requestedMode || await showMainMenu();
@@ -156,19 +156,19 @@ export async function main({ mode: requestedMode } = {}) {
 
     if (mode === '3' && !process.env.FAST_BOOT) {
       fs.writeFileSync(setupCompletePath, '1');
-      boot.plain('  √ Archivo .setup_complete generado (Fast Boot para el próximo arranque).');
+      boot.plain('  √ .setup_complete file created (Fast Boot for next startup).');
     }
 
     boot.plain('');
-    boot.plain('  ✨ Arranque completado. El plugin Feedback está operativo.');
-    boot.plain('  Mantenga esta consola abierta. Presione Ctrl+C para detener.');
+    boot.plain('  ✨ Startup complete. The Feedback plugin is operational.');
+    boot.plain('  Keep this console open. Press Ctrl+C to stop.');
     boot.plain('');
 
   } catch (e) {
-    boot.error(`Error crítico: ${e.message}`);
+    boot.error(`Critical error: ${e.message}`);
     if (e.stack) boot.debug(e.stack);
     
-    boot.info('Ejecutando limpieza por error (Graceful Shutdown)...');
+    boot.info('Running cleanup on error (Graceful Shutdown)...');
     if (shutdownHandler) {
       await shutdownHandler();
     } else {

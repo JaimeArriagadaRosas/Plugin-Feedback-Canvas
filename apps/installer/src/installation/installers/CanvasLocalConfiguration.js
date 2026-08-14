@@ -88,7 +88,7 @@ export class CanvasLocalConfiguration {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       return this.fs.readFileSync(target, 'utf8') === this.fs.readFileSync(example, 'utf8');
     } catch (error) {
-      this.boot.warn(`No se pudo verificar la plantilla de Canvas: ${error}`);
+      this.boot.warn(`Could not verify the Canvas template: ${error}`);
       return false;
     }
   }
@@ -112,7 +112,7 @@ export class CanvasLocalConfiguration {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       this.fs.writeFileSync(overrideFile, this.yaml.dump(override));
     } catch (error) {
-      this.boot.warn(`Error escribiendo docker-compose.override.yml: ${error}`);
+      this.boot.warn(`Error writing docker-compose.override.yml: ${error}`);
     }
   }
 
@@ -123,7 +123,7 @@ export class CanvasLocalConfiguration {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       return this.yaml.load(this.fs.readFileSync(overrideFile, 'utf8')) || { services: {}, volumes: {} };
     } catch (error) {
-      this.boot.warn(`Error leyendo docker-compose.override.yml: ${error}`);
+      this.boot.warn(`Error reading docker-compose.override.yml: ${error}`);
       return null;
     }
   }

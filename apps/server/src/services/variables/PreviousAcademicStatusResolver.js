@@ -11,8 +11,8 @@ export default class PreviousAcademicStatusResolver extends BaseVariableResolver
     if (!student || !student.id) return '';
 
     try {
-      // Simulación de llamada a la base de datos de historia académica.
-      // Comportamiento Fallback: si no hay datos, retornamos string vacío (se ignora en el prompt).
+      // Simulation of call to academic history database.
+      // Fallback behavior: if there is no data, return empty string (ignored in the prompt).
       const mockStatusData = await this._fetchMockData(student.id);
       
       if (!mockStatusData) {
@@ -23,28 +23,28 @@ export default class PreviousAcademicStatusResolver extends BaseVariableResolver
       if (!status) return '';
 
       let description = '';
-      if (status === 'regular') description = 'Alumno regular sin riesgo académico histórico.';
-      else if (status === 'risk') description = 'El estudiante ha presentado riesgo académico o reprobación de asignaturas en semestres anteriores.';
-      else if (status === 'outstanding') description = 'El estudiante ha tenido un rendimiento histórico destacado en semestres previos.';
+      if (status === 'regular') description = 'Regular student without historical academic risk.';
+      else if (status === 'risk') description = 'The student has presented academic risk or failed courses in previous semesters.';
+      else if (status === 'outstanding') description = 'The student has had outstanding historical performance in previous semesters.';
 
       return this.sanitize(description);
 
     } catch (err) {
-      logger.error(`[PreviousAcademicStatusResolver] Error resolviendo variable para ${student.id}: ${err.message}`);
-      return ''; // Fallback silencioso
+      logger.error(`[PreviousAcademicStatusResolver] Error resolving variable for ${student.id}: ${err.message}`);
+      return ''; // Silent fallback
     }
   }
 
   async _fetchMockData(studentId) {
-    // Simular latencia de red
+    // Simulate network latency
     return new Promise(resolve => {
       setTimeout(() => {
-        // En producción, aquí se haría un fetch() al API real.
-        // Simularemos algunos casos según el último dígito del studentId.
+        // In production, a fetch() to the real API would be made here.
+        // We will simulate some cases according to the last digit of studentId.
         const idLastDigit = parseInt(String(studentId).slice(-1), 10);
         
         if (isNaN(idLastDigit) || idLastDigit % 5 === 0) {
-           return resolve(null); // Caso sin datos (Fallback test)
+           return resolve(null); // Case without data (Fallback test)
         }
 
         let status = 'regular';

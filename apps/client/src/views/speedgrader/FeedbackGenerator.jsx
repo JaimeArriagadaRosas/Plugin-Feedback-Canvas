@@ -44,22 +44,22 @@ export default function FeedbackGenerator({
 
   return (
     <section className={`${styles.panel} ${className}`}>
-      <div className={styles.header}>GENERACIÓN DE FEEDBACK IA</div>
+      <div className={styles.header}>AI FEEDBACK GENERATION</div>
       <div className={styles.body}>
         <div className={styles.context}>
-          <strong>Contexto Académico:</strong> La IA analizará la nota actual ({grade}/{activeAssignment?.points}), el historial de notas previas y el texto de la entrega.
+          <strong>Academic Context:</strong> The AI will analyze the current grade ({grade}/{activeAssignment?.points}), previous grade history, and the submission text.
         </div>
 
         <div className={styles.preview}>
           {loading ? (
-            "🤖 La IA está orquestando los datos académicos y generando feedback..."
+            "🤖 The AI is orchestrating academic data and generating feedback..."
           ) : (
             <textarea 
               value={feedback || ''} 
               onChange={(e) => setFeedback && setFeedback(e.target.value)} 
               className={styles.feedbackEditor} 
               rows={8}
-              placeholder="Haz clic en 'Generar Feedback' o escribe tu comentario manual aquí..."
+              placeholder="Click 'Generate Feedback' or write your manual comment here..."
               style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: isFeedbackApproved ? '#f3f4f6' : 'white' }}
               readOnly={isFeedbackApproved}
             />

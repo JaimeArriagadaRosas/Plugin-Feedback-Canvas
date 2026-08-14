@@ -1,10 +1,10 @@
-# Diagnóstico y resolución de problemas
+# Troubleshooting
 
-La regla principal es conservar el primer error, confirmar la carpeta y observar antes de modificar. No use `chmod -R 777`, `git reset --hard`, terminación masiva de procesos ni limpieza global de Docker como respuesta inicial.
+The main rule is to preserve the first error, confirm the folder, and observe before modifying. Do not use `chmod -R 777`, `git reset --hard`, massive process termination, or global Docker cleanup as an initial response.
 
-## Diagnóstico base
+## Baseline diagnostics
 
-Ejecute desde la raíz del plugin:
+Run from the plugin root:
 
 ```bash
 pwd
@@ -16,76 +16,76 @@ docker info
 docker compose version
 ```
 
-Guarde el comando, la salida completa y el sistema operativo. La existencia de `docker --version` solo demuestra que hay un cliente; `docker info` prueba la conexión al daemon.
+Save the command, the full output, and the operating system. The existence of `docker --version` only proves there is a client; `docker info` tests the connection to the daemon.
 
 ## `cd: No such file or directory`
 
-La carpeta no existe en esa ruta, aún no fue clonada/copiada o hay diferencias de mayúsculas.
+The folder does not exist at that path, it was not yet cloned/copied, or there are case differences.
 
 ```bash
 pwd
 ls -la
-ls -la /ruta/del/directorio/padre
+ls -la /path/to/parent/directory
 ```
 
-Las rutas con espacios deben ir entre comillas. En WSL, `D:\Descargas\Proyecto Plugin feedback` se ve como `/mnt/d/Descargas/Proyecto Plugin feedback`.
+Paths with spaces must be enclosed in quotes. In WSL, `D:\Downloads\Proyecto Plugin feedback` looks like `/mnt/d/Downloads/Proyecto Plugin feedback`.
 
-## `wsl: command not found` dentro de Ubuntu
+## `wsl: command not found` inside Ubuntu
 
-Ya está dentro de Linux. `wsl` administra distribuciones desde PowerShell/CMD de Windows. No instale un paquete Linux llamado `wsl` para corregirlo.
+You are already inside Linux. `wsl` manages distributions from Windows PowerShell/CMD. Do not install a Linux package named `wsl` to fix it.
 
-Si necesita apagar WSL completamente, abra PowerShell en Windows:
+If you need to shut down WSL completely, open PowerShell in Windows:
 
 ```powershell
 wsl --shutdown
 ```
 
-## `node version` busca un módulo
+## `node version` looks for a module
 
-Use una opción con guiones:
+Use an option with dashes:
 
 ```bash
 node --version
 node -v
 ```
 
-Sin `--`, Node interpreta `version` como el nombre de un archivo JavaScript.
+Without `--`, Node interprets `version` as the name of a JavaScript file.
 
-## npm o lockfile incompatibles
+## Incompatible npm or lockfile
 
-El proyecto fija npm 11.8.0. Desde la raíz confirmada:
+The project pins npm 11.8.0. From the confirmed root:
 
 ```bash
 npx --yes npm@11.8.0 ci
 ```
 
-No cambie a `npm install` ni borre el lockfile. Si falla, conserve las primeras líneas del error y compruebe que Node satisface `^20.19.0 || >=22.12.0`.
+Do not switch to `npm install` or delete the lockfile. If it fails, keep the first lines of the error and check that Node satisfies `^20.19.0 || >=22.12.0`.
 
-## PowerShell bloquea `npm.ps1`
+## PowerShell blocks `npm.ps1`
 
-Use el ejecutable de Windows:
+Use the Windows executable:
 
 ```powershell
 npm.cmd start
 npx.cmd --yes npm@11.8.0 ci
 ```
 
-Como alternativa, una política solo para la sesión puede autorizarse según las normas del equipo:
+Alternatively, a session-only policy can be authorized according to the team's rules:
 
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
 
-No cambie la política de toda la máquina sin necesidad.
+Do not change the machine-wide policy unnecessarily.
 
-## Docker no aparece en WSL2
+## Docker does not appear in WSL2
 
-Elija una arquitectura:
+Choose an architecture:
 
-1. Docker Desktop con WSL Integration habilitado para esa distribución; o
-2. Docker Engine nativo dentro de Ubuntu.
+1. Docker Desktop with WSL Integration enabled for that distribution; or
+2. Native Docker Engine inside Ubuntu.
 
-Compruebe origen y contexto:
+Check origin and context:
 
 ```bash
 which docker
@@ -94,11 +94,11 @@ docker context show
 docker info
 ```
 
-Una ruta bajo `/mnt/c/Program Files/Docker/...` es el cliente de Windows. No demuestra que exista un daemon Linux nativo.
+A path under `/mnt/c/Program Files/Docker/...` is the Windows client. It does not prove that a native Linux daemon exists.
 
 ## `Cannot connect to the Docker daemon`
 
-En rootless:
+In rootless:
 
 ```bash
 systemctl --user status docker.service
@@ -106,11 +106,11 @@ docker context show
 docker info
 ```
 
-En Docker Desktop, compruebe que la aplicación esté iniciada y que la integración de la distribución esté activa. No instale un segundo daemon antes de saber qué contexto/socket usa la terminal.
+In Docker Desktop, check that the application is started and that the distribution integration is active. Do not install a second daemon before knowing which context/socket the terminal uses.
 
-## Permiso denegado en `/var/run/docker.sock`
+## Permission denied on `/var/run/docker.sock`
 
-La terminal intenta usar el daemon del sistema sin permisos. El grupo `docker` concede acceso equivalente a root. La opción preferida del instalador Linux es rootless.
+The terminal tries to use the system daemon without permissions. The `docker` group grants access equivalent to root. The preferred option of the Linux installer is rootless.
 
 ```bash
 id
@@ -119,25 +119,25 @@ docker context show
 docker info
 ```
 
-Si se autorizó expresamente un cambio de grupo, se necesita una sesión nueva; en WSL puede requerir `wsl --shutdown` desde Windows. No combine `sudo docker` con un contexto rootless como solución permanente.
+If a group change was expressly authorized, a new session is needed; in WSL it may require `wsl --shutdown` from Windows. Do not combine `sudo docker` with a rootless context as a permanent solution.
 
-## Avisos `No cpuset/io.weight/io.max support`
+## `No cpuset/io.weight/io.max support` warnings
 
-Pueden aparecer con Docker rootless sobre WSL2. Indican que ciertos controles finos de cgroups/I/O no están disponibles; no significan por sí solos que Docker esté roto. Evalúe el fallo real del contenedor y la memoria disponible.
+They may appear with rootless Docker on WSL2. They indicate that certain fine-grained cgroups/I/O controls are not available; they do not by themselves mean Docker is broken. Evaluate the actual container failure and available memory.
 
-## Proyecto en `/mnt/c` o `/mnt/d` lento o con permisos extraños
+## Project in `/mnt/c` or `/mnt/d` slow or with strange permissions
 
-Copie/clone el proyecto al filesystem Linux:
+Copy/clone the project to the Linux filesystem:
 
 ```text
-/home/<usuario>/plugin-feedback/Plugin-Feedback
+/home/<user>/plugin-feedback/Plugin-Feedback
 ```
 
-Los builds, `node_modules`, Bundler y bind mounts son más fiables allí. Use las rutas `/mnt/...` para intercambio ocasional, no para el ciclo intensivo de herramientas Linux.
+Builds, `node_modules`, Bundler, and bind mounts are more reliable there. Use `/mnt/...` paths for occasional exchange, not for the intensive Linux tool cycle.
 
-## Puerto ocupado
+## Port in use
 
-Identifique primero al propietario.
+Identify the owner first.
 
 Windows:
 
@@ -153,39 +153,39 @@ ss -ltnp | grep ':3000'
 lsof -i :3000
 ```
 
-Repita para 5173, 8080 o 8443. No ejecute `taskkill /F` o `kill -9` hasta confirmar que el proceso pertenece a este proyecto. El orquestador solo debe cerrar sus propios procesos hijo.
+Repeat for 5173, 8080, or 8443. Do not run `taskkill /F` or `kill -9` until you confirm the process belongs to this project. The orchestrator should only close its own child processes.
 
-## `canvas.docker` no resuelve
+## `canvas.docker` does not resolve
 
-Compruebe:
+Check:
 
 ```bash
 getent hosts canvas.docker
 npm run setup:hosts
 ```
 
-El segundo comando modifica el archivo hosts y requiere autorización. Para revertir:
+The second command modifies the hosts file and requires authorization. To revert:
 
 ```bash
 npm run setup:hosts -- --remove
 ```
 
-## Certificado HTTPS no confiable
+## Untrusted HTTPS certificate
 
-Los certificados locales no son certificados públicos. Visite primero los endpoints locales y confíe únicamente en la CA/certificado generado para desarrollo. Nunca desactive globalmente la validación TLS ni establezca permanentemente `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+Local certificates are not public certificates. Visit the local endpoints first and trust only the CA/certificate generated for development. Never globally disable TLS validation or permanently set `NODE_TLS_REJECT_UNAUTHORIZED=0`.
 
-Compruebe:
+Check:
 
 ```bash
 npm run verify:https
 curl -kI https://localhost:3000/health
 ```
 
-`-k` es solo diagnóstico local; no debe usarse para validar producción.
+`-k` is only for local diagnostics; it must not be used to validate production.
 
-## Canvas no responde después del setup
+## Canvas does not respond after setup
 
-Desde `canvas-lms-master`:
+From `canvas-lms-master`:
 
 ```bash
 docker compose ps
@@ -195,9 +195,9 @@ docker compose logs --tail=100 postgres
 curl -I http://localhost:8080/login
 ```
 
-Busque el primer contenedor `Exited`, `Unhealthy` o error de migración. No borre volúmenes antes de guardar logs y confirmar que los datos son descartables.
+Look for the first container that is `Exited`, `Unhealthy`, or a migration error. Do not delete volumes before saving logs and confirming that the data is disposable.
 
-## Testcontainers no encuentra runtime
+## Testcontainers cannot find runtime
 
 ```bash
 docker info
@@ -205,15 +205,15 @@ docker run --rm hello-world
 npm run test:integration
 ```
 
-En rootless, asegúrese de ejecutar la prueba con el mismo usuario/contexto que responde a `docker info`.
+In rootless, make sure to run the test with the same user/context that responds to `docker info`.
 
-## Build completa con advertencia de chunks grandes
+## Build completes with large chunks warning
 
-Vite puede advertir por bundles como `exceljs` o el visor PDF. Si `npm run build` termina con código 0, es una advertencia de rendimiento, no un fallo. Regístrela como deuda y mida antes de cambiar la división de chunks.
+Vite may warn about bundles like `exceljs` or the PDF viewer. If `npm run build` ends with code 0, it is a performance warning, not a failure. Register it as debt and measure before changing the chunk splitting.
 
-## Limpieza segura
+## Safe cleanup
 
-Primero inspeccione:
+First inspect:
 
 ```bash
 docker ps -a
@@ -221,4 +221,4 @@ docker volume ls
 docker system df
 ```
 
-`docker compose down` afecta el stack del compose actual. `docker compose down -v`, `docker system prune -a --volumes`, `git clean -fdx` y `rm -rf` son destructivos; requieren un objetivo exacto, confirmación y respaldo cuando corresponda.
+`docker compose down` affects the stack of the current compose. `docker compose down -v`, `docker system prune -a --volumes`, `git clean -fdx`, and `rm -rf` are destructive; they require an exact target, confirmation, and backup when appropriate.

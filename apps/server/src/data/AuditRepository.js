@@ -1,7 +1,7 @@
 import db from './db.js';
 
 /**
- * Repositorio de Auditoría (PostgreSQL)
+ * Audit Repository (PostgreSQL)
  */
 export default class AuditRepository {
   static async log(userId, action, details, ip = '0.0.0.0') {
@@ -11,7 +11,7 @@ export default class AuditRepository {
         [userId, action, details, ip]
       );
     } catch (error) {
-      console.error('[AUDIT] Error guardando log:', error.message);
+      console.error('[AUDIT] Error saving log:', error.message);
     }
   }
 

@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
- * Barra de Navegación de Administración
- * Extraída en su propio módulo. Solo debe mostrarse si la vista actual es de administrador.
+ * Administration Navigation Bar
+ * Extracted into its own module. Should only be displayed if the current view is administrator.
  */
 export default function AdminNavbar({ role }) {
   const navigate = useNavigate();
@@ -11,14 +11,14 @@ export default function AdminNavbar({ role }) {
 
   const esVistaAdmin = location.pathname.startsWith('/admin') || location.pathname === '/';
 
-  // Seguridad adicional: Si por alguna razón el componente se monta pero
-  // no estamos en la vista de admin, no renderizamos nada.
+  // Additional security: If for some reason the component mounts but
+  // we are not in the admin view, we render nothing.
   if (!esVistaAdmin) return null;
 
   return (
     <nav
       role="navigation"
-      aria-label="Barra de Administración"
+      aria-label="Administration Bar"
       style={{
         background: '#1a252f',
         padding: '10px 30px',
@@ -34,7 +34,7 @@ export default function AdminNavbar({ role }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ color: '#ecf0f1', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px' }}>
-          ⚙️ Plugin Feedback — Panel de Administración
+          ⚙️ Feedback Plugin — Administration Panel
         </span>
         <span style={{
           background: '#e74c3c',
@@ -52,7 +52,7 @@ export default function AdminNavbar({ role }) {
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <button
           id="admin-nav-administracion"
-          title="Ver Panel de Administración"
+          title="View Administration Panel"
           style={{
             background: esVistaAdmin ? '#0770a3' : 'transparent',
             border: '1px solid rgba(255,255,255,0.3)',
@@ -69,12 +69,12 @@ export default function AdminNavbar({ role }) {
           }}
           onClick={() => navigate('/admin')}
         >
-          ⚙️ Administración
+          ⚙️ Administration
         </button>
 
         <button
           id="admin-nav-vista-docente"
-          title="Ver la interfaz exactamente como la ve un docente"
+          title="View the interface exactly as a teacher sees it"
           style={{
             background: 'transparent',
             border: '1px solid rgba(255,255,255,0.3)',
@@ -90,12 +90,12 @@ export default function AdminNavbar({ role }) {
           }}
           onClick={() => navigate('/teacher/courses')}
         >
-          📋 Vista Docente
+          📋 Teacher View
         </button>
 
         <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', height: '24px' }} />
         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-          Admin / Docente
+          Admin / Teacher
         </span>
       </div>
     </nav>

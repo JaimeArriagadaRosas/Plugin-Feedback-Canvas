@@ -1,6 +1,6 @@
-# Guía de contribución
+# Contribution Guide
 
-## 1. Preparar el repositorio
+## 1. Prepare the repository
 
 ```bash
 git clone https://github.com/JaimeArriagadaRosas/Plugin-Feedback-Canvas.git
@@ -8,85 +8,85 @@ cd Plugin-Feedback-Canvas
 npx --yes npm@11.8.0 ci
 ```
 
-Requisitos: Node `^20.19.0 || >=22.12.0`, npm 11.8.0 y Git. Docker solo es obligatorio para integración, Canvas local y E2E reales.
+Requirements: Node `^20.19.0 || >=22.12.0`, npm 11.8.0, and Git. Docker is only mandatory for integration, local Canvas, and real E2E tests.
 
-Antes de modificar:
+Before modifying:
 
 ```bash
 git status
 git branch --show-current
 ```
 
-Trabaje en una rama enfocada; no mezcle refactors masivos con una corrección funcional sin una justificación verificable.
+Work on a focused branch; do not mix massive refactors with a functional fix without a verifiable justification.
 
-## 2. Límites de diseño
+## 2. Design boundaries
 
-- Máximo recomendado de 300 líneas por archivo.
-- Máximo recomendado de 100 líneas por función.
-- Una responsabilidad principal por módulo/clase.
-- Dependencias externas detrás de adaptadores o servicios inyectables.
-- Controladores finos: validan/adaptan HTTP y delegan casos de uso.
-- Repositorios encapsulan SQL/persistencia; componentes React no conocen detalles de base de datos.
-- Cada bug corregido incorpora una regresión proporcional.
+- Recommended maximum of 300 lines per file.
+- Recommended maximum of 100 lines per function.
+- One primary responsibility per module/class.
+- External dependencies behind adapters or injectable services.
+- Thin controllers: validate/adapt HTTP and delegate use cases.
+- Repositories encapsulate SQL/persistence; React components do not know database details.
+- Every fixed bug incorporates a proportional regression test.
 
-Cuando un archivo supera un límite por documentación generada o una tabla declarativa, documente la excepción; no compacte código para «cumplir» a costa de legibilidad.
+When a file exceeds a limit due to generated documentation or a declarative table, document the exception; do not compress code to "comply" at the expense of readability.
 
 ## 3. Monorepo
 
-Los paquetes activos son:
+The active packages are:
 
 ```text
 apps/client/    React + Vite
 apps/server/    Node.js + Express
 ```
 
-El patrón `packages/*` está reservado en los workspaces, pero no hay paquetes compartidos activos en el árbol actual. Si se crea uno, debe tener límites y propietario claros.
+The `packages/*` pattern is reserved in the workspaces, but there are no active shared packages in the current tree. If one is created, it must have clear boundaries and owners.
 
-Ejecute scripts desde la raíz para que npm resuelva workspaces y lockfile de forma uniforme.
+Run scripts from the root so npm resolves workspaces and the lockfile uniformly.
 
-## 4. Lógica por plataforma
+## 4. Per-platform logic
 
-- Código exclusivamente Windows: adaptador/clase `Windows…` o `Win…`.
-- Código exclusivamente Linux: `Linux…`.
-- Diferencias específicas WSL: `Wsl…` o política WSL explícita.
-- Código exclusivamente macOS: `Mac…`.
-- Lógica compartida no debe llevar un prefijo de sistema.
+- Windows-only code: adapter/class `Windows…` or `Win…`.
+- Linux-only code: `Linux…`.
+- WSL specific differences: `Wsl…` or explicit WSL policy.
+- macOS-only code: `Mac…`.
+- Shared logic must not have a system prefix.
 
-Los probes observan y reportan; los instaladores mutan después de consentimiento. No mezcle descargas de Docker Desktop, APT, UAC, `sudo`, Gatekeeper o `.wslconfig` en un único archivo condicional.
+Probes observe and report; installers mutate after consent. Do not mix Docker Desktop downloads, APT, UAC, `sudo`, Gatekeeper, or `.wslconfig` in a single conditional file.
 
-## 5. Código local y producción
+## 5. Local code and production
 
-Los sufijos `.local.js`/`_local.js` indican un adaptador versionado para desarrollo, no un archivo privado. Nunca deben contener secretos.
+The `.local.js`/`_local.js` suffixes indicate a versioned adapter for development, not a private file. They must never contain secrets.
 
-- Comparta dominio y casos de uso entre local/producción.
-- Sustituya infraestructura mediante composition roots/adaptadores.
-- El bypass local requiere guardas explícitas y tests que demuestren que producción lo rechaza.
-- No cree una segunda implementación completa solo para cambiar la fuente de datos.
+- Share domain and use cases between local/production.
+- Substitute infrastructure via composition roots/adapters.
+- Local bypass requires explicit guards and tests demonstrating that production rejects it.
+- Do not create a second complete implementation just to change the data source.
 
-## 6. Antiguo directorio `scripts/`
+## 6. Old `scripts/` directory
 
-El directorio `scripts/` ha sido eliminado y su contenido redistribuido. Los comandos operativos y de diagnóstico ahora residen en `apps/installer/src/commands/` y `apps/server/bin/`. Nueva lógica de negocio, detección de plataforma o migraciones deben ubicarse en el módulo correspondiente.
+The `scripts/` directory has been removed and its content redistributed. Operational and diagnostic commands now reside in `apps/installer/src/commands/` and `apps/server/bin/`. New business logic, platform detection, or migrations must be placed in the corresponding module.
 
 
-## 7. Desarrollo
+## 7. Development
 
 ```bash
-npm run server   # backend; reinicio manual al cambiar código
-npm run dev      # frontend Vite con HMR
+npm run server   # backend; manual restart when changing code
+npm run dev      # Vite frontend with HMR
 ```
 
-Para Canvas completo:
+For full Canvas:
 
 ```bash
 npm start
-# seleccionar opción 3
+# select option 3
 ```
 
-No ejecute el proyecto Linux desde `/mnt/c` o `/mnt/d` si usa Docker Engine dentro de WSL2; clone en `/home/<usuario>/...`.
+Do not run the Linux project from `/mnt/c` or `/mnt/d` if using Docker Engine inside WSL2; clone into `/home/<user>/...`.
 
-## 8. Pruebas requeridas
+## 8. Required tests
 
-Base para cualquier cambio:
+Baseline for any change:
 
 ```bash
 npx --yes npm@11.8.0 run lint
@@ -94,64 +94,64 @@ npx --yes npm@11.8.0 test
 npx --yes npm@11.8.0 run build
 ```
 
-Si cambia el cliente:
+If you change the client:
 
 ```bash
 npx playwright install chromium
 npx --yes npm@11.8.0 run test:client
 ```
 
-Si cambia persistencia/integración:
+If you change persistence/integration:
 
 ```bash
 npx --yes npm@11.8.0 run test:integration
 ```
 
-Si cambia setup/plataforma, agregue tests con dependencias inyectadas y valide al menos el sistema afectado. Un mock de Docker no demuestra una instalación real.
+If you change setup/platform, add tests with injected dependencies and validate at least the affected system. A Docker mock does not prove a real installation.
 
-Consulte [TESTING.md](TESTING.md) para la matriz completa.
+See [TESTING.md](TESTING.md) for the complete matrix.
 
-## 9. Base de datos
+## 9. Database
 
-- Añada una migración incremental en `packages/plugin-database/migrations/`; no reescriba una migración ya aplicada.
-- Diseñe migraciones reanudables cuando sea razonable.
-- No incluya datos institucionales reales en seeds.
-- Cambios destructivos requieren backup, estrategia de rollback y aprobación explícita.
-- Actualice repositorios, tests y documentación del esquema en el mismo cambio.
+- Add an incremental migration in `packages/plugin-database/migrations/`; do not rewrite an already applied migration.
+- Design resumable migrations when reasonable.
+- Do not include real institutional data in seeds.
+- Destructive changes require backup, rollback strategy, and explicit approval.
+- Update repositories, tests, and schema documentation in the same change.
 
-## 10. Seguridad
+## 10. Security
 
-- No suba `.env`, tokens, claves privadas, credenciales o dumps.
-- No registre headers de autorización, cookies LTI ni prompts con datos personales completos.
-- Use argumentos estructurados al lanzar procesos; evite `shell: true` y concatenación de entradas.
-- No ejecute scripts remotos sin versión/verificación.
-- No mate procesos ajenos ni borre carpetas/volúmenes como recuperación automática.
-- Ejecute Gitleaks conforme a [GITLEAKS.md](GITLEAKS.md).
+- Do not commit `.env`, tokens, private keys, credentials, or dumps.
+- Do not log authorization headers, LTI cookies, or prompts with full personal data.
+- Use structured arguments when launching processes; avoid `shell: true` and input concatenation.
+- Do not run remote scripts without version/verification.
+- Do not kill external processes or delete folders/volumes as automatic recovery.
+- Run Gitleaks according to [GITLEAKS.md](GITLEAKS.md).
 
-Vulnerabilidades se comunican según [SECURITY.md](SECURITY.md), no mediante issues públicos con detalles explotables.
+Vulnerabilities are reported according to [SECURITY.md](SECURITY.md), not through public issues with exploitable details.
 
-## 11. Documentación
+## 11. Documentation
 
-Actualice documentación cuando cambie cualquiera de estos contratos:
+Update documentation when changing any of these contracts:
 
-- comandos y versiones;
-- variables de entorno;
-- puertos/URLs;
-- modos del orquestador;
-- estructura del monorepo;
-- scopes o endpoints LTI;
-- soporte de plataformas;
-- estado de pruebas o producción.
+- commands and versions;
+- environment variables;
+- ports/URLs;
+- orchestrator modes;
+- monorepo structure;
+- LTI scopes or endpoints;
+- platform support;
+- test or production status.
 
-No enlace informes privados ni prometa un comportamiento que no tenga evidencia reproducible.
+Do not link private reports or promise behavior that has no reproducible evidence.
 
-## 12. Checklist de pull request
+## 12. Pull request checklist
 
-- [ ] Alcance pequeño y descripción del problema/decisión.
-- [ ] Sin cambios ajenos ni artefactos generados.
-- [ ] Archivos/funciones dentro de límites o excepción justificada.
-- [ ] Prueba de regresión añadida o motivo explícito.
-- [ ] Lint, tests y build ejecutados con resultado informado.
-- [ ] Riesgos de migración, seguridad y rollback descritos.
-- [ ] Documentación y ejemplos actualizados.
-- [ ] Escaneo de secretos sin nuevos hallazgos.
+- [ ] Small scope and description of the problem/decision.
+- [ ] No unrelated changes or generated artifacts.
+- [ ] Files/functions within limits or justified exception.
+- [ ] Regression test added or explicit reason.
+- [ ] Lint, tests, and build executed with reported result.
+- [ ] Migration, security, and rollback risks described.
+- [ ] Documentation and examples updated.
+- [ ] Secret scan without new findings.

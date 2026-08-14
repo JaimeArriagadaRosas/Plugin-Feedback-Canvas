@@ -19,18 +19,18 @@ export function getLocalCaBuffer() {
     if (fs.existsSync(caPath)) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       cachedCaBuffer = fs.readFileSync(caPath);
-      logger.info(`[TLS] Se cargó el rootCA de mkcert exitosamente desde AppData.`);
+      logger.info(`[TLS] mkcert rootCA successfully loaded from AppData.`);
       return cachedCaBuffer;
     } else {
-       logger.warn(`[TLS] No se encontró rootCA.pem en ${caRoot}`);
+       logger.warn(`[TLS] rootCA.pem not found in ${caRoot}`);
     }
   } catch (error) {
-    logger.warn(`[TLS] No se pudo obtener el rootCA de mkcert. Error: ${error.message}`);
+    logger.warn(`[TLS] Could not get mkcert rootCA. Error: ${error.message}`);
   }
   return null;
 }
 
 export function configureLocalTLS() {
-  // La inyección dinámica de NODE_EXTRA_CA_CERTS ya no se usa porque Undici/fetch no la toma en runtime.
-  // El certificado se inyecta directamente mediante dispatcher en el CanvasClient.
+  // Dynamic injection of NODE_EXTRA_CA_CERTS is no longer used because Undici/fetch does not take it at runtime.
+  // The certificate is injected directly via dispatcher in CanvasClient.
 }

@@ -1,9 +1,9 @@
 /**
- * Puente de orquestación al módulo de proxy TLS inverso para Canvas Local.
+ * Orchestration bridge to the reverse TLS proxy module for Local Canvas.
  *
- * El módulo real es apps/installer/src/local/TlsProxyServer.js (fuera de src/). Este
- * archivo re-exporta sus funciones para que main.js (en src/orchestration)
- * pueda importarlo con una ruta relativa corta.
+ * The real module is apps/installer/src/local/TlsProxyServer.js (outside src/). This
+ * file re-exports its functions so that main.js (in src/orchestration)
+ * can import it with a short relative path.
  */
 
 export { startTlsProxy, stopTlsProxy } from '../local/TlsProxyServer.js';

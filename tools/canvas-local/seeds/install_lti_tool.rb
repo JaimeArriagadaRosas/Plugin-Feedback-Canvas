@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'json'
 
-puts "Registrando Developer Key LTI 1.3..."
+puts "Registering LTI 1.3 Developer Key..."
 host = (ENV['CANVAS_BASE_URL'] || 'https://localhost:8080').sub(/\/$/, '')
 plugin_url = (ENV['PLUGIN_BACKEND_URL'] || ENV['VITE_BACKEND_URL'] || 'https://localhost:3000').sub(/\/$/, '')
 frontend_url = (ENV['FRONTEND_URL'] || "#{host}/").sub(/\/$/, '')
@@ -28,7 +28,7 @@ tool_config = Lti::ToolConfiguration.where(developer_key: key).first_or_initiali
 
 placements_json_string = ENV['LTI_PLACEMENT_JSON']
 if placements_json_string.nil? || placements_json_string.strip.empty?
-  puts "ERROR: LTI_PLACEMENT_JSON no está definido o está vacío."
+  puts "ERROR: LTI_PLACEMENT_JSON is not defined or is empty."
   exit 1
 end
 
@@ -52,8 +52,8 @@ end
 
 
 tool_config.assign_attributes(
-  title: "Feedback Adaptativo",
-  description: "Plugin de Feedback Adaptativo con IA",
+  title: "Adaptive Feedback",
+  description: "Adaptive AI Feedback Plugin",
   target_link_uri: "#{plugin_url}/api/lti/callback",
   oidc_initiation_url: "#{plugin_url}/api/lti/login",
   public_jwk_url: "#{plugin_url}/api/lti/jwks",
@@ -73,8 +73,8 @@ puts "LTI_CLIENT_ID:#{key.global_id}"
 puts "========================="
 
 begin
-  # Instalamos explícitamente el botón LTI en la cuenta
-  puts "Instalando ContextExternalTool para asegurar que el botón aparezca..."
+  # Explicitly install the LTI button in the account
+  puts "Installing ContextExternalTool to ensure the button appears..."
   tool = ContextExternalTool.where(developer_key_id: key.id, context: Account.default).first_or_initialize
   tool.name = "Unida"
   tool.developer_key_id = key.id
@@ -83,25 +83,25 @@ begin
   tool.domain = URI.parse(plugin_url).host rescue 'localhost'
   tool.use_1_3 = true
   tool.workflow_state = "public"
-  # Limpiamos placements antiguas y copiamos las de la configuración actual
+  # Clear old placements and copy from current configuration
   tool.settings = {}
   tool_config.placements.each do |p|
     tool.settings[p["placement"].to_sym] = p
   end
   tool.custom_fields = tool_config.custom_fields
   tool.save!
-  puts "ContextExternalTool instalado correctamente."
+  puts "ContextExternalTool installed successfully."
 
-  # Inyectamos el JS global para logs de sesión en el frontend
+  # Inject global JS for session logs in the frontend
   js_url = "#{plugin_url}/api/canvas/canvas-logs.js"
   if Account.default.settings[:global_javascript] != js_url || !Account.default.settings[:global_includes]
     Account.default.settings[:global_javascript] = js_url
     Account.default.settings[:global_includes] = true
     Account.default.save!
-    puts "global_javascript configurado en Account.default: #{js_url}"
+    puts "global_javascript configured in Account.default: #{js_url}"
   end
 rescue => e
-  puts "Advertencia: Error al inyectar el Custom Theme JS o LTI: #{e.message}"
+  puts "Warning: Error injecting Custom Theme JS or LTI: #{e.message}"
   puts e.backtrace
   exit 1
 end

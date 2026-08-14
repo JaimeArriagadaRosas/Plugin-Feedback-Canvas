@@ -1,16 +1,16 @@
 /**
  * LocalTokenStore.js
  *
- * Adaptador ligero de persistencia de tokens para el entorno local.
- * Reemplaza la dependencia directa a CanvasTokenRepository (apps/server)
- * que violaba la frontera instalador→servidor.
+ * Lightweight token persistence adapter for the local environment.
+ * Replaces the direct dependency on CanvasTokenRepository (apps/server)
+ * that violated the installer→server boundary.
  *
- * En el contexto de setup local, los tokens se guardan en texto plano
- * en PostgreSQL. El cifrado AES-256-GCM es responsabilidad del servidor
- * en runtime, no del instalador durante la configuración inicial.
+ * In the context of local setup, tokens are saved in plain text
+ * in PostgreSQL. AES-256-GCM encryption is the server's responsibility
+ * at runtime, not the installer's during initial configuration.
  *
- * Si el servidor necesita tokens cifrados, los cifrará en el primer
- * acceso autenticado usando EncryptionService.
+ * If the server needs encrypted tokens, it will encrypt them on the first
+ * authenticated access using EncryptionService.
  */
 
 import pg from 'pg';
@@ -31,13 +31,13 @@ export class LocalTokenStore {
   }
 
   /**
-   * Guarda un token de Canvas en la tabla canvas_user_tokens.
-   * Inserta o actualiza según canvas_sub (UPSERT).
+   * Saves a Canvas token in the canvas_user_tokens table.
+   * Inserts or updates based on canvas_sub (UPSERT).
    *
-   * @param {string} canvasSub - Identificador LTI del usuario
-   * @param {string} accessToken - Token de acceso (texto plano en setup local)
-   * @param {string|null} refreshToken - Token de refresco (opcional)
-   * @param {Date} expiresAt - Fecha de expiración
+   * @param {string} canvasSub - User's LTI identifier
+   * @param {string} accessToken - Access token (plain text in local setup)
+   * @param {string|null} refreshToken - Refresh token (optional)
+   * @param {Date} expiresAt - Expiration date
    */
   async saveToken(canvasSub, accessToken, refreshToken, expiresAt) {
     const pool = this._getPool();

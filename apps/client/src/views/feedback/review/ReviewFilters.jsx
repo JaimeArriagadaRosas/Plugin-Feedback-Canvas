@@ -8,8 +8,8 @@ export default function ReviewFilters({
   setSelectedCourse,
   selectedAssignment,
   setSelectedAssignment,
-  coursesList = [{ value: 'Todos', label: 'Todos los Cursos' }],
-  assignmentsList = [{ value: 'Todas', label: 'Todas las Asignaciones' }],
+  coursesList = [{ value: 'Todos', label: 'All Courses' }],
+  assignmentsList = [{ value: 'Todas', label: 'All Assignments' }],
   onClear,
 }) {
   const logClear = useButtonLogger();
@@ -28,20 +28,20 @@ export default function ReviewFilters({
           {
             key: 'course',
             id: 'filter-course',
-            label: 'Filtrar por Curso',
+            label: 'Filter by Course',
             value: selectedCourse,
             onChange: setSelectedCourse,
             options: coursesList,
-            placeholder: 'Seleccione un curso...',
+            placeholder: 'Select a course...',
           },
           {
             key: 'assignment',
             id: 'filter-assignment',
-            label: 'Filtrar por Asignación',
+            label: 'Filter by Assignment',
             value: selectedAssignment,
             onChange: setSelectedAssignment,
             options: assignmentsList,
-            placeholder: 'Seleccione una asignación...',
+            placeholder: 'Select an assignment...',
           },
         ]}
         onClear={handleClear}

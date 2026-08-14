@@ -66,8 +66,8 @@ export default function FeedbackReviewPanel() {
   }, [logClick, setActiveFeedback, setShowEditModal]);
 
   const handleClearFilters = useCallback(() => {
-    setSelectedCourse('Todos');
-    setSelectedAssignment('Todas');
+    setSelectedCourse('All');
+    setSelectedAssignment('All');
   }, [setSelectedCourse, setSelectedAssignment]);
 
   const handleCloseModal = useCallback(() => {
@@ -79,13 +79,13 @@ export default function FeedbackReviewPanel() {
   return (
     <RequirePermission 
       permission="view_feedback" 
-      fallback={<div className={styles.panel} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+      fallback={<div className={styles.panel} style={{ padding: '2rem', textAlign: 'center' }}><h2>Functionality disabled by the administrator.</h2></div>}
     >
       <div className={styles.panel}>
         <header className={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <PendingFeedbacksIndicator courseId={selectedCourse} />
-          <h1 className={styles.title}>REVISIÓN DE FEEDBACKS</h1>
+          <h1 className={styles.title}>FEEDBACK REVIEW</h1>
         </div>
         <div className={styles.actions}>
           <button
@@ -94,16 +94,16 @@ export default function FeedbackReviewPanel() {
             onClick={logClick('FEEDBACK_REVIEW_BULK_APPROVE', handleBulkApprove)}
             style={{ marginRight: '10px', backgroundColor: canSubmitFeedback ? '#0374B5' : '#ccc', color: '#fff', borderColor: canSubmitFeedback ? '#0374B5' : '#ccc' }}
             disabled={!canSubmitFeedback}
-            title={!canSubmitFeedback ? "Permiso de envío deshabilitado" : ""}
+            title={!canSubmitFeedback ? "Sending permission disabled" : ""}
           >
-            ✔️ Aprobar Pendientes
+            ✔️ Approve Pending
           </button>
           <button
             type="button"
             className={styles.exportButton}
             onClick={logClick('FEEDBACK_REVIEW_EXPORT_EXCEL', handleExportExcel)}
           >
-            📥 Exportar Reporte Excel
+            📥 Export Excel Report
           </button>
         </div>
       </header>
@@ -120,7 +120,7 @@ export default function FeedbackReviewPanel() {
         />
 
         {loading ? (
-          <div className={styles.state}>Cargando feedbacks...</div>
+          <div className={styles.state}>Loading feedbacks...</div>
         ) : (
           <FeedbackTable
             feedbacks={filteredFeedbacks}
@@ -152,8 +152,8 @@ export default function FeedbackReviewPanel() {
       {pendingBulkApproval && (
         <ConfirmDialog
           isOpen={!!pendingBulkApproval}
-          title="Aprobación Masiva"
-          message={`¿Seguro que deseas aprobar y enviar a Canvas ${pendingBulkApproval.length} feedbacks pendientes?`}
+          title="Bulk Approval"
+          message={`Are you sure you want to approve and send ${pendingBulkApproval.length} pending feedbacks to Canvas?`}
           onConfirm={confirmBulkApprove}
           onClose={cancelBulkApprove}
         />

@@ -1,53 +1,53 @@
-# Estrategia de pruebas
+# Testing Strategy
 
-El proyecto usa varias capas. «Pasó el test» solo es útil si se identifica qué dependencias fueron reales y cuáles se simularon.
+The project uses several layers. "Test passed" is only useful if it is identified which dependencies were real and which were simulated.
 
-## 1. Comandos
+## 1. Commands
 
-| Comando | Cobertura principal | Requisitos |
+| Command | Main coverage | Requirements |
 |---|---|---|
-| `npm run lint` | reglas ESLint del backend | dependencias instaladas |
-| `npm test` | suite Vitest del repositorio | Docker para los tests con Testcontainers |
-| `npm run test:backend` | tests bajo `apps/server/tests` | Docker para integración incluida |
-| `npm run test:integration` | smoke PostgreSQL efímero | daemon Docker accesible |
-| `npm run test:client` | Vitest/Storybook en navegador | Chromium de Playwright |
-| `npm run test:e2e` | specs Playwright | Vite; Canvas/credenciales según spec |
-| `npm run build` | compilación Vite productiva | dependencias instaladas |
-| `npm run test:coverage` | cobertura Vitest | mismo runtime que la suite |
+| `npm run lint` | backend ESLint rules | installed dependencies |
+| `npm test` | repository Vitest suite | Docker for tests with Testcontainers |
+| `npm run test:backend` | tests under `apps/server/tests` | Docker for included integration |
+| `npm run test:integration` | ephemeral PostgreSQL smoke | accessible Docker daemon |
+| `npm run test:client` | Vitest/Storybook in browser | Playwright Chromium |
+| `npm run test:e2e` | Playwright specs | Vite; Canvas/credentials according to spec |
+| `npm run build` | production Vite compilation | installed dependencies |
+| `npm run test:coverage` | Vitest coverage | same runtime as the suite |
 
-Instale de forma reproducible:
+Install reproducibly:
 
 ```bash
 npx --yes npm@11.8.0 ci
 ```
 
-Para cliente:
+For client:
 
 ```bash
 npx playwright install chromium
 npx --yes npm@11.8.0 run test:client
 ```
 
-## 2. Capas
+## 2. Layers
 
-### Unitarias
+### Unit tests
 
-Prueban reglas, políticas y adaptadores con dependencias inyectadas. Son apropiadas para:
+They test rules, policies, and adapters with injected dependencies. They are appropriate for:
 
-- autorización por rol/contexto;
-- validación de versiones y plataforma;
-- selección de instaladores;
-- seguridad de rutas/procesos;
-- configuración Canvas y políticas de memoria;
-- factoría/proveedores de IA sin llamadas reales.
+- authorization by role/context;
+- version and platform validation;
+- installer selection;
+- path/process safety;
+- Canvas configuration and memory policies;
+- AI factory/providers without real calls.
 
-Un runner simulado de Docker valida argumentos y decisiones, no demuestra que Docker/Canvas funcionen.
+A simulated Docker runner validates arguments and decisions, it does not prove that Docker/Canvas work.
 
-### Integración
+### Integration
 
-`apps/server/tests/integration/backend_smoke.test.js` usa Testcontainers con PostgreSQL. Demuestra que el código puede hablar con una base efímera real y aplicar el smoke esperado.
+`apps/server/tests/integration/backend_smoke.test.js` uses Testcontainers with PostgreSQL. It demonstrates that the code can talk to a real ephemeral database and apply the expected smoke test.
 
-Requiere:
+Requires:
 
 ```bash
 docker info
@@ -55,99 +55,99 @@ docker compose version
 npm run test:integration
 ```
 
-Si el runtime no está disponible, el resultado es infraestructura faltante, no una aprobación omitida.
+If the runtime is not available, the result is missing infrastructure, not a skipped pass.
 
-### Cliente y Storybook
+### Client and Storybook
 
-`npm run test:client` ejecuta pruebas de componentes/historias en Chromium headless. Sirve para renderizado, estados y regresiones de componentes. No valida Canvas, PostgreSQL, correo ni LTI real.
+`npm run test:client` runs component/story tests in headless Chromium. It serves for rendering, states, and component regressions. It does not validate Canvas, PostgreSQL, email, or real LTI.
 
-### E2E aislados
+### Isolated E2E
 
-`massive-feedback.spec.js` intercepta HTTP con `page.route()`. En su estado actual es un arnés inicial: comprueba que la página abre, pero captura la aserción del título y termina con una condición trivial. `login.spec.js` también es un smoke mínimo.
+`massive-feedback.spec.js` intercepts HTTP with `page.route()`. In its current state it is an initial harness: it checks that the page opens, but catches the title assertion and ends with a trivial condition. `login.spec.js` is also a minimal smoke test.
 
-Estos tests no son todavía una puerta de release. Deben incorporar selectores estables, interacción real y aserciones observables antes de presentarse como cobertura del flujo masivo.
+These tests are not yet a release gate. They must incorporate stable selectors, real interaction, and observable assertions before being presented as massive flow coverage.
 
-### E2E LTI
+### LTI E2E
 
-`lti-flow.spec.js` abre Canvas, intenta autenticarse, entra al curso y busca la herramienta. En modo local puede omitir la validación del iframe cuando el enlace no aparece; por ello un pass local no siempre prueba el launch completo.
+`lti-flow.spec.js` opens Canvas, tries to authenticate, enters the course, and looks for the tool. In local mode it may skip the iframe validation when the link does not appear; therefore a local pass does not always test the full launch.
 
-Para un objetivo real se exige configuración explícita:
+For a real target, explicit configuration is required:
 
 ```bash
 E2E_TARGET=real \
 CANVAS_URL=https://canvas-staging.example.edu \
-CANVAS_TEST_USER=usuario-de-prueba \
-CANVAS_TEST_PASS=secreto \
+CANVAS_TEST_USER=test-user \
+CANVAS_TEST_PASS=secret \
 CANVAS_TEST_COURSE_ID=123 \
 npm run test:e2e
 ```
 
-El validador rechaza `localhost`, `.local` y redes privadas cuando `E2E_TARGET=real`. Use únicamente cuentas y cursos de staging; no registre contraseñas en CI logs.
+The validator rejects `localhost`, `.local`, and private networks when `E2E_TARGET=real`. Use only staging accounts and courses; do not log passwords in CI logs.
 
-## 3. Baseline conocido de la rama Linux
+## 3. Known Linux branch baseline
 
-La validación local registrada el 2026-08-11 obtuvo:
+The local validation logged on 2026-08-11 obtained:
 
-| Evidencia | Resultado |
+| Evidence | Result |
 |---|---:|
-| Backend en Ubuntu/WSL2 con Docker rootless | 71/71 |
-| Cliente/Storybook Chromium | 12/12; una story de documentación omitida |
-| ESLint backend | aprobado |
-| Build Vite | aprobado, con advertencia de chunks grandes |
-| Setup completo de Canvas local | assets, migraciones, web/jobs/Redis/PostgreSQL y `/login` operativos |
+| Backend on Ubuntu/WSL2 with rootless Docker | 71/71 |
+| Client/Storybook Chromium | 12/12; one documentation story skipped |
+| ESLint backend | passed |
+| Vite build | passed, with large chunks warning |
+| Full local Canvas setup | assets, migrations, web/jobs/Redis/PostgreSQL and `/login` operative |
 
-Esta tabla es una línea base, no reemplaza el resultado de CI del commit actual. WSL2 tampoco certifica por sí solo un host Linux físico/VM.
+This table is a baseline, it does not replace the CI result of the current commit. WSL2 also does not by itself certify a physical/VM Linux host.
 
-## 4. CI actual
+## 4. Current CI
 
-`.github/workflows/security.yml` ejecuta en cada push/PR:
+`.github/workflows/security.yml` runs on every push/PR:
 
-- build con Node 22.12.0 y npm 11.8.0;
-- validación de `docker compose config`;
-- Gitleaks con historial;
-- TruffleHog de secretos verificados;
-- ESLint del backend;
-- suite Vitest;
-- cliente/Storybook con Chromium.
+- build with Node 22.12.0 and npm 11.8.0;
+- `docker compose config` validation;
+- Gitleaks with history;
+- TruffleHog for verified secrets;
+- backend ESLint;
+- Vitest suite;
+- client/Storybook with Chromium.
 
-El workflow no ejecuta el E2E LTI real ni el setup completo de Canvas. Esas pruebas pertenecen a una matriz de staging controlada.
+The workflow does not run the real LTI E2E or the full Canvas setup. Those tests belong to a controlled staging matrix.
 
-## 5. Matriz mínima por tipo de cambio
+## 5. Minimum matrix by change type
 
-| Cambio | Evidencia mínima |
+| Change | Minimum evidence |
 |---|---|
-| Dominio/backend | lint + test afectado + suite backend |
-| UI/componente | test de componente/story + `test:client` + build |
-| SQL/repositorio | migración + integración PostgreSQL + rollback documentado |
-| Autorización/LTI | unitarias negativas + E2E staging del rol afectado |
-| Docker/setup | unitarias de política + ejecución limpia en plataforma afectada |
-| Plataforma compartida | Windows + WSL2 + Linux nativo; macOS si cambia su adaptador |
-| Producción | build de imagen + migración + health/readiness + smoke LTI + rollback |
+| Domain/backend | lint + affected test + backend suite |
+| UI/component | component test/story + `test:client` + build |
+| SQL/repository | migration + PostgreSQL integration + documented rollback |
+| Authorization/LTI | negative unit tests + staging E2E of the affected role |
+| Docker/setup | policy unit tests + clean run on affected platform |
+| Shared platform | Windows + WSL2 + native Linux; macOS if its adapter changes |
+| Production | image build + migration + health/readiness + LTI smoke + rollback |
 
-## 6. Rendimiento
+## 6. Performance
 
-El repositorio contiene runners de estrés y Autocannon, pero no conserva junto al código un artefacto reproducible que respalde las cifras históricas de 15.000 requests, 1.500 RPS o ausencia de fugas. Por ello esas cifras se retiraron de la documentación normativa.
+The repository contains Autocannon and stress runners, but it does not keep a reproducible artifact alongside the code that backs up the historical figures of 15,000 requests, 1,500 RPS, or absence of leaks. Therefore those figures were removed from the normative documentation.
 
-Un benchmark publicable debe registrar:
+A publishable benchmark must record:
 
-- commit, fecha y comando;
-- CPU, RAM, sistema operativo y versión de Docker;
-- dataset y duración;
-- mocks frente a servicios reales;
-- percentiles p50/p95/p99, throughput y errores;
-- uso de CPU/memoria/pool;
-- resultados y artefacto sin datos sensibles.
+- commit, date, and command;
+- CPU, RAM, OS, and Docker version;
+- dataset and duration;
+- mocks vs real services;
+- p50/p95/p99 percentiles, throughput, and errors;
+- CPU/memory/pool usage;
+- results and artifact without sensitive data.
 
-No ejecute estrés contra Canvas, IA o correo institucional sin autorización y límites acordados.
+Do not run stress tests against Canvas, AI, or institutional email without authorization and agreed limits.
 
-## 7. Criterio de release
+## 7. Release criteria
 
-Una release productiva exige, como mínimo:
+A production release requires, at a minimum:
 
-- CI verde del commit exacto;
-- E2E LTI real por rol y curso de staging;
-- generación, edición, aprobación y envío individual/masivo verificables;
-- correo/notificaciones reales en staging;
-- migración desde una copia representativa y rollback probado;
-- setup/imagen en Linux nativo limpio;
-- observabilidad, backup/restauración y escaneo de seguridad.
+- green CI of the exact commit;
+- real LTI E2E by role and staging course;
+- verifiable individual/massive generation, editing, approval, and sending;
+- real email/notifications in staging;
+- migration from a representative copy and tested rollback;
+- clean setup/image on native Linux;
+- observability, backup/restoration, and security scanning.

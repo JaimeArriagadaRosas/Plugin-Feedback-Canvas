@@ -23,7 +23,7 @@ export default function VariablesGlobalView() {
       setVariables(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error(err);
-      setToast({ message: 'Error al cargar variables globales.', type: 'error' });
+      setToast({ message: 'Error loading global variables.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ export default function VariablesGlobalView() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.desc.trim()) {
-      setToast({ message: 'Ambos campos son requeridos.', type: 'error' });
+      setToast({ message: 'Both fields are required.', type: 'error' });
       return;
     }
 
@@ -48,12 +48,12 @@ export default function VariablesGlobalView() {
         desc: formData.desc
       };
       await api.post('/global-variables', payload);
-      setToast({ message: 'Variable creada exitosamente.', type: 'success' });
+      setToast({ message: 'Variable created successfully.', type: 'success' });
       setFormData({ name: '', desc: '' }); // limpiar formulario
       fetchVariables(); // refrescar lista
     } catch (err) {
       console.error(err);
-      setToast({ message: err.response?.data?.error || 'Error al crear la variable.', type: 'error' });
+      setToast({ message: err.response?.data?.error || 'Error creating variable.', type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -64,11 +64,11 @@ export default function VariablesGlobalView() {
     
     try {
       await api.del(`/global-variables/${variableToDelete.id}`);
-      setToast({ message: 'Variable eliminada correctamente.', type: 'success' });
+      setToast({ message: 'Variable deleted successfully.', type: 'success' });
       fetchVariables(); // refrescar lista
     } catch (err) {
       console.error(err);
-      setToast({ message: err.response?.data?.error || 'Error al eliminar la variable.', type: 'error' });
+      setToast({ message: err.response?.data?.error || 'Error deleting variable.', type: 'error' });
     } finally {
       setVariableToDelete(null);
     }
@@ -87,69 +87,69 @@ export default function VariablesGlobalView() {
       {variableToDelete && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <h3>¿Eliminar variable?</h3>
-            <p>¿Estás seguro de que deseas eliminar la variable <strong>{variableToDelete.name}</strong>? Esta acción no se puede deshacer y los profesores no podrán seguir usándola en sus prompts.</p>
+            <h3>Delete variable?</h3>
+            <p>Are you sure you want to delete the variable <strong>{variableToDelete.name}</strong>? This action cannot be undone and teachers will no longer be able to use it in their prompts.</p>
             <div className={styles.modalActions}>
-              <button className={styles.cancelBtn} onClick={() => setVariableToDelete(null)}>Cancelar</button>
-              <button className={styles.confirmBtn} onClick={confirmDelete}>Confirmar</button>
+              <button className={styles.cancelBtn} onClick={() => setVariableToDelete(null)}>Cancel</button>
+              <button className={styles.confirmBtn} onClick={confirmDelete}>Confirm</button>
             </div>
           </div>
         </div>
       )}
       
       <div className={styles.header}>
-        <h2>GESTIÓN DE VARIABLES DE PERSONALIZACIÓN</h2>
-        <p>Administra las variables disponibles globalmente para la construcción de prompts.</p>
+        <h2>CUSTOMIZATION VARIABLES MANAGEMENT</h2>
+        <p>Manage globally available variables for prompt construction.</p>
       </div>
 
       <div className={styles.content}>
         <div className={styles.formCard}>
-          <h3>AGREGAR NUEVA VARIABLE DE PERSONALIZACIÓN</h3>
+          <h3>ADD NEW CUSTOMIZATION VARIABLE</h3>
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
-              <label>Nombre de la Variable (Único)</label>
+              <label>Variable Name (Unique)</label>
               <input 
                 type="text" 
                 name="name" 
-                placeholder="{{nueva_variable}}" 
+                placeholder="{{new_variable}}" 
                 value={formData.name}
                 onChange={handleInputChange}
                 disabled={submitting}
               />
-              <small>Ejemplo: {'{{asistencia_porcentaje}}'}</small>
+              <small>Example: {'{{asistencia_porcentaje}}'}</small>
             </div>
             <div className={styles.formGroup}>
-              <label>Descripción y Origen</label>
+              <label>Description and Source</label>
               <input 
                 type="text" 
                 name="desc" 
-                placeholder="Descripción clara de qué representa esta variable." 
+                placeholder="Clear description of what this variable represents." 
                 value={formData.desc}
                 onChange={handleInputChange}
                 disabled={submitting}
               />
-              <small>Ejemplo: Porcentaje de asistencia del estudiante (Fuente: API UNIDA)</small>
+              <small>Example: Student attendance percentage (Source: UNIDA API)</small>
             </div>
             <div className={styles.actions}>
               <button type="submit" className={styles.submitBtn} disabled={submitting}>
-                {submitting ? 'Creando...' : 'Nueva Variable'}
+                {submitting ? 'Creating...' : 'New Variable'}
               </button>
             </div>
           </form>
         </div>
 
         <div className={styles.listCard}>
-          <h3>LISTA DE VARIABLES EXISTENTES</h3>
+          <h3>LIST OF EXISTING VARIABLES</h3>
           {loading ? (
-            <p>Cargando variables...</p>
+            <p>Loading variables...</p>
           ) : (
             <div className={styles.tableContainer}>
               <table className={styles.variablesTable}>
                 <thead>
                   <tr>
-                    <th>Nombre de la Variable</th>
-                    <th>Descripción</th>
-                    <th style={{ width: '100px', textAlign: 'center' }}>Acción</th>
+                    <th>Variable Name</th>
+                    <th>Description</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,19 +162,19 @@ export default function VariablesGlobalView() {
                           <button 
                             className={styles.deleteBtn} 
                             onClick={() => setVariableToDelete(v)}
-                            title="Eliminar variable"
+                            title="Delete variable"
                           >
                             🗑️
                           </button>
                         ) : (
-                          <span className={styles.systemBadge}>Sistema</span>
+                          <span className={styles.systemBadge}>System</span>
                         )}
                       </td>
                     </tr>
                   ))}
                   {variables.length === 0 && (
                     <tr>
-                      <td colSpan="3" style={{textAlign: 'center'}}>No hay variables configuradas.</td>
+                      <td colSpan="3" style={{textAlign: 'center'}}>No variables configured.</td>
                     </tr>
                   )}
                 </tbody>
