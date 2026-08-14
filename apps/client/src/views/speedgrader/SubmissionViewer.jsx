@@ -202,11 +202,7 @@ export default function SubmissionViewer({
               <div className={styles.fallbackBody}>
                 <p className={styles.fallbackMessage}>
                   El visor de documentos de Canvas (Canvadocs) no respondió a tiempo.
-                  Esto es normal en entornos de <strong>desarrollo local</strong>, ya que el servicio DocViewer
-                  es un componente SaaS exclusivo de Instructure.
-                </p>
-                <p className={styles.fallbackMessage} style={{ fontSize: '0.95rem', color: '#6b7280' }}>
-                  En producción, este visor cargará correctamente.
+                  Es posible que el servicio esté experimentando intermitencias o que la conexión a internet sea inestable.
                 </p>
               </div>
             </div>

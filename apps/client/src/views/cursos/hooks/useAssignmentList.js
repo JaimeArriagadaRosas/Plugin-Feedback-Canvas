@@ -90,8 +90,11 @@ export function useAssignmentList(course) {
       logger.error('AssignmentList', "Error updating assignment status", { err });
       setErrorMsg(err.message || "Error al actualizar la tarea");
     },
-    onSettled: () => {
+    onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+      if (course?.id && variables?.id) {
+        queryClient.removeQueries({ queryKey: ['submission', course.id, variables.id] });
+      }
     }
   });
 
@@ -135,8 +138,11 @@ export function useAssignmentList(course) {
       logger.error('AssignmentList', "Error updating assignment template", { err });
       setErrorMsg(err.message || "Error al asignar la plantilla");
     },
-    onSettled: () => {
+    onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+      if (course?.id && variables?.id && (!variables.plantilla_id || variables.plantilla_id === "")) {
+        queryClient.removeQueries({ queryKey: ['submission', course.id, variables.id] });
+      }
     }
   });
 

@@ -9,6 +9,7 @@ export default function VariablesGlobalView() {
   const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({ name: '', desc: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [variableToDelete, setVariableToDelete] = useState(null);
 
   useEffect(() => {
     fetchVariables();
@@ -19,7 +20,7 @@ export default function VariablesGlobalView() {
     try {
       // Usamos el endpoint global de variables
       const res = await api.get('/global-variables');
-      setVariables(res.data || []);
+      setVariables(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error(err);
       setToast({ message: 'Error al cargar variables globales.', type: 'error' });
@@ -58,6 +59,21 @@ export default function VariablesGlobalView() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!variableToDelete) return;
+    
+    try {
+      await api.del(`/global-variables/${variableToDelete.id}`);
+      setToast({ message: 'Variable eliminada correctamente.', type: 'success' });
+      fetchVariables(); // refrescar lista
+    } catch (err) {
+      console.error(err);
+      setToast({ message: err.response?.data?.error || 'Error al eliminar la variable.', type: 'error' });
+    } finally {
+      setVariableToDelete(null);
+    }
+  };
+
   return (
     <div className={styles.container}>
       {toast && (
@@ -66,6 +82,19 @@ export default function VariablesGlobalView() {
           type={toast.type} 
           onClose={() => setToast(null)} 
         />
+      )}
+
+      {variableToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3>¿Eliminar variable?</h3>
+            <p>¿Estás seguro de que deseas eliminar la variable <strong>{variableToDelete.name}</strong>? Esta acción no se puede deshacer y los profesores no podrán seguir usándola en sus prompts.</p>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setVariableToDelete(null)}>Cancelar</button>
+              <button className={styles.confirmBtn} onClick={confirmDelete}>Confirmar</button>
+            </div>
+          </div>
+        </div>
       )}
       
       <div className={styles.header}>
@@ -120,6 +149,7 @@ export default function VariablesGlobalView() {
                   <tr>
                     <th>Nombre de la Variable</th>
                     <th>Descripción</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -127,11 +157,24 @@ export default function VariablesGlobalView() {
                     <tr key={v.id}>
                       <td><strong>{v.name}</strong></td>
                       <td>{v.desc}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        {v.isCustom ? (
+                          <button 
+                            className={styles.deleteBtn} 
+                            onClick={() => setVariableToDelete(v)}
+                            title="Eliminar variable"
+                          >
+                            🗑️
+                          </button>
+                        ) : (
+                          <span className={styles.systemBadge}>Sistema</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {variables.length === 0 && (
                     <tr>
-                      <td colSpan="2" style={{textAlign: 'center'}}>No hay variables configuradas.</td>
+                      <td colSpan="3" style={{textAlign: 'center'}}>No hay variables configuradas.</td>
                     </tr>
                   )}
                 </tbody>

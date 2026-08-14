@@ -9,6 +9,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const variablesDir = path.resolve(__dirname, '../../services/variables');
 
+const CORE_VARIABLES = [
+  'trayectoria_academica', 
+  'calificaciones_previas', 
+  'desempeno_otras_asignaturas', 
+  'perfil_ingreso', 
+  'situacion_academica_anterior'
+];
+
 export function createGlobalVariablesRoutes() {
   const router = express.Router();
 
@@ -18,7 +26,8 @@ export function createGlobalVariablesRoutes() {
     const variablesArray = Object.entries(DEFAULT_VARIABLES).map(([id, config]) => ({
       id,
       name: `{{${id}}}`,
-      desc: config.nombre || id
+      desc: config.nombre || id,
+      isCustom: !CORE_VARIABLES.includes(id)
     }));
     res.json(variablesArray);
   });
@@ -84,6 +93,36 @@ export default class ${className} extends BaseVariableResolver {
     } catch (error) {
       console.error('[GlobalVariablesRoutes] Error:', error);
       res.status(500).json({ error: 'Error interno al crear la variable.' });
+    }
+  });
+
+  // DELETE /api/variables/:id - Para eliminar una variable (Solo admin)
+  router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Proteger las variables core
+      if (CORE_VARIABLES.includes(id)) {
+        return res.status(403).json({ error: 'No se pueden eliminar las variables del sistema.' });
+      }
+
+      // Eliminar archivo físico
+      const className = id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('') + 'Resolver';
+      const fileName = `${className}.js`;
+      const filePath = path.join(variablesDir, fileName);
+
+      if (fs.existsSync(filePath)) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        fs.unlinkSync(filePath);
+      }
+
+      // Eliminar de memoria
+      delete DEFAULT_VARIABLES[id];
+
+      res.status(200).json({ message: 'Variable eliminada exitosamente.' });
+    } catch (error) {
+      console.error('[GlobalVariablesRoutes] Error al eliminar:', error);
+      res.status(500).json({ error: 'Error interno al eliminar la variable.' });
     }
   });
 
