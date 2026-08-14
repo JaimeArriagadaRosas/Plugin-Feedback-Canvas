@@ -95,14 +95,14 @@ export default class GradeConverter {
   /**
    * Selecciona el tono de feedback basado en la nota chilena (1.0–7.0)
    * Umbrales estándar de universidades chilenas:
-   *   7.0–5.5 : Sobresaliente / Excelente
-   *   5.4–4.0 : Bueno / Aprobado
+   *   7.0–6.0 : Sobresaliente / Excelente
+   *   5.9–4.0 : Bueno / Aprobado
    *   3.9–1.0 : Necesita reforzar
    * @param {number} chileGrade
    * @returns {string}
    */
   static getToneForChileGrade(chileGrade) {
-    if (chileGrade >= 5.5) return 'motivador y de excelencia';
+    if (chileGrade >= 6.0) return 'motivador y de excelencia';
     if (chileGrade >= 4.0) return 'constructivo y estándar';
     return 'de apoyo y refuerzo';
   }
