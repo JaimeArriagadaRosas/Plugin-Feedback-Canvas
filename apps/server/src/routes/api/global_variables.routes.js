@@ -111,12 +111,14 @@ export default class ${className} extends BaseVariableResolver {
       const fileName = `${className}.js`;
       const filePath = path.join(variablesDir, fileName);
 
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       if (fs.existsSync(filePath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         fs.unlinkSync(filePath);
       }
 
       // Eliminar de memoria
+      // eslint-disable-next-line security/detect-object-injection
       delete DEFAULT_VARIABLES[id];
 
       res.status(200).json({ message: 'Variable eliminada exitosamente.' });
