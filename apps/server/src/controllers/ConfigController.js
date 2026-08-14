@@ -35,6 +35,15 @@ export default class ConfigController {
     }
   }
 
+  async getTokenStatus(req, res, next) {
+    try {
+      const activeServices = await this.iaConfigManager.tokenRepo.getAllActiveServices();
+      res.json({ exito: true, data: activeServices });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAvailableModels(req, res, next) {
     try {
       const { servicio } = req.query;

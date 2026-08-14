@@ -16,9 +16,9 @@ export function useAdminConfig() {
   const [apiKey, setApiKey] = useState("");
   const [tokenValidationError, setTokenValidationError] = useState("");
   const [tokenSaveSuccess, setTokenSaveSuccess] = useState(false);
-  const [customEndpoint, setCustomEndpoint] = useState("");
   const [availableModels, setAvailableModels] = useState([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [configuredProviders, setConfiguredProviders] = useState([]);
 
   const clearErrors = useCallback(() => {
     setValidationError("");
@@ -34,6 +34,21 @@ export function useAdminConfig() {
     setEndpoint("https://generativelanguage.googleapis.com/v1beta");
     clearErrors();
   }, [clearErrors]);
+
+  const fetchConfiguredProviders = useCallback(async () => {
+    try {
+      const response = await api.get('/config/tokens/status');
+      if (response.exito) {
+        setConfiguredProviders(response.data);
+      }
+    } catch (error) {
+      logger.error('AdminPanel', 'Error fetching configured providers', { error });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConfiguredProviders();
+  }, [fetchConfiguredProviders]);
 
   const resetTokens = useCallback(() => {
     setService("gemini");
@@ -97,17 +112,18 @@ export function useAdminConfig() {
       await api.post('/config/tokens', {
         servicio: service.toLowerCase(),
         key: apiKey.trim(),
-        endpoint_personalizado: service === 'otros' ? customEndpoint.trim() : null
+        endpoint_personalizado: null // El endpoint se configura ahora en Motor IA
       });
 
       setTokenSaveSuccess(true);
       setApiKey("");
+      fetchConfiguredProviders();
       setTimeout(() => setTokenSaveSuccess(false), 4000);
     } catch (error) {
       logger.error('AdminPanel', 'Error guardando token IA', { error });
       setTokenValidationError(error.message || 'Error al guardar el token. Por favor, intente nuevamente.');
     }
-  }, [service, apiKey, customEndpoint]);
+  }, [service, apiKey, fetchConfiguredProviders]);
 
   const handleSave = useCallback(() => {
     if (activeTab === "RF55") {
@@ -149,7 +165,7 @@ export function useAdminConfig() {
     } else if (service === 'anthropic') {
       setEndpoint("https://api.anthropic.com/v1/messages");
     } else if (service === 'otros') {
-      setEndpoint(customEndpoint || "");
+      setEndpoint("");
     }
     
     return () => { isMounted = false; };
@@ -174,8 +190,7 @@ export function useAdminConfig() {
     saveSuccess,
     tokenValidationError,
     tokenSaveSuccess,
-    customEndpoint,
-    setCustomEndpoint,
+    configuredProviders,
     availableModels,
     isLoadingModels,
     handleSave,

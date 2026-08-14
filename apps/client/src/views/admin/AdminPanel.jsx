@@ -78,8 +78,7 @@ export default function AdminPanel({ onExit }) {
             setApiKey={config.setApiKey}
             tokenValidationError={config.tokenValidationError}
             tokenSaveSuccess={config.tokenSaveSuccess}
-            customEndpoint={config.customEndpoint}
-            setCustomEndpoint={config.setCustomEndpoint}
+            configuredProviders={config.configuredProviders}
           />
         )}
 
@@ -93,7 +92,11 @@ export default function AdminPanel({ onExit }) {
       </main>
 
       {['RF55', 'RF56'].includes(config.activeTab) && (
-        <ConfigFooter onSave={handleSave} onDiscard={handleDiscard} />
+        <ConfigFooter 
+          onSave={handleSave} 
+          onDiscard={handleDiscard} 
+          saveLabel={config.activeTab === 'RF56' ? 'Sincronizar Token' : 'Actualizar Motor'}
+        />
       )}
     </div>
     </RequirePermission>

@@ -98,6 +98,9 @@ export default function ModelConfigTab({
             type="text"
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
+            disabled={service !== 'otros'}
+            placeholder={service === 'otros' ? "Ej: http://localhost:11434/v1" : ""}
+            helperText={service !== 'otros' ? "El endpoint es gestionado automáticamente para servicios oficiales." : "URL base para la API tipo OpenAI"}
           />
         </div>
       </div>
