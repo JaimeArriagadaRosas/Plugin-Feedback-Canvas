@@ -60,6 +60,7 @@ function rewriteLocationHeader(headers, requestUrl) {
     .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget);
 
   location = location
+    // eslint-disable-next-line security/detect-non-literal-regexp
     .replace(new RegExp(`https?://${canvasDockerDomain}(:\\d+)?`), tlsTarget);
 
   if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirige a ${location}`);
