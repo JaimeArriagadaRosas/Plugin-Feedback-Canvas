@@ -62,4 +62,11 @@ export default class TokenRepository {
     await db.query('UPDATE Llaves_API_IA SET activo = FALSE WHERE id = $1', [id]);
     return true;
   }
+
+  async getAllActiveServices() {
+    const res = await db.query(
+      'SELECT servicio FROM Llaves_API_IA WHERE activo = TRUE'
+    );
+    return res.rows.map(row => row.servicio);
+  }
 }

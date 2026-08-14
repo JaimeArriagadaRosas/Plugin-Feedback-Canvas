@@ -7,6 +7,7 @@ export function createConfigRoutes(configCtrl, iaConfigCtrl, permissionsCtrl, va
   const router = express.Router();
 
   router.put('/ia-model', authorizeRole(['admin', 'teacher']), requirePermission('config_llm'), validateBody(schemas.iaModel), (req, res, next) => configCtrl.setIAModel(req, res, next));
+  router.get('/tokens/status', authorizeRole(['admin', 'teacher']), requirePermission('config_llm'), (req, res, next) => configCtrl.getTokenStatus(req, res, next));
   router.get('/tokens', authorizeRole(['admin', 'teacher']), requirePermission('config_llm'), (req, res, next) => configCtrl.getTokens(req, res, next));
   router.post('/tokens', authorizeRole(['admin', 'teacher']), requirePermission('config_llm'), validateBody(schemas.iaToken), (req, res, next) => configCtrl.saveToken(req, res, next));
   router.get('/ia-models', authorizeRole(['admin', 'teacher']), requirePermission('config_llm'), (req, res, next) => configCtrl.getAvailableModels(req, res, next));

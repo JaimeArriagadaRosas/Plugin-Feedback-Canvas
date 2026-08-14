@@ -10,9 +10,21 @@ export default function TokenConfigTab({
   setApiKey,
   tokenValidationError,
   tokenSaveSuccess,
-  customEndpoint,
-  setCustomEndpoint,
+  configuredProviders = [],
 }) {
+
+  const formatProviders = (providers) => {
+    if (!providers || providers.length === 0) return 'Ninguno configurado';
+    const names = {
+      openai: 'OpenAI',
+      anthropic: 'Claude',
+      gemini: 'Gemini',
+      otros: 'Otros (Custom)'
+    };
+    return providers.map(p => names[p] || p).join(', ');
+  };
+
+  const isConfigured = configuredProviders.includes(service);
 
   return (
     <div className={styles.tab}>
@@ -46,28 +58,24 @@ export default function TokenConfigTab({
           />
         </div>
       </div>
-      
-      {service === 'otros' && (
-        <div className={styles.row}>
-          <div className={styles.col}>
-            <label className={styles.label}>Endpoint Personalizado (URL base)</label>
-            <Input
-              type="text"
-              value={customEndpoint}
-              onChange={(e) => setCustomEndpoint(e.target.value)}
-              placeholder="Ej: http://localhost:11434/v1"
-              helperText="URL base para la API tipo OpenAI"
-            />
-          </div>
-        </div>
-      )}
+
 
       <div className={styles.infoBox}>
         <div className={styles.infoRow}>
-          <strong>Tokens Almacenados Cifrados:</strong> <span className={styles.successText}>✔ Sí (OpenAI, Claude, Gemini, Otros)</span>
+          <strong>Tokens Almacenados Cifrados:</strong>{' '}
+          {configuredProviders.length > 0 ? (
+            <span className={styles.successText}>✔ Sí ({formatProviders(configuredProviders)})</span>
+          ) : (
+            <span style={{ color: '#666' }}>Ninguno configurado</span>
+          )}
         </div>
         <div className={styles.infoBoxInner}>
-          <strong>Estado de Token {service}:</strong> Activo, Cifrado
+          <strong>Estado de Token {service}:</strong>{' '}
+          {isConfigured ? (
+            <span className={styles.successText}>Activo, Cifrado</span>
+          ) : (
+            <span style={{ color: '#d32f2f' }}>No configurado</span>
+          )}
         </div>
       </div>
 
