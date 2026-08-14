@@ -123,9 +123,16 @@ export async function validateToken(token) {
  * @returns {Promise<{ user_id: number, email: string, token: string, canvas_sub: string }>}
  */
 export async function healTokenViaFile(canvasDir, teacherEmail, fallbackName = 'Dr. Elena Ramirez', existingToken = null, forceRegenerate = false) {
-  // Limpiar archivo de handoff previo si existe (por si el proceso anterior falló a medias)
-  const cleanupScript = `File.delete('${TOKEN_HANDOFF_PATH_IN_CONTAINER}') rescue nil`;
-  await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', cleanupScript], { cwd: canvasDir });
+  const hostHandoffPath = path.join(canvasDir, '.token_handoff.json');
+
+  // Pre-crear el archivo de handoff desde el host y otorgar permisos de escritura
+  // para que el usuario sin privilegios del contenedor pueda escribir en él.
+  try {
+    await fs.writeFile(hostHandoffPath, '');
+    await fs.chmod(hostHandoffPath, 0o666);
+  } catch (e) {
+    console.debug('No se pudo pre-crear el archivo de handoff en el host', e.message);
+  }
 
   const shouldRegenerate = forceRegenerate || !existingToken;
 
@@ -175,7 +182,7 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
   }
 
   // Leer el archivo de handoff desde el host (volumen compartido)
-  const hostHandoffPath = path.join(canvasDir, '.token_handoff.json');
+  // const hostHandoffPath ya fue declarada al inicio de la función
   let raw;
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
