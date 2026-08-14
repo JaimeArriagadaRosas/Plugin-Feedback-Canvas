@@ -18,6 +18,10 @@ export default class CanvasTokenManager {
 
     const tokenData = await this.tokenRepo.getToken(teacherId);
     if (!tokenData) {
+      if (process.env.CANVAS_ACCESS_TOKEN) {
+        logger.info(`[AUTH] Usando token global (CANVAS_ACCESS_TOKEN) para el usuario ${teacherId}`);
+        return process.env.CANVAS_ACCESS_TOKEN;
+      }
       throw new AppError(`Token OAuth no encontrado para el usuario ${teacherId}`, 401, { requireOAuth: true });
     }
 

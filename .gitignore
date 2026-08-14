@@ -29,6 +29,10 @@ apps/server/certs/
 # Archivos temporales de agentes IA
 .gemini/
 graphify-out/
+scratch/
+test-*.js
+test_*.js
+inspect_*.js
 
 # Archivos locales de ejecucion, datos y logs
 *.log

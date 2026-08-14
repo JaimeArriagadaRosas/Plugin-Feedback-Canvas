@@ -131,6 +131,11 @@ export function useSpeedGraderActions({
 
   const handleManualSubmit = useCallback(async (text) => {
     if (!text) return;
+    // Guard Clause (OCP/SRP): Prevención de desincronización de base de datos
+    if (activeAssignment?.id && currentAssignmentId !== activeAssignment.id) {
+      setStatusMsg("Error de Sincronización: La tarea mostrada no coincide con el estado interno. Por favor, recargue la página.");
+      return;
+    }
     setLoading(true);
     setStatusMsg("Guardando feedback manual como pendiente...");
     try {

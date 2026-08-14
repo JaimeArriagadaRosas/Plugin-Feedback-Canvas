@@ -51,9 +51,21 @@ export function useSpeedGraderData() {
     enabled: !!courseId,
   });
 
-  // Inicializar la tarea si no hay ninguna seleccionada
+  // Inicializar o auto-corregir la tarea seleccionada (Watchdog SRP)
   useEffect(() => {
-    if (assignments.length > 0 && !currentAssignmentId) {
+    if (assignments.length === 0) {
+      if (currentAssignmentId !== null) setCurrentAssignmentId(null);
+      return;
+    }
+    
+    if (!currentAssignmentId) {
+      setCurrentAssignmentId(assignments[0].id);
+      return;
+    }
+    
+    // Si hay un ID pero ya no existe en la lista de tareas activas, forzamos corrección
+    const isStillValid = assignments.some(a => a.id === currentAssignmentId);
+    if (!isStillValid) {
       setCurrentAssignmentId(assignments[0].id);
     }
   }, [assignments, currentAssignmentId]);
@@ -108,6 +120,7 @@ export function useSpeedGraderData() {
       return null;
     },
     enabled: !!courseId && !!currentStudent.id,
+    refetchInterval: 15000, // Polling cada 15 segundos para actualizar feedback generado en segundo plano
   });
 
   const feedbackDetail = feedbackDetailList?.find(fb => fb.assignmentId == currentAssignmentId) || null;

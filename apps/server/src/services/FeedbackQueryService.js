@@ -75,7 +75,7 @@ export default class FeedbackQueryService {
         assignmentId: fb.tarea_id,
         assignmentName: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
         templateId: fb.plantilla_id,
-        grade: fb.nota_chile ?? null,
+        grade: fb.nota_chile ?? fb.nota_canvas ?? null,
         profile: 'PROMEDIO',
         trend: 'Estable',
         status: fb.estado || 'PENDIENTE',
