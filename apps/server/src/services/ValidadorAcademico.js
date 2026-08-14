@@ -1,28 +1,28 @@
 /**
- * Validador Académico
- * Procesa datos históricos y actuales para generar un perfil de desempeño del estudiante.
+ * Academic Validator
+ * Processes historical and current data to generate a student performance profile.
  */
 export default class ValidadorAcademico {
   /**
-   * Genera un perfil psicopedagógico resumido basado en historial
-   * @param {Array} history - Lista de calificaciones y feedbacks previos
+   * Generates summary psychopedagogical profile based on history
+   * @param {Array} history - List of previous grades and feedbacks
    */
   static generateStudentProfile(history) {
     if (!history || history.length === 0) {
-      return { level: 'Nuevo', trend: 'Neutral', advice: 'No hay datos previos.' };
+      return { level: 'New', trend: 'Neutral', advice: 'No previous data.' };
     }
 
     const grades = history.map(h => parseFloat(h.grade) || 0);
     const average = grades.reduce((a, b) => a + b, 0) / grades.length;
     
-    // Calcular tendencia (simplificado)
+    // Calculate trend (simplified)
     const recent = grades.slice(0, 3);
     const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-    const trend = recentAvg > average ? 'Mejorando' : (recentAvg < average ? 'Bajando' : 'Estable');
+    const trend = recentAvg > average ? 'Improving' : (recentAvg < average ? 'Dropping' : 'Stable');
 
-    let level = 'Promedio';
-    if (average >= 90) level = 'Sobresaliente';
-    else if (average < 60) level = 'En Riesgo';
+    let level = 'Average';
+    if (average >= 90) level = 'Outstanding';
+    else if (average < 60) level = 'At Risk';
 
     return {
       average: average.toFixed(1),
@@ -33,9 +33,9 @@ export default class ValidadorAcademico {
   }
 
   /**
-   * Valida si un estudiante califica para un feedback de refuerzo especial
+   * Validates if student qualifies for special reinforcement feedback
    */
   static needsReinforcement(profile) {
-    return profile.level === 'En Riesgo' || profile.trend === 'Bajando';
+    return profile.level === 'At Risk' || profile.trend === 'Dropping';
   }
 }

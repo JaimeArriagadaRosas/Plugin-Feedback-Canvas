@@ -19,10 +19,10 @@ export default function TemplateForm({ name, setName }) {
   return (
     <form className={styles.form}>
       <div className={styles.field}>
-        <label className={styles.label}>Nombre de la Plantilla</label>
+        <label className={styles.label}>Template Name</label>
         <Input
           {...register('name')}
-          placeholder="Ej: Feedback de Refuerzo Semanal"
+          placeholder="Ex: Weekly Reinforcement Feedback"
         />
       </div>
     </form>

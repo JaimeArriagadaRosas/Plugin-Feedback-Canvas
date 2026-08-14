@@ -1,9 +1,9 @@
 import CourseIdResolver from './CourseIdResolver.js';
 
 /**
- * FeedbackQueryService - Responsabilidad única: consultas y mapeo de DTOs.
+ * FeedbackQueryService - Single responsibility: queries and DTO mapping.
  *
- * Separtado de FeedbackService para cumplir SRP.
+ * Separated from FeedbackService to comply with SRP.
  */
 export default class FeedbackQueryService {
   constructor(feedbackRepo, canvasGateway, academicHistoryService, validadorAcademico) {
@@ -13,25 +13,25 @@ export default class FeedbackQueryService {
     this.validadorAcademico = validadorAcademico;
   }
 
-  // El método rateByStudent ha sido movido a FeedbackMutationService
+  // The rateByStudent method has been moved to FeedbackMutationService
 
   async getStudentView(studentId, courseId, teacherId) {
     const inferredCourseId = await this._resolveCourseId(courseId, studentId);
     
     const approved = await this._getApprovedFeedbacks(studentId, inferredCourseId);
     
-    // FIX: En lugar de intentar consultar las tareas a la API de Canvas usando
-    // un token genérico ('system') que no existe y genera errores, construimos
-    // la lista de tareas del estudiante basándonos en los feedbacks aprobados 
-    // que ya tenemos almacenados en la base de datos (SOLID - SRP).
+    // FIX: Instead of trying to query assignments from Canvas API using
+    // a generic token ('system') that does not exist and generates errors, we build
+    // the student's assignment list based on the approved feedbacks 
+    // that we already have stored in the database (SOLID - SRP).
     const assignments = approved.map(fb => ({
       id: fb.tarea_id,
-      name: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
+      name: fb.nombre_tarea || `Assignment ${fb.tarea_id}`,
       due: fb.fecha_generacion ? new Date(fb.fecha_generacion).toLocaleDateString() : '',
       score: fb.nota_canvas ?? '-',
       total: '100', // Valor por defecto
       hasFeedback: true,
-      feedback: { ...fb, teacherName: 'Profesor del Curso' }
+      feedback: { ...fb, teacherName: 'Course Teacher' }
     }));
 
     return assignments;
@@ -49,35 +49,35 @@ export default class FeedbackQueryService {
     } catch (err) {
       if (err?.message) {
         const logger = (await import('../utils/logger.js')).default;
-        logger.warn(`[FeedbackQuery] No se pudieron obtener los cursos del profesor ${teacherId}:`, { error: err.message });
+        logger.warn(`[FeedbackQuery] Could not fetch courses for teacher ${teacherId}:`, { error: err.message });
       }
     }
     
-    // Utilizamos desnormalización (nombres cacheados en DB) y complementamos con 1 sola llamada a Canvas para los cursos.
+    // We use denormalization (names cached in DB) and complement with 1 single call to Canvas for courses.
     return feedbacks.map(fb => {
       const isExplicitCourse = courseId && String(courseId) === String(fb.curso_id);
       const isOwnFeedback = String(fb.profesor_id) === String(teacherId);
       const isMyCourse = coursesMap.has(String(fb.curso_id));
 
-      // Filtramos feedbacks que no pertenecen a los cursos del profesor
+      // We filter out feedbacks that do not belong to the teacher's courses
       if (teacherId !== 'system' && !isExplicitCourse && !isOwnFeedback && !isMyCourse) {
         return null;
       }
 
-      const mappedCourseName = coursesMap.get(String(fb.curso_id)) || fb.nombre_curso || `Curso ${fb.curso_id}`;
+      const mappedCourseName = coursesMap.get(String(fb.curso_id)) || fb.nombre_curso || `Course ${fb.curso_id}`;
 
       return {
         id: fb.id,
-        student: fb.nombre_estudiante || `Estudiante ${fb.estudiante_id}`,
+        student: fb.nombre_estudiante || `Student ${fb.estudiante_id}`,
         studentId: fb.estudiante_id,
         courseId: fb.curso_id,
         courseName: mappedCourseName,
         assignmentId: fb.tarea_id,
-        assignmentName: fb.nombre_tarea || `Tarea ${fb.tarea_id}`,
+        assignmentName: fb.nombre_tarea || `Assignment ${fb.tarea_id}`,
         templateId: fb.plantilla_id,
         grade: fb.nota_chile ?? fb.nota_canvas ?? null,
-        profile: 'PROMEDIO',
-        trend: 'Estable',
+        profile: 'AVERAGE',
+        trend: 'Stable',
         status: fb.estado || 'PENDIENTE',
         feedback: fb.contenido_generado,
         rating: fb.calificacion_profesor ?? null,
@@ -109,14 +109,14 @@ export default class FeedbackQueryService {
   _mapFeedbackToDTOSync(fb) {
     return {
       id: fb.id,
-      student: fb.nombre_estudiante || `Estudiante ${fb.estudiante_id}`,
+      student: fb.nombre_estudiante || `Student ${fb.estudiante_id}`,
       studentId: fb.estudiante_id,
       courseId: fb.curso_id,
       assignmentId: fb.tarea_id,
       templateId: fb.plantilla_id,
       grade: fb.nota_chile ?? null,
-      profile: 'PROMEDIO',
-      trend: 'Estable',
+      profile: 'AVERAGE',
+      trend: 'Stable',
       status: fb.estado || 'PENDIENTE',
       feedback: fb.contenido_generado,
       rating: fb.calificacion_profesor ?? null,
@@ -163,13 +163,13 @@ export default class FeedbackQueryService {
   async _fetchStudentName(courseId, studentId, preloadedStudents = null, teacherId = 'system') {
     try {
       const students = preloadedStudents || await this.canvasGateway.getStudents(courseId, teacherId);
-      return students.find(s => String(s.id) === String(studentId)) || { name: `Estudiante ${studentId}` };
+      return students.find(s => String(s.id) === String(studentId)) || { name: `Student ${studentId}` };
     } catch (err) {
       if (err?.message) {
         const logger = (await import('../utils/logger.js')).default;
-        logger.warn(`[FeedbackQuery] No se pudo obtener nombre de estudiante ${studentId}:`, { error: err.message });
+        logger.warn(`[FeedbackQuery] Could not fetch student name ${studentId}:`, { error: err.message });
       }
-      return { name: `Estudiante ${studentId}` };
+      return { name: `Student ${studentId}` };
     }
   }
 
@@ -177,13 +177,13 @@ export default class FeedbackQueryService {
     try {
       const teachers = await this.canvasGateway.getTeachers(courseId, systemTeacherId);
       const teacher = teachers.find(t => String(t.id) === String(targetTeacherId));
-      return teacher ? teacher.name : 'Profesor del Curso';
+      return teacher ? teacher.name : 'Course Teacher';
     } catch (err) {
       if (err?.message) {
         const logger = (await import('../utils/logger.js')).default;
-        logger.warn(`[FeedbackQuery] No se pudo obtener nombre de profesor ${targetTeacherId}:`, { error: err.message });
+        logger.warn(`[FeedbackQuery] Could not fetch teacher name ${targetTeacherId}:`, { error: err.message });
       }
-      return 'Profesor del Curso';
+      return 'Course Teacher';
     }
   }
 
@@ -194,7 +194,7 @@ export default class FeedbackQueryService {
     } catch (err) {
       if (err?.message) {
         const logger = (await import('../utils/logger.js')).default;
-        logger.warn(`[FeedbackQuery] No se pudo obtener perfil académico del estudiante ${studentId}:`, { error: err.message });
+        logger.warn(`[FeedbackQuery] Could not fetch academic profile of student ${studentId}:`, { error: err.message });
       }
       return { level: 'AVERAGE', trend: 'STABLE', average: null };
     }
@@ -202,25 +202,25 @@ export default class FeedbackQueryService {
 
   _translateProfile(level) {
     const map = {
-      'OUTSTANDING': 'SOBRESALIENTE',
-      'EXCELLENT': 'DESTACADO',
-      'AVERAGE': 'PROMEDIO',
-      'NEEDS_SUPPORT': 'REQUIERE APOYO',
-      'AT_RISK': 'EN RIESGO'
+      'OUTSTANDING': 'OUTSTANDING',
+      'EXCELLENT': 'EXCELLENT',
+      'AVERAGE': 'AVERAGE',
+      'NEEDS_SUPPORT': 'NEEDS SUPPORT',
+      'AT_RISK': 'AT RISK'
     };
     // eslint-disable-next-line security/detect-object-injection
-    return map[level] || 'PROMEDIO';
+    return map[level] || 'AVERAGE';
   }
 
   _translateTrend(trend) {
     const map = {
-      'IMPROVING': 'Mejorando',
-      'UP': 'Mejorando',
-      'WORSENING': 'Bajando',
-      'DOWN': 'Bajando',
-      'STABLE': 'Estable'
+      'IMPROVING': 'Improving',
+      'UP': 'Improving',
+      'WORSENING': 'Worsening',
+      'DOWN': 'Worsening',
+      'STABLE': 'Stable'
     };
     // eslint-disable-next-line security/detect-object-injection
-    return map[trend] || 'Estable';
+    return map[trend] || 'Stable';
   }
 }

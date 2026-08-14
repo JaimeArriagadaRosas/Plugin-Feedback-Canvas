@@ -22,11 +22,11 @@ export default class SubmissionFacade {
   }
 
   async postComment(courseId, assignmentId, studentId, teacherId, comment) {
-    // Verificación GET previa (Idempotencia requerida por directiva 2)
+    // Previous GET verification (Idempotency required by directive 2)
     const current = await this.getSubmission(courseId, assignmentId, studentId, teacherId);
     const alreadyExists = current?.submission_comments?.some(c => c.comment === comment);
     if (alreadyExists) {
-      logger.info(`[CanvasLmsAdapter] Idempotency: Comentario ya existente para ${studentId}, omitiendo PUT.`);
+      logger.info(`[CanvasLmsAdapter] Idempotency: Comment already exists for ${studentId}, skipping PUT.`);
       return current;
     }
     return this.adapter._fetchWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions/${studentId}`, teacherId, {
@@ -36,10 +36,10 @@ export default class SubmissionFacade {
   }
 
   async updateGrade(courseId, assignmentId, studentId, teacherId, grade) {
-    // Verificación GET previa (Idempotencia requerida por directiva 2)
+    // Previous GET verification (Idempotency required by directive 2)
     const current = await this.getSubmission(courseId, assignmentId, studentId, teacherId);
     if (current && String(current.grade) === String(grade)) {
-      logger.info(`[CanvasLmsAdapter] Idempotency: Nota ya asignada para ${studentId}, omitiendo PUT.`);
+      logger.info(`[CanvasLmsAdapter] Idempotency: Grade already assigned for ${studentId}, skipping PUT.`);
       return current;
     }
     return this.adapter._fetchWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions/${studentId}`, teacherId, {
@@ -49,14 +49,14 @@ export default class SubmissionFacade {
   }
 
   async pushRubricAssessment(courseId, assignmentId, studentId, teacherId, rubricAssessment) {
-    logger.info(`[CanvasLmsAdapter] Empujando rúbrica para estudiante ${studentId} en tarea ${assignmentId}`);
+    logger.info(`[CanvasLmsAdapter] Pushing rubric for student ${studentId} in assignment ${assignmentId}`);
     
-    // Verificación GET previa (Idempotencia requerida por directiva 2)
+    // Previous GET verification (Idempotency required by directive 2)
     const current = await this.adapter._fetchWithToken(`/courses/${courseId}/assignments/${assignmentId}/submissions/${studentId}?include[]=rubric_assessment`, teacherId);
     if (current && current.rubric_assessment) {
       const isSame = JSON.stringify(current.rubric_assessment) === JSON.stringify(rubricAssessment);
       if (isSame) {
-        logger.info(`[CanvasLmsAdapter] Idempotency: Rúbrica ya asignada para ${studentId}, omitiendo PUT.`);
+        logger.info(`[CanvasLmsAdapter] Idempotency: Rubric already assigned for ${studentId}, skipping PUT.`);
         return current;
       }
     }

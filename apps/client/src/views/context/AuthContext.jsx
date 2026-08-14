@@ -25,11 +25,11 @@ export const AuthProvider = ({ children }) => {
   const { data, error, refetch } = useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
-      logger.debug('Auth', 'Consultando /api/config/me vía React Query...');
+      logger.debug('Auth', 'Querying /api/config/me via React Query...');
       try {
         const data = await api.get('/config/me');
         if (!data.exito || !data.role) {
-          throw new ApiError(data.error?.mensaje || 'No autorizado', 401);
+          throw new ApiError(data.error?.mensaje || 'Unauthorized', 401);
         }
         return data;
       } catch (err) {
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     gcTime: 30 * 60 * 1000,
     retry: (failureCount, err) => {
       const status = err?.status;
-      // En entorno de iframes LTI (Safari/Chrome ITP), permitimos 1 reintento ante 401 para revalidar cookies/storage
+      // In LTI iframe environments (Safari/Chrome ITP), we allow 1 retry on 401 to revalidate cookies/storage
       if (status === 400 || status === 403) return false;
       if (status === 401) return failureCount < 1;
       return failureCount < 2;
@@ -54,33 +54,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (data) {
       const sourceLabel =
-        data.source === 'lti' ? 'Canvas LMS (JWT LTI 1.3 real)' :
-        data.source === 'local' ? 'Sesión local (modo dev)' :
+        data.source === 'lti' ? 'Canvas LMS (real LTI 1.3 JWT)' :
+        data.source === 'local' ? 'Local session (dev mode)' :
         data.source === 'dev-token' ? 'dev-token (bypass local)' :
-        (data.source || 'desconocido');
-      const correcto = data.source === 'lti';
+        (data.source || 'unknown');
+      const isCorrect = data.source === 'lti';
 
-      logger.info('Auth', `LOGIN correcto | Usuario: ${data.user} | Permisos: ${data.role} | Fuente: ${sourceLabel}`, { correcto });
+      logger.info('Auth', `Successful LOGIN | User: ${data.user} | Permissions: ${data.role} | Source: ${sourceLabel}`, { isCorrect });
 
       if (data.role === 'admin') {
-        logger.info('Auth', 'Permisos de Administrador habilitados. Acceso total al sistema.');
+        logger.info('Auth', 'Administrator permissions enabled. Full system access.');
       } else if (data.role === 'teacher') {
-        logger.info('Auth', 'Permisos de Profesor habilitados. Gestión docente.');
+        logger.info('Auth', 'Teacher permissions enabled. Teaching management.');
       } else if (data.role === 'student') {
-        logger.info('Auth', 'Restricciones de Estudiante aplicadas. Solo vista de alumno.');
+        logger.info('Auth', 'Student restrictions applied. Student view only.');
       } else {
-        logger.warn('Auth', `Rol desconocido: ${data.role}`);
+        logger.warn('Auth', `Unknown role: ${data.role}`);
       }
 
-      if (!correcto) {
-        logger.warn('Auth', 'El login NO provino de un JWT real de Canvas. Fuente detectada:', sourceLabel);
+      if (!isCorrect) {
+        logger.warn('Auth', 'Login did NOT come from a real Canvas JWT. Detected source:', sourceLabel);
       } else {
-        logger.info('Auth', 'Todo correcto: sesión autenticada contra Canvas LMS vía LTI 1.3.');
+        logger.info('Auth', 'All good: session authenticated against Canvas LMS via LTI 1.3.');
       }
 
       dispatch({ type: 'LOGIN_SUCCESS', payload: data });
     } else if (error) {
-      logger.warn('Auth', "No se pudo verificar la sesión:", { message: error.message });
+      logger.warn('Auth', "Could not verify session:", { message: error.message });
       dispatch({ type: 'LOGIN_ERROR', payload: error.message });
     }
   }, [data, error]);
@@ -88,9 +88,9 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await logoutToken();
-      logger.info('Auth', 'LOGOUT: sesión cerrada y token eliminado del frontend.');
+      logger.info('Auth', 'LOGOUT: session closed and token removed from frontend.');
     } catch (e) {
-      logger.warn('Auth', 'Logout backend falló, limpiando localmente:', { error: e?.message });
+      logger.warn('Auth', 'Backend logout failed, clearing locally:', { error: e?.message });
     } finally {
       sessionStorage.clear();
       localStorage.removeItem('lti-token');

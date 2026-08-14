@@ -32,41 +32,41 @@ export async function runDiagnosis() {
 function printHeader() {
   const line = '═'.repeat(54);
   console.log(`\n${C.bold}${C.magenta}${line}${C.reset}`);
-  console.log(`${C.bold}${C.magenta}  DIAGNÓSTICO — Plugin Feedback Adaptativo${C.reset}`);
-  console.log(`${C.bold}${C.magenta}  ${new Date().toLocaleString('es-CL')}${C.reset}`);
+  console.log(`${C.bold}${C.magenta}  DIAGNOSIS — Adaptive Feedback Plugin${C.reset}`);
+  console.log(`${C.bold}${C.magenta}  ${new Date().toLocaleString('en-US')}${C.reset}`);
   console.log(`${C.bold}${C.magenta}${line}${C.reset}`);
 }
 
 function checkStructure(state) {
-  section('Estructura de archivos');
+  section('File structure');
   const files = [
-    ['apps/client/src/main.jsx', 'Entrada del frontend React'],
-    ['apps/server/src/server.js', 'Servidor Express'],
-    ['apps/server/src/middlewares/AuthLTI13Handler.js', 'Autenticación LTI'],
-    ['apps/server/src/routes/GestorRutasAPI.js', 'Rutas de API'],
-    ['apps/server/src/utils/logger.js', 'Logger estructurado'],
-    ['apps/client/vite.config.js', 'Configuración de Vite'],
-    ['.env', 'Variables del entorno local']
+    ['apps/client/src/main.jsx', 'React frontend entry point'],
+    ['apps/server/src/server.js', 'Express Server'],
+    ['apps/server/src/middlewares/AuthLTI13Handler.js', 'LTI Authentication'],
+    ['apps/server/src/routes/GestorRutasAPI.js', 'API Routes'],
+    ['apps/server/src/utils/logger.js', 'Structured logger'],
+    ['apps/client/vite.config.js', 'Vite Configuration'],
+    ['.env', 'Local environment variables']
   ];
   for (const [relativePath, description] of files) {
     const fullPath = path.join(PLUGIN_DIR, relativePath);
     if (fs.existsSync(fullPath)) ok(state, relativePath, description);
-    else fail(state, `${relativePath} no encontrado`, `Crea el archivo: ${fullPath}`);
+    else fail(state, `${relativePath} not found`, `Create the file: ${fullPath}`);
   }
 }
 
 function checkEnvironment(state, env) {
-  section('Variables de entorno');
+  section('Environment variables');
   const required = [
-    ['VITE_CANVAS_BASE_URL', 'URL base de Canvas LMS'],
-    ['LTI_CLIENT_ID', 'Client ID del tool LTI'],
-    ['LTI_REDIRECT_URI', 'URI de callback LTI'],
-    ['GEMINI_API_KEY', 'Clave de API de Gemini IA']
+    ['VITE_CANVAS_BASE_URL', 'Canvas LMS base URL'],
+    ['LTI_CLIENT_ID', 'LTI tool Client ID'],
+    ['LTI_REDIRECT_URI', 'LTI callback URI'],
+    ['GEMINI_API_KEY', 'Gemini AI API Key']
   ];
   for (const [key, description] of required) {
     const value = env[key] || process.env[key];
-    if (value?.trim()) ok(state, key, `${description} configurada`);
-    else fail(state, `${key} no configurado`, `Agrega ${key}=<valor> en .env`);
+    if (value?.trim()) ok(state, key, `${description} configured`);
+    else fail(state, `${key} not configured`, `Add ${key}=<value> in .env`);
   }
   reportLocalMode(state, env);
 }
@@ -75,35 +75,35 @@ function reportLocalMode(state, env) {
   const useLocal = env.VITE_USE_LOCAL_DATA === 'true' || env.USE_LOCAL_DATA === 'true';
   const role = env.LOCAL_USER_ROLE;
   if (!useLocal) {
-    warn(state, 'Modo local inactivo', 'Configura VITE_USE_LOCAL_DATA=true solo para pruebas sin Canvas.');
+    warn(state, 'Local mode inactive', 'Configure VITE_USE_LOCAL_DATA=true only for testing without Canvas.');
     return;
   }
-  ok(state, 'Modo local activo', `Rol configurado: ${role || '(ninguno)'}`);
-  if (!role) warn(state, 'LOCAL_USER_ROLE no definido', 'Usa admin, teacher, student o student-1..student-5.');
+  ok(state, 'Local mode active', `Configured role: ${role || '(none)'}`);
+  if (!role) warn(state, 'LOCAL_USER_ROLE not defined', 'Use admin, teacher, student or student-1..student-5.');
   else if (!['admin', 'teacher', 'student'].includes(role) && !role.startsWith('student-')) {
-    warn(state, `Rol '${role}' no reconocido`, 'Usa admin, teacher, student o student-1..student-5.');
+    warn(state, `Role '${role}' not recognized`, 'Use admin, teacher, student or student-1..student-5.');
   }
 }
 
 async function checkServices(state) {
-  section('Servicios y puertos');
+  section('Services and ports');
   const backendRunning = await checkPort(3000);
-  reportPort(state, backendRunning, 'Backend Express', ':3000', 'npm run server');
-  reportPort(state, await checkPort(5173), 'Frontend Vite', ':5173', 'npm run dev');
-  if (await checkPort(8080)) ok(state, 'Canvas LMS (Docker)', 'Puerto 8080 en uso');
-  else warn(state, 'Canvas LMS no detectado en :8080', 'Para modo local usa npm start y elige opción 3.');
+  reportPort(state, backendRunning, 'Express Backend', ':3000', 'npm run server');
+  reportPort(state, await checkPort(5173), 'Vite Frontend', ':5173', 'npm run dev');
+  if (await checkPort(8080)) ok(state, 'Canvas LMS (Docker)', 'Port 8080 in use');
+  else warn(state, 'Canvas LMS not detected on :8080', 'For local mode use npm start and choose option 3.');
   return backendRunning;
 }
 
 function reportPort(state, active, name, port, command) {
-  if (active) ok(state, name, `Puerto ${port} en uso`);
-  else fail(state, `${name} no detectado en ${port}`, `Ejecuta: ${command}`);
+  if (active) ok(state, name, `Port ${port} in use`);
+  else fail(state, `${name} not detected on ${port}`, `Run: ${command}`);
 }
 
 async function checkApi(state, backendRunning) {
-  section('API del backend');
+  section('Backend API');
   if (!backendRunning) {
-    warn(state, 'API no verificada', 'El backend no está corriendo.');
+    warn(state, 'API not verified', 'The backend is not running.');
     return;
   }
   await reportHealth(state);
@@ -113,91 +113,91 @@ async function checkApi(state, backendRunning) {
 
 async function reportHealth(state) {
   const response = await httpGet('https://localhost:3000/api/health');
-  if (response.ok && response.status === 200) ok(state, '/api/health', 'Respuesta correcta');
-  else fail(state, '/api/health falló', requestFailureDetail(response));
+  if (response.ok && response.status === 200) ok(state, '/api/health', 'Correct response');
+  else fail(state, '/api/health failed', requestFailureDetail(response));
 }
 
 async function reportStartupMode(state) {
   const response = await httpGet('https://localhost:3000/api/config/startup-mode');
   if (!(response.ok && response.status === 200)) {
-    fail(state, '/api/config/startup-mode falló', requestFailureDetail(response));
+    fail(state, '/api/config/startup-mode failed', requestFailureDetail(response));
     return;
   }
   try {
     const config = JSON.parse(response.data);
-    ok(state, '/api/config/startup-mode', `Modo: ${config.mode} | DB: ${config.dbMode}`);
+    ok(state, '/api/config/startup-mode', `Mode: ${config.mode} | DB: ${config.dbMode}`);
   } catch {
-    warn(state, '/api/config/startup-mode', 'Respuesta no es JSON válido');
+    warn(state, '/api/config/startup-mode', 'Response is not valid JSON');
   }
 }
 
 async function reportCurrentUser(state) {
   const response = await httpGet('https://localhost:3000/api/config/me');
   if (response.status === 401) {
-    warn(state, '/api/config/me → 401', 'Normal sin sesión LTI ni modo local.');
+    warn(state, '/api/config/me → 401', 'Normal without LTI session or local mode.');
     return;
   }
   if (response.status !== 200) {
-    fail(state, '/api/config/me falló', requestFailureDetail(response));
+    fail(state, '/api/config/me failed', requestFailureDetail(response));
     return;
   }
   try {
     const user = JSON.parse(response.data);
-    ok(state, '/api/config/me', `Rol: ${user.role} | Usuario: ${user.user}`);
+    ok(state, '/api/config/me', `Role: ${user.role} | User: ${user.user}`);
   } catch {
-    warn(state, '/api/config/me', 'Respuesta no es JSON válido');
+    warn(state, '/api/config/me', 'Response is not valid JSON');
   }
 }
 
 function checkDocker(state) {
   section('Docker');
   try {
-    ok(state, 'Docker instalado', commandOutput('docker', ['--version'], PLUGIN_DIR, 3000));
+    ok(state, 'Docker installed', commandOutput('docker', ['--version'], PLUGIN_DIR, 3000));
   } catch {
-    warn(state, 'Docker no detectado', dockerInstallGuidance());
+    warn(state, 'Docker not detected', dockerInstallGuidance());
     return;
   }
   try {
     const status = commandOutput('docker', ['compose', 'ps'], CANVAS_DIR, 5000);
-    if (/running|up/i.test(status)) ok(state, 'Canvas Docker Compose', 'Contenedores activos detectados');
-    else warn(state, 'Canvas Docker Compose', 'No se detectaron contenedores activos.');
+    if (/running|up/i.test(status)) ok(state, 'Canvas Docker Compose', 'Active containers detected');
+    else warn(state, 'Canvas Docker Compose', 'No active containers detected.');
   } catch {
-    warn(state, 'Canvas Docker Compose', 'No se pudo consultar el estado de los contenedores.');
+    warn(state, 'Canvas Docker Compose', 'Could not query container status.');
   }
 }
 
 function checkNodeAndLogs(state) {
-  section('Node.js, dependencias y logs');
+  section('Node.js, dependencies and logs');
   try {
     const version = commandOutput('node', ['--version'], PLUGIN_DIR, 3000);
     const major = Number.parseInt(version.replace('v', ''), 10);
     if (major >= 20) ok(state, 'Node.js', `${version} (compatible)`);
-    else warn(state, 'Node.js', `${version}; se requiere Node.js 20 o superior.`);
+    else warn(state, 'Node.js', `${version}; Node.js 20 or higher is required.`);
   } catch {
-    fail(state, 'Node.js no encontrado', 'Instala Node.js 20 o superior.');
+    fail(state, 'Node.js not found', 'Install Node.js 20 or higher.');
   }
-  if (fs.existsSync(path.join(PLUGIN_DIR, 'node_modules'))) ok(state, 'node_modules', 'Dependencias instaladas');
-  else fail(state, 'node_modules no encontrado', 'Ejecuta npm ci.');
+  if (fs.existsSync(path.join(PLUGIN_DIR, 'node_modules'))) ok(state, 'node_modules', 'Dependencies installed');
+  else fail(state, 'node_modules not found', 'Run npm ci.');
   reportLogs(state);
 }
 
 function reportLogs(state) {
   const logsDir = path.join(PLUGIN_DIR, 'logs');
   if (!fs.existsSync(logsDir)) {
-    warn(state, 'Directorio de logs no existe', 'Se creará al arrancar el backend.');
+    warn(state, 'Logs directory does not exist', 'It will be created when the backend starts.');
     return;
   }
   const files = fs.readdirSync(logsDir).filter((filename) => filename.endsWith('.log'));
-  if (files.length) ok(state, 'Directorio de logs', `${files.length} archivo(s) de diagnóstico.`);
-  else warn(state, 'Directorio de logs vacío', 'Se poblará solo cuando ocurra un fallo relevante.');
+  if (files.length) ok(state, 'Logs directory', `${files.length} diagnostic file(s).`);
+  else warn(state, 'Empty logs directory', 'Will be populated only when a relevant failure occurs.');
 }
 
 function printSummary({ passed, warnings, failures }) {
   console.log(`\n${C.bold}${'═'.repeat(54)}${C.reset}`);
-  console.log(`${C.bold}  RESUMEN:${C.reset}`);
-  console.log(`  ${C.green}√ Correcto:${C.reset} ${passed}`);
-  console.log(`  ${C.yellow}! Avisos:${C.reset} ${warnings}`);
-  console.log(`  ${C.red}× Errores:${C.reset} ${failures}`);
+  console.log(`${C.bold}  SUMMARY:${C.reset}`);
+  console.log(`  ${C.green}√ Passed:${C.reset} ${passed}`);
+  console.log(`  ${C.yellow}! Warnings:${C.reset} ${warnings}`);
+  console.log(`  ${C.red}× Failures:${C.reset} ${failures}`);
   console.log(`${C.bold}${'═'.repeat(54)}${C.reset}`);
 }
 
@@ -207,12 +207,12 @@ function commandOutput(command, args, cwd, timeout) {
 
 function dockerInstallGuidance() {
   return process.platform === 'linux'
-    ? 'Instala Docker Engine y Docker Compose V2; Docker Desktop no es obligatorio en Linux.'
-    : 'Instala e inicia Docker Desktop para usar Canvas local.';
+    ? 'Install Docker Engine and Docker Compose V2; Docker Desktop is not mandatory on Linux.'
+    : 'Install and start Docker Desktop to use local Canvas.';
 }
 
 function requestFailureDetail(response) {
-  return `Estado: ${response.status || 'N/A'} | Error: ${response.error || 'respuesta inválida'}`;
+  return `Status: ${response.status || 'N/A'} | Error: ${response.error || 'invalid response'}`;
 }
 
 function checkPort(port) {
@@ -273,7 +273,7 @@ function section(title) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runDiagnosis().then((passed) => process.exit(passed ? 0 : 1)).catch((error) => {
-    console.error('Error ejecutando diagnóstico:', error.message);
+    console.error('Error running diagnosis:', error.message);
     process.exit(1);
   });
 }

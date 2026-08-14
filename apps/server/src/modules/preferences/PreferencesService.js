@@ -5,8 +5,8 @@ export default class PreferencesService {
     this.preferencesRepository = new PreferencesRepository();
   }
 
-  async getStudentPreference(estudianteId) {
-    const pref = await this.preferencesRepository.getPreference(estudianteId);
+  async getStudentPreference(studentId) {
+    const pref = await this.preferencesRepository.getPreference(studentId);
     
     // Devolver valores por defecto si no existen
     if (!pref) {
@@ -22,7 +22,7 @@ export default class PreferencesService {
     };
   }
 
-  async saveStudentPreference(estudianteId, metodo, frecuencia) {
+  async saveStudentPreference(studentId, metodo, frecuencia) {
     // Validar entradas
     const metodosValidos = ['both', 'canvas_inapp', 'email', 'none'];
     const frecuenciasValidas = ['inmediata', 'diario'];
@@ -35,7 +35,7 @@ export default class PreferencesService {
       throw new Error(`Frecuencia de notificación inválida: ${frecuencia}`);
     }
 
-    const savedPref = await this.preferencesRepository.savePreference(estudianteId, metodo, frecuencia);
+    const savedPref = await this.preferencesRepository.savePreference(studentId, metodo, frecuencia);
     return {
       metodo: savedPref.metodo,
       frecuencia: savedPref.frecuencia

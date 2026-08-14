@@ -1,7 +1,7 @@
 export default class BaseRole {
   constructor() {
-    // Definimos el esquema base de permisos (nomenclatura estándar en inglés)
-    // Estos son los valores por defecto si no hay overrides en la base de datos.
+    // We define the base permission schema (standard nomenclature in English)
+    // These are the default values if there are no overrides in the database.
     this.defaultPermissions = {
       view_feedback: false,
       edit_feedback: false,
@@ -9,7 +9,7 @@ export default class BaseRole {
       config_llm: false
     };
 
-    // Configuración de la interfaz (qué permisos son mutables por el admin globalmente)
+    // Interface configuration (which permissions are globally mutable by admin)
     this.mutablePermissions = [];
   }
 
@@ -35,13 +35,13 @@ export default class BaseRole {
    * @param {object} context Contexto de la petición (ej. courseId, userId)
    */
   hasPermission(permissionKey, overrides = {}, context = {}) {
-    // Si el permiso no es mutable para este rol, siempre retorna el valor por defecto
+    // If the permission is not mutable for this role, it always returns the default value
     if (!this.mutablePermissions.includes(permissionKey)) {
       // eslint-disable-next-line security/detect-object-injection
       return this.defaultPermissions[permissionKey] || false;
     }
     
-    // Si hay un override explícito, lo usamos. Si no, usamos el valor por defecto.
+    // If there is an explicit override, we use it. If not, we use the default value.
     const safeOverrides = overrides || {};
     // eslint-disable-next-line security/detect-object-injection
     if (safeOverrides[permissionKey] !== undefined) {

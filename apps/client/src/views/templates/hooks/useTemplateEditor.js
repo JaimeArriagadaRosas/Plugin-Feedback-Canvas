@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useTemplateEditor(template) {
-  const [name, setName] = useState(template?.name || template?.nombre || "Nueva Plantilla de Feedback");
+  const [name, setName] = useState(template?.name || template?.nombre || "New Feedback Template");
   
   let initialContent = {
-    alto: "Estimado {{nombre_estudiante}},\n\n¡Excelente trabajo! Tu calificación ha sido {{calificacion}}.\n\nSigue así.",
-    medio: "Estimado {{nombre_estudiante}},\n\nTu calificación en la actividad ha sido {{calificacion}}.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas...",
-    bajo: "Estimado {{nombre_estudiante}},\n\nTu calificación ha sido {{calificacion}}.\n\nNecesitas mejorar. Te sugerimos tutorías."
+    alto: "Dear {{nombre_estudiante}},\n\nExcellent work! Your grade has been {{calificacion}}.\n\nKeep it up.",
+    medio: "Dear {{nombre_estudiante}},\n\nYour grade on the activity has been {{calificacion}}.\n\nThe current course average is {{promedio_curso}}.\n\nWe suggest reviewing the following topics...",
+    bajo: "Dear {{nombre_estudiante}},\n\nYour grade has been {{calificacion}}.\n\nYou need to improve. We suggest tutoring."
   };
 
   if (template?.contenido || template?.content) {

@@ -7,23 +7,23 @@ export class WslDockerPolicy {
 
   missing() {
     return {
-      message: `Docker no está disponible dentro de ${this.host.distro}.`,
-      action: 'Elija un solo modo: integración WSL de Docker Desktop o Docker Engine nativo dentro de la distro.',
-      fix: 'Docker Desktop: habilite Resources > WSL Integration. Engine nativo: siga https://docs.docker.com/engine/install/ubuntu/.'
+      message: `Docker is not available inside ${this.host.distro}.`,
+      action: 'Choose a single mode: Docker Desktop WSL integration or native Docker Engine inside the distro.',
+      fix: 'Docker Desktop: enable Resources > WSL Integration. Native Engine: follow https://docs.docker.com/engine/install/ubuntu/.'
     };
   }
 
   daemon(state) {
     if (state.cliOrigin === 'windows-interop') {
       return {
-        message: 'WSL encontró el cliente de Docker de Windows, pero Docker Desktop no expone un daemon utilizable.',
-        action: `Inicie Docker Desktop y habilite la integración para ${this.host.distro}; no instale un segundo Engine automáticamente.`,
+        message: 'WSL found the Windows Docker client, but Docker Desktop does not expose a usable daemon.',
+        action: `Start Docker Desktop and enable integration for ${this.host.distro}; do not install a second Engine automatically.`,
         fix: 'Windows: Docker Desktop > Settings > Resources > WSL Integration.'
       };
     }
     return {
-      message: 'Docker Engine nativo está instalado dentro de WSL, pero su daemon no está activo.',
-      action: 'Inicie el servicio Linux con `sudo systemctl start docker`.',
+      message: 'Native Docker Engine is installed inside WSL, but its daemon is not active.',
+      action: 'Start the Linux service with `sudo systemctl start docker`.',
       fix: 'WSL/Linux: sudo systemctl enable --now docker'
     };
   }
@@ -31,29 +31,29 @@ export class WslDockerPolicy {
   permission(state) {
     if (state.cliOrigin === 'windows-interop') return this.daemon(state);
     return {
-      message: 'El usuario de WSL no tiene permisos sobre el socket Docker nativo.',
-      action: 'Agregue el usuario al grupo docker y reinicie la distro WSL.',
-      fix: 'sudo usermod -aG docker $USER; luego ejecute `wsl --shutdown` desde Windows.'
+      message: 'The WSL user does not have permissions on the native Docker socket.',
+      action: 'Add the user to the docker group and restart the WSL distro.',
+      fix: 'sudo usermod -aG docker $USER; then run `wsl --shutdown` from Windows.'
     };
   }
 
   memory() {
     return {
-      action: 'Ajuste la memoria desde Docker Desktop o desde `%UserProfile%\\.wslconfig` en Windows y reinicie WSL.'
+      action: 'Adjust memory from Docker Desktop or from `%UserProfile%\\.wslconfig` in Windows and restart WSL.'
     };
   }
 
   compose(state) {
     return state.cliOrigin === 'windows-interop'
-      ? 'Actualice Docker Desktop y verifique que `docker compose version` funcione dentro de WSL.'
-      : 'Instale Compose V2 dentro de la distro junto con Docker Engine.';
+      ? 'Update Docker Desktop and verify that `docker compose version` works inside WSL.'
+      : 'Install Compose V2 inside the distro along with Docker Engine.';
   }
 
   install() {
     return {
-      target: `Docker Engine nativo dentro de ${this.host.distro}`,
-      prompt: `No se detectó integración de Docker Desktop. ¿Deseas instalar explícitamente Docker Engine dentro de ${this.host.distro}?`,
-      declined: `Habilita Docker Desktop > Resources > WSL Integration para ${this.host.distro} y vuelve a ejecutar npm start.`
+      target: `Native Docker Engine inside ${this.host.distro}`,
+      prompt: `No Docker Desktop integration detected. Do you want to explicitly install Docker Engine inside ${this.host.distro}?`,
+      declined: `Enable Docker Desktop > Resources > WSL Integration for ${this.host.distro} and run npm start again.`
     };
   }
 }

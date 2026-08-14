@@ -59,14 +59,14 @@ export default function DeleteTemplateModal({ template, onConfirm, onClose }) {
   return (
     <div style={styles.overlay}>
       <div style={styles.content}>
-        <div style={styles.header}>Confirmar Eliminación</div>
+        <div style={styles.header}>Confirm Deletion</div>
         <div style={styles.body}>
-          <p>¿Está seguro de que desea eliminar la plantilla <strong>"{template?.name}"</strong>?</p>
-          <p style={{ marginTop: "10px", color: "#666", fontSize: "13px" }}>Esta acción es irreversible. Se requiere una confirmación según el requerimiento.</p>
+          <p>Are you sure you want to delete the template <strong>"{template?.name}"</strong>?</p>
+          <p style={{ marginTop: "10px", color: "#666", fontSize: "13px" }}>This action is irreversible. A confirmation is required according to the requirement.</p>
         </div>
         <div style={styles.footer}>
-          <button style={styles.btnConfirm} onClick={onConfirm}>Confirmar</button>
-          <button style={styles.btnCancel} onClick={onClose}>Cancelar</button>
+          <button style={styles.btnConfirm} onClick={onConfirm}>Confirm</button>
+          <button style={styles.btnCancel} onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>

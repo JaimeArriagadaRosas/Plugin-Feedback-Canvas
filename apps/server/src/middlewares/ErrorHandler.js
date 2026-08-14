@@ -2,12 +2,12 @@ import { nowIso } from '../utils/datetime.js';
 import logger from '../utils/logger.js';
 
 /**
- * Middleware de manejo de errores centralizado (RF40)
+ * Centralized error handling middleware (RF40)
  *
- * DESIGN-08 FIX: Distingue errores operacionales (AppError, isOperational=true)
- * de errores de programación (TypeError, ReferenceError, etc.).
- * - Errores operacionales: se devuelve su mensaje al cliente.
- * - Errores de programación: se devuelve un mensaje genérico y se alerta en logs.
+ * DESIGN-08 FIX: Distinguishes operational errors (AppError, isOperational=true)
+ * from programming errors (TypeError, ReferenceError, etc.).
+ * - Operational errors: their message is returned to the client.
+ * - Programming errors: a generic message is returned and logged.
  */
 
 
@@ -19,11 +19,11 @@ export const ErrorHandler = (err, req, res, next) => {
   if (isOperational) {
     logger.warn(`[ERROR-OP] ${statusCode} ${err.message}`, { path: req.originalUrl });
   } else {
-    // Error de programación — loguear con stack completo para debugging
+    // Programming error — log with full stack for debugging
     logger.error(`[ERROR-PROG] ${nowIso()}:`, { error: err.stack || err.message, path: req.originalUrl });
   }
 
-  // RF54: Registrar en BD accesos no autorizados (401, 403)
+  // RF54: Log unauthorized access in DB (401, 403)
   if (statusCode === 401 || statusCode === 403) {
     import('../data/db.js').then(({ default: db }) => {
       const ipAddress = req.ip || req.socket?.remoteAddress || null;
@@ -33,15 +33,15 @@ export const ErrorHandler = (err, req, res, next) => {
       db.query(
         `INSERT INTO Logs_Auditoria (usuario_id, accion, detalle, ip_address) VALUES ($1, $2, $3, $4)`,
         [usuarioId, accion, detalle, ipAddress]
-      ).catch(dbErr => logger.error(`[ERROR-PROG] Falla loggeando auditoría DB: ${dbErr.message}`));
-    }).catch(importErr => logger.error(`[ERROR-PROG] Falla importando DB: ${importErr.message}`));
+      ).catch(dbErr => logger.error(`[ERROR-PROG] Failed logging DB audit: ${dbErr.message}`));
+    }).catch(importErr => logger.error(`[ERROR-PROG] Failed importing DB: ${importErr.message}`));
   }
 
-  // En producción, los errores no operacionales devuelven un mensaje genérico
-  // para no filtrar detalles de implementación.
+  // In production, non-operational errors return a generic message
+  // to not leak implementation details.
   const clientMessage = isDev
     ? (err.message || 'Internal Server Error')
-    : (isOperational ? err.message : (statusCode === 404 ? 'No encontrado' : 'Error interno del servidor'));
+    : (isOperational ? err.message : (statusCode === 404 ? 'Not found' : 'Internal server error'));
 
   res.status(statusCode).json({
     exito: false,

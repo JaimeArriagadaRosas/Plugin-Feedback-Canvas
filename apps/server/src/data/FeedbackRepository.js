@@ -1,7 +1,7 @@
 import db from './db.js';
 
 /**
- * Repositorio de Historial de Feedbacks (PostgreSQL + Local)
+ * Feedback History Repository (PostgreSQL + Local)
  */
 export default class FeedbackRepository {
   async executeTransaction(callback) {

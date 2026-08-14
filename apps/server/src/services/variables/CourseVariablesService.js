@@ -7,8 +7,8 @@ export default class CourseVariablesService {
   }
 
   /**
-   * Obtiene la configuración de variables para un curso dado.
-   * Retorna los valores por defecto si no hay configuración previa.
+   * Gets variable configuration for a given course.
+   * Returns default values if there is no previous configuration.
    * @param {string|number} courseId 
    */
   async getCourseVariables(courseId) {
@@ -20,7 +20,7 @@ export default class CourseVariablesService {
   }
 
   /**
-   * Valida y guarda la configuración de variables para un curso.
+   * Validates and saves variable configuration for a course.
    * @param {string|number} courseId 
    * @param {Object} variablesObj 
    */

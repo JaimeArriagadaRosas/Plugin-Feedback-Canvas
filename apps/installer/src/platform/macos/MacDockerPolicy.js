@@ -7,17 +7,17 @@ export class MacDockerPolicy {
 
   missing() {
     return {
-      message: 'No se encontró un runtime Docker compatible en macOS.',
-      action: 'Instale Docker Desktop u OrbStack de forma explícita.',
+      message: 'No compatible Docker runtime found on macOS.',
+      action: 'Install Docker Desktop or OrbStack explicitly.',
       fix: 'macOS: https://docs.docker.com/desktop/setup/install/mac-install/'
     };
   }
 
   daemon() {
     return {
-      message: 'El runtime de contenedores de macOS no está activo.',
-      action: 'Abra Docker Desktop u OrbStack y complete sus permisos iniciales.',
-      fix: 'Inicie la aplicación de contenedores seleccionada.'
+      message: 'The macOS container runtime is not active.',
+      action: 'Open Docker Desktop or OrbStack and complete their initial permissions.',
+      fix: 'Start the selected container application.'
     };
   }
 
@@ -27,19 +27,19 @@ export class MacDockerPolicy {
 
   memory() {
     return {
-      action: 'Ajuste la memoria desde las preferencias del runtime de contenedores de macOS.'
+      action: 'Adjust memory from the macOS container runtime preferences.'
     };
   }
 
   compose() {
-    return 'Actualice el runtime seleccionado y verifique que exponga `docker compose`.';
+    return 'Update the selected runtime and verify that it exposes `docker compose`.';
   }
 
   install() {
     return {
       target: '/Applications',
-      prompt: '¿Deseas instalar un runtime de contenedores compatible para macOS?',
-      declined: 'Instala Docker Desktop u OrbStack y vuelve a ejecutar npm start.'
+      prompt: 'Do you want to install a compatible container runtime for macOS?',
+      declined: 'Install Docker Desktop or OrbStack and run npm start again.'
     };
   }
 }

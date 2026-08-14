@@ -7,43 +7,43 @@ export class LinuxDockerPolicy {
 
   missing() {
     return {
-      message: 'Docker Engine no está instalado en Linux.',
-      action: 'Instale Docker Engine y el plugin Compose V2 con el gestor de paquetes de su distribución.',
-      fix: 'Consulte https://docs.docker.com/engine/install/ y evite instalar Docker Desktop salvo que lo elija expresamente.'
+      message: 'Docker Engine is not installed on Linux.',
+      action: 'Install Docker Engine and the Compose V2 plugin with your distribution\'s package manager.',
+      fix: 'Check https://docs.docker.com/engine/install/ and avoid installing Docker Desktop unless explicitly chosen.'
     };
   }
 
   daemon() {
     return {
-      message: 'El daemon de Docker Engine no está activo.',
-      action: 'Inícielo con `sudo systemctl start docker` y revise `systemctl status docker`.',
+      message: 'Docker Engine daemon is not active.',
+      action: 'Start it with `sudo systemctl start docker` and check `systemctl status docker`.',
       fix: 'Linux: sudo systemctl enable --now docker'
     };
   }
 
   permission() {
     return {
-      message: 'El socket de Docker existe, pero el usuario no tiene permisos.',
-      action: 'Agregue el usuario al grupo docker y abra una sesión nueva.',
-      fix: 'Linux: sudo usermod -aG docker $USER; cierre sesión y vuelva a entrar.'
+      message: 'Docker socket exists, but the user does not have permissions.',
+      action: 'Add the user to the docker group and start a new session.',
+      fix: 'Linux: sudo usermod -aG docker $USER; log out and log back in.'
     };
   }
 
   memory() {
     return {
-      action: 'Docker Engine usa la memoria del host. Amplíe la VM o reduzca los servicios de Canvas; no existen preferencias de Docker Desktop en este modo.'
+      action: 'Docker Engine uses host memory. Expand the VM or reduce Canvas services; there are no Docker Desktop preferences in this mode.'
     };
   }
 
   compose() {
-    return 'Instale el paquete Compose V2 de su distribución (por ejemplo, `sudo apt-get install docker-compose-v2`).';
+    return 'Install the Compose V2 package of your distribution (for example, `sudo apt-get install docker-compose-v2`).';
   }
 
   install() {
     return {
-      target: 'paquetes del sistema Linux',
-      prompt: '¿Deseas instalar Docker Engine y Compose V2 mediante el gestor de paquetes de Linux?',
-      declined: 'Instala Docker Engine siguiendo https://docs.docker.com/engine/install/ y vuelve a ejecutar npm start.'
+      target: 'Linux system packages',
+      prompt: 'Do you want to install Docker Engine and Compose V2 via the Linux package manager?',
+      declined: 'Install Docker Engine following https://docs.docker.com/engine/install/ and run npm start again.'
     };
   }
 }

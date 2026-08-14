@@ -1,24 +1,24 @@
 /**
- * Capa central de configuración.
+ * Central configuration layer.
  *
- * Proxy fino sobre `process.env`. NO reemplaza `process.env`: centraliza las
- * lecturas para validación, máscara y auditoría, conservando los nombres de
- * claves, los defaults y la capacidad de MUTAR `process.env` en runtime (que
- * hoy usan main.js, SystemConfigController y los setup de test).
+ * Thin proxy over `process.env`. DOES NOT replace `process.env`: centralizes
+ * reads for validation, masking, and auditing, while keeping key names,
+ * defaults, and the ability to MUTATE `process.env` at runtime (used today
+ * by main.js, SystemConfigController, and test setups).
  *
- * Regla de oro para no romper nada: cualquier lectura migrada debe conservar
- * el mismo nombre de variable y el mismo valor por defecto que tenía.
+ * Golden rule to avoid breaking anything: any migrated read must preserve
+ * the same variable name and the same default value it had.
  */
 import logger from '../utils/logger.js';
 
-/** Lee una variable de entorno, devolviendo `fallback` si está ausente o vacía. */
+/** Reads an environment variable, returning `fallback` if absent or empty. */
 export function getEnv(key, fallback) {
   // eslint-disable-next-line security/detect-object-injection
   const v = process.env[key];
   return v === undefined || v === '' ? fallback : v;
 }
 
-/** Lee un booleano de entorno ('true' | '1'). */
+/** Reads an environment boolean ('true' | '1'). */
 export function getEnvBool(key, fallback = false) {
   // eslint-disable-next-line security/detect-object-injection
   const v = process.env[key];
@@ -26,7 +26,7 @@ export function getEnvBool(key, fallback = false) {
   return v === 'true' || v === '1';
 }
 
-/** Escribe una variable de entorno (conserva mutaciones en runtime). */
+/** Writes an environment variable (preserves mutations at runtime). */
 export function setEnv(key, value) {
   if (value === undefined || value === null) {
     // eslint-disable-next-line security/detect-object-injection
@@ -37,19 +37,19 @@ export function setEnv(key, value) {
   }
 }
 
-/** ¿Entorno de producción? */
+/** Production environment? */
 export function isProduction() {
   return process.env.NODE_ENV === 'production';
 }
 
-/** ¿Está habilitado el modo de datos locales (auth relajada)? */
+/** Is local data mode enabled (relaxed auth)? */
 export function isLocalDataEnabled() {
   return getEnvBool('USE_LOCAL_DATA') || getEnvBool('VITE_USE_LOCAL_DATA');
 }
 
 /**
- * Lee una clave de backend con fallback a su equivalente VITE_ (legacy).
- * Mantiene el aviso de deprecación cuando se usa la clave VITE_.
+ * Reads a backend key with fallback to its VITE_ equivalent (legacy).
+ * Keeps the deprecation warning when the VITE_ key is used.
  */
 export function getCanvasEnv(key, viteKey) {
   // eslint-disable-next-line security/detect-object-injection
@@ -59,7 +59,7 @@ export function getCanvasEnv(key, viteKey) {
   // eslint-disable-next-line security/detect-object-injection
   const viteVal = process.env[viteKey];
   if (viteVal) {
-    logger.warn(`Variable de entorno deprecada: ${viteKey}. Usar ${key} en backend.`);
+    logger.warn(`Deprecated environment variable: ${viteKey}. Use ${key} in backend.`);
     return viteVal;
   }
   return undefined;

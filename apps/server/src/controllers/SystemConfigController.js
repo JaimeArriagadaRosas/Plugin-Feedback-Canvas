@@ -27,12 +27,12 @@ export default class SystemConfigController {
 
   setLocalRole(req, res) {
     if (isProduction()) {
-      return res.status(403).json({ exito: false, error: { mensaje: 'Modo local no disponible en producción.' } });
+      return res.status(403).json({ exito: false, error: { mensaje: 'Local mode not available in production.' } });
     }
 
     const { role } = req.body;
     if (!role || !isPermittedLocalRole(role)) {
-      return res.status(400).json({ exito: false, error: { mensaje: `Rol no válido: ${role}` } });
+      return res.status(400).json({ exito: false, error: { mensaje: `Invalid role: ${role}` } });
     }
 
     if (role === 'admin') {
@@ -44,7 +44,7 @@ export default class SystemConfigController {
       if (!signed) {
         return res.status(403).json({
           exito: false,
-          error: { mensaje: 'Rol admin en modo local requiere un dev-token firmado.' }
+          error: { mensaje: 'Admin role in local mode requires a signed dev-token.' }
         });
       }
     }
@@ -54,16 +54,16 @@ export default class SystemConfigController {
     res.cookie('dev-token', signedToken, { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'Lax' });
     const signedRole = signDevRole(role);
     res.cookie('dev-role', signedRole, { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'Lax' });
-    logger.info('Sesion local configurada mediante API', { role, ip: req.ip });
-    res.json({ exito: true, role, mensaje: `Sesion local establecida como ${role}` });
+    logger.info('Local session configured via API', { role, ip: req.ip });
+    res.json({ exito: true, role, mensaje: `Local session established as ${role}` });
   }
 
   clearLocalRole(req, res) {
     res.clearCookie('dev-token');
     res.clearCookie('dev-role');
     res.clearCookie('lti_token');
-    logger.info('[Auth] CERRANDO SESION (Logout) / Sesion local limpiada', { ip: req.ip });
-    res.json({ exito: true, mensaje: 'Sesion local eliminada' });
+    logger.info('[Auth] CLOSING SESSION (Logout) / Local session cleared', { ip: req.ip });
+    res.json({ exito: true, mensaje: 'Local session deleted' });
   }
 
   async getMe(req, res) {
@@ -78,13 +78,13 @@ export default class SystemConfigController {
       });
 
       if (identity.isLocalSession) {
-        logger.info(`[AUTH] Sesión activa (Modo Local) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
+        logger.info(`[AUTH] Active session (Local Mode) | User: ${identity.canonicalUserId?.substring(0,8)}... | Role: ${role}`);
       } else {
         const sourceStr = identity.source === 'session-token' ? 'Session Token' : 'LTI Recuperada';
-        logger.info(`[AUTH] Sesión activa (${sourceStr}) | Usuario: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
+        logger.info(`[AUTH] Active session (${sourceStr}) | User: ${identity.canonicalUserId?.substring(0,8)}... | Role: ${role}`);
       }
 
-      // Obtener manager de permisos inyectado en app
+      // Get permissions manager injected in app
       const permissionsManager = req.app.get('permissionsManager');
       let permissions = {};
       if (permissionsManager) {
@@ -95,7 +95,7 @@ export default class SystemConfigController {
         }
       }
 
-      // Obtener manager de IA para verificar disponibilidad (RF64)
+      // Get AI manager to verify availability (RF64)
       const iaConfigManager = req.app.get('iaConfigManager');
       let isAiServiceAvailable = false;
       if (iaConfigManager) {
@@ -111,14 +111,14 @@ export default class SystemConfigController {
 
       return res.json({
         exito: true,
-        user: identity.ltiUserId, // Mantenemos el LTI UUID como identificador primario para el frontend (legacy)
+        user: identity.ltiUserId, // Keep LTI UUID as primary identifier for frontend (legacy)
         userName: identity.name || identity.ltiUserId,
         role,
         roles: identity.roles,
-        permissions, // NUEVO: Se envían los permisos al frontend
+        permissions, // NEW: Permissions are sent to frontend
         courseId: identity.canonicalCourseId || identity.courseId,
         courseName: identity.courseName,
-        studentId: identity.canonicalUserId || identity.numericUserId || null, // El ID numérico para queries específicas
+        studentId: identity.canonicalUserId || identity.numericUserId || null, // Numeric ID for specific queries
         isLocalSession: identity.isLocalSession ?? false,
         source: identity.source ?? null,
         canonicalUserId: identity.canonicalUserId,
@@ -126,11 +126,11 @@ export default class SystemConfigController {
       });
     }
 
-    logger.warn('/api/config/me llamado sin ltiContext válido');
+    logger.warn('/api/config/me called without valid ltiContext');
     res.status(401).json({
       exito: false,
       error: {
-        mensaje: 'Sin sesion activa. Inicie el plugin desde Canvas LMS o configure el modo local.',
+        mensaje: 'No active session. Start the plugin from Canvas LMS or configure local mode.',
         codigo: 401
       }
     });

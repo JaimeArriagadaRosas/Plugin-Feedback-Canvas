@@ -1,8 +1,8 @@
 /**
- * Controlador de Estadísticas (RF46, RF47, RF48, RF49)
+ * Statistics Controller (RF46, RF47, RF48, RF49)
  *
- * Expone endpoints para obtener conteos, histogramas de calificaciones
- * y distribución de feedback, usados en el Panel del Docente y Administrador.
+ * Exposes endpoints to get counts, grade histograms
+ * and feedback distribution, used in the Teacher and Administrator Panel.
  */
 import { AppError } from '../utils/errors.js';
 
@@ -12,14 +12,14 @@ export default class StatsController {
   }
 
   /**
-   * RF46: Contabilizar feedbacks generados, pendientes, aprobados, editados.
-   * RF47: Calcular porcentajes en tiempo real.
+   * RF46: Count generated, pending, approved, and edited feedbacks.
+   * RF47: Calculate real-time percentages.
    */
   async getCourseStats(req, res, next) {
     try {
       const { courseId } = req.params;
       if (!courseId) {
-        throw new AppError('El courseId es obligatorio', 400);
+        throw new AppError('courseId is mandatory', 400);
       }
 
       const assignmentId = req.query.assignmentId ? parseInt(req.query.assignmentId, 10) : null;
@@ -32,7 +32,7 @@ export default class StatsController {
   }
 
   /**
-   * RF49: Histograma de distribución de calificaciones.
+   * RF49: Grade distribution histogram.
    */
   async getGradeDistribution(req, res, next) {
     try {
@@ -64,7 +64,7 @@ export default class StatsController {
       const courseIdNum = courseId ? Number(courseId) : null;
       const data = await this.statsService.feedbackRepo.listAll(500, courseIdNum);
       
-      let csv = 'ID,Estudiante ID,Curso ID,Tarea ID,Nota Canvas,Nota Chile,Estado,Fecha Generacion\n';
+      let csv = 'ID,Student ID,Course ID,Assignment ID,Canvas Grade,Chile Grade,Status,Generation Date\n';
       data.forEach(row => {
         csv += `${row.id},${row.estudiante_id},${row.curso_id},${row.tarea_id},${row.nota_canvas},${row.nota_chile},${row.estado},${row.fecha_generacion}\n`;
       });

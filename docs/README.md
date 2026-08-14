@@ -1,89 +1,89 @@
-# Plugin Feedback para Canvas LMS
+# Feedback Plugin for Canvas LMS
 
-Plugin Feedback es una aplicación web LTI 1.3 que se integra con Canvas LMS para generar, revisar, aprobar y enviar retroalimentación académica. El profesor conserva el control del flujo: puede usar plantillas, variables de contexto y proveedores de IA, pero revisa y aprueba el feedback antes de que llegue al estudiante.
+Feedback Plugin is an LTI 1.3 web application that integrates with Canvas LMS to generate, review, approve, and send academic feedback. The teacher retains control of the flow: they can use templates, context variables, and AI providers, but they review and approve the feedback before it reaches the student.
 
 > [!IMPORTANT]
-> El proyecto está en validación preproductiva. El modo local permite desarrollar y probar el plugin con una instancia simulada de Canvas, pero no certifica por sí mismo un despliegue institucional ni producción.
+> The project is in pre-production validation. The local mode allows developing and testing the plugin with a simulated Canvas instance, but it does not certify an institutional deployment nor production by itself.
 
-## Índice
+## Index
 
-- [Descripción y documentación relacionada](#descripción-y-documentación-relacionada)
-- [Abrir una consola o terminal](#abrir-una-consola-o-terminal)
-- [Programas requeridos](#programas-requeridos)
-- [Organización de carpetas](#organización-de-carpetas)
-- [Instalación paso a paso](#instalación-paso-a-paso)
-- [Qué hacen npm, npm ci y node_modules](#qué-hacen-npm-npm-ci-y-nodemodules)
-- [Variables de entorno](#variables-de-entorno-env)
-- [Compilación y ejecución](#compilación-y-ejecución)
-- [La capa de instalación de la opción 3](#la-capa-de-instalación-de-la-opción-3)
-- [Por qué tarda la primera ejecución](#por-qué-tarda-la-primera-ejecución)
-- [Ejecución manual para desarrollo](#ejecución-manual-para-desarrollo)
-- [Cuentas locales de prueba](#cuentas-locales-de-prueba)
-- [Pruebas y resolución de problemas](#pruebas-y-resolución-de-problemas)
+- [Description and related documentation](#description-and-related-documentation)
+- [Opening a console or terminal](#opening-a-console-or-terminal)
+- [Required programs](#required-programs)
+- [Folder organization](#folder-organization)
+- [Step-by-step installation](#step-by-step-installation)
+- [What npm, npm ci, and node_modules do](#what-npm-npm-ci-and-node_modules-do)
+- [Environment variables (.env)](#environment-variables-env)
+- [Compilation and execution](#compilation-and-execution)
+- [The option 3 installation layer](#the-option-3-installation-layer)
+- [Why the first execution takes time](#why-the-first-execution-takes-time)
+- [Manual execution for development](#manual-execution-for-development)
+- [Local test accounts](#local-test-accounts)
+- [Testing and troubleshooting](#testing-and-troubleshooting)
 
-## Descripción y documentación relacionada
+## Description and related documentation
 
-El repositorio es un monorepo: contiene el cliente React, el servidor Node.js, el instalador interactivo, contratos compartidos y el acceso a datos. Canvas LMS **no** pertenece al dominio del plugin: el modo local lo prepara como una carpeta hermana para simular la plataforma real.
+The repository is a monorepo: it contains the React client, the Node.js server, the interactive installer, shared contracts, and data access. Canvas LMS does **not** belong to the plugin's domain: the local mode prepares it as a sibling folder to simulate the real platform.
 
-Esta guía enseña el primer uso. Los temas especializados permanecen en documentos separados para evitar duplicarlos:
+This guide teaches the first use. Specialized topics remain in separate documents to avoid duplicating them:
 
-| Necesidad | Documento |
+| Need | Document |
 |---|---|
-| Instalar en Windows, Linux, WSL2 o macOS | [Instalación multiplataforma](INSTALLATION.md) |
-| Entender los modos y el ciclo diario de Canvas | [Desarrollo local](LOCAL_DEVELOPMENT.md) |
-| Variables, versiones, secretos y recursos | [Entorno de ejecución](ENVIRONMENT.md) |
-| Ejecutar las pruebas | [Estrategia de pruebas](TESTING.md) |
-| Diagnosticar errores | [Troubleshooting](TROUBLESHOOTING.md) |
-| Contribuir al monorepo | [Contribución](CONTRIBUTING.md) |
-| Despliegue LTI institucional | [Despliegue](DEPLOYMENT.md) |
+| Install on Windows, Linux, WSL2, or macOS | [Multi-platform installation](INSTALLATION.md) |
+| Understand modes and the daily Canvas cycle | [Local development](LOCAL_DEVELOPMENT.md) |
+| Variables, versions, secrets, and resources | [Execution environment](ENVIRONMENT.md) |
+| Execute tests | [Testing strategy](TESTING.md) |
+| Diagnose errors | [Troubleshooting](TROUBLESHOOTING.md) |
+| Contribute to the monorepo | [Contribution](CONTRIBUTING.md) |
+| Institutional LTI deployment | [Deployment](DEPLOYMENT.md) |
 
-## Abrir una consola o terminal
+## Opening a console or terminal
 
-La consola es una ventana de texto desde la que se ejecutan comandos. Todos los comandos de este documento se escriben después del prompt y se confirman con `Enter`.
+The console is a text window from which commands are executed. All commands in this document are typed after the prompt and confirmed with `Enter`.
 
 ### Windows
 
 > [!TIP]
-> **Rendimiento:** Si el arranque o compilación son muy lentos en Windows nativo, se recomienda encarecidamente añadir la carpeta del proyecto a las **exclusiones de Windows Defender**. El escaneo en tiempo real de miles de archivos pequeños (como los de `node_modules` o contenedores de Docker) penaliza drásticamente el disco.
-> Puedes hacerlo abriendo PowerShell como Administrador y ejecutando:
-> `Add-MpPreference -ExclusionPath "C:\Ruta\A\Tu\Proyecto"`
+> **Performance:** If startup or compilation is very slow on native Windows, it is strongly recommended to add the project folder to the **Windows Defender exclusions**. The real-time scanning of thousands of small files (like those in `node_modules` or Docker containers) drastically penalizes the disk.
+> You can do this by opening PowerShell as Administrator and running:
+> `Add-MpPreference -ExclusionPath "C:\Path\To\Your\Project"`
 
-Abra **Windows Terminal**, **PowerShell** o **Símbolo del sistema (CMD)** desde Inicio. Para una prueba WSL, abra directamente la aplicación **Ubuntu**: ahí ya está dentro de Linux.
+Open **Windows Terminal**, **PowerShell**, or **Command Prompt (CMD)** from the Start menu. For a WSL test, directly open the **Ubuntu** application: there you are already inside Linux.
 
-### Ubuntu sobre WSL2
+### Ubuntu on WSL2
 
-Abra la aplicación **Ubuntu** desde Inicio. No escriba `wsl -d Ubuntu-26.04` dentro de Ubuntu: `wsl` es un comando de administración de Windows y se usa desde PowerShell o CMD.
+Open the **Ubuntu** application from the Start menu. Do not type `wsl -d Ubuntu-26.04` inside Ubuntu: `wsl` is a Windows administration command and is used from PowerShell or CMD.
 
-### Linux nativo y macOS
+### Native Linux and macOS
 
-En Linux normalmente se abre la terminal con `Ctrl+Alt+T`. En macOS, abra **Terminal** desde Spotlight con `Cmd+Espacio`.
+In Linux, you normally open the terminal with `Ctrl+Alt+T`. In macOS, open **Terminal** from Spotlight with `Cmd+Space`.
 
-### Sintaxis mínima
+### Minimum syntax
 
 ```bash
-pwd                         # muestra la carpeta actual
-ls -la                      # lista archivos, incluidos los ocultos
-cd carpeta                  # entra a una carpeta
-cd ..                       # sube un nivel
-cd "ruta con espacios"      # entra a una ruta que contiene espacios
-node --version              # muestra la versión; "node version" es incorrecto
+pwd                         # shows the current folder
+ls -la                      # lists files, including hidden ones
+cd folder                   # enters a folder
+cd ..                       # goes up one level
+cd "path with spaces"       # enters a path containing spaces
+node --version              # shows the version; "node version" is incorrect
 ```
 
-En Linux y macOS, `~` significa la carpeta personal del usuario. Linux distingue mayúsculas de minúsculas y usa `/` como separador de rutas.
+In Linux and macOS, `~` means the user's home folder. Linux is case-sensitive and uses `/` as the path separator.
 
-## Programas requeridos
+## Required programs
 
-Node.js y Git son prerrequisitos externos: el proyecto está escrito en Node.js, por lo que `npm start` necesita un Node funcional antes de poder iniciar el instalador. Docker es necesario solo para Canvas local, PostgreSQL de integración, Gotenberg y pruebas con Testcontainers.
+Node.js and Git are external prerequisites: the project is written in Node.js, so `npm start` needs a functional Node before being able to start the installer. Docker is necessary only for local Canvas, integration PostgreSQL, Gotenberg, and tests with Testcontainers.
 
-| Componente | Requisito | Para qué se usa |
+| Component | Requirement | What it is used for |
 |---|---|---|
-| Git | versión moderna con TLS | clonar el plugin y Canvas LMS |
-| Node.js | `^20.19.0` o `>=22.12.0` | ejecutar el instalador, backend y herramientas |
-| npm | `11.8.0` para instalaciones reproducibles | respetar `package-lock.json` |
-| Docker Compose | Compose V2: `docker compose` | Canvas y servicios locales |
-| Memoria y disco | al menos 8 GiB disponibles para Canvas | imágenes, assets y bases de datos locales |
+| Git | modern version with TLS | clone the plugin and Canvas LMS |
+| Node.js | `^20.19.0` or `>=22.12.0` | run the installer, backend, and tools |
+| npm | `11.8.0` for reproducible installations | respect `package-lock.json` |
+| Docker Compose | Compose V2: `docker compose` | Canvas and local services |
+| Memory and disk | at least 8 GiB available for Canvas | images, assets, and local databases |
 
-Compruebe cualquier instalación con:
+Check any installation with:
 
 ```bash
 node --version
@@ -95,11 +95,11 @@ docker compose version
 
 ### Windows
 
-Instale una versión LTS compatible de [Node.js](https://nodejs.org/) y Git. Para el modo 3, instale y abra Docker Desktop con backend WSL2. El instalador puede orientar o automatizar parte de Docker, pero Node.js continúa siendo un requisito del usuario.
+Install a compatible LTS version of [Node.js](https://nodejs.org/) and Git. For mode 3, install and open Docker Desktop with the WSL2 backend. The installer can guide or automate part of Docker, but Node.js continues to be a user requirement.
 
-### Ubuntu, WSL2 y Linux nativo
+### Ubuntu, WSL2, and Native Linux
 
-En Ubuntu, WSL2 y Linux nativo, instale Node para ese entorno Linux. Una opción recomendada es NVM: administra versiones de Node por usuario y no requiere `sudo`.
+In Ubuntu, WSL2, and native Linux, install Node for that Linux environment. A recommended option is NVM: it manages Node versions per user and does not require `sudo`.
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
@@ -110,33 +110,33 @@ node --version
 command -v node
 ```
 
-La última línea debe mostrar una ruta bajo `~/.nvm/`. Si abre una terminal nueva, NVM cargará la versión predeterminada. Consulte las [instrucciones oficiales de NVM](https://github.com/nvm-sh/nvm#installing-and-updating) si su shell no carga `~/.bashrc`.
+The last line should show a path under `~/.nvm/`. If you open a new terminal, NVM will load the default version. See the [official NVM instructions](https://github.com/nvm-sh/nvm#installing-and-updating) if your shell does not load `~/.bashrc`.
 
-Al seleccionar el modo 3 en Ubuntu, el proyecto puede pedir confirmación y contraseña `sudo` para instalar Docker Engine, Docker Compose, Docker rootless o `mkcert` cuando falten.
+When selecting mode 3 in Ubuntu, the project may ask for `sudo` confirmation and password to install Docker Engine, Docker Compose, rootless Docker, or `mkcert` when they are missing.
 
 ### macOS
 
-Instale Node LTS y Git con sus instaladores oficiales o el gestor que use su equipo. Para Canvas local use Docker Desktop u OrbStack. La automatización de certificados en macOS aún requiere validación adicional; consulte [Instalación multiplataforma](INSTALLATION.md).
+Install Node LTS and Git with their official installers or the package manager used by your computer. For local Canvas, use Docker Desktop or OrbStack. Certificate automation in macOS still requires additional validation; see [Multi-platform installation](INSTALLATION.md).
 
-## Organización de carpetas
+## Folder organization
 
-En Windows puede guardar una copia del repositorio donde prefiera. En Linux/WSL2, se recomienda trabajar desde la carpeta personal del usuario, por ejemplo `/home/<usuario>/projects`. Así las dependencias, permisos y montajes Docker se mantienen en el mismo entorno Linux y los builds suelen ser más rápidos.
+In Windows, you can save a copy of the repository wherever you prefer. In Linux/WSL2, it is recommended to work from the user's home folder, for example, `/home/<user>/projects`. This way, dependencies, permissions, and Docker mounts remain in the same Linux environment, and builds are usually faster.
 
-El modo 3 prepara Canvas como carpeta hermana:
+Mode 3 prepares Canvas as a sibling folder:
 
 ```text
 projects/
-├── Plugin-Feedback-Canvas/  # este repositorio
-└── canvas-lms-master/       # creado por la opción 3; dependencia externa
+├── Plugin-Feedback-Canvas/  # this repository
+└── canvas-lms-master/       # created by option 3; external dependency
 ```
 
-No mueva ni mezcle código del plugin dentro de `canvas-lms-master`. Tampoco suba Canvas, `node_modules`, certificados, archivos `.env`, tokens o volúmenes Docker al repositorio.
+Do not move or mix plugin code inside `canvas-lms-master`. Also, do not commit Canvas, `node_modules`, certificates, `.env` files, tokens, or Docker volumes to the repository.
 
-## Instalación paso a paso
+## Step-by-step installation
 
-### 1. Clonar el proyecto
+### 1. Clone the project
 
-Desde Ubuntu/WSL2, clone la versión estable del proyecto desde `main`:
+From Ubuntu/WSL2, clone the stable version of the project from `main`:
 
 ```bash
 mkdir -p ~/projects
@@ -146,7 +146,7 @@ git clone --branch main --single-branch \
 cd ~/projects/Plugin-Feedback-Canvas
 ```
 
-Compruebe siempre dónde está antes de comenzar:
+Always check where you are before starting:
 
 ```bash
 pwd
@@ -154,116 +154,116 @@ git branch --show-current
 git status
 ```
 
-### 2. Instalar dependencias e iniciar
+### 2. Install dependencies and start
 
-Con Node nativo compatible ya instalado, el comando habitual es:
+With compatible native Node already installed, the usual command is:
 
 ```bash
 npm start
 ```
 
-Si `node_modules` no existe o está incompleto, el prearranque instala automáticamente las dependencias mediante `npx --yes npm@11.8.0 ci`. Por eso, para una primera ejecución normal, no necesita ejecutar antes `npm ci` ni `npm install` a mano.
+If `node_modules` does not exist or is incomplete, the pre-boot automatically installs the dependencies using `npx --yes npm@11.8.0 ci`. Therefore, for a normal first execution, you do not need to manually run `npm ci` or `npm install` beforehand.
 
-Cuando aparezca el menú, seleccione:
+When the menu appears, select:
 
 ```text
 [3] Ejecutar localmente Canvas LMS (Entorno Docker de desarrollo)
 ```
 
-Mantenga la consola abierta mientras Canvas se instala o está en ejecución. Para detener los procesos que inició el orquestador, use `Ctrl+C` una sola vez y espere el cierre ordenado.
+Keep the console open while Canvas is installing or running. To stop the processes initiated by the orchestrator, use `Ctrl+C` only once and wait for the orderly shutdown.
 
-### 3. Instalación manual de dependencias, solo cuando se necesite
+### 3. Manual dependency installation, only when needed
 
-Para reconstruir explícitamente dependencias ya diagnosticadas, use la versión fijada de npm:
+To explicitly rebuild already diagnosed dependencies, use the pinned version of npm:
 
 ```bash
 npx --yes npm@11.8.0 ci --no-fund --no-audit
 ```
 
-`package-lock.json` contiene las versiones verificadas del proyecto; consérvelo al reconstruir dependencias.
+`package-lock.json` contains the verified versions of the project; keep it when rebuilding dependencies.
 
-## Qué hacen npm, npm ci y node_modules
+## What npm, npm ci, and node_modules do
 
-`package.json` es la lista declarada de herramientas y scripts del proyecto. `package-lock.json` fija las versiones exactas y sus integridades. `node_modules/` es la carpeta generada que contiene las librerías descargadas y ejecutables locales como Vite, Vitest y ESLint.
+`package.json` is the declared list of project tools and scripts. `package-lock.json` pins the exact versions and their integrities. `node_modules/` is the generated folder containing downloaded libraries and local executables like Vite, Vitest, and ESLint.
 
-| Comando | Uso correcto en este repositorio | Efecto |
+| Command | Correct use in this repository | Effect |
 |---|---|---|
-| `npm start` | inicio normal | ejecuta el orquestador y repara dependencias faltantes con npm fijado |
-| `npx --yes npm@11.8.0 ci` | reconstrucción manual controlada | recrea `node_modules` exactamente desde el lockfile |
-| `npm install` | agregar o actualizar una dependencia de forma intencional | puede recalcular el lockfile; no es la reparación rutinaria |
+| `npm start` | normal start | runs the orchestrator and repairs missing dependencies with pinned npm |
+| `npx --yes npm@11.8.0 ci` | controlled manual rebuild | recreates `node_modules` exactly from the lockfile |
+| `npm install` | intentionally add or update a dependency | may recalculate the lockfile; not the routine repair |
 
-`node_modules` puede ocupar cientos de MB. No se versiona ni se edita a mano. Borrarlo obliga a descargar e instalar otra vez; no borra el código fuente, pero sí prolonga el siguiente arranque.
+`node_modules` can take up hundreds of MBs. It is not versioned or manually edited. Deleting it forces downloading and installing again; it does not delete the source code, but it does prolong the next startup.
 
-## Variables de entorno (.env)
+## Environment variables (.env)
 
-En local, el orquestador crea `.env` desde su plantilla segura cuando no existe y genera claves de desarrollo faltantes. Para ejecutar la opción 3 normalmente no necesita escribir secretos a mano.
+Locally, the orchestrator creates `.env` from its secure template when it does not exist and generates missing development keys. To run option 3, you normally do not need to write secrets manually.
 
-Puede editar `.env` para configurar proveedores IA, puertos o credenciales locales de prueba, pero nunca debe subirlo a Git. Tampoco copie a producción tokens de Canvas, claves privadas LTI, certificados locales o cuentas sintéticas. La lista de variables y su alcance está en [Entorno de ejecución](ENVIRONMENT.md).
+You can edit `.env` to configure AI providers, ports, or local test credentials, but you must never commit it to Git. Also, do not copy Canvas tokens, private LTI keys, local certificates, or synthetic accounts to production. The list of variables and their scope is in [Execution environment](ENVIRONMENT.md).
 
 > [!WARNING]
-> Si se regeneran claves locales mientras existen volúmenes con datos anteriores, algunos datos cifrados pueden dejar de ser legibles. El instalador no borra volúmenes automáticamente: respalde y decida un reset de forma explícita.
+> If local keys are regenerated while volumes with previous data exist, some encrypted data may become unreadable. The installer does not automatically delete volumes: back up and explicitly decide on a reset.
 
-## Compilación y ejecución
+## Compilation and execution
 
-`npm start` abre una consola interactiva con cuatro modos:
+`npm start` opens an interactive console with four modes:
 
-| Opción | Propósito |
+| Option | Purpose |
 |---:|---|
-| 1 | Runtime LTI 1.3 para un Canvas externo |
-| 2 | Asistente de registro y despliegue LTI |
-| 3 | Canvas LMS local en Docker: modo principal para desarrollo y QA |
-| 4 | Validaciones de caja negra del proyecto |
+| 1 | LTI 1.3 runtime for an external Canvas |
+| 2 | LTI registration and deployment assistant |
+| 3 | Local Canvas LMS in Docker: main mode for development and QA |
+| 4 | Black-box project validations |
 
-Para Canvas local sin responder el menú:
+For local Canvas without answering the menu:
 
 ```bash
 NON_INTERACTIVE=true STARTUP_MODE=3 npm start
 ```
 
-Al terminar correctamente, las direcciones habituales son:
+Upon successful completion, the usual addresses are:
 
-| Servicio | Dirección |
+| Service | Address |
 |---|---|
 | Plugin / backend | `https://localhost:3000` |
-| Frontend Vite | `https://localhost:5173` |
-| Canvas mediante proxy TLS | `https://localhost:8443` |
-| Canvas HTTP interno | `http://localhost:8080` |
-| Gotenberg local | `http://localhost:3001` |
+| Vite frontend | `https://localhost:5173` |
+| Canvas via TLS proxy | `https://localhost:8443` |
+| Internal HTTP Canvas | `http://localhost:8080` |
+| Local Gotenberg | `http://localhost:3001` |
 
-El navegador se abre con el navegador predeterminado del usuario. En WSL, Canvas y Docker viven dentro de Ubuntu, pero el navegador y su almacén de certificados pertenecen a Windows.
+The browser opens with the user's default browser. In WSL, Canvas and Docker live inside Ubuntu, but the browser and its certificate store belong to Windows.
 
-## La capa de instalación de la opción 3
+## The option 3 installation layer
 
-La opción 3 no solo “abre una ventana”. Comprueba y prepara componentes de manera reanudable:
+Option 3 doesn't just "open a window". It checks and prepares components in a resumable way:
 
-1. Verifica Node, npm, Git, Docker, Compose, memoria, puertos y permisos.
-2. Crea o conserva `.env`, claves locales y la configuración mínima.
-3. Clona Canvas LMS como carpeta hermana, sin incorporarlo al monorepo.
-4. Levanta los servicios base de Canvas y prepara su configuración Docker.
-5. Instala gems Ruby, paquetes Yarn, traducciones y compila los assets de Canvas.
-6. Inicializa PostgreSQL, Redis, contenedores `web` y `jobs` de Canvas.
-7. Inserta datos sintéticos, instala la configuración LTI local y sincroniza usuarios.
-8. Levanta PostgreSQL y Gotenberg del plugin, aplica sus migraciones y arranca el backend.
-9. Genera certificados HTTPS de desarrollo, levanta el proxy TLS y abre Canvas cuando responde.
+1. Verifies Node, npm, Git, Docker, Compose, memory, ports, and permissions.
+2. Creates or preserves `.env`, local keys, and minimal configuration.
+3. Clones Canvas LMS as a sibling folder, without incorporating it into the monorepo.
+4. Starts the Canvas base services and prepares its Docker configuration.
+5. Installs Ruby gems, Yarn packages, translations, and compiles Canvas assets.
+6. Initializes PostgreSQL, Redis, and Canvas `web` and `jobs` containers.
+7. Inserts synthetic data, installs the local LTI configuration, and synchronizes users.
+8. Starts the plugin's PostgreSQL and Gotenberg, applies its migrations, and starts the backend.
+9. Generates local development HTTPS certificates, starts the TLS proxy, and opens Canvas when it responds.
 
-Las preguntas interactivas dependen de lo que falte. En una Ubuntu recién creada pueden aparecer confirmaciones para instalar Docker y rootless con `sudo`, instalar `mkcert` y `libnss3-tools`, crear una CA local y —en WSL— confiar solo en la CA pública en el almacén del usuario de Windows. Una ejecución posterior reutiliza herramientas, imágenes, assets y marcadores como `.assets_built` y `.setup_complete`, por lo que hará menos preguntas.
+Interactive questions depend on what is missing. On a newly created Ubuntu, confirmations may appear to install Docker and rootless with `sudo`, install `mkcert` and `libnss3-tools`, create a local CA, and — in WSL — trust only the public CA in the Windows user store. A subsequent execution reuses tools, images, assets, and markers like `.assets_built` and `.setup_complete`, so it will ask fewer questions.
 
-## Por qué tarda la primera ejecución
+## Why the first execution takes time
 
-La primera ejecución suele requerir entre **20 y 35 minutos**, aunque puede tardar más según la red, CPU, memoria, disco y la disponibilidad de cachés. No cierre la consola solo porque haya actividad prolongada.
+The first execution usually requires between **20 and 35 minutes**, although it may take longer depending on the network, CPU, memory, disk, and cache availability. Do not close the console just because there is prolonged activity.
 
-Las partes más costosas son:
+The most expensive parts are:
 
-- descargas de imágenes Docker y del checkout de Canvas, que ocupan varios GiB;
-- instalación de gems Ruby y paquetes JavaScript de Canvas;
-- migraciones y semillas de las bases de datos;
-- compilación de traducciones y assets visuales de Canvas.
+- downloading Docker images and the Canvas checkout, which take several GiBs;
+- installing Canvas Ruby gems and JavaScript packages;
+- database migrations and seeds;
+- compiling translations and Canvas visual assets.
 
-Las ejecuciones posteriores suelen ser mucho más rápidas porque reutilizan las imágenes, contenedores, volúmenes y assets. Aun así, el instalador vuelve a revisar el estado crítico: una ejecución rápida no sustituye una comprobación de salud.
+Subsequent executions are usually much faster because they reuse images, containers, volumes, and assets. Even so, the installer re-checks the critical state: a fast execution does not replace a health check.
 
-## Ejecución manual para desarrollo
+## Manual execution for development
 
-Cuando ya existen las dependencias y no necesita preparar Canvas desde cero, puede levantar partes por separado:
+When dependencies already exist and you don't need to prepare Canvas from scratch, you can start parts separately:
 
 Terminal 1:
 
@@ -277,42 +277,42 @@ Terminal 2:
 npm run dev
 ```
 
-Vite recarga cambios del frontend. El backend se reinicia manualmente cuando cambia su código. Este modo no crea Canvas, Docker, seeds ni el proxy completo; úselo solo si entiende y ya tiene listos esos componentes.
+Vite reloads frontend changes. The backend is restarted manually when its code changes. This mode does not create Canvas, Docker, seeds, or the full proxy; use it only if you understand and already have those components ready.
 
-Para generar el build del frontend:
+To generate the frontend build:
 
 ```bash
 npm run build
 ```
 
-Para añadir el alias local `canvas.docker` al archivo hosts:
+To add the local alias `canvas.docker` to the hosts file:
 
 ```bash
 npm run setup:hosts
 ```
 
-Ese último comando modifica el archivo hosts y requiere autorización. Para revertirlo:
+That last command modifies the hosts file and requires authorization. To revert it:
 
 ```bash
 npm run setup:hosts -- --remove
 ```
 
-## Cuentas locales de prueba
+## Local test accounts
 
-El modo 3 genera datos sintéticos exclusivos del entorno local:
+Mode 3 generates synthetic data exclusive to the local environment:
 
-| Rol | Usuario | Contraseña inicial |
+| Role | User | Initial password |
 |---|---|---|
-| Administrador | `admin@canvas.local` | `password123` |
-| Profesor principal | `profesor@canvas.local` | `password123` |
-| Profesores adicionales | `profesor2@canvas.local`, `profesor3@canvas.local` | `password123` |
-| Estudiantes | `estudiante1@canvas.local` a `estudiante5@canvas.local` | `password123` |
+| Administrator | `admin@canvas.local` | `password123` |
+| Main teacher | `teacher@canvas.local` | `password123` |
+| Additional teachers | `teacher2@canvas.local`, `teacher3@canvas.local` | `password123` |
+| Students | `student1@canvas.local` to `student5@canvas.local` | `password123` |
 
-Son fixtures públicas de desarrollo. Nunca las use para staging, producción ni cuentas reales.
+They are public development fixtures. Never use them for staging, production, or real accounts.
 
-## Pruebas y resolución de problemas
+## Testing and troubleshooting
 
-Antes de cambiar código, confirme dónde está y guarde el primer error completo:
+Before changing code, confirm where you are and save the complete first error:
 
 ```bash
 pwd
@@ -323,19 +323,19 @@ docker info
 docker compose version
 ```
 
-Problemas frecuentes:
+Frequent problems:
 
-| Síntoma | Primera acción segura |
+| Symptom | First safe action |
 |---|---|
-| `node version` busca un archivo | use `node --version` |
-| Node no está disponible en Ubuntu/Linux | instale Node mediante NVM y compruebe `node --version` |
-| `wsl: command not found` dentro de Ubuntu | ya está en Linux; ejecute `wsl` solo desde Windows |
-| Docker no responde | compruebe `docker context show` y `docker info`; no mezcle Docker Desktop y rootless sin elegir uno |
-| Puerto ocupado | identifique el proceso antes de detenerlo |
-| certificado no confiable | ejecute `npm run verify:https`; no desactive TLS globalmente |
-| Canvas tarda o no responde | revise `docker compose ps` y los logs de `web`, `jobs` y `postgres` antes de borrar datos |
+| `node version` looks for a file | use `node --version` |
+| Node is not available in Ubuntu/Linux | install Node via NVM and check `node --version` |
+| `wsl: command not found` inside Ubuntu | you are already in Linux; run `wsl` only from Windows |
+| Docker does not respond | check `docker context show` and `docker info`; don't mix Docker Desktop and rootless without choosing one |
+| Port in use | identify the process before stopping it |
+| untrusted certificate | run `npm run verify:https`; do not disable TLS globally |
+| Canvas takes a long time or does not respond | review `docker compose ps` and the logs of `web`, `jobs`, and `postgres` before deleting data |
 
-Para comandos concretos, limpieza segura y casos por plataforma consulte [Troubleshooting](TROUBLESHOOTING.md). Para las suites automáticas use:
+For specific commands, safe cleanup, and per-platform cases, see [Troubleshooting](TROUBLESHOOTING.md). For automated suites use:
 
 ```bash
 npx --yes npm@11.8.0 run lint
@@ -343,4 +343,4 @@ npx --yes npm@11.8.0 test
 npx --yes npm@11.8.0 run build
 ```
 
-No use `docker system prune -a --volumes`, `git clean -fdx`, `rm -rf`, `kill -9` ni cambios globales de permisos como primer diagnóstico. Esas acciones pueden borrar datos, cachés o trabajo útil.
+Do not use `docker system prune -a --volumes`, `git clean -fdx`, `rm -rf`, `kill -9`, or global permission changes as a first diagnosis. Those actions can delete data, caches, or useful work.

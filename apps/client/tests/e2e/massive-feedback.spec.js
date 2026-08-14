@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Flujo de Generación Masiva (Caja Negra E2E)', () => {
-  test('Debería permitir a un profesor generar feedback masivo', async ({ page }) => {
-    // 1. Mock de sesión para entrar como Profesor
+test.describe('Massive Generation Flow (E2E Black Box)', () => {
+  test('Should allow a teacher to generate massive feedback', async ({ page }) => {
+    // 1. Session mock to enter as Teacher
     await page.route('**/api/session/status', async (route) => {
       await route.fulfill({
         status: 200,
@@ -13,7 +13,7 @@ test.describe('Flujo de Generación Masiva (Caja Negra E2E)', () => {
       });
     });
 
-    // 2. Mock de lista de estudiantes
+    // 2. Student list mock
     await page.route('**/api/courses/course_1/students', async (route) => {
       await route.fulfill({
         status: 200,
@@ -27,7 +27,7 @@ test.describe('Flujo de Generación Masiva (Caja Negra E2E)', () => {
       });
     });
 
-    // 3. Mock de configuración o asignaciones activas
+    // 3. Configuration or active assignments mock
     await page.route('**/api/config/assignments', async (route) => {
       await route.fulfill({
         status: 200,
@@ -38,29 +38,29 @@ test.describe('Flujo de Generación Masiva (Caja Negra E2E)', () => {
       });
     });
 
-    // 4. Mock del endpoint masivo
+    // 4. Massive endpoint mock
     await page.route('**/api/feedback/generate-all', async (route) => {
       await route.fulfill({
         status: 202, // Accepted
         json: {
           exito: true,
-          mensaje: 'Generación masiva iniciada en segundo plano.'
+          mensaje: 'Massive generation started in the background.'
         }
       });
     });
 
-    // Ir a la ruta del dashboard o página principal
-    // (Asumimos que el front corre en / y lee la sesión)
+    // Go to the dashboard or main page route
+    // (We assume the frontend runs on / and reads the session)
     await page.goto('/');
 
-    // Como no conocemos el HTML exacto, este test sirve como arnés inicial 
-    // y debe ajustarse a los data-testids reales de la aplicación React.
+    // As we don't know the exact HTML, this test serves as an initial harness 
+    // and should be adjusted to the real data-testids of the React application.
     
-    // Test base: verificar que Playwright cargó la UI sin reventar
+    // Base test: verify that Playwright loaded the UI without crashing
     await expect(page).toHaveTitle(/Feedback/i).catch(() => {});
     
-    // Validamos que el Testcontainer o Backend no fue tocado, 
-    // todo ocurrió en el mock (Playwright local intercept).
+    // We validate that the Testcontainer or Backend was not touched, 
+    // everything happened in the mock (local Playwright intercept).
     expect(true).toBe(true);
   });
 });

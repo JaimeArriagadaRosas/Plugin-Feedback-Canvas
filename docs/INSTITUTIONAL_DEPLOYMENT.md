@@ -1,130 +1,130 @@
-# Recomendaciones para un despliegue institucional Canvas
+# Recommendations for an Institutional Canvas Deployment
 
-Este documento orienta un piloto universitario (por ejemplo, UNAB). La decisión final pertenece a administración Canvas, seguridad, infraestructura, protección de datos y dueños académicos.
+This document guides a university pilot (e.g., UNAB). The final decision belongs to Canvas administration, security, infrastructure, data protection, and academic owners.
 
-## 1. Cuenta raíz o subcuenta
+## 1. Root account or sub-account
 
-Canvas permite instalar herramientas a nivel de cuenta o curso. Para un piloto:
+Canvas allows installing tools at the account or course level. For a pilot:
 
-- prefiera una **subcuenta** o conjunto de cursos controlados;
-- use cuenta raíz solo si la herramienta es institucional, el placement es deseado para todos y los scopes fueron aprobados;
-- documente quién puede habilitar/deshabilitar la herramienta y cómo se revierte.
+- prefer a **sub-account** or a set of controlled courses;
+- use the root account only if the tool is institutional, the placement is desired for everyone, and the scopes were approved;
+- document who can enable/disable the tool and how it is reverted.
 
-Una subcuenta reduce alcance operacional, pero no reemplaza autorización interna del plugin ni minimización de scopes.
+A sub-account reduces operational scope, but it does not replace the plugin's internal authorization or scope minimization.
 
-## 2. Placement actual
+## 2. Current placement
 
-`config/lti_placement.json` contiene un placement local `course_navigation` con `visibility: "public"`. La documentación antigua afirmaba `visibility: "admins"`; eso no coincide con el código.
+`config/lti_placement.json` contains a local `course_navigation` placement with `visibility: "public"`. Older documentation stated `visibility: "admins"`; that does not match the code.
 
-Antes del piloto decida qué roles deben ver el enlace y genere una configuración productiva. La visibilidad del menú no es control de acceso: el backend siempre debe autorizar el rol y contexto del launch.
+Before the pilot, decide which roles should see the link and generate a production configuration. Menu visibility is not access control: the backend must always authorize the launch role and context.
 
-## 3. Origen y proxy
+## 3. Origin and proxy
 
-Sirva frontend y backend del plugin bajo un mismo origen, por ejemplo:
+Serve the plugin's frontend and backend under a single origin, for example:
 
 ```text
-https://feedback.institucion.example/
-https://feedback.institucion.example/api/...
+https://feedback.institution.example/
+https://feedback.institution.example/api/...
 ```
 
-Esto simplifica CORS y la sesión interna del plugin. No elimina por sí solo el problema de cookies de terceros: Canvas y el plugin siguen siendo sitios distintos cuando la herramienta está en iframe. Valide `Secure`, `SameSite`, redirects OIDC, políticas del navegador y alternativas que no dependan de almacenamiento bloqueado.
+This simplifies CORS and the plugin's internal session. It does not by itself eliminate the third-party cookies problem: Canvas and the plugin are still distinct sites when the tool is in an iframe. Validate `Secure`, `SameSite`, OIDC redirects, browser policies, and alternatives that do not rely on blocked storage.
 
-## 4. LTI Advantage y scopes
+## 4. LTI Advantage and scopes
 
-Scopes actuales:
+Current scopes:
 
-| Servicio | Scope | Uso esperado |
+| Service | Scope | Expected use |
 |---|---|---|
-| AGS | `lineitem` | consultar/administrar line items autorizados |
-| AGS | `result.readonly` | leer resultados |
-| AGS | `score` | publicar puntuaciones cuando el flujo lo requiera |
-| NRPS | `contextmembership.readonly` | obtener membresías/roles del contexto |
+| AGS | `lineitem` | check/manage authorized line items |
+| AGS | `result.readonly` | read results |
+| AGS | `score` | publish scores when the flow requires it |
+| NRPS | `contextmembership.readonly` | get context memberships/roles |
 
-Valide si todos son necesarios para los requisitos aprobados. La publicación de feedback mediante APIs Canvas y el acceso a entregas pueden requerir scopes Canvas adicionales en el token/API correspondiente; no amplíe permisos por comodidad.
+Validate whether all are necessary for the approved requirements. Publishing feedback via Canvas APIs and accessing submissions may require additional Canvas scopes on the corresponding token/API; do not broaden permissions for convenience.
 
-## 5. Identidad y autorización
+## 5. Identity and authorization
 
-- allowlist de issuers y deployments institucionales;
-- validación de firma con JWKS Canvas y rotación/cache segura;
-- `state` y `nonce` de un solo uso con expiración;
-- autorización por rol, curso, cuenta y pertenencia;
-- mapeo estable entre subject LTI y usuario interno;
-- revocación cuando cambia una matrícula/rol;
-- auditoría sin tokens ni datos sensibles.
+- allowlist of institutional issuers and deployments;
+- signature validation with Canvas JWKS and secure rotation/cache;
+- single-use `state` and `nonce` with expiration;
+- authorization by role, course, account, and membership;
+- stable mapping between LTI subject and internal user;
+- revocation when an enrollment/role changes;
+- audit without tokens or sensitive data.
 
-Si hay varias réplicas, el estado OIDC, sesiones, idempotencia y jobs no puede depender de memoria de un único proceso.
+If there are multiple replicas, OIDC state, sessions, idempotency, and jobs cannot rely on a single process's memory.
 
-## 6. Datos personales y académicos
+## 6. Personal and academic data
 
-Antes de habilitar IA:
+Before enabling AI:
 
-- defina qué datos del estudiante salen de la institución;
-- minimice nombres, entregas, calificaciones y contexto;
-- establezca base legal, retención, residencia y contrato del proveedor;
-- permita revisión humana antes del envío;
-- registre proveedor/modelo/configuración sin almacenar secretos;
-- documente corrección, eliminación y respuesta a incidentes.
+- define what student data leaves the institution;
+- minimize names, submissions, grades, and context;
+- establish legal basis, retention, residence, and provider contract;
+- allow human review before sending;
+- log provider/model/configuration without storing secrets;
+- document correction, deletion, and incident response.
 
-Los mocks SIS/locales no pueden confundirse con integraciones institucionales reales.
+SIS/local mocks cannot be confused with real institutional integrations.
 
-## 7. Proveedores de IA
+## 7. AI Providers
 
-La factoría admite Gemini, OpenAI, Claude y custom. La institución debe aprobar:
+The factory supports Gemini, OpenAI, Claude, and custom. The institution must approve:
 
-- proveedor y endpoints;
-- modelos permitidos;
-- claves por entorno y rotación;
-- límites/cuotas y manejo de rate limit;
-- política de contenido y datos;
-- fallback cuando IA está deshabilitada.
+- provider and endpoints;
+- allowed models;
+- keys per environment and rotation;
+- limits/quotas and rate limit handling;
+- content and data policy;
+- fallback when AI is disabled.
 
-La ausencia de clave/IA debe producir un modo legible y explícito, no una pantalla indefinidamente cargando.
+The absence of a key/AI must produce a readable and explicit mode, not an indefinitely loading screen.
 
-## 8. Correo y notificaciones
+## 8. Email and notifications
 
-El adaptador actual `EmailService.local.js` escribe `local-emails.log`; no envía correo institucional. Producción requiere:
+The current adapter `EmailService.local.js` writes to `local-emails.log`; it does not send institutional email. Production requires:
 
-- proveedor SMTP/API aprobado;
-- remitente/dominio verificado;
-- plantillas accesibles;
-- retries idempotentes y dead-letter;
-- preferencias/consentimiento;
-- métricas de entrega, rebote y queja;
-- pruebas RF42/RF44 con cuentas de staging.
+- approved SMTP/API provider;
+- verified sender/domain;
+- accessible templates;
+- idempotent retries and dead-letter;
+- preferences/consent;
+- delivery, bounce, and complaint metrics;
+- RF42/RF44 testing with staging accounts.
 
-## 9. Operación
+## 9. Operation
 
-Defina propietarios para:
+Define owners for:
 
-- disponibilidad y on-call;
-- PostgreSQL, backups y restauración;
-- certificados, claves y rotación;
-- actualizaciones Canvas/LTI;
-- cuotas IA y costos;
-- soporte docente/estudiantil;
-- incidentes de privacidad/seguridad;
-- rollback de aplicación y migraciones.
+- availability and on-call;
+- PostgreSQL, backups, and restoration;
+- certificates, keys, and rotation;
+- Canvas/LTI updates;
+- AI quotas and costs;
+- teacher/student support;
+- privacy/security incidents;
+- application and migrations rollback.
 
-## 10. Piloto progresivo
+## 10. Progressive pilot
 
-1. laboratorio local con datos sintéticos;
-2. Canvas staging y dominio TLS real;
-3. curso cerrado con administradores/QA;
-4. profesores voluntarios y estudiantes de prueba;
-5. piloto de subcuenta con monitoreo y soporte;
-6. evaluación de calidad, seguridad, costos y operación;
-7. decisión formal antes de ampliar alcance.
+1. local lab with synthetic data;
+2. staging Canvas and real TLS domain;
+3. closed course with administrators/QA;
+4. volunteer teachers and test students;
+5. sub-account pilot with monitoring and support;
+6. quality, security, costs, and operation evaluation;
+7. formal decision before expanding scope.
 
-No promueva la herramienta a cuenta raíz solo porque el setup local funciona.
+Do not promote the tool to root account just because the local setup works.
 
-## 11. Evidencia de aprobación
+## 11. Approval evidence
 
-- configuración LTI y scopes firmados por responsables;
-- matriz de roles/cursos y pruebas negativas;
-- DPIA/evaluación de privacidad si aplica;
-- threat model y escaneo de seguridad;
-- E2E de generación/revisión/envío/notificación;
-- carga con escenarios autorizados;
-- recuperación de backup y rollback;
-- manual operativo y mesa de ayuda;
-- criterios de éxito y salida del piloto.
+- LTI configuration and scopes signed by owners;
+- role/course matrix and negative tests;
+- DPIA/privacy assessment if applicable;
+- threat model and security scan;
+- generate/review/send/notify E2E;
+- load testing with authorized scenarios;
+- backup recovery and rollback;
+- operational manual and help desk;
+- pilot success and exit criteria.

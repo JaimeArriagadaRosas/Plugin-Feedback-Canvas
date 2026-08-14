@@ -6,11 +6,11 @@ import GeminiErrorHandler from './errors/GeminiErrorHandler.js';
 
 const OUTPUT_GUARDRAILS = `
 ---
-REGLAS DE SALIDA (OBLIGATORIAS):
-1. Entrega SOLO el texto de retroalimentación. No expliques lo que harás, no describas la plantilla, no resumas las preguntas.
-2. Si vas a mencionar números, usa los datos provistos arriba —no inventes calificaciones.
-3. Finaliza con un saludo cordial y tu nombre como profesor.
-4. La respuesta debe estar completamente en el idioma solicitado y lista para enviar al estudiante sin modificaciones.`;
+OUTPUT RULES (MANDATORY):
+1. Deliver ONLY the feedback text. Do not explain what you will do, do not describe the template, do not summarize the questions.
+2. If you are going to mention numbers, use the data provided above —do not invent grades.
+3. End with a cordial greeting and your name as a teacher.
+4. The response must be completely in the requested language and ready to send to the student without modifications.`;
 
 export default class GeminiProvider extends IAProvider {
   constructor(apiKey, customEndpoint = null) {
@@ -20,25 +20,25 @@ export default class GeminiProvider extends IAProvider {
   }
 
   async generateFeedback(prompt, config = {}) {
-    logger.info('[IA] Generando feedback con Gemini (con Exponential Backoff)...');
+    logger.info('[IA] Generating feedback with Gemini (with Exponential Backoff)...');
 
     const apiKey = config.apiKey || this.apiKey;
     if (!apiKey) {
-      logger.warn('[IA] API Key de Gemini ausente. Usando respuesta local de respaldo.');
+      logger.warn('[IA] Gemini API Key absent. Using local fallback response.');
       return this._generateLocalResponse();
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Si hubiese customEndpoint, el SDK de Google Generative AI oficial permite baseURL
-    // pero no está formalmente documentado para todos los casos. Dejamos el soporte abierto:
+    // If there were a customEndpoint, the official Google Generative AI SDK allows baseURL
+    // but it is not formally documented for all cases. We leave the support open:
     if (this.customEndpoint) {
       // genAI.baseURL = this.customEndpoint; // Depende de la versión del SDK
     }
 
     const modelName = config.model || "gemini-3.5-flash";
     
-    // Si hay systemInstruction, adjuntamos los guardrails obligatorios
+    // If there is systemInstruction, we attach the mandatory guardrails
     let finalSystemInstruction = config.systemInstruction || '';
     if (finalSystemInstruction) {
       finalSystemInstruction += '\n' + OUTPUT_GUARDRAILS;
@@ -67,7 +67,7 @@ export default class GeminiProvider extends IAProvider {
         const text = response.text().trim();
 
         if (!text || text.length < 20) {
-          logger.warn('[IA] Respuesta vacía o muy corta. Usando fallback local.');
+          logger.warn('[IA] Empty or very short response. Using local fallback.');
           return this._generateLocalResponse();
         }
 
@@ -79,8 +79,8 @@ export default class GeminiProvider extends IAProvider {
   }
 
   async fetchAvailableModels(apiKey) {
-    // El SDK de @google/generative-ai no tiene un listModels público simple en todas sus versiones sin autenticación de Google Cloud.
-    // Usaremos fetch directo a la REST API para obtener los modelos, o devolveremos los conocidos estáticos si falla.
+    // The @google/generative-ai SDK does not have a simple public listModels in all its versions without Google Cloud authentication.
+    // We will use direct fetch to the REST API to get the models, or return the known static ones if it fails.
     return await ExponentialBackoff.execute(async () => {
       try {
         const targetKey = apiKey || this.apiKey;
@@ -112,19 +112,19 @@ export default class GeminiProvider extends IAProvider {
   }
 
   _generateLocalResponse() {
-    return `[MODO LOCAL – Sin API Key] El trabajo tiene aspectos relevantes y otros que requieren atención.
+    return `[LOCAL MODE – No API Key] The work has relevant aspects and others that require attention.
 
-✅ Aspectos destacados:
-  • Has mostrado comprensión de varios conceptos clave.
-  • La estructura general de la respuesta es ordenada.
+✅ Highlighted aspects:
+  • You have shown an understanding of several key concepts.
+  • The general structure of the response is orderly.
 
-⚠️ Aspectos a reforzar:
-  • Revisa los temas en los que tuviste respuestas incorrectas para la próxima evaluación.
-  • Profundiza en la explicación de tus decisiones.
+⚠️ Aspects to reinforce:
+  • Review the topics where you had incorrect answers for the next assessment.
+  • Delve deeper into the explanation of your decisions.
 
-Recuerda que puedes consultar en las horas de consulta si tienes dudas específicas.
+Remember that you can consult during office hours if you have specific questions.
 
-Saludos,
-Profesor(a)`;
+Regards,
+Teacher`;
   }
 }

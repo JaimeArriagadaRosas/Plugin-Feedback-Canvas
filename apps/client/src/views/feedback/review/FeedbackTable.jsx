@@ -13,12 +13,28 @@ const PROFILE_COLORS = {
   'REQUIERE APOYO': { bg: '#fff5e6', text: '#e67e22' }
 };
 
+const PROFILE_TRANSLATIONS = {
+  'SOBRESALIENTE': 'OUTSTANDING',
+  'PROMEDIO': 'AVERAGE',
+  'EN RIESGO': 'AT RISK',
+  'DESTACADO': 'EXCELLENT',
+  'REQUIERE APOYO': 'NEEDS SUPPORT'
+};
+
 const STATUS_COLORS = {
   'PENDIENTE': { bg: '#fef9e7', text: '#b58900' },
   'EDITADO': { bg: '#eef2f7', text: '#475569' },
   'APROBADO': { bg: '#e9f7ef', text: '#1d8348' },
   'ENVIADO': { bg: '#e9f7ef', text: '#1d8348' },
   'RECHAZADO': { bg: '#fdedec', text: '#922b21' }
+};
+
+const STATUS_TRANSLATIONS = {
+  'PENDIENTE': 'PENDING',
+  'EDITADO': 'EDITED',
+  'APROBADO': 'APPROVED',
+  'ENVIADO': 'SENT',
+  'RECHAZADO': 'REJECTED'
 };
 
 export default function FeedbackTable({
@@ -45,7 +61,7 @@ export default function FeedbackTable({
           checked={allPendingSelected}
           onChange={() => onToggleAllSelection(pendingFeedbacks.map(fb => fb.id))}
           disabled={pendingFeedbacks.length === 0}
-          title="Seleccionar todos los pendientes o editados"
+          title="Select all pending or edited"
         />
       ), 
       width: '5%',
@@ -58,27 +74,27 @@ export default function FeedbackTable({
         />
       )
     },
-    { key: 'student', label: 'Estudiante', width: '20%' },
-    { key: 'grade', label: 'Calificación', width: '10%' },
-    { key: 'profile', label: 'Perfil Académico (IA)', width: '15%', render: (value) => {
+    { key: 'student', label: 'Student', width: '20%' },
+    { key: 'grade', label: 'Grade', width: '10%' },
+    { key: 'profile', label: 'Academic Profile (AI)', width: '15%', render: (value) => {
       const colors = PROFILE_COLORS[value] || { bg: '#eee', text: '#333' };
-      return <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', backgroundColor: colors.bg, color: colors.text }}>{value}</span>;
+      return <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', backgroundColor: colors.bg, color: colors.text }}>{PROFILE_TRANSLATIONS[value] || value}</span>;
     }},
-    { key: 'trend', label: 'Tendencia', width: '10%', render: (value) => `${value === 'Mejorando' ? '📈' : value === 'Bajando' ? '📉' : '➖'} ${value}` },
-    { key: 'status', label: 'Estado', width: '10%', render: (value) => {
+    { key: 'trend', label: 'Trend', width: '10%', render: (value) => `${value === 'Mejorando' ? '📈' : value === 'Bajando' ? '📉' : '➖'} ${value === 'Mejorando' ? 'Improving' : value === 'Bajando' ? 'Declining' : value}` },
+    { key: 'status', label: 'Status', width: '10%', render: (value) => {
       const colors = STATUS_COLORS[value] || { bg: '#eee', text: '#333' };
-      return <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: '80px', justifyContent: 'center', backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.text}33` }}>{value}</span>;
+      return <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: '80px', justifyContent: 'center', backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.text}33` }}>{STATUS_TRANSLATIONS[value] || value}</span>;
     }},
-    { key: 'actions', label: 'Acciones', width: '15%', render: (_, row) => {
+    { key: 'actions', label: 'Actions', width: '15%', render: (_, row) => {
       const isApproved = isFinalFeedbackState(row.status);
       return (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button variant="secondary" size="sm" onClick={() => logReview('FEEDBACK_REVIEW_OPEN', () => onReview?.(row))()}>
-            {isApproved ? 'Valorar' : 'Revisar'}
+            {isApproved ? 'Rate' : 'Review'}
           </Button>
           {!isApproved && (
             <Button variant="primary" size="sm" onClick={() => logEdit('FEEDBACK_REVIEW_EDIT', () => onEdit?.(row))()}>
-              Editar
+              Edit
             </Button>
           )}
         </div>
@@ -89,7 +105,7 @@ export default function FeedbackTable({
   return (
     <div className={styles.wrapper}>
       {feedbacks.length === 0 ? (
-        <div className={styles.empty}>No se han encontrado feedbacks generados aún. Ve a SpeedGrader para generar uno.</div>
+        <div className={styles.empty}>No generated feedbacks found yet. Go to SpeedGrader to generate one.</div>
       ) : (
         <table className={styles.table}>
           <thead>

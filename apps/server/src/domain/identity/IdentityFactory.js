@@ -14,7 +14,7 @@ export class IdentityFactory {
     return new AppIdentity({
       ltiUserId: decoded.sub,
       numericUserId: customClaims.canvas_user_id || customClaims.user_id || null,
-      name: decoded.name || 'Usuario',
+      name: decoded.name || 'User',
       roles: getRolesFromClaims(decoded),
       courseId: contextClaim.id,
       numericCourseId: customClaims.canvas_course_id || null,
@@ -38,7 +38,7 @@ export class IdentityFactory {
       ltiUserId: decoded.sub,
       // Si el SessionToken fue emitido con studentId, lo usamos como numericUserId (prioridad)
       numericUserId: decoded.studentId || customClaims.canvas_user_id || customClaims.user_id || null,
-      name: decoded.name || 'Usuario',
+      name: decoded.name || 'User',
       roles: getRolesFromClaims(decoded) || decoded.role, // Compatibilidad hacia atrás
       courseId: contextClaim.id || decoded.courseId,
       numericCourseId: customClaims.canvas_course_id || null,
@@ -56,7 +56,7 @@ export class IdentityFactory {
     return new AppIdentity({
       ltiUserId: localId,
       numericUserId: localId,
-      name: 'Usuario Local',
+      name: 'Local User',
       roles: [role], // Simplificado
       courseId: courseId,
       numericCourseId: courseId,

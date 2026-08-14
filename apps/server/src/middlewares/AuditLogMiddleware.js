@@ -2,11 +2,11 @@ import db from '../data/db.js';
 import { redactBody } from '../security/audit.js';
 
 /**
- * Middleware de Auditoría — Registra acciones que modifican datos (POST/PUT/DELETE).
+ * Audit Middleware — Logs actions that modify data (POST/PUT/DELETE).
  *
- * FIX: Corregido el patrón de monkey-patching con async que causaba recursión
- *      potencial. Ahora se usa res.on('finish') en lugar de sobreescribir res.send,
- *      lo cual es el patrón recomendado por Express para hooks de respuesta.
+ * FIX: Fixed async monkey-patching pattern that caused potential recursion.
+ *      Now using res.on('finish') instead of overwriting res.send,
+ *      which is the recommended Express pattern for response hooks.
  */
 export const auditLogMiddleware = (req, res, next) => {
   const method = req.method;
@@ -19,7 +19,7 @@ export const auditLogMiddleware = (req, res, next) => {
   const originalSend = res.send;
 
   const logAuditAndSend = (originalMethod, body) => {
-    // Restaurar inmediatamente para evitar recursión
+    // Restore immediately to avoid recursion
     res.json = originalJson;
     res.send = originalSend;
 
@@ -35,7 +35,7 @@ export const auditLogMiddleware = (req, res, next) => {
       [usuarioId, accion, detalle, ipAddress]
     )
     .catch(dbErr => {
-      console.warn(`[AUDIT-FALLBACK] Error crítico al guardar en BD: ${dbErr.message}`);
+      console.warn(`[AUDIT-FALLBACK] Critical error saving to DB: ${dbErr.message}`);
     })
     .finally(() => {
       originalMethod.call(res, body);

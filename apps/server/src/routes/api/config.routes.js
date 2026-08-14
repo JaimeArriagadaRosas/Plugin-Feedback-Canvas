@@ -18,7 +18,7 @@ export function createConfigRoutes(configCtrl, iaConfigCtrl, permissionsCtrl, va
   router.get('/permissions', authorizeRole(['admin']), (req, res, next) => permissionsCtrl.getAllPermissions(req, res, next));
   router.put('/permissions/:role', authorizeRole(['admin']), (req, res, next) => permissionsCtrl.updatePermissions(req, res, next));
   
-  // Variables de curso están bajo /courses/:courseId/variables en GestorRutasAPI, así que las exportamos separadas o aquí en /
+  // Course variables are under /courses/:courseId/variables in APIRouterManager, so we export them separately or here in /
   router.get('/courses/:courseId/variables', authorizeRole(['teacher', 'admin']), (req, res, next) => variableCtrl.getVariables(req, res, next));
   router.put('/courses/:courseId/variables', authorizeRole(['teacher', 'admin']), validateBody(schemas.courseVariables), (req, res, next) => variableCtrl.saveVariables(req, res, next));
 

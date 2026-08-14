@@ -5,8 +5,8 @@ import CanvasClient from './CanvasClient.js';
 
 
 /**
- * Servicio de Integración con LTI AGS (Assignment and Grade Services)
- * Permite enviar calificaciones y comentarios a SpeedGrader sin API Keys individuales.
+ * Integration Service with LTI AGS (Assignment and Grade Services)
+ * Allows sending grades and feedback to SpeedGrader without individual API Keys.
  */
 export default class LTIAGSService {
   constructor(clientId, authUrl, privateKey = null, useLocalMode = false, canvasClient = null) {
@@ -20,29 +20,29 @@ export default class LTIAGSService {
   }
 
   /**
-   * Obtiene un token de acceso LTI Advantage (oauth2/token) usando Client Credentials y JWT
+   * Gets an LTI Advantage access token (oauth2/token) using Client Credentials and JWT
    */
   async getAccessToken() {
-    // Si ya tenemos un token válido, lo reutilizamos
+    // If we already have a valid token, reuse it
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
     if (this.useLocalMode || !this.privateKey) {
-      logger.debug('[LTI-AGS] Utilizando Access Token local (Modo Local)');
+      logger.debug('[LTI-AGS] Using local Access Token (Local Mode)');
       this.accessToken = 'local-ags-token-12345';
       this.tokenExpiry = Date.now() + 3600 * 1000;
       return this.accessToken;
     }
 
     try {
-      // Generar el Client Assertion JWT firmado con la clave privada RS256
+      // Generate the Client Assertion JWT signed with the RS256 private key
       const payload = {
         iss: this.clientId,
         sub: this.clientId,
         aud: this.authUrl,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 300, // 5 minutos de expiración
+        exp: Math.floor(Date.now() / 1000) + 300, // 5 minutes expiration
         jti: randomBytes(16).toString('hex')
       };
 
@@ -66,7 +66,7 @@ export default class LTIAGSService {
         });
 
         if (!response.ok) {
-          throw new Error(`Error en token LTI [${response.status}]: ${response.statusText}`);
+          throw new Error(`Error in LTI token [${response.status}]: ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -74,23 +74,23 @@ export default class LTIAGSService {
         this.tokenExpiry = Date.now() + (data.expires_in - 30) * 1000;
         return this.accessToken;
       } catch (error) {
-      logger.error('[LTI-AGS] Error obteniendo access token:', { error: error.message });
-      throw new Error('No se pudo autenticar con LTI AGS de Canvas');
+      logger.error('[LTI-AGS] Error getting access token:', { error: error.message });
+      throw new Error('Could not authenticate with Canvas LTI AGS');
     }
   }
 
   /**
-   * Envía la nota y comentarios a SpeedGrader usando AGS
-   * @param {string} scoresUrl Endpoint de scores (generalmente viene en la claim de AGS del token launch)
-   * @param {string} studentId ID del estudiante a evaluar
-   * @param {number|string} score Nota asignada
-   * @param {number|string} maxScore Nota máxima posible
-   * @param {string} comment Comentario de feedback
+   * Sends grade and feedback to SpeedGrader using AGS
+   * @param {string} scoresUrl Scores endpoint (usually in the AGS claim of the token launch)
+   * @param {string} studentId ID of the student to evaluate
+   * @param {number|string} score Assigned grade
+   * @param {number|string} maxScore Maximum possible grade
+   * @param {string} comment Feedback comment
    */
   async submitScoreAndComment(scoresUrl, studentId, score, maxScore, comment) {
     if (this.useLocalMode) {
-      logger.debug(`[LTI-AGS] [LOCAL] Enviando nota a Canvas SpeedGrader:\n        URL: ${scoresUrl}\n        Estudiante: ${studentId}\n        Nota: ${score}/${maxScore}\n        Comentario: ${comment.substring(0, 60)}...`);
-      return { success: true, message: 'Calificación de pruebas enviada exitosamente (Local)' };
+      logger.debug(`[LTI-AGS] [LOCAL] Sending grade to Canvas SpeedGrader:\n        URL: ${scoresUrl}\n        Student: ${studentId}\n        Grade: ${score}/${maxScore}\n        Comment: ${comment.substring(0, 60)}...`);
+      return { success: true, message: 'Test grade sent successfully (Local)' };
     }
 
     try {
@@ -116,7 +116,7 @@ export default class LTIAGSService {
         });
 
         if (!response.ok) {
-          throw new Error(`Error al enviar calificación [${response.status}]: ${response.statusText}`);
+          throw new Error(`Error sending grade [${response.status}]: ${response.statusText}`);
         }
 
         const contentType = response.headers.get("content-type");
@@ -125,7 +125,7 @@ export default class LTIAGSService {
         }
         return {};
       } catch (error) {
-      logger.error('[LTI-AGS] Error al publicar score en Canvas:', { error: error.message });
+      logger.error('[LTI-AGS] Error publishing score to Canvas:', { error: error.message });
       throw error;
     }
   }

@@ -1,10 +1,10 @@
 /**
- * Motor de Prompts IA (Versión Mejorada)
- * Construye prompts complejos combinando contexto, rangos y perfiles.
+ * AI Prompt Engine (Improved Version)
+ * Builds complex prompts combining context, ranges, and profiles.
  */
 export default class PromptManager {
   /**
-   * Genera un prompt avanzado delegando la inyección de variables a los Resolvers
+   * Generates advanced prompt delegating variable injection to Resolvers
    */
   static async buildPrompt(template, context, resolvers = []) {
     let prompt = template;
@@ -20,13 +20,13 @@ export default class PromptManager {
   }
 
   /**
-   * Formatea los criterios de la rúbrica para ser legibles por la IA
+   * Formats rubric criteria to be readable by AI
    */
   static _formatRubric(rubric) {
-    if (!rubric || !Array.isArray(rubric)) return 'No se proporcionó rúbrica.';
+    if (!rubric || !Array.isArray(rubric)) return 'No rubric provided.';
 
     return rubric.map(crit => {
-      return `- Criterio: ${crit.description}\n  Puntos: ${crit.points}\n  Comentario previo: ${crit.comments || 'Ninguno'}`;
+      return `- Criterion: ${crit.description}\n  Points: ${crit.points}\n  Previous comment: ${crit.comments || 'None'}`;
     }).join('\n');
   }
 }

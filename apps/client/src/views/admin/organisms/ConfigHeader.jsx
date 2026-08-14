@@ -5,11 +5,11 @@ export default function ConfigHeader({ title, onExit, activeTab }) {
   return (
     <header className={styles.header}>
       <h1 className={styles.title}>
-        {title}: {activeTab === "RF55" ? "CAPA DE ABSTRACCIÓN IA" : "GESTIÓN DE TOKENS IA"}
+        {title}: {activeTab === "RF55" ? "AI ABSTRACTION LAYER" : "AI TOKEN MANAGEMENT"}
       </h1>
       {onExit && (
         <Button variant="secondary" onClick={onExit}>
-          Volver al Plugin
+          Back to Plugin
         </Button>
       )}
     </header>

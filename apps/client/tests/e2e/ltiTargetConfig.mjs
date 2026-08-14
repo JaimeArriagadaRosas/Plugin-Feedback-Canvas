@@ -22,7 +22,7 @@ export function getE2ETargetConfig(environment = process.env) {
     if (environment[variable]?.trim()) config[property] = environment[variable].trim();
     else missing.push(variable);
   }
-  if (missing.length) throw new Error(`E2E real requiere: ${missing.join(', ')}`);
+  if (missing.length) throw new Error(`Real E2E requires: ${missing.join(', ')}`);
   validatePublicCanvasUrl(config.canvasUrl);
   return { ...config, isLocal: false };
 }
@@ -42,10 +42,10 @@ function validatePublicCanvasUrl(canvasUrl) {
   try {
     parsed = new URL(canvasUrl);
   } catch {
-    throw new Error('CANVAS_URL debe ser una URL http(s) valida para E2E real.');
+    throw new Error('CANVAS_URL must be a valid http(s) URL for real E2E.');
   }
   if (!['http:', 'https:'].includes(parsed.protocol) || isLocalHost(parsed.hostname)) {
-    throw new Error('E2E real requiere un CANVAS_URL publico; localhost y redes privadas no son validos.');
+    throw new Error('Real E2E requires a public CANVAS_URL; localhost and private networks are not valid.');
   }
 }
 

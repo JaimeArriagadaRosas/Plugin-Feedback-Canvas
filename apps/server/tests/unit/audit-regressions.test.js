@@ -14,8 +14,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Regresiones de la auditoría', () => {
-  it('permite healthchecks sin Origin aunque el entorno sea productivo', async () => {
+describe('Audit regressions', () => {
+  it('allows healthchecks without Origin even if the environment is productive', async () => {
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
@@ -35,7 +35,7 @@ describe('Regresiones de la auditoría', () => {
     }
   });
 
-  it('ejecuta la ruta de nota privada y rechaza IDs inválidos sin colgarse', async () => {
+  it('executes private note route and rejects invalid IDs without crashing', async () => {
     const privateNoteCtrl = {
       updateNote: vi.fn((_req, res) => res.json({ exito: true }))
     };
@@ -50,15 +50,15 @@ describe('Regresiones de la auditoría', () => {
     app.use('/private-notes', createPrivateNotesRoutes(privateNoteCtrl));
     app.use((error, _req, res, _next) => res.status(error.statusCode || 500).json({ error: error.message }));
 
-    const valid = await request(app).put('/private-notes/1').send({ nota_privada: 'Seguimiento' });
-    const invalid = await request(app).put('/private-notes/no-es-id').send({ nota_privada: 'Seguimiento' });
+    const valid = await request(app).put('/private-notes/1').send({ nota_privada: 'Tracking' });
+    const invalid = await request(app).put('/private-notes/no-es-id').send({ nota_privada: 'Tracking' });
 
     expect(valid.status).toBe(200);
     expect(privateNoteCtrl.updateNote).toHaveBeenCalledTimes(1);
     expect(invalid.status).toBe(400);
   });
 
-  it('incluye nota privada, valoración y nota cero en el DTO de revisión', async () => {
+  it('includes private note, rating and zero grade in review DTO', async () => {
     const service = new FeedbackQueryService(
       {
         listAll: vi.fn().mockResolvedValue([{
@@ -68,9 +68,9 @@ describe('Regresiones de la auditoría', () => {
           curso_id: '33',
           tarea_id: '44',
           nota_chile: 0,
-          contenido_generado: 'Contenido',
+          contenido_generado: 'Content',
           calificacion_profesor: 4,
-          nota_privada: 'Privada',
+          nota_privada: 'Private',
           estado: 'EDITADO'
         }])
       },
@@ -82,14 +82,14 @@ describe('Regresiones de la auditoría', () => {
     const [feedback] = await service.getListAll(null, 'system');
     expect(feedback.grade).toBe(0);
     expect(feedback.rating).toBe(4);
-    expect(feedback.nota_privada).toBe('Privada');
+    expect(feedback.nota_privada).toBe('Private');
   });
 
-  it('activa view_feedback para estudiantes por defecto', () => {
+  it('enables view_feedback for students by default', () => {
     expect(new StudentRole().getDefaults().view_feedback).toBe(true);
   });
 
-  it('extrae un identificador de webhook y marca el evento procesado', async () => {
+  it('extracts a webhook identifier and marks the event as processed', async () => {
     const feedbackService = { generateFeedback: vi.fn().mockResolvedValue({ exito: true }) };
     const configRepo = { getConfigAsignacion: vi.fn().mockResolvedValue({ profesor_id: 'teacher-1', plantilla_id: 2 }) };
     const webhookService = {
@@ -121,8 +121,8 @@ describe('Regresiones de la auditoría', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('registra el fallo de webhook para permitir reintento', async () => {
-    const feedbackService = { generateFeedback: vi.fn().mockRejectedValue(new Error('Canvas no disponible')) };
+  it('logs webhook failure to allow retry', async () => {
+    const feedbackService = { generateFeedback: vi.fn().mockRejectedValue(new Error('Canvas unavailable')) };
     const configRepo = { getConfigAsignacion: vi.fn().mockResolvedValue({ profesor_id: 'teacher-1' }) };
     const webhookService = {
       claimEvent: vi.fn().mockResolvedValue({ claimed: true, attempts: 1, status: 'PROCESSING' }),
@@ -146,14 +146,14 @@ describe('Regresiones de la auditoría', () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 500 }));
   });
 
-  it('incluye feedbacks EDITADO en el lote y limita el lote al profesor', async () => {
+  it('includes EDITED feedbacks in batch and limits batch to teacher', async () => {
     const client = {
       query: vi.fn()
         .mockResolvedValueOnce({ rows: [{
           id: 1,
           estado: 'EDITADO',
           profesor_id: 'teacher-1',
-          contenido_generado: 'Editado'
+          contenido_generado: 'Edited'
         }] })
         .mockResolvedValueOnce({ rows: [] })
     };
@@ -173,7 +173,7 @@ describe('Regresiones de la auditoría', () => {
     expect(service._processCanvasUploadsInBackground).toHaveBeenCalledTimes(1);
   });
 
-  it('permite que una sola aprobación concurrente publique en Canvas', async () => {
+  it('allows a single concurrent approval to post to Canvas', async () => {
     const existing = {
       id: 1,
       estado: 'EDITADO',
@@ -181,7 +181,7 @@ describe('Regresiones de la auditoría', () => {
       curso_id: '1',
       tarea_id: '2',
       profesor_id: 'teacher-1',
-      contenido_generado: 'Contenido'
+      contenido_generado: 'Content'
     };
     const feedbackRepo = {
       getById: vi.fn().mockResolvedValue(existing),
@@ -209,7 +209,7 @@ describe('Regresiones de la auditoría', () => {
       courseId: 1,
       assignmentId: 2,
       studentId: 3,
-      content: 'Contenido'
+      content: 'Content'
     };
 
     const results = await Promise.allSettled([
@@ -220,10 +220,10 @@ describe('Regresiones de la auditoría', () => {
     expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
     expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
     expect(canvasGateway.postComment).toHaveBeenCalledTimes(1);
-    expect(feedbackRepo.updateStatusAndContent).toHaveBeenCalledWith(1, 'ENVIADO', 'Contenido');
+    expect(feedbackRepo.updateStatusAndContent).toHaveBeenCalledWith(1, 'ENVIADO', 'Content');
   });
 
-  it('resuelve el nombre manual desde Canvas y conserva una nota cero', async () => {
+  it('resolves manual name from Canvas and preserves a zero grade', async () => {
     const feedbackRepo = {
       save: vi.fn().mockResolvedValue({ id: 9 }),
       updateStatusAndContent: vi.fn().mockResolvedValue({})
@@ -238,7 +238,7 @@ describe('Regresiones de la auditoría', () => {
       assignmentId: 2,
       studentId: 3,
       teacherId: 'teacher-1',
-      contenidoManual: 'Buen trabajo',
+      contenidoManual: 'Good job',
       grade: 0
     });
 
@@ -248,7 +248,7 @@ describe('Regresiones de la auditoría', () => {
     }));
   });
 
-  it('registra email fallido cuando producción no tiene proveedor configurado', async () => {
+  it('logs failed email when production has no configured provider', async () => {
     const existing = {
       id: 1,
       estado: 'EDITADO',
@@ -256,7 +256,7 @@ describe('Regresiones de la auditoría', () => {
       curso_id: '1',
       tarea_id: '2',
       profesor_id: 'teacher-1',
-      contenido_generado: 'Contenido'
+      contenido_generado: 'Content'
     };
     const feedbackRepo = {
       getById: vi.fn().mockResolvedValue(existing),
@@ -278,7 +278,7 @@ describe('Regresiones de la auditoría', () => {
       courseId: 1,
       assignmentId: 2,
       studentId: 3,
-      content: 'Contenido'
+      content: 'Content'
     }, null, 'teacher-1');
 
     expect(result.warnings).toContain('NOTIFICATION_FAILED');

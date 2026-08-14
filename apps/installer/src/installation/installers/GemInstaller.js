@@ -8,7 +8,7 @@ export class GemInstaller {
   }
 
   async ensureBundlerPlugins() {
-    this.boot.info('Verificando plugins de Bundler necesarios...');
+    this.boot.info('Verifying necessary Bundler plugins...');
     
     const { success, out, err } = await runCommand(
       'docker', 
@@ -19,8 +19,8 @@ export class GemInstaller {
     const hasMultilock = out.includes('bundler-multilock') || err.includes('bundler-multilock');
     
     if (!hasMultilock) {
-      this.boot.info('Instalando bundler-multilock...');
-      const spinner = createSpinner('Instalando plugin bundler-multilock...').start();
+      this.boot.info('Installing bundler-multilock...');
+      const spinner = createSpinner('Installing bundler-multilock plugin...').start();
       
       const installResult = await runCommand(
         'docker',
@@ -29,13 +29,13 @@ export class GemInstaller {
       );
       
       if (!installResult.success) {
-        spinner.error({ text: 'Falló la instalación de bundler-multilock.' });
-        this.boot.error('Error al instalar bundler-multilock. Salida: ' + installResult.err);
+        spinner.error({ text: 'Failed to install bundler-multilock.' });
+        this.boot.error('Error installing bundler-multilock. Output: ' + installResult.err);
         return false;
       }
-      spinner.success({ text: 'bundler-multilock instalado correctamente.' });
+      spinner.success({ text: 'bundler-multilock installed correctly.' });
     } else {
-      this.boot.info('bundler-multilock ya está instalado.');
+      this.boot.info('bundler-multilock is already installed.');
     }
     
     return true;

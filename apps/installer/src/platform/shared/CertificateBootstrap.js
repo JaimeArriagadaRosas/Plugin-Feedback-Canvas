@@ -10,11 +10,11 @@ export class CertificateBootstrap {
     if (!certificatesReady) {
       if (!(await this.platformInstaller.ensureTool())) return false;
       if (!(await this.platformInstaller.confirmCertificateAuthority())) {
-        this.boot.warn('Se canceló la configuración de la CA local para HTTPS.');
+        this.boot.warn('Local CA configuration for HTTPS was canceled.');
         return false;
       }
       if (!(await this.certificateGenerator.ensureCertificates())) {
-        this.boot.error('No se pudieron generar los certificados HTTPS locales.');
+        this.boot.error('Could not generate local HTTPS certificates.');
         return false;
       }
     }

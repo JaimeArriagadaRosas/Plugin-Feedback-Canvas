@@ -38,7 +38,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
       await api.post('/system-notifications/clear', { tipo_error });
       refetchSystemErrors();
     } catch (e) {
-      console.error('Error al limpiar notificación:', e);
+      console.error('Error clearing notification:', e);
     }
   };
 
@@ -73,10 +73,10 @@ export default function PendingFeedbacksIndicator({ courseId }) {
   }, [summary.students]);
 
   const errorLabels = {
-    'CANVAS_CONNECTION_FAILED': 'Fallo conexión Canvas',
-    'AI_GENERATION_FAILED': 'Error generación IA',
-    'INSUFFICIENT_DATA': 'Datos insuficientes',
-    'NOTIFICATION_FAILED': 'Fallo envío notificación'
+    'CANVAS_CONNECTION_FAILED': 'Canvas connection failed',
+    'AI_GENERATION_FAILED': 'AI generation error',
+    'INSUFFICIENT_DATA': 'Insufficient data',
+    'NOTIFICATION_FAILED': 'Notification send failed'
   };
 
   const totalErrors = systemErrors.reduce((acc, curr) => acc + parseInt(curr.cantidad || 0, 10), 0);
@@ -88,7 +88,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
       <button 
         className={styles.bellButton} 
         onClick={() => setShowPopover(!showPopover)}
-        title="Notificaciones"
+        title="Notifications"
       >
         🔔
         {hasNotifications && <span className={styles.badge}>{totalNotifications}</span>}
@@ -97,11 +97,11 @@ export default function PendingFeedbacksIndicator({ courseId }) {
       {showPopover && (
         <div className={styles.popover}>
           <div className={styles.popoverHeader}>
-            <h4>Notificaciones</h4>
+            <h4>Notifications</h4>
             <button 
               className={styles.emojiToggleBtn}
               onClick={() => setActiveTab(activeTab === 'feedback' ? 'errores' : 'feedback')}
-              title={activeTab === 'feedback' ? 'Ver Errores' : 'Ver Feedback'}
+              title={activeTab === 'feedback' ? 'View Errors' : 'View Feedback'}
             >
               {activeTab === 'feedback' ? '⚠️' : '📝'}
             </button>
@@ -110,7 +110,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
             {activeTab === 'errores' && (
               <div className={styles.errorSection}>
                 <div className={styles.sectionHeader}>
-                  <h5 className={styles.sectionTitle}>Errores del Sistema</h5>
+                  <h5 className={styles.sectionTitle}>System Errors</h5>
                 </div>
                 {systemErrors.length > 0 ? (
                   <ul className={styles.errorList}>
@@ -122,7 +122,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
                         <button 
                           className={styles.clearBtn} 
                           onClick={() => handleClearError(err.tipo_error)}
-                          title="Limpiar error"
+                          title="Clear error"
                         >
                           ✕
                         </button>
@@ -130,7 +130,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
                     ))}
                   </ul>
                 ) : (
-                  <p className={styles.noPendingMsg}>No hay notificaciones de error.</p>
+                  <p className={styles.noPendingMsg}>No error notifications.</p>
                 )}
               </div>
             )}
@@ -138,7 +138,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
             {activeTab === 'feedback' && (
               <div className={styles.feedbackSection}>
                 <div className={styles.sectionHeader}>
-                  <h5 className={styles.sectionTitle}>Feedback Pendiente</h5>
+                  <h5 className={styles.sectionTitle}>Pending Feedback</h5>
                 </div>
                 {hasPending ? (
                   <ul className={styles.studentList}>
@@ -149,7 +149,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
                     ))}
                   </ul>
                 ) : (
-                  <p className={styles.noPendingMsg}>No hay feedbacks pendientes.</p>
+                  <p className={styles.noPendingMsg}>No pending feedbacks.</p>
                 )}
               </div>
             )}

@@ -13,7 +13,7 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
         const res = await apiClient.get(`/feedback/history/${courseId}/${studentId}`);
         setData(res.data);
       } catch (err) {
-        setError(err.message || 'Error al analizar la trayectoria');
+        setError(err.message || 'Error analyzing trajectory');
       } finally {
         setLoading(false);
       }
@@ -27,8 +27,8 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
     if (!data || !data.history || data.history.length < 2) {
       return {
         canAnalyze: false,
-        message: 'No hay suficientes entregas calificadas previas para realizar un análisis comparativo.',
-        suggestion: 'Continúa evaluando al estudiante para generar datos de tendencia.'
+        message: 'Not enough previous graded submissions to perform a comparative analysis.',
+        suggestion: 'Continue grading the student to generate trend data.'
       };
     }
 
@@ -40,21 +40,21 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
     const prevPct = (prev.grade / (prev.pointsPossible || 100)) * 100;
     const diff = lastPct - prevPct;
     
-    let trendLabel = 'Mantiene';
+    let trendLabel = 'Maintains';
     let trendColor = '#383d41';
     let trendBg = '#e2e3e5';
-    let suggestion = 'El rendimiento del estudiante se mantiene estable. Es un buen momento para desafiarlo un poco más.';
+    let suggestion = "The student's performance remains stable. It's a good time to challenge them a bit more.";
 
     if (diff >= 5) {
-      trendLabel = 'Mejora';
+      trendLabel = 'Improvement';
       trendColor = '#155724';
       trendBg = '#d4edda';
-      suggestion = 'Buen progreso detectado. Se recomienda reconocer su esfuerzo en el feedback para reforzar positivamente esta actitud.';
+      suggestion = 'Good progress detected. It is recommended to acknowledge their effort in the feedback to positively reinforce this attitude.';
     } else if (diff <= -5) {
-      trendLabel = 'Baja';
+      trendLabel = 'Decline';
       trendColor = '#721c24';
       trendBg = '#f8d7da';
-      suggestion = 'Alerta de rendimiento. Es recomendable indagar si el estudiante está enfrentando dificultades con el material reciente.';
+      suggestion = 'Performance alert. It is advisable to inquire if the student is facing difficulties with recent material.';
     }
 
     return {
@@ -109,11 +109,11 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
             textTransform: 'uppercase',
             letterSpacing: '0.3px'
           }}>
-            📈 Análisis de Trayectoria Académica
+            📈 Academic Trajectory Analysis
           </h2>
           <button
             onClick={onClose}
-            title="Cerrar"
+            title="Close"
             style={{
               background: 'transparent',
               border: 'none',
@@ -140,7 +140,7 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
             </div>
           ) : (error && !data) ? (
             <div style={{ color: 'red', textAlign: 'center', padding: '20px' }}>
-              <p>Ocurrió un error: {error}</p>
+              <p>An error occurred: {error}</p>
             </div>
           ) : (
             <div>
@@ -148,7 +148,7 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
                 <>
                   <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                     <span style={{ fontSize: '14px', color: '#666', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      Estado General
+                      Overall Status
                     </span>
                     <span style={{ 
                       background: analysis.trendBg,
@@ -164,17 +164,17 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
                   </div>
 
                   <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-                    <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#333' }}>Detalle de Rendimiento</h3>
+                    <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#333' }}>Performance Detail</h3>
                     <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.5', color: '#555' }}>
-                      El estudiante pasó de obtener un <strong>{analysis.prevPct}%</strong> en <em>"{analysis.prevAssignment}"</em> a un <strong>{analysis.lastPct}%</strong> en <em>"{analysis.lastAssignment}"</em>.
+                      The student went from getting <strong>{analysis.prevPct}%</strong> on <em>"{analysis.prevAssignment}"</em> to <strong>{analysis.lastPct}%</strong> on <em>"{analysis.lastAssignment}"</em>.
                     </p>
                     <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>
-                      Esto representa una {analysis.trendLabel === 'Baja' ? 'caída' : (analysis.trendLabel === 'Mejora' ? 'mejora' : 'variación')} del <strong>{analysis.diff}%</strong> en su rendimiento.
+                      This represents a <strong>{analysis.diff}%</strong> {analysis.trendLabel === 'Decline' ? 'drop' : (analysis.trendLabel === 'Improvement' ? 'improvement' : 'variation')} in their performance.
                     </p>
                   </div>
 
                   <div style={{ background: '#fff3cd', borderLeft: '4px solid #ffecb5', padding: '12px 16px', borderRadius: '0 4px 4px 0' }}>
-                    <strong style={{ display: 'block', fontSize: '13px', color: '#856404', marginBottom: '4px' }}>💡 Recomendación:</strong>
+                    <strong style={{ display: 'block', fontSize: '13px', color: '#856404', marginBottom: '4px' }}>💡 Recommendation:</strong>
                     <span style={{ fontSize: '13px', color: '#856404', lineHeight: '1.4' }}>
                       {analysis.suggestion}
                     </span>
@@ -183,7 +183,7 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
               ) : (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <div style={{ fontSize: '40px', marginBottom: '16px' }}>🤷🏽‍♂️</div>
-                  <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>Datos Insuficientes</h3>
+                  <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>Insufficient Data</h3>
                   <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.5', marginBottom: '16px' }}>{analysis.message}</p>
                   <p style={{ color: '#0770a3', fontSize: '13px', fontWeight: 'bold' }}>{analysis.suggestion}</p>
                 </div>
@@ -212,7 +212,7 @@ export default function TrajectoryModal({ onClose, courseId, studentId }) {
               fontSize: '13px'
             }}
           >
-            Aceptar
+            Accept
           </button>
         </div>
       </div>

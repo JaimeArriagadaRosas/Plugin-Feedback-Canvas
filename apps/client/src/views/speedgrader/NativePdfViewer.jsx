@@ -9,7 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 const PdfSkeleton = () => (
   <div className={styles.skeletonContainer}>
-    <span className={styles.loadingText}>Procesando documento...</span>
+    <span className={styles.loadingText}>Processing document...</span>
   </div>
 );
 
@@ -37,7 +37,7 @@ const NativePdfViewer = ({ fileUrl }) => {
   const onDocumentLoadError = (err) => {
     console.error('[NativePdfViewer] Error loading PDF:', err);
     try { console.timeEnd('PDF_Load_Time'); } catch (e) {} // Evitar error si no había timer activo
-    setError('No se pudo cargar el documento.');
+    setError('Could not load document.');
   };
 
   const changePage = (offset) => {
@@ -61,7 +61,7 @@ const NativePdfViewer = ({ fileUrl }) => {
           disabled={pageNumber <= 1} 
           onClick={previousPage}
           className={styles.iconBtn}
-          title="Página Anterior"
+          title="Previous Page"
         >
           &lt;
         </button>
@@ -73,7 +73,7 @@ const NativePdfViewer = ({ fileUrl }) => {
           disabled={pageNumber >= numPages}
           onClick={nextPage}
           className={styles.iconBtn}
-          title="Página Siguiente"
+          title="Next Page"
         >
           &gt;
         </button>
@@ -81,9 +81,9 @@ const NativePdfViewer = ({ fileUrl }) => {
         <div className={styles.separator} />
 
         <div className={styles.zoomGroup}>
-          <button onClick={zoomOut} className={styles.iconBtn} title="Alejar">-</button>
+          <button onClick={zoomOut} className={styles.iconBtn} title="Zoom Out">-</button>
           <span className={styles.zoomText}>{Math.round(scale * 100)}%</span>
-          <button onClick={zoomIn} className={styles.iconBtn} title="Acercar">+</button>
+          <button onClick={zoomIn} className={styles.iconBtn} title="Zoom In">+</button>
         </div>
       </div>
       <div className={styles.documentWrapper}>

@@ -1,7 +1,7 @@
 import IAProviderFactory from '../services/ia/factories/IAProviderFactory.js';
 
 /**
- * Controlador de Configuración (RF55, RF56)
+ * Configuration Controller (RF55, RF56)
  */
 export default class ConfigController {
   constructor(iaConfigManager, configRepo) {
@@ -19,7 +19,7 @@ export default class ConfigController {
       }
       
       const config = await this.iaConfigManager.updateServiceStatus(servicio, true);
-      res.json({ exito: true, mensaje: `Modelo cambiado a ${modelo}`, data: config });
+      res.json({ exito: true, mensaje: `Model changed to ${modelo}`, data: config });
     } catch (error) {
       next(error);
     }
@@ -48,7 +48,7 @@ export default class ConfigController {
     try {
       const { servicio } = req.query;
       if (!servicio) {
-        return res.status(400).json({ exito: false, error: { mensaje: 'Servicio es requerido' } });
+        return res.status(400).json({ exito: false, error: { mensaje: 'Service is required' } });
       }
 
       let models = [];
@@ -56,7 +56,7 @@ export default class ConfigController {
         const provider = await this.iaConfigManager.getProvider(servicio);
         models = await provider.fetchAvailableModels();
       } catch (err) {
-        // Fallback: Si no hay llave configurada o la API falla, devolver lista estática
+        // Fallback: If no key is configured or the API fails, return static list
         if (servicio === 'openai') {
           models = [
             { id: 'gpt-4o', name: 'GPT-4o' },
@@ -79,13 +79,13 @@ export default class ConfigController {
         }
       }
 
-      // Manejo específico para CustomProvider (otros) o listas vacías
+      // Specific handling for CustomProvider (others) or empty lists
       if (!models || models.length === 0 || servicio === 'otros') {
         if (servicio === 'otros') {
-          models = [{ id: 'custom', name: 'Modelo Personalizado' }];
+          models = [{ id: 'custom', name: 'Custom Model' }];
         } else {
-          // Si por alguna razón sigue vacío (no hubo fallback)
-          models = [{ id: 'default', name: 'Falta configurar token' }];
+          // If for some reason it's still empty (no fallback)
+          models = [{ id: 'default', name: 'Token configuration missing' }];
         }
       }
 
@@ -101,25 +101,25 @@ export default class ConfigController {
       
       // Validaciones básicas
       if (!servicio || !key) {
-        const error = new Error('Servicio y key son requeridos');
+        const error = new Error('Service and key are required');
         error.statusCode = 400;
         return next(error);
       }
 
-      // Probar conexión antes de guardar
+      // Test connection before saving
       const provider = IAProviderFactory.createProvider(servicio, key, endpoint_personalizado);
       await provider.testConnection(key);
 
       await this.iaConfigManager.tokenRepo.registerKey(servicio, key, endpoint_personalizado);
       
-      // RESPUESTA DE ÉXITO: Siempre JSON
+      // SUCCESS RESPONSE: Always JSON
       return res.json({ 
         exito: true, 
-        mensaje: `Llave para ${servicio} registrada y validada correctamente` 
+        mensaje: `Key for ${servicio} successfully registered and validated` 
       });
       
     } catch (error) {
-      // Asegurar que el error tenga statusCode para el ErrorHandler
+      // Ensure the error has a statusCode for the ErrorHandler
       if (!error.statusCode) {
         error.statusCode = 500;
       }

@@ -59,14 +59,14 @@ function createPool() {
 
   const newPool = new Pool(poolConfig);
   newPool.on('error', (err) => {
-    logger.error('[DB] Error inesperado en el pool:', { error: err.message });
+    logger.error('[DB] Unexpected error in the pool:', { error: err.message });
   });
   return newPool;
 }
 
 
 async function initializePostgres() {
-  logger.info('[DB] Iniciando conexión a PostgreSQL...');
+  logger.info('[DB] Starting PostgreSQL connection...');
   let autoStarted = false;
 
   try {
@@ -78,19 +78,19 @@ async function initializePostgres() {
       try {
         await pingDatabase(pool);
       } catch (error) {
-        // En entorno local de desarrollo, intentar encender el contenedor en el primer fallo
+        // In local development environment, try to start the container on the first failure
         if (!isProduction() && attempt === 1 && !autoStarted) {
           let forceRetry = false;
           try {
             const { autoStartLocalDbContainer } = await import('./docker.local.js');
             autoStarted = await autoStartLocalDbContainer();
             if (autoStarted) {
-              logger.progress(`[DB] Esperando a que PostgreSQL termine su inicialización...`);
+              logger.progress(`[DB] Waiting for PostgreSQL to finish initialization...`);
               await new Promise(r => setTimeout(r, 2000));
               forceRetry = true;
             }
           } catch (e) {
-            logger.warn('[DB] No se pudo cargar módulo local de docker:', { error: e.message });
+            logger.warn('[DB] Could not load local docker module:', { error: e.message });
           }
           
           if (forceRetry) {
@@ -111,14 +111,14 @@ async function initializePostgres() {
       shouldRetry: (err) => isConnectionError(err.originalError || err) || err.message.includes('Forcing retry'),
       onAttemptFailed: (err, attempt, delay) => {
         if (!err.message.includes('Forcing retry')) {
-          logger.progress(`[DB] Fallo intento ${attempt}. Esperando ${delay}ms para reintentar...`);
+          logger.progress(`[DB] Attempt ${attempt} failed. Waiting ${delay}ms to retry...`);
         }
       }
     });
 
-    logger.info('[DB] Conexión inicial a PostgreSQL exitosa.');
+    logger.info('[DB] Initial PostgreSQL connection successful.');
 
-    // Aplicar fix de RLS automáticamente
+    // Apply RLS fix automatically
     try {
       if (pool) {
         await pool.query(`
@@ -126,16 +126,16 @@ async function initializePostgres() {
           CREATE POLICY aislar_tenant_feedback ON Historial_Feedback_Generado
           USING (profesor_id = current_setting('app.current_tenant', true) OR estudiante_id = current_setting('app.current_tenant', true));
         `);
-        logger.info('[DB] Migración RLS de Historial_Feedback_Generado aplicada correctamente.');
+        logger.info('[DB] RLS migration for Historial_Feedback_Generado applied successfully.');
       }
     } catch (migErr) {
-      logger.error('[DB] Error aplicando migración RLS:', { error: migErr.message });
+      logger.error('[DB] Error applying RLS migration:', { error: migErr.message });
     }
     
   } catch (error) {
     pool = null;
     const details = error.originalError ? error.originalError.message : error.message;
-    throw new DatabaseConnectionError(`Fallo crítico: No se pudo conectar a PostgreSQL en el arranque. Detalles: ${details}`, error);
+    throw new DatabaseConnectionError(`Critical failure: Could not connect to PostgreSQL on startup. Details: ${details}`, error);
   }
 }
 

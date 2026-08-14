@@ -1,33 +1,33 @@
 /**
- * TeacherLayout — Layout y rutas para el rol Docente.
+ * TeacherLayout — Layout and routes for the Teacher role.
  *
- * Accesible para:
- *   - Rol 'teacher' (directamente desde AppRoot — SIN barra de admin)
- *   - Rol 'admin' en /teacher/* (desde AdminLayout — admin ve la barra de admin arriba)
+ * Accessible for:
+ *   - Role 'teacher' (directly from AppRoot — WITHOUT admin bar)
+ *   - Role 'admin' at /teacher/* (from AdminLayout — admin sees the admin bar above)
  *
- * IMPORTANTE: Este componente NO tiene ninguna barra de administración.
- * La separación es física y visual:
- *   - Un docente que entra con rol teacher → JAMÁS ve nada de admin.
- *   - Un admin que entra con rol admin y navega a /teacher/* → ve la barra de
- *     admin encima (gestionada por AdminLayout), pero la vista del docente
- *     en sí es idéntica a la del teacher real.
+ * IMPORTANT: This component has NO administration bar.
+ * The separation is physical and visual:
+ *   - A teacher logging in with role teacher → NEVER sees anything from admin.
+ *   - An admin logging in with role admin and navigating to /teacher/* → sees the admin
+ *     bar above (managed by AdminLayout), but the teacher view itself is identical
+ *     to that of a real teacher.
  *
- * FIX: Las rutas internas usan el prefijo /teacher/ completo porque
- *      el <Routes> interno de este componente ve la URL completa.
+ * FIX: Internal routes use the full /teacher/ prefix because
+ *      the internal <Routes> sees the full URL.
  */
 
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import CourseSelector from '../cursos/CourseSelector';
-import AssignmentList from '../cursos/AssignmentList';
-import TemplateManagement from '../plantillas/TemplateManagement';
+import CourseSelector from '../courses/CourseSelector';
+import AssignmentList from '../courses/AssignmentList';
+import TemplateManagement from '../templates/TemplateManagement';
 import SpeedGraderPanel from '../speedgrader/SpeedGraderPanel';
 import FeedbackReviewPanel from '../feedback/FeedbackReviewPanel';
 import FeedbackDetailView from '../feedback/FeedbackDetailView';
-import VariablesConfigView from '../cursos/variables/VariablesConfigView';
+import VariablesConfigView from '../courses/variables/VariablesConfigView';
 import UserMenu from '../components/UserMenu';
 import logger from '../../utils/logger';
 import { useAuth } from '../context/AuthContext';
-import { useCourseData } from '../cursos/hooks/useCourseData';
+import { useCourseData } from '../courses/hooks/useCourseData';
 import RequirePermission from '../../components/atoms/RequirePermission';
 
 export default function TeacherLayout({ isAdminView = false }) {
@@ -38,28 +38,28 @@ export default function TeacherLayout({ isAdminView = false }) {
       permission="view_feedback" 
       fallback={
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Lato, sans-serif', color: '#2d3b45' }}>
-          <h2>Funcionalidad deshabilitada por el administrador.</h2>
+          <h2>This feature has been disabled by the administrator.</h2>
         </div>
       }
     >
       <div className="teacher-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', position: 'relative' }}>
         <UserMenu mode="anchored" />
-        <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
 
         {/* ────────────────────────────────────────────────────────────────────
-          NO HAY BARRA SUPERIOR AQUÍ.
-          La separación de vistas es innegociable:
-            • Si role=teacher  → solo este layout, sin ninguna barra de admin.
-            • Si role=admin y navega a /teacher/* → AdminLayout gestiona su
-              propia barra arriba; este componente solo renderiza el contenido.
+          NO TOP BAR HERE.
+          The separation of views is non-negotiable:
+            • If role=teacher  → only this layout, no admin bar whatsoever.
+            • If role=admin and navigates to /teacher/* → AdminLayout manages its
+              own bar above; this component only renders the content.
           ──────────────────────────────────────────────────────────────────── */}
 
       <main id="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         <Routes>
-        {/* Raíz → selector de cursos */}
+        {/* Root → course selector */}
         <Route path="/" element={<Navigate to="/teacher/courses" replace />} />
 
-        {/* ── Paso 1: Selección de Curso ─────────────────────────────────── */}
+        {/* ── Step 1: Course Selection ─────────────────────────────────── */}
         <Route
           path="courses"
           element={
@@ -67,18 +67,18 @@ export default function TeacherLayout({ isAdminView = false }) {
               onCourseSelected={(course) =>
                 navigate(`/teacher/assignments/${course.id}`)
               }
-              onApiError={(err) => logger.error('TeacherLayout', 'API Error en cursos', { error: err })}
+              onApiError={(err) => logger.error('TeacherLayout', 'API Error in courses', { error: err })}
             />
           }
         />
 
-        {/* ── Paso 2: Lista de Tareas ────────────────────────────────────── */}
+        {/* ── Step 2: Assignment List ────────────────────────────────────── */}
         <Route
           path="assignments/:courseId"
           element={<AssignmentListRoute navigate={navigate} location={location} />}
         />
 
-        {/* ── Paso 3: Gestión de Plantillas ─────────────────────────────── */}
+        {/* ── Step 3: Template Management ─────────────────────────────── */}
         <Route
           path="templates/:courseId/:assignmentId"
           element={<TemplateRoute navigate={navigate} />}
@@ -90,7 +90,7 @@ export default function TeacherLayout({ isAdminView = false }) {
           element={<SpeedGraderPanel onExit={() => navigate('/teacher/courses')} />}
         />
 
-        {/* ── Revisión de Feedback ──────────────────────────────────────── */}
+        {/* ── Feedback Review ──────────────────────────────────────────── */}
         <Route
           path="review"
           element={
@@ -100,19 +100,19 @@ export default function TeacherLayout({ isAdminView = false }) {
           }
         />
 
-        {/* ── Detalle de Feedback ───────────────────────────────────────── */}
+        {/* ── Feedback Detail ───────────────────────────────────────────── */}
         <Route
           path="review/detail/:feedbackId"
           element={<FeedbackDetailView onBack={() => navigate('/teacher/review')} />}
         />
 
-        {/* ── Configuración de Variables (RF34/35) ──────────────────────── */}
+        {/* ── Variable Configuration ──────────────────────────────────── */}
         <Route
           path="variables"
           element={<VariablesConfigView />}
         />
 
-        {/* Catch-all → cursos */}
+        {/* Catch-all → courses */}
         <Route path="*" element={<Navigate to="/teacher/courses" replace />} />
         </Routes>
         </main>
@@ -122,7 +122,7 @@ export default function TeacherLayout({ isAdminView = false }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Componentes de ruta internos — usan useParams() para leer parámetros de URL
+// Internal route components — use useParams() to read URL parameters
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AssignmentListRoute({ navigate }) {
@@ -131,7 +131,7 @@ function AssignmentListRoute({ navigate }) {
   const { courses } = useCourseData();
   
   const foundCourse = courses?.find(c => String(c.id) === String(courseId));
-  const course = selectedCourse || foundCourse || { id: courseId, name: 'Curso Seleccionado' };
+  const course = selectedCourse || foundCourse || { id: courseId, name: 'Selected Course' };
 
   return (
     <AssignmentList
@@ -154,4 +154,3 @@ function TemplateRoute({ navigate }) {
     />
   );
 }
-

@@ -9,7 +9,7 @@ export function resolveEnv() {
   const useLocalData = isLocalDataEnabled();
 
   if (useLocalData && isProduction()) {
-    logger.warn('USE_LOCAL_DATA activo en entorno production. Esto desactiva la seguridad LTI real.');
+    logger.warn('USE_LOCAL_DATA active in production environment. This disables real LTI security.');
   }
 
   const canvasBaseUrl = configManager.getCanvasBaseUrl();
@@ -22,11 +22,11 @@ export function resolveEnv() {
   const allowedDeploymentIds = configManager.getLtiDeploymentIds();
 
   if (!webhookSecret) {
-    logger.warn('WEBHOOK_SECRET no configurado. Los webhooks de Canvas no estaran autenticados.');
+    logger.warn('WEBHOOK_SECRET not configured. Canvas webhooks will not be authenticated.');
   }
 
   if (!canvasAccessToken) {
-    logger.warn('[BOOTSTRAP] No se encontró CANVAS_ACCESS_TOKEN en el entorno.');
+    logger.warn('[BOOTSTRAP] CANVAS_ACCESS_TOKEN not found in the environment.');
   }
 
   return {
@@ -55,16 +55,16 @@ export function resolveFrontendDist(startDir) {
     dir = parent;
   }
 
-  logger.warn('[FRONTEND] No se encontró build (dist/index.html). SPA no se servirá estáticamente desde el backend.');
-  logger.warn('[FRONTEND] -> Si estás desarrollando, Vite se encargará de servirlo. Opcionalmente ejecuta "npm run build".');
+  logger.warn('[FRONTEND] Build not found (dist/index.html). SPA will not be served statically from el backend.');
+  logger.warn('[FRONTEND] -> If you are developing, Vite will serve it. Opcionalmente ejecuta "npm run build".');
   return path.join(startDir, '../../../../../../dist');
 }
 
 export function logSecretsSummary() {
   const missing = Object.keys(SECRET_REGISTRY).filter(nombre => !getSecret(nombre));
   if (missing.length) {
-    logger.info(`[BOOTSTRAP] Estado de secretos verificado (${missing.join(', ')}: FALTA).`);
+    logger.info(`[BOOTSTRAP] Secret status verified (${missing.join(', ')}: MISSING).`);
   } else {
-    logger.info(`[BOOTSTRAP] Estado de secretos verificado (OK).`);
+    logger.info(`[BOOTSTRAP] Secret status verified (OK).`);
   }
 }

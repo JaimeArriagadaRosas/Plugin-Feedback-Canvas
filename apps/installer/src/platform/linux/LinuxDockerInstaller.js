@@ -60,7 +60,7 @@ export class LinuxDockerInstaller {
 
   async _enableService() {
     if (!(await this._has('systemctl'))) {
-      return { success: false, err: 'systemctl no está disponible en esta distribución.' };
+      return { success: false, err: 'systemctl is not available on this distribution.' };
     }
     return this._runPrivileged('systemctl', ['enable', '--now', 'docker']);
   }
@@ -70,57 +70,57 @@ export class LinuxDockerInstaller {
   }
 
   async install() {
-    this.boot.info(`Preparando Docker Engine nativo en ${this.host.isWsl ? 'WSL/Linux' : 'Linux'}...`);
+    this.boot.info(`Preparing native Docker Engine on ${this.host.isWsl ? 'WSL/Linux' : 'Linux'}...`);
     const manager = await this._detectPackageManager();
     if (!manager) {
-      this.boot.error('No se encontró un gestor compatible (apt-get, dnf o pacman).');
-      this.boot.action('Instale Docker Engine manualmente desde https://docs.docker.com/engine/install/.');
+      this.boot.error('Could not find a compatible package manager (apt-get, dnf, or pacman).');
+      this.boot.action('Install Docker Engine manually from https://docs.docker.com/engine/install/.');
       return false;
     }
 
-    this.boot.warn(`Se solicitarán privilegios sudo para instalar paquetes mediante ${manager}.`);
+    this.boot.warn(`Sudo privileges will be requested to install packages via ${manager}.`);
     const installed = await this._installPackages(manager);
     if (!installed.success) {
-      this.boot.error(`No se pudo instalar Docker Engine: ${installed.err}`);
+      this.boot.error(`Could not install Docker Engine: ${installed.err}`);
       return false;
     }
 
-    this.boot.info('Modo recomendado: Docker rootless evita conceder acceso equivalente a root mediante el grupo docker.');
-    const useRootless = await this.confirmRootless('¿Configurar Docker rootless para el usuario actual?', true);
+    this.boot.info('Recommended mode: Rootless Docker avoids granting root-equivalent access through the docker group.');
+    const useRootless = await this.confirmRootless('Configure rootless Docker for the current user?', true);
     if (useRootless) {
       const rootless = await this.rootlessInstaller.install(manager, this.username());
       if (rootless.success) {
-        this.boot.success('Docker rootless quedó activo para el usuario actual.');
+        this.boot.success('Rootless Docker is now active for the current user.');
         return true;
       }
-      this.boot.warn(`No se pudo configurar Docker rootless: ${rootless.err}`);
-      this.boot.action('Puede continuar con el daemon del sistema si autoriza explícitamente el grupo docker.');
+      this.boot.warn(`Could not configure rootless Docker: ${rootless.err}`);
+      this.boot.action('You can continue with the system daemon if you explicitly authorize the docker group.');
     }
 
     const service = await this._enableService();
     if (!service.success) {
-      this.boot.error(`Docker se instaló, pero no se pudo iniciar el servicio: ${service.err}`);
+      this.boot.error(`Docker was installed, but the service could not be started: ${service.err}`);
       return false;
     }
 
-    this.boot.warn('SEGURIDAD: pertenecer al grupo docker permite controlar contenedores con privilegios equivalentes a root.');
-    const grantAccess = await this.confirmGroup('¿Autoriza agregar el usuario actual al grupo docker con ese nivel de privilegio?');
+    this.boot.warn('SECURITY: belonging to the docker group allows controlling containers with root-equivalent privileges.');
+    const grantAccess = await this.confirmGroup('Do you authorize adding the current user to the docker group with that privilege level?');
     if (grantAccess) {
       const group = await this._grantCurrentUserAccess();
       if (!group.success) {
-        this.boot.warn(`Docker está activo, pero no se pudo actualizar el grupo del usuario: ${group.err}`);
+        this.boot.warn(`Docker is active, but the user group could not be updated: ${group.err}`);
         return false;
       }
     } else {
-      this.boot.action('No se modificó el grupo docker. Configure Docker rootless o use sudo explícitamente para administrarlo.');
+      this.boot.action('The docker group was not modified. Configure rootless Docker or use sudo explicitly to manage it.');
       return true;
     }
 
-    this.boot.success('Docker Engine y Compose V2 quedaron instalados mediante el proveedor Linux configurado.');
-    this.boot.warn('Debe abrir una sesión nueva para que el grupo docker se aplique al proceso actual.');
+    this.boot.success('Docker Engine and Compose V2 are now installed via the configured Linux provider.');
+    this.boot.warn('You must start a new session for the docker group to apply to the current process.');
     this.boot.action(this.host.isWsl
-      ? 'Desde Windows ejecute `wsl --shutdown`, vuelva a abrir Ubuntu y reanude `npm start`.'
-      : 'Cierre sesión, vuelva a entrar y reanude `npm start`.');
+      ? 'From Windows, run `wsl --shutdown`, open Ubuntu again, and resume `npm start`.'
+      : 'Log out, log back in, and resume `npm start`.');
     return true;
   }
 

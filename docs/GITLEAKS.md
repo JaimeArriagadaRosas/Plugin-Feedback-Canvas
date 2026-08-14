@@ -1,66 +1,66 @@
-# Política de Gitleaks y secretos
+# Gitleaks and Secrets Policy
 
-## 1. Objetivo
+## 1. Objective
 
-Gitleaks analiza el árbol actual y el historial disponible. `.gitleaks.toml` usa las reglas estándar y limita excepciones a fixtures sintéticos concretos; no se permiten allowlists de directorios productivos completos.
+Gitleaks analyzes the current tree and the available history. `.gitleaks.toml` uses standard rules and limits exceptions to specific synthetic fixtures; allowlists of entire production directories are not permitted.
 
-La existencia de un escáner no reemplaza rotación, mínimos privilegios ni revisión de logs/artefactos.
+The existence of a scanner does not replace rotation, least privileges, or review of logs/artifacts.
 
-## 2. Línea de base histórica
+## 2. Historical baseline
 
-`.gitleaksignore` contiene siete fingerprints exactos de hallazgos anteriores a `fix/linux-native-setup-hardening`. La línea base no permite secretos nuevos: un cambio de commit, línea, regla o archivo vuelve a fallar.
+`.gitleaksignore` contains seven exact fingerprints of findings prior to `fix/linux-native-setup-hardening`. The baseline does not allow new secrets: a change of commit, line, rule, or file will fail again.
 
-Dos fingerprints corresponden a claves privadas antiguas presentes en commits públicos. Deben tratarse como expuestas aunque ya no existan en el árbol:
+Two fingerprints correspond to old private keys present in public commits. They must be treated as exposed even if they no longer exist in the tree:
 
-1. identificar credenciales/certificados/Developer Keys relacionados;
-2. revocar o rotar;
-3. comprobar que ningún entorno conserva los valores;
-4. considerar reescritura coordinada del historial solo después de rotar.
+1. identify related credentials/certificates/Developer Keys;
+2. revoke or rotate;
+3. verify that no environment retains the values;
+4. consider coordinated history rewriting only after rotating.
 
-Reescribir historial cambia hashes y referencias compartidas. No se ejecuta desde una rama de documentación ni sin coordinación de todos los clones/remotos.
+Rewriting history changes hashes and shared references. It is not executed from a documentation branch or without coordination of all clones/remotes.
 
-## 3. Comprobación local
+## 3. Local check
 
-Escaneo del árbol:
+Tree scan:
 
 ```bash
 docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.0 \
   dir /repo --config /repo/.gitleaks.toml --redact --no-banner
 ```
 
-Escaneo del historial (requiere un clon con `.git`):
+History scan (requires a clone with `.git`):
 
 ```bash
 docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.0 \
   git /repo --config /repo/.gitleaks.toml --redact --no-banner
 ```
 
-Una carpeta descargada como ZIP no contiene `.git` y no puede demostrar que el historial esté limpio.
+A folder downloaded as a ZIP does not contain `.git` and cannot demonstrate that the history is clean.
 
-## 4. Falsos positivos
+## 4. False positives
 
-Antes de ignorar:
+Before ignoring:
 
-- cambie fixtures por valores obviamente sintéticos;
-- confirme que la ruta nunca llega a runtime/imagen;
-- prefiera un fingerprint individual documentado;
-- explique regla, archivo y razón en la revisión.
+- change fixtures to obviously synthetic values;
+- confirm that the path never reaches runtime/image;
+- prefer an individual documented fingerprint;
+- explain the rule, file, and reason in the review.
 
-No agregue `apps/`, `config/`, `.github/` o un tipo completo de clave a una allowlist.
+Do not add `apps/`, `config/`, `.github/` or an entire key type to an allowlist.
 
-## 5. Incidente
+## 5. Incident
 
-Si aparece un secreto real:
+If a real secret appears:
 
-1. revoque/rótelo antes de editar historial;
-2. identifique logs, forks, artefactos y despliegues afectados;
-3. elimínelo del árbol y sustituya el mecanismo de configuración;
-4. abra un aviso privado según [SECURITY.md](SECURITY.md);
-5. decida de forma coordinada si reescribe historial;
-6. añada una regresión de escaneo sin incluir el valor comprometido.
+1. revoke/rotate it before editing history;
+2. identify affected logs, forks, artifacts, and deployments;
+3. remove it from the tree and replace the configuration mechanism;
+4. open a private notice according to [SECURITY.md](SECURITY.md);
+5. decide in a coordinated manner whether to rewrite history;
+6. add a scanning regression test without including the compromised value.
 
-Eliminar el archivo o hacer otro commit no invalida un secreto expuesto.
+Deleting the file or making another commit does not invalidate an exposed secret.
 
 ## 6. CI
 
-El workflow ejecuta Gitleaks con `fetch-depth: 0` y TruffleHog. Un hallazgo nuevo bloquea el pipeline y debe corregirse; no se rebaja el escaneo para obtener un estado verde.
+The workflow runs Gitleaks with `fetch-depth: 0` and TruffleHog. A new finding blocks the pipeline and must be fixed; scanning is not downgraded to obtain a green state.

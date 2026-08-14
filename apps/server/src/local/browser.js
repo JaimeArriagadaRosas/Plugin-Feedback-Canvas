@@ -14,16 +14,16 @@ export async function openBrowser(url) {
     } else {
       execFileSync('xdg-open', [url]);
     }
-  } catch (err) { logger.debug('[BROWSER] No se pudo abrir el navegador de forma automática.', { error: err.message }); }
+  } catch (err) { logger.debug('[BROWSER] Could not open browser automatically.', { error: err.message }); }
 }
 
 /**
- * Canal de eventos para el estado de inicialización de Canvas.
+ * Event channel for Canvas initialization status.
  *
- * `server.js`/`CanvasLocalManager` mutan `global.isCanvasInitializing`. En lugar
- * de sondear ciegamente localhost:3000 cada 3 s durante 30 min (lo que produce
- * los "avisa de lentitud" falsos y gasto de red), exponemos ese flag como un
- * EventEmitter en proceso: el orquestador espera por EVENTO real, no por timer.
+ * `server.js`/`CanvasLocalManager` mutate `global.isCanvasInitializing`. Instead
+ * of blindly polling localhost:3000 every 3s for 30min (which produces
+ * fake "slowness warnings" and network waste), we expose this flag as an
+ * in-process EventEmitter: the orchestrator waits for a real EVENT, not a timer.
  */
 let canvasInitEmitter = null;
 
@@ -32,7 +32,7 @@ function getCanvasInitEmitter() {
     canvasInitEmitter = new EventEmitter();
     canvasInitEmitter.on('newListener', (event, listener) => {
       if (event === 'ready' && global.isCanvasInitializing === false) {
-        // Ya está listo: notificar en el siguiente tick para no perder el listener.
+        // Already ready: notify in the next tick to not lose the listener.
         queueMicrotask(() => listener());
       }
     });
@@ -49,20 +49,20 @@ export function notifyCanvasError(err) {
 }
 
 /**
- * Espera a que Canvas LMS esté listo SUSCRIBIÉNDOSE al flag real
- * (`global.isCanvasInitializing`), no sondeando.
+ * Waits for Canvas LMS to be ready SUBSCRIBING to the real flag
+ * (`global.isCanvasInitializing`), not polling.
  *
- * Estrategia:
- *  1. Si ya estamos en el mismo proceso que el backend y el flag ya es false,
- *     resolvemos de inmediato (sin espera ni polling).
- *  2. Si el flag está en true, esperamos el evento 'ready' del emitter.
- *  3. Fallback defensivo: si por algún motivo el emitter no se usa (p. ej.
- *     arranque en proceso separado), sondeamos /api/config/startup-mode con
- *     backoff exponencial y timeout real, midiendo el tiempo para reportar
- *     anomalías basadas en causa real, no en un umbral arbitrario.
+ * Strategy:
+ *  1. If we are already in the same process as the backend and the flag is already false,
+ *     we resolve immediately (no wait or polling).
+ *  2. If the flag is true, we wait for the 'ready' event from the emitter.
+ *  3. Defensive fallback: if for some reason the emitter is not used (e.g.
+ *     startup in a separate process), we poll /api/config/startup-mode with
+ *     exponential backoff and real timeout, measuring time to report
+ *     anomalies based on real cause, not an arbitrary threshold.
  */
 export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
-  // Caso feliz en-proceso: el backend ya nos indicó el estado vía flag global.
+  // Happy in-process case: the backend already told us the status via global flag.
   if (typeof global.isCanvasInitializing === 'boolean' && global.isCanvasInitializing === false) {
     return;
   }
@@ -71,7 +71,7 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         cleanup();
-        reject(new Error('Timeout esperando a Canvas LMS (evento de listo no recibido).'));
+        reject(new Error('Timeout waiting for Canvas LMS (ready event not received).'));
       }, timeoutMs);
       const onReady = () => { cleanup(); resolve(); };
       const onErr = (err) => { cleanup(); reject(err); };
@@ -86,19 +86,19 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
     return;
   }
 
-  // Fallback: flag no observable en este proceso. Sondeo inteligente con backoff.
+  // Fallback: flag not observable in this process. Smart polling with backoff.
   const start = Date.now();
   return new Promise((resolve, reject) => {
     let attempt = 0;
     const poll = () => {
       if (Date.now() - start > timeoutMs) {
-        return reject(new Error('Timeout esperando a Canvas LMS.'));
+        return reject(new Error('Timeout waiting for Canvas LMS.'));
       }
       const delay = Math.min(2000 * 2 ** attempt, 10000);
       attempt++;
       
-      // El flujo LTI local requiere HTTPS. Un fallo TLS se reintenta y se reporta;
-      // nunca se degrada silenciosamente a HTTP.
+      // The local LTI flow requires HTTPS. A TLS failure is retried and reported;
+      // it never silently degrades to HTTP.
       const protocol = https;
       const agentOptions = { rejectUnauthorized: false };
       
@@ -112,7 +112,7 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
             try {
               const json = JSON.parse(data);
               if (json.initializing === false) return resolve();
-            } catch (err) { logger.debug('[CANVAS_READY] JSON inválido en polling startup-mode.', { error: err.message }); }
+            } catch (err) { logger.debug('[CANVAS_READY] Invalid JSON in polling startup-mode.', { error: err.message }); }
             setTimeout(poll, delay);
           });
         }

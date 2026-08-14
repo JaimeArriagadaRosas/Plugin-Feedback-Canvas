@@ -1,6 +1,6 @@
 name: feedback-plugin-ecosystem
 
-# Definición base (compartida)
+# Base definition (shared)
 services:
   db:
     image: postgres:15-alpine

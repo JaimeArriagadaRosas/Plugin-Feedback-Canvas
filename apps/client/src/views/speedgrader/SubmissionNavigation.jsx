@@ -14,7 +14,7 @@ export default function SubmissionNavigation({
     <div className={styles.submissionHeader}>
       <div className={styles.submissionHeaderLeft}>
         <p className={styles.submissionStudent}>
-          Tarea:{' '}
+          Assignment:{' '}
           <select 
             className={styles.studentSelectLeft}
             value={currentAssignmentId || ''}
@@ -32,7 +32,7 @@ export default function SubmissionNavigation({
               </option>
             ))}
             {assignments.length === 0 && (
-              <option value="">Sin Tarea</option>
+              <option value="">No Assignment</option>
             )}
           </select>
         </p>
@@ -43,7 +43,7 @@ export default function SubmissionNavigation({
           onClick={() => currentIndex > 0 && setCurrentIndex(currentIndex - 1)}
           disabled={currentIndex === 0}
         >
-          ‹ Anterior
+          ‹ Previous
         </button>
         <select 
           className={styles.studentSelectCenter}
@@ -56,7 +56,7 @@ export default function SubmissionNavigation({
             </option>
           ))}
           {students.length === 0 && (
-            <option value={0}>Sin Estudiante</option>
+            <option value={0}>No Student</option>
           )}
         </select>
         <button
@@ -64,7 +64,7 @@ export default function SubmissionNavigation({
           onClick={() => currentIndex < students.length - 1 && setCurrentIndex(currentIndex + 1)}
           disabled={currentIndex === students.length - 1}
         >
-          Siguiente ›
+          Next ›
         </button>
       </div>
     </div>

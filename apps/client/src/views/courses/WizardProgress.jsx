@@ -80,7 +80,7 @@ export default function WizardProgress({ currentStep = 0 }) {
         return result.data.map(a => ({
           id: a.id,
           name: a.name,
-          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
+          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'No date',
           rubric: a.use_rubric_for_grading === true || a.has_rubric === true || !!(Array.isArray(a.rubric) && a.rubric.length > 0),
           template: a.template || "",
           plantilla_id: a.template || null,
@@ -96,10 +96,10 @@ export default function WizardProgress({ currentStep = 0 }) {
   const orphanedCount = assignments.filter(a => Boolean(a.active) === true && (!a.plantilla_id && !a.template)).length;
 
   const steps = [
-    { id: 0, label: "SELECCIÓN DE CURSO", warning: false },
-    { id: 1, label: "LISTADO DE TAREAS", warning: orphanedCount > 0 },
-    { id: 2, label: "GESTIÓN PLANTILLAS", warning: orphanedCount > 0 },
-    { id: 3, label: "CONFIGURAR FEEDBACK", warning: false },
+    { id: 0, label: "COURSE SELECTION", warning: false },
+    { id: 1, label: "ASSIGNMENT LIST", warning: orphanedCount > 0 },
+    { id: 2, label: "TEMPLATE MANAGEMENT", warning: orphanedCount > 0 },
+    { id: 3, label: "CONFIGURE FEEDBACK", warning: false },
   ];
 
   return (
@@ -116,10 +116,10 @@ export default function WizardProgress({ currentStep = 0 }) {
             }}>
               {step.id}
             </div>
-            {step.label} {currentStep === step.id ? "[activo]" : (currentStep > step.id ? "[completado]" : "")}
+            {step.label} {currentStep === step.id ? "[active]" : (currentStep > step.id ? "[completed]" : "")}
             {step.warning && (
-              <span style={styles.badgeWarning} title="Existen tareas activas sin plantilla asignada">
-                ⚠️ Sin Plantilla
+              <span style={styles.badgeWarning} title="There are active assignments without an assigned template">
+                ⚠️ No Template
               </span>
             )}
           </div>

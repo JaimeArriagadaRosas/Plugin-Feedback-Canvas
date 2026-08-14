@@ -18,20 +18,20 @@ export default function AIControls({
     <>
       <section className={styles.feedbackAdaptivePanel}>
         <div className={styles.feedbackAdaptiveHeader}>
-          UNIDA FEEDBACK ADAPTATIVO (IA)
+          UNIDA ADAPTIVE FEEDBACK (AI)
         </div>
         <div className={styles.feedbackAdaptiveBody}>
           {feedback ? (
             <>
               <div className={styles.feedbackAdaptiveText} style={{ whiteSpace: 'pre-wrap' }}>
                 {typeof feedback === 'string' && (feedback.includes('API key not valid') || feedback.includes('API_KEY_INVALID') || feedback.includes('GoogleGenerativeAI Error'))
-                  ? 'Por favor, comunícate con tu administrador para configurar una clave o modelo de IA válido en el sistema.'
+                  ? 'Please contact your administrator to configure a valid AI key or model in the system.'
                   : RichTextProcessor.process(feedback)}
               </div>
             </>
           ) : (
             <div className={styles.feedbackPlaceholder}>
-              Aquí se visualizará la review del feedback generado para el estudiante.
+              The generated feedback review for the student will be displayed here.
             </div>
           )}
         </div>

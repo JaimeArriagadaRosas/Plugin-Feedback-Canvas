@@ -13,23 +13,23 @@ export default class LocalAuthController {
   async localLogin(req, res, next) {
     try {
       if (isProduction()) {
-        throw new AppError('Login local no permitido en producción', 403);
+        throw new AppError('Local login not allowed in production', 403);
       }
 
       const { email, password } = req.body || {};
 
       if (!email || !password) {
-        throw new AppError('Email y password son requeridos', 400);
+        throw new AppError('Email and password are required', 400);
       }
 
       const user = await usuarioRepo.findByEmail(email);
       if (!user || !user.activo) {
-        throw new AppError('Credenciales inválidas', 401);
+        throw new AppError('Invalid credentials', 401);
       }
 
       const passwordMatch = await bcrypt.compare(password, user.password_hash);
       if (!passwordMatch) {
-        throw new AppError('Credenciales inválidas', 401);
+        throw new AppError('Invalid credentials', 401);
       }
 
       const roleURN = toRoleURN(user.rol);
@@ -67,7 +67,7 @@ export default class LocalAuthController {
         [user.id, user.canvas_user_id, user.canvas_user_uuid, deploymentId, issuer]
       );
 
-      logger.info('[LOCAL-AUTH] Login exitoso', { rol: user.rol, userId: user.canvas_user_id });
+      logger.info('[LOCAL-AUTH] Successful login', { rol: user.rol, userId: user.canvas_user_id });
 
       return res.json({
         exito: true,
@@ -91,14 +91,14 @@ export default class LocalAuthController {
   async localLogout(req, res, next) {
     try {
       if (isProduction()) {
-        throw new AppError('Logout local no permitido en producción', 403);
+        throw new AppError('Local logout not allowed in production', 403);
       }
 
       const isSecure = req.secure || req.get('x-forwarded-proto') === 'https';
       res.clearCookie('dev-token', { httpOnly: true, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
       res.clearCookie('dev-role', { httpOnly: false, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
 
-      logger.info('[LOCAL-AUTH] ✅ LOGOUT exitoso: sesión local cerrada (cookies dev-token/dev-role eliminadas)');
+      logger.info('[LOCAL-AUTH] ✅ LOGOUT successful: local session closed (dev-token/dev-role cookies removed)');
 
       return res.json({ exito: true });
     } catch (err) {
@@ -109,14 +109,14 @@ export default class LocalAuthController {
   async ltiLogout(req, res, next) {
     try {
       if (isProduction()) {
-        throw new AppError('Logout LTI no permitido en producción', 403);
+        throw new AppError('LTI logout not allowed in production', 403);
       }
 
       const isSecure = req.secure || req.get('x-forwarded-proto') === 'https';
       res.clearCookie('lti_token', { httpOnly: true, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
       res.clearCookie('session-token', { httpOnly: true, secure: isSecure, sameSite: isSecure ? 'None' : 'Lax' });
 
-      logger.info('[LTI-AUTH] [OK] LOGOUT LTI 1.3 exitoso: cookies lti_token y session-token eliminadas');
+      logger.info('[LTI-AUTH] [OK] Successful LTI 1.3 LOGOUT: lti_token and session-token cookies removed');
 
       return res.json({ exito: true });
     } catch (err) {

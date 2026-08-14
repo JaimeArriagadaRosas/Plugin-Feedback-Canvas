@@ -33,7 +33,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
     handleTemplateChange,
   } = useAssignmentList(course);
 
-  const displayError = errorMsg || (isError ? queryError?.message || "Error al cargar/sincronizar las tareas" : null);
+  const displayError = errorMsg || (isError ? queryError?.message || "Error loading/syncing assignments" : null);
 
   const handleSync = useCallback(() => {
     setShowToast(true);
@@ -49,12 +49,12 @@ export default function AssignmentList({ course, onBack, onNext }) {
   const handleNext = useCallback(
     () => logClick('ASSIGNMENT_LIST_NEXT', () => {
       if (!canEditFeedback) {
-        setErrorMsg("No tienes permiso para editar feedback o avanzar al Paso 3.");
+        setErrorMsg("You do not have permission to edit feedback or advance to Step 3.");
         return;
       }
       const activeAssignments = assignments.filter(a => a.active);
       if (activeAssignments.length === 0) {
-        setErrorMsg("Debe activar el plugin IA para al menos una tarea antes de continuar.");
+        setErrorMsg("You must enable the AI plugin for at least one assignment before continuing.");
         return;
       }
       onNext?.(assignments.length ? assignments[0].id : null);
@@ -65,12 +65,12 @@ export default function AssignmentList({ course, onBack, onNext }) {
   return (
     <div className={styles.wrapper}>
       <main className={styles.main}>
-        <h1 className={styles.pageTitle}>CONFIGURACIÓN - LISTADO DE TAREAS</h1>
+        <h1 className={styles.pageTitle}>CONFIGURATION — ASSIGNMENT LIST</h1>
 
         <div className={styles.sectionHeading}>
-          <span>TAREAS EVALUABLES CON RÚBRICA ASOCIADA (Curso: {course?.name})</span>
+          <span>GRADEABLE ASSIGNMENTS WITH ASSOCIATED RUBRIC (Course: {course?.name})</span>
           <Button variant="secondary" onClick={handleSync} className={styles.btnSync}>
-            <span>🔄</span> Sincronizar Tareas Ahora
+            <span>🔄</span> Sync Assignments Now
           </Button>
         </div>
 
@@ -85,17 +85,17 @@ export default function AssignmentList({ course, onBack, onNext }) {
         </div>
       </main>
 
-      {/* Barra sticky inferior */}
+      {/* Bottom sticky bar */}
       <div className={styles.stickyBar}>
         <div className={styles.navButtons}>
-          <button className={styles.btnBack} onClick={handleBack}>Volver</button>
+          <button className={styles.btnBack} onClick={handleBack}>Back</button>
           <button 
             className={styles.btnNext} 
             onClick={handleNext}
             disabled={!canEditFeedback}
-            title={!canEditFeedback ? "Permiso de edición deshabilitado" : ""}
+            title={!canEditFeedback ? "Edit permission disabled" : ""}
           >
-            Continuar
+            Continue
           </button>
         </div>
         <WizardProgress currentStep={1} />
@@ -127,7 +127,7 @@ export default function AssignmentList({ course, onBack, onNext }) {
         <div className={styles.toast} style={{ cursor: 'pointer' }} onClick={() => setShowToast(false)}>
           <span style={{ color: 'var(--color-primary)', fontSize: 18 }}>&#x2139;</span>
           <span>
-            Sincronizando configuración...
+            Syncing configuration...
           </span>
         </div>
       )}

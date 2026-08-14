@@ -1,10 +1,10 @@
 /**
- * Cliente HTTP centralizado del frontend.
+ * Centralized frontend HTTP client.
  *
- * Unifica las llamadas `fetch` dispersas en los componentes de `src/vista/`,
- * centralizando la base `/api`, el manejo de JSON y errores, y —vía
- * interceptor— la inyección del token LTI y las credenciales. Esto sustituye
- * al antiguo monkey-patch global de `window.fetch` en main.jsx.
+ * Unifies scattered `fetch` calls in `src/views/` components,
+ * centralizing the `/api` base, JSON parsing, error handling, and —via
+ * interceptor— LTI token and credentials injection. This replaces
+ * the old global `window.fetch` monkey-patch in main.jsx.
  */
 import { getToken } from '../lib/authToken';
 import logger from '../utils/logger';
@@ -52,7 +52,7 @@ export class ApiError extends Error {
 
 function handleTokenRefresh(response, data) {
   if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
-    logApi('warn', `Sesión requiere OAuth. Redirigiendo a ${data.error.oauthUrl}`);
+    logApi('warn', `Session requires OAuth. Redirecting to ${data.error.oauthUrl}`);
     if (typeof window !== 'undefined') {
       window.location.href = data.error.oauthUrl;
     }
@@ -124,7 +124,7 @@ async function apiFetch(path, options = {}) {
   } catch (networkError) {
     const duration = Date.now() - t0;
     const category = classifyError(null, networkError);
-    logApi('error', `${method} ${url} FALLO (${duration}ms)`, {
+    logApi('error', `${method} ${url} FAILED (${duration}ms)`, {
       requestId,
       category,
       status: networkError.status || null,
@@ -133,7 +133,7 @@ async function apiFetch(path, options = {}) {
     });
     clearTimeout(timeoutId);
     throw new ApiError(
-      `Error de red al llamar a ${url}: ${networkError.message}`,
+      `Network error calling ${url}: ${networkError.message}`,
       networkError.status || 0,
       { category, requestId },
       category
@@ -170,7 +170,7 @@ async function apiFetch(path, options = {}) {
           data.mensaje ||
           (typeof data.error === 'string' ? data.error : null) ||
           data.message)) ||
-      `Petición a ${url} falló con estado ${response.status}`;
+      `Request to ${url} failed with status ${response.status}`;
     logApi('error', `${method} ${url} -> ${response.status} (${duration}ms)`, {
       requestId,
       category,

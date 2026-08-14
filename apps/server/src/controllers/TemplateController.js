@@ -2,7 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/errors.js';
 
 /**
- * Controlador de Plantillas (RF09, RF10, RF11)
+ * Templates Controller (RF09, RF10, RF11)
  */
 export default class TemplateController {
   constructor(templateManager) {
@@ -22,7 +22,7 @@ export default class TemplateController {
 
   async getOne(req, res) {
     const template = await this.templateManager.getTemplateById(req.params.id);
-    if (!template) throw new ApiError('Plantilla no encontrada', 404);
+    if (!template) throw new ApiError('Template not found', 404);
     res.json({ exito: true, data: template });
   }
 
@@ -35,13 +35,13 @@ export default class TemplateController {
   async update(req, res) {
     const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     const updated = await this.templateManager.updateTemplate(req.params.id, req.body, profesorId);
-    if (!updated) throw new ApiError('Plantilla no encontrada o sin permisos', 404);
+    if (!updated) throw new ApiError('Template not found or without permissions', 404);
     res.json({ exito: true, data: updated });
   }
 
   async delete(req, res) {
     const profesorId = req.appIdentity?.canonicalUserId || req.body.profesorId || 'system';
     await this.templateManager.deleteTemplate(req.params.id, profesorId);
-    res.json({ exito: true, mensaje: 'Plantilla eliminada correctamente' });
+    res.json({ exito: true, mensaje: 'Template deleted successfully' });
   }
 }

@@ -9,27 +9,27 @@ const GOTENBERG_URL = 'http://localhost:3001/forms/libreoffice/convert';
 const TEST_FILE_NAME = 'massive_test_file.txt';
 const TEST_FILE_PATH = path.join(__dirname, TEST_FILE_NAME);
 
-// 1. Generar un archivo gigante de prueba
+// 1. Generate a massive test file
 async function createMassiveFile(lines) {
-  console.log(`Generando archivo de prueba con ${lines} líneas...`);
+  console.log(`Generating test file with ${lines} lines...`);
   const stream = fs.createWriteStream(TEST_FILE_PATH);
   for (let i = 0; i < lines; i++) {
-    stream.write(`Línea de prueba ${i} para estresar Gotenberg. LibreOffice tendrá que paginar todo esto.\n`);
-    // Agregamos algo de texto sin sentido para hacerlo más pesado
+    stream.write(`Test line ${i} to stress Gotenberg. LibreOffice will have to paginate all this.\n`);
+    // We add some nonsense text to make it heavier
     stream.write(`Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.\n`);
   }
   return new Promise((resolve) => {
     stream.end(() => {
       const stats = fs.statSync(TEST_FILE_PATH);
-      console.log(`Archivo generado: ${stats.size / 1024 / 1024} MB`);
+      console.log(`File generated: ${stats.size / 1024 / 1024} MB`);
       resolve();
     });
   });
 }
 
-// 2. Enviar a Gotenberg
+// 2. Send to Gotenberg
 async function sendToGotenberg() {
-  console.log(`Enviando archivo a ${GOTENBERG_URL}...`);
+  console.log(`Sending file to ${GOTENBERG_URL}...`);
   const fileBuffer = fs.readFileSync(TEST_FILE_PATH);
   const blob = new Blob([fileBuffer], { type: 'text/plain' });
   const formData = new FormData();
@@ -44,27 +44,27 @@ async function sendToGotenberg() {
     console.timeEnd('Gotenberg_Response_Time');
 
     if (response.ok) {
-      console.log('✅ Éxito: Conversión completada. Status 200.');
+      console.log('✅ Success: Conversion completed. Status 200.');
     } else {
       const errText = await response.text();
-      console.error(`❌ Falló la conversión: Status ${response.status} - ${errText}`);
+      console.error(`❌ Conversion failed: Status ${response.status} - ${errText}`);
     }
   } catch (err) {
     console.timeEnd('Gotenberg_Response_Time');
-    console.error(`❌ Error de red / Timeout: ${err.message}`);
+    console.error(`❌ Network / Timeout error: ${err.message}`);
   }
 }
 
 // Main
 async function run() {
-  console.log('--- INICIANDO PRUEBA DE ESTRÉS GOTENBERG ---');
-  // Ajusta este número para hacerlo más o menos pesado (100,000 líneas ~ 20MB de texto)
+  console.log('--- STARTING GOTENBERG STRESS TEST ---');
+  // Adjust this number to make it heavier or lighter (100,000 lines ~ 20MB of text)
   await createMassiveFile(100000); 
   await sendToGotenberg();
   
-  // Limpieza
+  // Cleanup
   fs.unlinkSync(TEST_FILE_PATH);
-  console.log('--- PRUEBA FINALIZADA ---');
+  console.log('--- TEST FINISHED ---');
 }
 
 run();

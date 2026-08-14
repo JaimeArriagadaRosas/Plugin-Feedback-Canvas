@@ -1,33 +1,33 @@
-# Política de seguridad
+# Security Policy
 
-## Versiones cubiertas
+## Covered versions
 
-Mientras el proyecto permanezca en validación preproductiva, solo se reciben correcciones de seguridad sobre la rama de desarrollo activa. No existe todavía una versión productiva con soporte o SLA publicado.
+While the project remains in pre-production validation, security fixes are only received on the active development branch. There is no production version with support or a published SLA yet.
 
-## Cómo reportar una vulnerabilidad
+## How to report a vulnerability
 
-No publique credenciales, exploits funcionales ni datos personales en un issue público.
+Do not publish credentials, functional exploits, or personal data in a public issue.
 
-1. Use **Security > Report a vulnerability** en el repositorio de GitHub para abrir un aviso privado.
-2. Incluya componente afectado, impacto, condiciones de explotación y una reproducción mínima sin secretos reales.
-3. Si una credencial pudo exponerse, revóquela o rótela inmediatamente; eliminarla de un commit no invalida copias del historial.
+1. Use **Security > Report a vulnerability** in the GitHub repository to open a private advisory.
+2. Include affected component, impact, exploitation conditions, and a minimal reproduction without real secrets.
+3. If a credential could have been exposed, revoke or rotate it immediately; removing it from a commit does not invalidate history copies.
 
-El mantenedor confirmará la recepción y coordinará la divulgación según severidad y disponibilidad. Este proyecto no declara por ahora tiempos de respuesta garantizados.
+The maintainer will acknowledge receipt and coordinate disclosure based on severity and availability. This project does not currently declare guaranteed response times.
 
-## Alcance prioritario
+## Priority scope
 
-- validación OIDC/JWT, `state`, `nonce` y deployments LTI;
-- autorización por rol, curso y usuario;
-- manejo y cifrado de tokens Canvas y claves de IA;
-- inyección SQL, XSS, SSRF y carga de archivos;
-- aislamiento del bypass local respecto de producción;
-- exposición de Docker, PostgreSQL, Gotenberg o endpoints administrativos;
-- secretos presentes en el árbol o historial Git.
+- OIDC/JWT validation, `state`, `nonce`, and LTI deployments;
+- authorization by role, course, and user;
+- handling and encryption of Canvas tokens and AI keys;
+- SQL injection, XSS, SSRF, and file uploads;
+- isolation of local bypass from production;
+- exposure of Docker, PostgreSQL, Gotenberg, or administrative endpoints;
+- secrets present in the Git tree or history.
 
-## Escaneo de secretos
+## Secret scanning
 
-La política de Gitleaks y la línea de base histórica se explican en [GITLEAKS.md](GITLEAKS.md). Una coincidencia nueva no debe silenciarse mediante allowlists amplias.
+The Gitleaks policy and historical baseline are explained in [GITLEAKS.md](GITLEAKS.md). A new match must not be silenced through broad allowlists.
 
-## Datos de prueba
+## Test data
 
-Las cuentas `@canvas.local`, la contraseña `password123` y los documentos de fixtures son exclusivamente sintéticos. No deben habilitarse en redes públicas ni reutilizarse en entornos institucionales.
+The `@canvas.local` accounts, the `password123` password, and the fixture documents are exclusively synthetic. They must not be enabled on public networks or reused in institutional environments.

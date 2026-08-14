@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import WizardProgress from "../cursos/WizardProgress";
+import WizardProgress from "../courses/WizardProgress";
 import TemplateEditor from "./TemplateEditor";
 import DeleteTemplateModal from "./DeleteTemplateModal";
 import TemplateList from "./components/TemplateList";
@@ -7,7 +7,7 @@ import TemplateFilters from "./components/TemplateFilters";
 import TemplatePagination from "./components/TemplatePagination";
 import ConfirmDialog from "../../components/molecules/ConfirmDialog";
 import { useTemplatesManagement } from "./hooks/useTemplatesManagement";
-import { useAssignmentList } from "../cursos/hooks/useAssignmentList";
+import { useAssignmentList } from '../courses/hooks/useAssignmentList';
 import styles from './TemplateManagement.module.css';
 
 export default function TemplateManagement({ courseId, onBack, onNext }) {
@@ -39,17 +39,17 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
   
   const handleNext = () => {
     if (templates.length === 0) {
-      setErrorMsg("Por favor, cree al menos una plantilla para continuar.");
+      setErrorMsg("Please create at least one template to continue.");
       return;
     }
     const activeAssignments = assignments.filter(a => Boolean(a.active) === true);
     if (activeAssignments.length === 0) {
-      setErrorMsg("Debe activar el plugin al menos en una tarea para continuar.");
+      setErrorMsg("You must enable the plugin for at least one assignment to continue.");
       return;
     }
     const orphaned = activeAssignments.filter(a => !a.plantilla_id && !a.template);
     if (orphaned.length > 0) {
-      setErrorMsg(`Hay ${orphaned.length} tarea(s) activa(s) sin una plantilla configurada en el Paso 1. Por favor regrese al Paso 1 y seleccione una plantilla.`);
+      setErrorMsg(`There are ${orphaned.length} active assignment(s) without a configured template in Step 1. Please go back to Step 1 and select a template.`);
       return;
     }
     if (onNext) onNext();
@@ -121,14 +121,14 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
   return (
     <div className={styles.wrapper}>
       <main className={styles.main}>
-        <h1 className={styles.pageTitle}>CONFIGURACIÓN - GESTIÓN DE PLANTILLAS</h1>
+        <h1 className={styles.pageTitle}>CONFIGURATION — TEMPLATE MANAGEMENT</h1>
 
         <div className={styles.sectionHeader}>
-          <div className={styles.sectionTitle}>BIBLIOTECA DE PLANTILLAS (Base de Datos Local)</div>
+          <div className={styles.sectionTitle}>TEMPLATE LIBRARY (Local Database)</div>
           <button className={styles.btnCreate} onClick={() => {
             setCurrentTemplate(null);
             setShowEditor(true);
-          }}>+ Crear Nueva Plantilla</button>
+          }}>+ Create New Template</button>
         </div>
 
         <TemplateFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} />
@@ -150,12 +150,12 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
 
       </main>
 
-      {/* Barra sticky inferior */}
+      {/* Bottom sticky bar */}
       <div className={styles.stickyBar}>
         {(onBack || onNext) && (
           <div className={styles.navButtons}>
-            {onBack && <button className={styles.btnBack} onClick={onBack}>Volver</button>}
-            {onNext && <button className={styles.btnNext} onClick={handleNext}>Continuar</button>}
+            {onBack && <button className={styles.btnBack} onClick={onBack}>Back</button>}
+            {onNext && <button className={styles.btnNext} onClick={handleNext}>Continue</button>}
           </div>
         )}
         <WizardProgress currentStep={2} />
@@ -174,10 +174,10 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
           isOpen={showDuplicateModal}
           onClose={() => setShowDuplicateModal(false)}
           onConfirm={handleConfirmDuplicate}
-          title="Confirmar Duplicación"
-          message={`¿Está seguro de que desea crear una copia de la plantilla "${templateToDuplicate?.name}"?`}
-          confirmLabel="Sí, duplicar"
-          cancelLabel="Cancelar"
+          title="Confirm Duplication"
+          message={`Are you sure you want to create a copy of the template "${templateToDuplicate?.name}"?`}
+          confirmLabel="Yes, duplicate"
+          cancelLabel="Cancel"
           confirmVariant="primary"
         />
       )}

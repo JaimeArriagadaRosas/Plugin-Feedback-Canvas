@@ -4,7 +4,7 @@ export default class SystemNotificationService {
   }
 
   async saveNotification(profesorId, tipoError, detalle, contexto = {}) {
-    if (!profesorId || profesorId === 'system') return; // En scripts background puros puede no haber profe
+    if (!profesorId || profesorId === 'system') return; // In pure background scripts there may be no teacher
     return this.notificationRepo.save(profesorId, tipoError, detalle, contexto);
   }
 

@@ -20,7 +20,7 @@ export default function FeedbackActions({
         className={styles.action}
         style={{ backgroundColor: '#e2e8f0', color: '#718096', border: '1px solid #cbd5e0' }}
       >
-        GENERAR NUEVO FEEDBACK (Deshabilitado)
+        GENERATE NEW FEEDBACK (Disabled)
       </Button>
     );
   }
@@ -29,7 +29,7 @@ export default function FeedbackActions({
     <>
       {isFeedbackApproved ? (
         <div className={styles.approvedBadge}>
-          ✅ Feedback Aprobado y Enviado
+          ✅ Feedback Approved and Sent
         </div>
       ) : (
         <Button
@@ -38,7 +38,7 @@ export default function FeedbackActions({
           disabled={loading}
           className={styles.action}
         >
-          {loading ? "GENERANDO..." : (generatedFeedbackId ? "REGENERAR FEEDBACK" : "GENERAR FEEDBACK")}
+          {loading ? "GENERATING..." : (generatedFeedbackId ? "REGENERATE FEEDBACK" : "GENERATE FEEDBACK")}
         </Button>
       )}
     </>

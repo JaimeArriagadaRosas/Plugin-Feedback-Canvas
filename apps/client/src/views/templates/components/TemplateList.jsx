@@ -4,7 +4,7 @@ const SKELETON_KEYS = ['skel-tmpl-1', 'skel-tmpl-2', 'skel-tmpl-3', 'skel-tmpl-4
 
 export default function TemplateList({ templates, loading, onEdit, onDelete, onRequestDuplicate }) {
   if (!loading && templates.length === 0) {
-    return <div className={styles.emptyState}>No se encontraron plantillas.</div>;
+    return <div className={styles.emptyState}>No templates found.</div>;
   }
 
   return (
@@ -12,9 +12,9 @@ export default function TemplateList({ templates, loading, onEdit, onDelete, onR
       <table className={styles.table}>
         <thead>
           <tr>
-            <th className={styles.th}>NOMBRE DE PLANTILLA</th>
-            <th className={styles.th} style={{ width: "100px" }}>RANGOS</th>
-            <th className={styles.th} style={{ width: "150px" }}>ACCIONES</th>
+            <th className={styles.th}>TEMPLATE NAME</th>
+            <th className={styles.th} style={{ width: "100px" }}>RANGES</th>
+            <th className={styles.th} style={{ width: "150px" }}>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -39,9 +39,9 @@ export default function TemplateList({ templates, loading, onEdit, onDelete, onR
                 </td>
                 <td className={styles.td}>{template.ranges}</td>
                 <td className={styles.td}>
-                  <button className={styles.actionIcon} onClick={() => onEdit(template)} title="Editar">📝</button>
-                  <button className={styles.actionIcon} onClick={() => onDelete(template)} title="Eliminar">🗑️</button>
-                  <button className={styles.actionIcon} onClick={() => onRequestDuplicate(template)} title="Duplicar">📋</button>
+                  <button className={styles.actionIcon} onClick={() => onEdit(template)} title="Edit">📝</button>
+                  <button className={styles.actionIcon} onClick={() => onDelete(template)} title="Delete">🗑️</button>
+                  <button className={styles.actionIcon} onClick={() => onRequestDuplicate(template)} title="Duplicate">📋</button>
                 </td>
               </tr>
             ))

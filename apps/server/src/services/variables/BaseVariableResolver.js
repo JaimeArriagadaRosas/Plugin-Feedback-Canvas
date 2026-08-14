@@ -1,6 +1,6 @@
 /**
- * Clase base para todos los resolutores de variables dinámicas.
- * Define la interfaz que deben cumplir los módulos de variables.
+ * Base class for all dynamic variable resolvers.
+ * Defines the interface that variable modules must meet.
  */
 export default class BaseVariableResolver {
   constructor(variableName) {
@@ -8,7 +8,7 @@ export default class BaseVariableResolver {
   }
 
   /**
-   * Indica si esta variable está presente en la plantilla cruda.
+   * Indicates if this variable is present in the raw template.
    * @param {string} template 
    * @returns {boolean}
    */
@@ -17,17 +17,17 @@ export default class BaseVariableResolver {
   }
 
   /**
-   * Resuelve el valor de la variable de forma asíncrona (si es necesario) 
-   * o sincrónica.
-   * @param {Object} context Contexto global de la generación (submission, student, courseId, etc.)
-   * @returns {Promise<string>} El string que reemplazará la variable
+   * Resolves the variable value asynchronously (if necessary) 
+   * or synchronously.
+   * @param {Object} context Global generation context (submission, student, courseId, etc.)
+   * @returns {Promise<string>} The string that will replace the variable
    */
   async resolve(context) {
-    throw new Error('Debe ser implementado por la subclase');
+    throw new Error('Must be implemented by the subclass');
   }
 
   /**
-   * Sanitización básica para prevenir Prompt Injection
+   * Basic sanitization to prevent Prompt Injection
    */
   sanitize(val) {
     if (typeof val !== 'string') return val;

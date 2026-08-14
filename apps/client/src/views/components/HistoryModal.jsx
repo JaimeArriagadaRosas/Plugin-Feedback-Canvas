@@ -15,7 +15,7 @@ export default function HistoryModal({ onClose, courseId, studentId }) {
         const res = await apiClient.get(`/feedback/history/${courseId}/${studentId}`);
         setData(res.data);
       } catch (err) {
-        setError(err.message || 'Error al cargar el historial');
+        setError(err.message || 'Error loading history');
       } finally {
         setLoading(false);
       }
@@ -64,11 +64,11 @@ export default function HistoryModal({ onClose, courseId, studentId }) {
             textTransform: 'uppercase',
             letterSpacing: '0.3px'
           }}>
-            📊 Historial de Calificaciones
+            📊 Grade History
           </h2>
           <button
             onClick={onClose}
-            title="Cerrar"
+            title="Close"
             style={{
               background: 'transparent',
               border: 'none',
@@ -98,26 +98,26 @@ export default function HistoryModal({ onClose, courseId, studentId }) {
             </div>
           ) : (error && !data) ? (
             <div style={{ color: 'red', textAlign: 'center', padding: '20px' }}>
-              <p>Ocurrió un error: {error}</p>
+              <p>An error occurred: {error}</p>
             </div>
           ) : (
             <div>
               <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>Tendencia Actual:</span>
+                <span style={{ fontWeight: 'bold' }}>Current Trend:</span>
                 <span style={{ 
                   background: data?.trend === 'Mejora' ? '#d4edda' : data?.trend === 'Baja' ? '#f8d7da' : '#e2e3e5',
                   color: data?.trend === 'Mejora' ? '#155724' : data?.trend === 'Baja' ? '#721c24' : '#383d41',
                   padding: '4px 8px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold' 
                 }}>
-                  {data?.trend || 'Sin datos'}
+                  {data?.trend === 'Mejora' ? 'Improvement' : data?.trend === 'Baja' ? 'Decline' : data?.trend || 'No data'}
                 </span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ccc' }}>
-                    <th style={{ padding: '10px' }}>Tarea</th>
-                    <th style={{ padding: '10px' }}>Puntaje</th>
-                    <th style={{ padding: '10px' }}>Fecha</th>
+                    <th style={{ padding: '10px' }}>Assignment</th>
+                    <th style={{ padding: '10px' }}>Score</th>
+                    <th style={{ padding: '10px' }}>Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -128,7 +128,7 @@ export default function HistoryModal({ onClose, courseId, studentId }) {
                       <td style={{ padding: '10px' }}>{new Date(h.date).toLocaleDateString()}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan="3" style={{ padding: '10px', textAlign: 'center' }}>No hay entregas previas.</td></tr>
+                    <tr><td colSpan="3" style={{ padding: '10px', textAlign: 'center' }}>No previous submissions.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -156,7 +156,7 @@ export default function HistoryModal({ onClose, courseId, studentId }) {
               fontSize: '13px'
             }}
           >
-            Cerrar
+            Close
           </button>
         </div>
       </div>

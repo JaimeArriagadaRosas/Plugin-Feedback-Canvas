@@ -6,9 +6,9 @@ import { PDFExportService } from '../../src/modules/reports/services/exportPdf.s
 
 const feedback = [{
   curso_id: 1,
-  nombre_curso: 'Matemática',
+  nombre_curso: 'Math',
   tarea_id: 2,
-  nombre_tarea: 'Álgebra',
+  nombre_tarea: 'Algebra',
   estudiante_id: 3,
   nombre_estudiante: 'Ada',
   estado: 'APROBADO',
@@ -17,18 +17,18 @@ const feedback = [{
   es_util: true
 }];
 
-describe('Exportadores de reportes', () => {
-  it('genera las hojas operativas de Excel sin mezclar lógica en el servicio público', async () => {
+describe('Report exporters', () => {
+  it('generates operational Excel sheets without mixing logic in the public service', async () => {
     const buffer = await new ExcelExportService().generateExcel(feedback);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
 
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual(expect.arrayContaining([
-      'Métricas Globales', 'Detalle Histórico', 'Auditoría (Críticos)', 'Historial de Plantillas'
+      'Global Metrics', 'Historical Detail', 'Audit (Critical)', 'Template History'
     ]));
   });
 
-  it('genera un documento PDF válido aun cuando no hay logs operativos', async () => {
+  it('generates a valid PDF document even when there are no operational logs', async () => {
     const buffer = await new PDFExportService().generateReport(feedback);
 
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');

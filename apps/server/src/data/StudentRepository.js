@@ -1,11 +1,11 @@
 import db from './db.js';
 
 /**
- * Repositorio de Estudiantes (Historial Académico)
+ * Student Repository (Academic History)
  */
 export default class StudentRepository {
   async getHistory(studentId, courseId) {
-    // Modo local: En una DB real buscaríamos en la tabla Historial_Academico_Local
+    // Local mode: In a real DB we would search in the Historial_Academico_Local table
     const res = await db.query(
       'SELECT resumen_desempeno FROM Historial_Academico_Local WHERE estudiante_id = $1 AND curso_id = $2',
       [studentId, courseId]

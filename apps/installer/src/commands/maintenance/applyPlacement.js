@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// Aplica la configuración de placements LTI 1.3 de Canvas (config/lti_placement.json)
-// a una Developer Key existente mediante la API de Canvas.
+// Applies the Canvas LTI 1.3 placements configuration (config/lti_placement.json)
+// to an existing Developer Key via the Canvas API.
 //
-// Qué hace:
-//   1. Quita global_navigation (visibilidad "members" exponía el botón a TODOS,
-//      incluidos estudiantes).
-//   2. Usa course_navigation con visibility:"admins" (profesores, TA, designers y
-//      account-admins la ven; los estudiantes NO).
-//   3. Usa account_navigation para el Panel de Administración (solo account-admins).
-//   4. Inyecta el parámetro custom unida_entry para que el backend sepa la intención
-//      del lanzamiento (admin vs course).
+// What it does:
+//   1. Removes global_navigation ('members' visibility exposed the button to EVERYONE,
+//      including students).
+//   2. Uses course_navigation with visibility:"admins" (teachers, TAs, designers, and
+//      account-admins see it; students DO NOT).
+//   3. Uses account_navigation for the Administration Panel (only account-admins).
+//   4. Injects the custom parameter unida_entry so the backend knows the intention
+//      of the launch (admin vs course).
 //
-// Uso:
+// Usage:
 //   CANVAS_BASE_URL=https://tu-instancia.instructure.com \
 //   CANVAS_ACCESS_TOKEN=xxxxx \
 //   DEVELOPER_KEY_ID=123 \
 //   node apps/installer/src/commands/maintenance/applyPlacement.js
 //
-// Variables de entorno:
+// Environment variables:
 //   CANVAS_BASE_URL     (def. https://canvas.instructure.com)
-//   CANVAS_ACCESS_TOKEN  token de cuenta con permiso de administrar developer keys
-//   DEVELOPER_KEY_ID     id numérico de la Developer Key "unida-feedback"
+//   CANVAS_ACCESS_TOKEN  account token with permission to manage developer keys
+//   DEVELOPER_KEY_ID     numeric id of the 'unida-feedback' Developer Key
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -36,11 +36,11 @@ const DEVELOPER_KEY_ID = process.env.DEVELOPER_KEY_ID;
 
 async function main() {
   if (!CANVAS_ACCESS_TOKEN) {
-    logger.error('❌ Falta CANVAS_ACCESS_TOKEN (token con permiso de admin de developer keys).');
+    logger.error('❌ Missing CANVAS_ACCESS_TOKEN (token with admin permission for developer keys).');
     process.exit(1);
   }
   if (!DEVELOPER_KEY_ID) {
-    logger.error('❌ Falta DEVELOPER_KEY_ID (id de la Developer Key "unida-feedback").');
+    logger.error('❌ Missing DEVELOPER_KEY_ID (id of the "unida-feedback" Developer Key).');
     process.exit(1);
   }
 
@@ -51,7 +51,7 @@ async function main() {
   const placements = toolConfig.extensions?.[0]?.settings?.placements || [];
   const hasGlobalNav = placements.some(p => p.placement === 'global_navigation');
   if (hasGlobalNav) {
-    logger.info('ℹ️ El JSON contiene global_navigation. Se aplicará este placement a nivel de cuenta/usuario.');
+    logger.info('ℹ️ The JSON contains global_navigation. This placement will be applied at the account/user level.');
   }
 
   const url = `${CANVAS_BASE_URL}/api/v1/developer_keys/${DEVELOPER_KEY_ID}`;
@@ -68,17 +68,17 @@ async function main() {
 
   const text = await res.text();
   if (!res.ok) {
-    logger.error(`❌ Canvas respondió ${res.status}:`, { text });
+    logger.error(`❌ Canvas responded ${res.status}:`, { text });
     process.exit(1);
   }
 
-  logger.info('✅ Developer Key actualizada con los placements correctos.\n' +
-    '   • course_navigation  → visibility:"admins" (oculto a estudiantes)\n' +
-    '   • account_navigation → solo account-admins (Panel de Administración)\n' +
-    '   • global_navigation  → eliminado');
+  logger.info('✅ Developer Key updated with the correct placements.\n' +
+    '   • course_navigation  → visibility:"admins" (hidden from students)\n' +
+    '   • account_navigation → only account-admins (Administration Panel)\n' +
+    '   • global_navigation  → removed');
 }
 
 main().catch(err => {
-  logger.error('Error inesperado:', { error: err.message, stack: err.stack });
+  logger.error('Unexpected error:', { error: err.message, stack: err.stack });
   process.exit(1);
 });

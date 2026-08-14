@@ -3,7 +3,7 @@ import path from 'node:path';
 import pc from 'picocolors';
 
 /**
- * Modifica dinámicamente el archivo lti_placement.json para adaptarlo al dominio de producción.
+ * Dynamically modifies the lti_placement.json file to adapt it to the production domain.
  */
 export async function buildDynamicLtiConfig(pluginDir, domain) {
   const configPath = path.join(pluginDir, 'config', 'lti_placement.json');
@@ -12,20 +12,20 @@ export async function buildDynamicLtiConfig(pluginDir, domain) {
   try {
     rawJson = await fs.readFile(configPath, 'utf8');
   } catch (err) {
-    throw new Error(`No se encontró config/lti_placement.json: ${err.message}`);
+    throw new Error(`config/lti_placement.json not found: ${err.message}`);
   }
 
-  // En la plantilla actual, tenemos "localhost", "localhost:8443", y "https://localhost:3000".
-  // Vamos a parsearlo y reemplazar los valores en la estructura para ser precisos.
+  // In the current template, we have "localhost", "localhost:8443", and "https://localhost:3000".
+  // We will parse it and replace the values in the structure to be precise.
   const config = JSON.parse(rawJson);
 
-  // Extraer host sin protocolo para el domain field
+  // Extract host without protocol for the domain field
   const hostMatch = domain.replace(/^https?:\/\//, '').split('/')[0];
 
-  // Modificar extensiones
+  // Modify extensions
   if (config.extensions && config.extensions.length > 0) {
     config.extensions[0].domain = hostMatch;
-    // target_link_uri principal (generalmente el login o el callback dependendiendo de canvas, asimilaremos callback para el boton)
+    // main target_link_uri (usually login or callback depending on canvas, we will assimilate callback for the button)
     if (config.extensions[0].settings) {
       config.extensions[0].settings.icon_url = `${domain}/icon.png`;
       if (config.extensions[0].settings.placements) {
@@ -38,7 +38,7 @@ export async function buildDynamicLtiConfig(pluginDir, domain) {
     }
   }
 
-  // Reemplazos de URIs globales
+  // Global URI replacements
   if (config.public_jwk_url) {
     config.public_jwk_url = config.public_jwk_url.replace(/https?:\/\/localhost:\d+/, domain);
   }

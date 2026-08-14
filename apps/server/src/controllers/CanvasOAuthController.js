@@ -11,20 +11,20 @@ export default class CanvasOAuthController {
   }
 
   /**
-   * Inicia el flujo OAuth redirigiendo al usuario a Canvas.
+   * Starts the OAuth flow by redirecting the user to Canvas.
    */
   async login(req, res, next) {
     try {
       const canvasBaseUrl = getCanvasEnv('CANVAS_BASE_URL', 'VITE_CANVAS_BASE_URL') || 'https://canvas.instructure.com';
       const clientId = getEnv('CANVAS_CLIENT_ID', getEnv('LTI_CLIENT_ID', '10000000000001'));
       
-      // La URL de retorno a nuestro backend
+      // The return URL to our backend
       const redirectUri = `${getEnv('BACKEND_URL', `https://localhost:${getEnv('PORT', 3000)}`)}/api/oauth2/canvas/callback`;
       
       const canvasSub = req.appIdentity?.ltiUserId;
       
       if (!canvasSub) {
-        throw new AppError('No se proporcionó identificación LTI del usuario para el inicio de sesión OAuth', 400);
+        throw new AppError('LTI user identification not provided for OAuth login', 400);
       }
       
       const canonicalUserId = req.appIdentity?.canonicalUserId || canvasSub;
@@ -61,7 +61,7 @@ export default class CanvasOAuthController {
         authUrl.searchParams.append('scope', scopes);
       }
 
-      logger.info(`[CanvasOAuth] Iniciando flujo OAuth para el usuario ${canvasSub}, redirigiendo a Canvas.`);
+      logger.info(`[CanvasOAuth] Starting OAuth flow for user ${canvasSub}, redirecting to Canvas.`);
       res.redirect(authUrl.toString());
     } catch (error) {
       next(error);
@@ -69,37 +69,37 @@ export default class CanvasOAuthController {
   }
 
   /**
-   * Recibe el código de autorización de Canvas y obtiene el token.
+   * Receives the authorization code from Canvas and gets the token.
    */
   async callback(req, res, next) {
     try {
       const { code, state, error, error_description } = req.query;
 
       if (error) {
-        logger.error(`[CanvasOAuth] Error devuelto por Canvas: ${error} - ${error_description}`);
+        logger.error(`[CanvasOAuth] Error returned by Canvas: ${error} - ${error_description}`);
         return res.redirect(`${getEnv('FRONTEND_URL', 'https://localhost:5173')}/error?msg=OAuth_Failed`);
       }
 
       if (!code || !state) {
-        throw new AppError('Parámetros inválidos en el callback OAuth', 400);
+        throw new AppError('Invalid parameters in OAuth callback', 400);
       }
 
       const decodedState = verifyOAuthState(state);
       if (!decodedState || !decodedState.canvasSub) {
-        throw new AppError('Estado OAuth inválido o manipulado', 400);
+        throw new AppError('Invalid or manipulated OAuth state', 400);
       }
       const canvasSub = decodedState.canvasSub;
       const canonicalUserId = decodedState.canonicalUserId || canvasSub;
 
       const canvasBaseUrl = getCanvasEnv('CANVAS_BASE_URL', 'VITE_CANVAS_BASE_URL') || 'https://canvas.instructure.com';
       const clientId = getEnv('CANVAS_CLIENT_ID', getEnv('LTI_CLIENT_ID', '10000000000001'));
-      const clientSecret = getEnv('CANVAS_CLIENT_SECRET', getEnv('LTI_CLIENT_SECRET')); // Permitir fallback al secret LTI
+      const clientSecret = getEnv('CANVAS_CLIENT_SECRET', getEnv('LTI_CLIENT_SECRET')); // Allow fallback to LTI secret
       const redirectUri = `${getEnv('BACKEND_URL', `https://localhost:${getEnv('PORT', 3000)}`)}/api/oauth2/canvas/callback`;
 
       if (!clientSecret) {
-        logger.error('[CanvasOAuth] Falla crítica: CANVAS_CLIENT_SECRET o LTI_CLIENT_SECRET no están configurados en el servidor.');
-        // Si no hay client secret, fallamos
-        throw new AppError('Configuración incompleta: falta CANVAS_CLIENT_SECRET / LTI_CLIENT_SECRET', 500);
+        logger.error('[CanvasOAuth] Critical failure: CANVAS_CLIENT_SECRET or LTI_CLIENT_SECRET are not configured on the server.');
+        // If there is no client secret, we fail
+        throw new AppError('Incomplete configuration: missing CANVAS_CLIENT_SECRET / LTI_CLIENT_SECRET', 500);
       }
 
       const response = await this.canvasClient.oauthFetch('/token', {
@@ -119,19 +119,19 @@ export default class CanvasOAuthController {
 
       if (!response.ok) {
         const errText = await response.text();
-        logger.error(`[CanvasOAuth] Fallo al intercambiar token: ${response.status} ${errText}`);
-        throw new AppError('Fallo al obtener token de Canvas', 502);
+        logger.error(`[CanvasOAuth] Failed to exchange token: ${response.status} ${errText}`);
+        throw new AppError('Failed to get token from Canvas', 502);
       }
 
       const data = await response.json();
       
-      // Guardar el token en la BD usando canvasSub (UUID de LTI)
+      // Save the token in the DB using canvasSub (LTI UUID)
       const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
       await this.canvasTokenRepo.saveToken(canvasSub, data.access_token, data.refresh_token, expiresAt);
 
-      logger.info(`[CanvasOAuth] Token OAuth guardado exitosamente para el usuario (sub) ${canvasSub}`);
+      logger.info(`[CanvasOAuth] OAuth token successfully saved for user (sub) ${canvasSub}`);
 
-      // Redirigir de vuelta a la app frontend
+      // Redirect back to the frontend app
       res.redirect(`${getEnv('FRONTEND_URL', 'https://localhost:5173')}/`);
     } catch (err) {
       next(err);

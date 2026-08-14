@@ -19,18 +19,18 @@ function createLog(contents) {
 }
 
 describe('Diagnostics', () => {
-  it('identifica una clave de cifrado incompatible antes de sugerir reconstruir assets', () => {
-    const log = createLog('bundle install completado\nencryption key is incorrect.\n');
+  it('identifies an incompatible encryption key before suggesting rebuilding assets', () => {
+    const log = createLog('bundle install completed\nencryption key is incorrect.\n');
 
     expect(analyzeLogAndDiagnose(log)).toMatchObject({ type: 'CANVAS_ENCRYPTION_KEY_MISMATCH' });
   });
 
-  it('lee solo el final de registros grandes', () => {
-    const log = createLog(`inicio-no-debe-estar\n${'salida-intermedia\n'.repeat(6000)}final-importante\n`);
+  it('reads only the end of large logs', () => {
+    const log = createLog(`start-should-not-be-there\n${'intermediate-output\n'.repeat(6000)}important-end\n`);
 
     const tail = readLogTail(log, 128);
 
-    expect(tail).toContain('final-importante');
-    expect(tail).not.toContain('inicio-no-debe-estar');
+    expect(tail).toContain('important-end');
+    expect(tail).not.toContain('start-should-not-be-there');
   });
 });

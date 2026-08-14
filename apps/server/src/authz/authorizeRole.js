@@ -13,20 +13,20 @@ export const authorizeRole = (requiredRoles) => {
 
     if (requiredRoles.includes('teacher') && (classification.isInstructor || classification.isTA || classification.isDesigner || classification.isAccountAdmin)) {
       authorized = true;
-      logger.debug(`[AUTHZ] Autorizado como teacher (Instructor/TA/Designer/Admin)`);
+      logger.debug(`[AUTHZ] Authorized as teacher (Instructor/TA/Designer/Admin)`);
     }
-    // entry=teacher es solo un hint del lanzamiento; NO otorga acceso por sí solo
-    // (evita escalada). Se exige clasificación real de instructor.
+    // entry=teacher is just a launch hint; DOES NOT grant access by itself
+    // (prevents escalation). Real instructor classification is required.
     if (requiredRoles.includes('teacher') && isExplicitTeacherEntry && !authorized) {
-      logger.warn(`[AUTHZ] entry=teacher sin clasificación de instructor; denegado`);
+      logger.warn(`[AUTHZ] entry=teacher without instructor classification; denied`);
     }
     if (requiredRoles.includes('admin')   && classification.isAccountAdmin) {
       authorized = true;
-      logger.debug(`[AUTHZ] Autorizado como admin (AccountAdmin)`);
+      logger.debug(`[AUTHZ] Authorized as admin (AccountAdmin)`);
     }
     if (requiredRoles.includes('student') && classification.isLearner) {
       authorized = true;
-      logger.debug(`[AUTHZ] Autorizado como student (Learner)`);
+      logger.debug(`[AUTHZ] Authorized as student (Learner)`);
     }
 
     if (classification.isLearner) {
@@ -36,15 +36,15 @@ export const authorizeRole = (requiredRoles) => {
         const reqId = Number(requestedStudentId);
         const authId = Number(authenticatedStudentId);
         if (reqId !== authId) {
-          return next(new AppError('Acceso denegado: Solo puedes acceder a tu propio feedback.', 403));
+          return next(new AppError('Access denied: You can only access your own feedback.', 403));
         }
       }
     }
 
-    logger.info(`[AUTHZ] Rol efectivo: ${effective} | Requerido: [${requiredRoles.join(',')}] | Autorizado: ${authorized}`);
+    logger.info(`[AUTHZ] Effective role: ${effective} | Required: [${requiredRoles.join(',')}] | Authorized: ${authorized}`);
 
     if (!authorized) {
-      return next(new AppError(`Acceso denegado: Se requiere rol [${requiredRoles.join(' o ')}], pero el usuario tiene rol '${effective}'.`, 403));
+      return next(new AppError(`Access denied: Role required [${requiredRoles.join(' o ')}], pero el usuario tiene rol '${effective}'.`, 403));
     }
     next();
   };

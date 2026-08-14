@@ -16,7 +16,7 @@ export default function LivePreview({ text }) {
         {processedText}
       </div>
       <p className={styles.hint}>
-        * Esta es una vista previa de cómo el estudiante verá el feedback en Canvas.
+        * This is a preview of how the student will see the feedback in Canvas.
       </p>
     </div>
   );

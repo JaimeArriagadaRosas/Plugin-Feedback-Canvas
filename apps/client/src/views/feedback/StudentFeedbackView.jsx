@@ -32,17 +32,17 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
   return (
     <RequirePermission 
       permission="view_feedback" 
-      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Funcionalidad deshabilitada por el administrador.</h2></div>}
+      fallback={<div className={styles.wrapper} style={{ padding: '2rem', textAlign: 'center' }}><h2>Functionality disabled by the administrator.</h2></div>}
     >
       <div className={styles.wrapper}>
         <header className={styles.header}>
         <h1 className={styles.title}>
-          {viewMode === 'list' ? 'CALIFICACIONES' : 'DETALLES DE LA ENTREGA'}
+          {viewMode === 'list' ? 'GRADES' : 'SUBMISSION DETAILS'}
         </h1>
         <div className={styles.actions}>
           {viewMode === 'details' && (
             <Button variant="secondary" onClick={handleBackToList}>
-              Volver a Calificaciones
+              Back to Grades
             </Button>
           )}
           {viewMode === 'list' && (
@@ -50,7 +50,7 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
               <button 
                 className={styles.bellButton} 
                 onClick={() => setShowPreferences(!showPreferences)}
-                title="Preferencias de notificación"
+                title="Notification preferences"
               >
                 🔔
               </button>

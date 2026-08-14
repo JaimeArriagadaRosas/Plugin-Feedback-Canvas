@@ -25,7 +25,7 @@ export default class IAProviderFactory {
       case 'custom':
         return new CustomProvider(apiKey, customEndpoint);
       default:
-        throw new Error(`Proveedor de IA no soportado: ${service}`);
+        throw new Error(`Unsupported AI provider: ${service}`);
     }
   }
 }

@@ -2,26 +2,26 @@ import db from '../data/db.js';
 
 export default class LLMConfigurationService {
   /**
-   * Obtiene la configuración global de IA
+   * Gets global AI configuration
    */
   async getConfig() {
     const query = 'SELECT * FROM Configuracion_IA LIMIT 1';
     const result = await db.query(query);
     if (result.rows.length === 0) {
-      // Retornar por defecto si no existe
+      // Return default if it does not exist
       return {
         modelo_preferido: 'gemini-1.5-flash',
-        prompt_base: 'Eres un asistente de feedback para estudiantes. Analiza la calificación {{calificacion}} y la trayectoria {{trayectoria}}. Genera feedback detallado.'
+        prompt_base: 'You are a feedback assistant for students. Analyze the grade {{calificacion}} and the trajectory {{trayectoria}}. Generate detailed feedback.'
       };
     }
     return result.rows[0];
   }
 
   /**
-   * Actualiza la configuración global de IA
+   * Updates global AI configuration
    */
   async updateConfig(modelo_preferido, prompt_base) {
-    // Verificamos si ya existe
+    // Check if it already exists
     const current = await db.query('SELECT id FROM Configuracion_IA LIMIT 1');
     
     if (current.rows.length === 0) {
@@ -43,17 +43,17 @@ export default class LLMConfigurationService {
   }
 
   /**
-   * Construye el prompt final reemplazando las variables con el contexto
+   * Builds final prompt replacing variables with context
    */
   async buildPrompt(contextData) {
     const config = await this.getConfig();
     let finalPrompt = config.prompt_base;
 
-    // Reemplazo de variables simuladas (RF04 y RF34)
+    // Simulated variables replacement (RF04 and RF34)
     const variables = {
-      '{{curso_nombre}}': contextData.curso_nombre || 'Curso Desconocido',
-      '{{estudiante_nombre}}': contextData.estudiante_nombre || 'Estudiante',
-      '{{calificacion}}': contextData.calificacion || 'Sin calificar',
+      '{{curso_nombre}}': contextData.curso_nombre || 'Unknown Course',
+      '{{estudiante_nombre}}': contextData.estudiante_nombre || 'Student',
+      '{{calificacion}}': contextData.calificacion || 'Ungraded',
       '{{trayectoria}}': contextData.trayectoria || 'Normal',
       '{{rubrica_nombre}}': contextData.rubrica_nombre || 'N/A',
       '{{texto_plantilla}}': contextData.texto_plantilla || ''

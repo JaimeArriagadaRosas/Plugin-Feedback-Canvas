@@ -4,9 +4,9 @@ import styles from '../FeedbackDetailView.module.css';
 export default function FeedbackEditor({ text, setText }) {
   return (
     <div className={styles.card} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <div className={styles.cardHeader}>TEXTO GENERADO PARA EDICIÓN</div>
+      <div className={styles.cardHeader}>GENERATED TEXT FOR EDITING</div>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #eee", fontSize: 13, background: "#f9f9f9" }}>
-        Previsualización y Edición de Feedback
+        Feedback Preview and Editing
       </div>
       <div className={styles.toolbar}>
         <button className={styles.toolBtn}><b>B</b></button>

@@ -33,8 +33,8 @@ function updateMetrics(metrics, row) {
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;
-  addRating(metrics.teacherRatings, row.calificacion_profesor);
-  addRating(metrics.studentRatings, row.calificacion_estudiante, metrics.stars);
+  addRating(metrics.teacherRatings, row.calificacion_teacher);
+  addRating(metrics.studentRatings, row.calificacion_student, metrics.stars);
   const key = row.curso_id;
   if (!metrics.courses.has(key)) metrics.courses.set(key, { name: row.nombre_curso || `Curso ${key}`, total: 0, approved: 0 });
   const course = metrics.courses.get(key);
@@ -79,7 +79,7 @@ function drawKpiCards(document, total, approvalRate, teacherAverage, studentAver
   const y = document.y;
   const cards = [
     ['Total Feedbacks', String(total)], ['Tasa Aprobación', approvalRate],
-    ['Val. Profesores', withStars(teacherAverage)], ['Val. Estudiantes', withStars(studentAverage)]
+    ['Val. Teacheres', withStars(teacherAverage)], ['Val. Students', withStars(studentAverage)]
   ];
   cards.forEach(([title, value], index) => drawKpi(document, 50 + index * 120, y, title, value));
   document.y = y + 110;
@@ -103,7 +103,7 @@ function drawStateDistribution(document, metrics) {
 
 function drawRatingHistogram(document, stars) {
   document.y += 20;
-  drawSectionTitle(document, 'Histograma de Valoración (Estudiantes)');
+  drawSectionTitle(document, 'Histograma de Valoración (Students)');
   const max = Math.max(...Object.values(stars), 1);
   const baseY = document.y;
   [5, 4, 3, 2, 1].forEach((star, index) => {

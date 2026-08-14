@@ -33,7 +33,7 @@
     }
   ],
   "public_jwk_url": "https://localhost:3000/api/lti/jwks",
-  "description": "Herramienta Unida para Canvas",
+  "description": "Unida Tool for Canvas",
   "target_link_uri": "https://localhost:3000/api/lti/callback",
   "oidc_initiation_url": "https://localhost:3000/api/lti/login",
   "custom_fields": {

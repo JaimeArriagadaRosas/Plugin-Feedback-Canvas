@@ -10,17 +10,17 @@ export default function TemplatePagination({ currentPage, totalPages, onPageChan
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        Anterior
+        Previous
       </button>
       <span className={styles.pageInfo}>
-        Página {currentPage} de {totalPages}
+        Page {currentPage} of {totalPages}
       </span>
       <button 
         className={styles.pageBtn} 
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        Siguiente
+        Next
       </button>
     </div>
   );

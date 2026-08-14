@@ -26,29 +26,29 @@ export class WslCertificateToolInstaller extends LinuxCertificateToolInstaller {
     const linuxRootCaPath = path.join(rootDirectory, 'rootCA.pem');
     if (this._isTrusted(linuxRootCaPath)) return true;
     const accepted = await this.confirm(
-      'Windows puede compartir su confianza con los navegadores que usan su almacén de certificados. ¿Desea confiar solo en la CA pública rootCA.pem?',
+      'Windows can share its trust with browsers that use its certificate store. Do you want to trust only the public CA rootCA.pem?',
       false
     );
     if (!accepted) {
-      this.boot.action('Importe rootCA.pem en Trusted Root Certification Authorities del usuario de Windows.');
+      this.boot.action('Import rootCA.pem into the Windows user\'s Trusted Root Certification Authorities.');
       return false;
     }
     const rootCaPath = toWindowsWslPath(linuxRootCaPath, this.environment.WSL_DISTRO_NAME);
     if (!rootCaPath) {
-      this.boot.error('No se pudo obtener rootCA.pem para el almacén de certificados de Windows.');
+      this.boot.error('Could not get rootCA.pem for the Windows certificate store.');
       return false;
     }
 
-    const spinner = this.spinnerFactory('Confiando en la CA pública para Windows...').start();
+    const spinner = this.spinnerFactory('Trusting the public CA for Windows...').start();
     const imported = await this.runner('certutil.exe', [
       '-user', '-addstore', 'Root', rootCaPath
     ]);
     if (imported.success) {
       this._saveTrustedFingerprint(linuxRootCaPath);
-      spinner.success({ text: 'CA pública confiada en el usuario de Windows.', mark: '  √' });
+      spinner.success({ text: 'Public CA trusted for Windows user.', mark: '  √' });
       return true;
     }
-    spinner.error({ text: 'Windows no pudo confiar en rootCA.pem.', mark: '  ×' });
+    spinner.error({ text: 'Windows could not trust rootCA.pem.', mark: '  ×' });
     const detail = String(imported.err || imported.out || '').trim().split('\n').at(-1);
     if (detail) this.boot.debug(detail);
     return false;
@@ -58,7 +58,7 @@ export class WslCertificateToolInstaller extends LinuxCertificateToolInstaller {
     const root = await this.runner('mkcert', ['-CAROOT'], { captureAll: true });
     const directory = String(root.out || '').trim();
     if (root.success && directory) return directory;
-    this.boot.error('No se pudo obtener el directorio de la CA local de mkcert.');
+    this.boot.error('Could not get the local CA directory from mkcert.');
     return null;
   }
 

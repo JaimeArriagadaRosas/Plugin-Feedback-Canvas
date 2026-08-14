@@ -47,41 +47,41 @@ export class AssetBuilder {
   _printHeader() {
     this.boot.plain('');
     this.boot.plain('=========================================================');
-    this.boot.plain('   CONFIGURANDO DEPENDENCIAS Y ASSETS DE CANVAS LMS');
+    this.boot.plain('   CONFIGURING CANVAS LMS DEPENDENCIES AND ASSETS');
     this.boot.plain('=========================================================');
   }
 
   _buildSteps() {
     return [
-      [['docker', 'info'], 'Verificando daemon Docker...', 'Docker no responde.', 'Docker en ejecucion'],
-      [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Iniciando contenedores...', 'Fallo el inicio.', 'Contenedores iniciados'],
+      [['docker', 'info'], 'Verifying Docker daemon...', 'Docker is not responding.', 'Docker is running'],
+      [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Starting containers...', 'Start failed.', 'Containers started'],
       [['docker', 'compose', 'exec', '-T', 'web', 'chmod', '-R', 'go-w', '/home/docker/.gem'],
-      'Asegurando permisos del cache de gems...', 'Fallo al asegurar permisos del cache de gems.', 'Permisos del cache de gems asegurados'],
+      'Ensuring gem cache permissions...', 'Failed to ensure gem cache permissions.', 'Gem cache permissions ensured'],
       [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
-      'Instalando plugin de Bundler...', 'Error instalando plugin de Bundler.', 'Plugin de Bundler instalado', 5],
+      'Installing Bundler plugin...', 'Error installing Bundler plugin.', 'Bundler plugin installed', 5],
       [['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',
         'bundle', 'install', '--jobs=2'],
-      'Instalando dependencias de Ruby...', 'Error en Ruby.', 'Dependencias de Ruby instaladas', 5],
+      'Installing Ruby dependencies...', 'Ruby error.', 'Ruby dependencies installed', 5],
       [['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec',
         'rake', 'db:create', 'db:migrate'],
-      'Inicializando base de datos...', 'Fallo al inicializar la base de datos de Canvas.', 'Base de datos inicializada'],
+      'Initializing database...', 'Failed to initialize the Canvas database.', 'Database initialized'],
       [['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'install', '--frozen-lockfile',
         '--network-concurrency', '2', '--child-concurrency', '2'],
-      'Instalando dependencias Yarn...', 'Error Yarn.', 'Dependencias de Yarn instaladas', 5],
+      'Installing Yarn dependencies...', 'Yarn error.', 'Yarn dependencies installed', 5],
       [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
         "find bin script packages -type f \\( -name '*.sh' -o -path '*/scripts/*' \\) -print0 | xargs -0 -r sed -i 's/\\r$//'; find bin script -type f -print0 | xargs -0 -r sed -i 's/\\r$//'; true"],
-      'Normalizando CRLF...', 'Fallo al normalizar CRLF.', 'CRLF normalizado'],
+      'Normalizing CRLF...', 'Failed to normalize CRLF.', 'CRLF normalized'],
       [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'i18n:generate_js'],
-      'Generando traducciones...', 'Fallo en i18n:generate_js.', 'Traducciones generadas', 5],
+      'Generating translations...', 'i18n:generate_js failed.', 'Translations generated', 5],
       [['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'run', 'build:packages'],
-      'Construyendo paquetes internos...', 'Fallo en build:packages.', 'Paquetes construidos', 5],
+      'Building internal packages...', 'build:packages failed.', 'Packages built', 5],
       [['docker', 'compose', 'exec', '-T', '-e', 'CANVAS_BUILD_CONCURRENCY=1', '-e',
         'PARALLEL_PROCESSORS=1', '-e', 'DISABLE_HAPPYPACK=1', '-e', 'NODE_OPTIONS=--max-old-space-size=2048',
         '-e', 'COMPILE_ASSETS_API_DOCS=0', '-e', 'COMPILE_ASSETS_BRAND_CONFIGS=0', 'web', 'bundle', 'exec',
         'rake', 'canvas:compile_assets'],
-      'Compilando assets...', 'Fallo la compilacion de assets.', 'Assets compilados exitosamente', 10],
+      'Compiling assets...', 'Asset compilation failed.', 'Assets compiled successfully', 10],
       [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'brand_configs:write'],
-      'Generando brand configs...', 'Fallo al generar brand configs.', 'Brand configs generados']
+      'Generating brand configs...', 'Failed to generate brand configs.', 'Brand configs generated']
     ];
   }
 
@@ -101,16 +101,16 @@ export class AssetBuilder {
     const memoryBytes = Number.parseInt(result.success ? result.out?.trim() : '', 10);
     const limits = getCanvasResourceLimits(memoryBytes);
     if (limits.memoryGb !== null) {
-      this.boot.info(`Recursos Canvas ajustados para ${limits.memoryGb.toFixed(1)}GB disponibles.`);
+      this.boot.info(`Canvas resources adjusted for ${limits.memoryGb.toFixed(1)}GB available.`);
     } else {
-      this.boot.warn('No se pudo leer la memoria de Docker; se aplicaran limites conservadores de Canvas.');
+      this.boot.warn('Could not read Docker memory; conservative Canvas limits will be applied.');
     }
     return limits;
   }
 
   async _runLogged(commandArgs, startMsg, failMsg, successMsg, maxRetries = 0) {
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-      const spinner = createSpinner(attempt === 0 ? startMsg : `${startMsg} (Reintento ${attempt}/${maxRetries})`).start();
+      const spinner = createSpinner(attempt === 0 ? startMsg : `${startMsg} (Retry ${attempt}/${maxRetries})`).start();
       const args = this._applyContainerUser(commandArgs);
       const result = await this.runner(args[0], args.slice(1), {
         cwd: this.canvasDir,
@@ -123,7 +123,7 @@ export class AssetBuilder {
         return true;
       }
 
-      spinner.error({ text: `${this._getFailureMessage(failMsg, result)} Código ${result.code}`, mark: '  ×' });
+      spinner.error({ text: `${this._getFailureMessage(failMsg, result)} Code ${result.code}`, mark: '  ×' });
       if (attempt < maxRetries) await this._waitForRetry(attempt + 1);
     }
     this._printDiagnosis();
@@ -151,7 +151,7 @@ export class AssetBuilder {
   _getFailureMessage(defaultMessage, result) {
     const output = `${result.out}\n${result.err}`;
     if (/encryption key is incorrect/i.test(output)) {
-      return 'Clave de cifrado de Canvas no coincide con la base de datos existente.';
+      return 'Canvas encryption key does not match the existing database.';
     }
     return defaultMessage;
   }
@@ -164,6 +164,6 @@ export class AssetBuilder {
   _printDiagnosis() {
     const diagnosis = analyzeLogAndDiagnose(this.logFile);
     if (diagnosis) printDiagnosisBox(this.boot, diagnosis);
-    else this.boot.error(`Fallo sin diagnostico. Revisar log: ${this.logFile}`);
+    else this.boot.error(`Failure without diagnosis. Check log: ${this.logFile}`);
   }
 }

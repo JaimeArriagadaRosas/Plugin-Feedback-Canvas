@@ -1,131 +1,132 @@
-# Entorno de ejecución reproducible
+# Reproducible Execution Environment
 
-## 1. Versiones
+## 1. Versions
 
-| Componente | Política actual |
+| Component | Current policy |
 |---|---|
 | Node.js | `^20.19.0 || >=22.12.0` |
-| npm | exactamente `11.8.0` para reproducir el lockfile |
+| npm | exactly `11.8.0` to reproduce the lockfile |
 | CI | Node `22.12.0` + npm `11.8.0` |
-| Imagen del servidor | Node `24-alpine` |
+| Server image | Node `24-alpine` |
 | React | `18.2.0` |
 | Vite | `8.1.5` |
-| PostgreSQL del plugin | imagen `postgres:15-alpine` |
-| Gotenberg | imagen mayor `gotenberg/gotenberg:8` |
-| Canvas local | `release/2026-05-20.143` |
+| Plugin PostgreSQL | `postgres:15-alpine` image |
+| Gotenberg | major image `gotenberg/gotenberg:8` |
+| Local Canvas | `release/2026-05-20.143` |
 
-Instalación reproducible:
+Reproducible installation:
 
 ```bash
 npx --yes npm@11.8.0 ci
 ```
 
-No use `npm install` en CI, imágenes, preboot ni para «arreglar» un lockfile. Los rangos de algunas dependencias de desarrollo siguen resolviéndose mediante `package-lock.json`.
+Do not use `npm install` in CI, images, preboot, or to "fix" a lockfile. The ranges of some development dependencies are still resolved using `package-lock.json`.
 
-## 2. Modos de arranque
+## 2. Boot modes
 
-| Variable | Valor | Significado |
+| Variable | Value | Meaning |
 |---|---:|---|
-| `STARTUP_MODE` | `1` | runtime LTI para Canvas externo |
-| `STARTUP_MODE` | `2` | asistente de despliegue/registro |
-| `STARTUP_MODE` | `3` | Canvas local Docker |
-| `STARTUP_MODE` | `4` | validaciones de caja negra |
-| `NON_INTERACTIVE` | `true` | usa `STARTUP_MODE` sin preguntar en el menú |
+| `STARTUP_MODE` | `1` | LTI runtime for external Canvas |
+| `STARTUP_MODE` | `2` | deployment/registration assistant |
+| `STARTUP_MODE` | `3` | Docker local Canvas |
+| `STARTUP_MODE` | `4` | black-box validations |
+| `NON_INTERACTIVE` | `true` | uses `STARTUP_MODE` without asking in the menu |
 
-Ejemplo temporal:
+Temporary example:
 
 ```bash
 NON_INTERACTIVE=true STARTUP_MODE=3 npm start
 ```
 
-## 3. Archivo `.env`
+## 3. `.env` File
 
-El preflight conserva `.env` si ya existe. Si no existe, usa `.env.example` cuando esté disponible; en el árbol actual también existe una plantilla fallback en `EnvironmentDetector` para no bloquear el setup local.
+The preflight preserves `.env` if it already exists. If it does not exist, it uses `.env.example` when available; in the current tree, there is also a fallback template in `EnvironmentDetector` to avoid blocking local setup.
 
-`.env` es generado y está ignorado por Git. No es fuente de configuración productiva ni debe copiarse entre equipos sin revisar cada valor.
+`.env` is generated and is ignored by Git. It is not a source of production configuration nor should it be copied between teams without reviewing each value.
 
-## 4. Variables principales
+## 4. Main variables
 
-### Base de datos
+### Database
 
-| Variable | Propósito |
+| Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | cadena completa cuando el entorno la proporciona |
-| `DB_HOST`, `DB_PORT` | host/puerto PostgreSQL |
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | credenciales y base del plugin |
-| `AUTO_MIGRATE` | ejecuta migraciones al arranque solo si es `true` |
+| `DATABASE_URL` | full string when the environment provides it |
+| `DB_HOST`, `DB_PORT` | PostgreSQL host/port |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | plugin credentials and database |
+| `AUTO_MIGRATE` | runs migrations on startup only if `true` |
 
-### Canvas y LTI
+### Canvas and LTI
 
-| Variable | Propósito |
+| Variable | Purpose |
 |---|---|
-| `CANVAS_BASE_URL` | origen público/base de Canvas |
-| `CANVAS_API_URL` / `CANVAS_API_HOST` | endpoint/host utilizado por adaptadores Canvas |
-| `CANVAS_ACCESS_TOKEN` | token API para flujos que lo requieran |
-| `CANVAS_COURSE_ID` | curso local o de prueba seleccionado |
-| `LTI_CLIENT_ID` | client ID de la Developer Key |
-| `LTI_CLIENT_SECRET` | secreto cuando el flujo de registro lo requiera |
-| `LTI_DEPLOYMENT_IDS` | deployments permitidos |
-| `LTI_ISSUER`, `LTI_OIDC_URL` | plataforma y endpoint OIDC |
-| `LTI_REDIRECT_URI` | callback registrado |
-| `LTI_KEY_ID` | identificador de clave del plugin |
+| `CANVAS_BASE_URL` | public origin/base of Canvas |
+| `CANVAS_API_HOST` | hostname/host:port used by `CanvasClient` when building REST API URLs |
+| `CANVAS_ACCESS_TOKEN` | API token for flows that require it |
+| `CANVAS_COURSE_ID` | selected local or test course |
+| `LTI_CLIENT_ID` | Developer Key client ID |
+| `LTI_CLIENT_SECRET` | main LTI secret for OAuth2 |
+| `CANVAS_CLIENT_SECRET` | alias of `LTI_CLIENT_SECRET` accepted by `CanvasOAuthController` and `CanvasTokenManager` |
+| `LTI_DEPLOYMENT_IDS` | permitted deployments |
+| `LTI_ISSUER`, `LTI_OIDC_URL` | platform and OIDC endpoint |
+| `LTI_REDIRECT_URI` | registered callback |
+| `LTI_KEY_ID` | plugin key identifier |
 
-### Aplicación y servicios
+### Application and services
 
-| Variable | Propósito |
+| Variable | Purpose |
 |---|---|
-| `PORT` | puerto del backend; valor habitual 3000 |
-| `FRONTEND_URL`, `FRONTEND_DIST` | origen de UI y build servido |
-| `GOTENBERG_URL` | servicio de conversión de documentos |
-| `REDIS_URL` | Redis cuando el entorno/servicio lo use |
-| `LOG_LEVEL`, `LOG_TO_FILE` | nivel y destino de logs |
-| `ENCRYPTION_KEY` | cifrado de valores sensibles persistidos |
-| `DEV_TOKEN_SECRET` | firma de tokens de desarrollo local |
+| `PORT` | backend port; usual value 3000 |
+| `FRONTEND_URL`, `FRONTEND_DIST` | UI origin and served build |
+| `GOTENBERG_URL` | document conversion service |
+| `REDIS_URL` | Redis when the environment/service uses it |
+| `LOG_LEVEL`, `LOG_TO_FILE` | logs level and destination |
+| `ENCRYPTION_KEY` | encryption of persisted sensitive values |
+| `DEV_TOKEN_SECRET` | signature of local development tokens |
 
-### Desarrollo local
+### Local development
 
-| Variable | Regla |
+| Variable | Rule |
 |---|---|
-| `USE_LOCAL_DATA` | `false` fuera de desarrollo |
-| `VITE_USE_LOCAL_DATA` | `false` en builds/despliegues reales |
-| `ENABLE_TEST_AUTH_BYPASS` | prohibido en producción |
-| `CANVAS_ADMIN_PASS`, `CANVAS_TEACHER_PASS`, `CANVAS_STUDENT_PASS` | solo fixtures locales |
+| `USE_LOCAL_DATA` | `false` outside development |
+| `VITE_USE_LOCAL_DATA` | `false` in real builds/deployments |
+| `ENABLE_TEST_AUTH_BYPASS` | forbidden in production |
+| `CANVAS_ADMIN_PASS`, `CANVAS_TEACHER_PASS`, `CANVAS_STUDENT_PASS` | local fixtures only |
 
-Las claves de proveedores de IA también son secretos. Gemini admite `GEMINI_API_KEY`; otros proveedores se configuran mediante la capa administrativa/persistencia cifrada según el flujo actual. No invente una variable genérica sin comprobar su consumo en código.
+AI provider keys are also secrets. Gemini supports `GEMINI_API_KEY`; other providers are configured via the administrative layer/encrypted persistence depending on the current flow. Do not invent a generic variable without checking its consumption in code.
 
-## 5. Archivos y estado generados
+## 5. Generated files and state
 
-| Ruta | Contenido | Versionar |
+| Path | Content | Version |
 |---|---|---|
-| `.env` | configuración/secretos locales | no |
-| `.setup_complete` | marcador de fast boot | no |
-| `tmp/canvas_local_users.json` | perfiles y tokens sintéticos exportados | no |
-| `logs/` | logs operativos | no |
-| `dist/` | build del frontend | no |
-| `node_modules/` | dependencias instaladas | no |
-| `canvas-lms-master/` | checkout externo Canvas | no, vive fuera del repo |
+| `.env` | local configuration/secrets | no |
+| `.setup_complete` | fast boot marker | no |
+| `tmp/canvas_local_users.json` | exported synthetic profiles and tokens | no |
+| `logs/` | operational logs | no |
+| `dist/` | frontend build | no |
+| `node_modules/` | installed dependencies | no |
+| `canvas-lms-master/` | external Canvas checkout | no, lives outside the repo |
 
-Los archivos de código `*.local.js` sí se versionan: expresan adaptadores locales, no secretos personales.
+Code files `*.local.js` are versioned: they express local adapters, not personal secrets.
 
-## 6. Contenedores y memoria
+## 6. Containers and memory
 
 - Windows: Docker Desktop/WSL2.
-- Linux: Docker Engine + Compose V2; se recomienda rootless.
-- WSL2: Docker Desktop integrado o Engine nativo, no ambos implícitamente.
-- macOS: OrbStack o Docker Desktop.
+- Linux: Docker Engine + Compose V2; rootless is recommended.
+- WSL2: Integrated Docker Desktop or native Engine, not both implicitly.
+- macOS: OrbStack or Docker Desktop.
 
-El setup calcula límites de Canvas desde la memoria visible para Docker. Aproximadamente 8 GiB disponibles es el mínimo práctico del flujo local; una compilación puede requerir más CPU, disco y tiempo aunque los límites sean conservadores.
+The setup calculates Canvas limits from the memory visible to Docker. Approximately 8 GiB available is the practical minimum of the local flow; a build may require more CPU, disk, and time even if the limits are conservative.
 
-## 7. Producción
+## 7. Production
 
-- Inyecte secretos desde el sistema de despliegue o gestor de secretos.
-- Use contraseñas/keys nuevas, rotables y distintas de fixtures.
-- Mantenga `NODE_ENV=production`, bypass local desactivado y orígenes públicos HTTPS coherentes.
-- Ejecute migraciones como etapa controlada y con backup/rollback.
-- No incorpore `.env`, claves privadas o certificados locales a la imagen.
-- Valide que `config/lti_placement.json` sea generado para el dominio real; el archivo versionado contiene endpoints localhost.
+- Inject secrets from the deployment system or secrets manager.
+- Use new, rotatable passwords/keys distinct from fixtures.
+- Keep `NODE_ENV=production`, local bypass disabled, and coherent HTTPS public origins.
+- Run migrations as a controlled stage and with backup/rollback.
+- Do not include `.env`, private keys, or local certificates in the image.
+- Validate that `config/lti_placement.json` is generated for the real domain; the versioned file contains localhost endpoints.
 
-## 8. Verificación
+## 8. Verification
 
 ```bash
 node --version

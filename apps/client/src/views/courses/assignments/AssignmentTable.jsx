@@ -15,7 +15,7 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
     queryKey: ['templates-raw'],
     queryFn: async () => {
       const result = await api.get('/templates');
-      if (!result.exito) throw new Error(result.mensaje || 'Error al obtener plantillas');
+      if (!result.exito) throw new Error(result.mensaje || 'Error fetching templates');
       return result.data || [];
     }
   });
@@ -38,7 +38,7 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
   if (!loading && assignments.length === 0) {
     return (
       <div className={styles.empty}>
-        Aún no hay tareas para este curso.
+        No assignments found for this course yet.
       </div>
     );
   }
@@ -47,11 +47,11 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
     <table className={styles.table}>
       <thead>
         <tr>
-          <th style={{ width: '35%' }}>Nombre de la Tarea</th>
-          <th style={{ width: '15%' }}>Fecha de Entrega</th>
-          <th style={{ width: '15%', textAlign: 'center' }}>Rúbrica Detectada</th>
-          <th style={{ width: '25%' }}>Plantilla Asignada</th>
-          <th style={{ width: '15%' }}>Plugin Activo</th>
+          <th style={{ width: '35%' }}>Assignment Name</th>
+          <th style={{ width: '15%' }}>Due Date</th>
+          <th style={{ width: '15%', textAlign: 'center' }}>Rubric Detected</th>
+          <th style={{ width: '25%' }}>Assigned Template</th>
+          <th style={{ width: '15%' }}>Plugin Active</th>
         </tr>
       </thead>
       <tbody>
@@ -87,9 +87,9 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
                   : (item.active ? (item.plantilla_id || item.template || '') : '')}
                 onChange={(e) => handleTemplateChange(item.id, e.target.value)}
               >
-                <option value="">Seleccionar plantilla...</option>
+                <option value="">Select template...</option>
                 {templates.map(t => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                  <option key={t.id} value={t.id}>{t.nombre || t.name}</option>
                 ))}
               </select>
             </td>
@@ -103,7 +103,7 @@ export default function AssignmentTable({ assignments, onToggle, onTemplateChang
               >
                 <div className={`${styles.handle} ${item.active ? styles.handleOn : ''}`} />
                 <span className={styles.label}>
-                  {item.active ? 'Activo' : 'Inactivo'}
+                  {item.active ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </td>

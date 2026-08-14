@@ -6,15 +6,15 @@ import { getCustomFetchConfig } from './CustomProvider.local.js';
 
 const OUTPUT_GUARDRAILS = `
 ---
-REGLAS DE SALIDA (OBLIGATORIAS):
-1. Entrega SOLO el texto de retroalimentación. No expliques lo que harás, no describas la plantilla, no resumas las preguntas.
-2. Si vas a mencionar números, usa los datos provistos arriba —no inventes calificaciones.
-3. Finaliza con un saludo cordial y tu nombre como profesor.
-4. La respuesta debe estar completamente en el idioma solicitado y lista para enviar al estudiante sin modificaciones.`;
+OUTPUT RULES (MANDATORY):
+1. Deliver ONLY the feedback text. Do not explain what you will do, do not describe the template, do not summarize the questions.
+2. If you are going to mention numbers, use the data provided above —do not invent grades.
+3. End with a cordial greeting and your name as a teacher.
+4. The response must be completely in the requested language and ready to send to the student without modifications.`;
 
 /**
- * Proveedor para endpoints genéricos u "Otros". 
- * Por defecto asume una API compatible con OpenAI (muy común en Ollama, vLLM, etc).
+ * Provider for generic or "Other" endpoints. 
+ * By default it assumes an OpenAI-compatible API (very common in Ollama, vLLM, etc).
  */
 export default class CustomProvider extends IAProvider {
   constructor(apiKey, customEndpoint) {
@@ -24,17 +24,17 @@ export default class CustomProvider extends IAProvider {
   }
 
   async generateFeedback(prompt, config = {}) {
-    logger.info(`[IA] Generando feedback con Custom Provider en ${this.baseURL}...`);
+    logger.info(`[IA] Generating feedback with Custom Provider at ${this.baseURL}...`);
 
     if (!this.baseURL) {
-      throw new Error('Custom Endpoint no proporcionado para proveedor "Otros"');
+      throw new Error('Custom Endpoint not provided for "Other" provider');
     }
 
     const apiKey = config.apiKey || this.apiKey;
     const modelName = config.model || "custom-model";
     const promptConGuardrails = prompt + OUTPUT_GUARDRAILS;
 
-    // getCustomFetchConfig permite inyectar opciones locales (ej. ignorar SSL en dev)
+    // getCustomFetchConfig allows injecting local options (e.g. ignore SSL in dev)
     const localConfig = getCustomFetchConfig();
 
     return await ExponentialBackoff.execute(async () => {
@@ -71,7 +71,7 @@ export default class CustomProvider extends IAProvider {
         const text = data.choices?.[0]?.message?.content?.trim();
 
         if (!text) {
-          throw new Error('Respuesta vacía del proveedor custom');
+          throw new Error('Empty response from custom provider');
         }
 
         return text;
@@ -104,16 +104,16 @@ export default class CustomProvider extends IAProvider {
         }
         
         const data = await response.json();
-        // Intentar parsear el formato estándar de OpenAI `/models`
+        // Try parsing the standard OpenAI /models format
         if (data && data.data && Array.isArray(data.data)) {
            return data.data.map(m => ({ id: m.id, name: m.id }));
         } else if (Array.isArray(data)) {
            // Ollama tags api format as fallback? Wait, Ollama /api/tags uses diff format.
-           // Pero asumimos API compatible con OpenAI para Custom Provider.
+           // But we assume OpenAI-compatible API for Custom Provider.
            return data.map(m => ({ id: m.id || m.name, name: m.id || m.name }));
         }
         
-        return [{ id: 'custom-model', name: 'Modelo Personalizado' }];
+        return [{ id: 'custom-model', name: 'Custom Model' }];
       } catch (error) {
          CustomErrorHandler.handleError(error);
       }

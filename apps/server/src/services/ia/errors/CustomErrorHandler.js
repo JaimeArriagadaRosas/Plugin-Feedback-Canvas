@@ -5,14 +5,14 @@ export default class CustomErrorHandler {
     if (error.response) {
       const status = error.response.status;
       const data = error.response.data;
-      const message = typeof data === 'string' ? data : (data?.error?.message || data?.message || 'Error del endpoint personalizado');
+      const message = typeof data === 'string' ? data : (data?.error?.message || data?.message || 'Custom endpoint error');
 
       if (status === 401 || status === 403) {
-        throw new ApiError(`Acceso denegado al endpoint personalizado (HTTP ${status}). Revisa la API Key o los permisos.`, status);
+        throw new ApiError(`Access denied to custom endpoint (HTTP ${status}). Check the API Key or permissions.`, status);
       }
       
       if (status === 429) {
-        const customError = new ApiError('Límite de peticiones (rate limit) excedido en el endpoint personalizado.', 429);
+        const customError = new ApiError('Rate limit exceeded on custom endpoint.', 429);
         const retryAfter = error.response.headers['retry-after'];
         if (retryAfter) {
           customError.retryAfter = retryAfter;
@@ -21,17 +21,17 @@ export default class CustomErrorHandler {
       }
 
       if (status >= 500) {
-        throw new ApiError(`Error en el servidor personalizado: ${message}`, status);
+        throw new ApiError(`Error on custom server: ${message}`, status);
       }
       
-      throw new ApiError(`Respuesta de error del endpoint personalizado: ${message}`, status || 400);
+      throw new ApiError(`Error response from custom endpoint: ${message}`, status || 400);
     }
     
-    // Si fue un error de Axios porque no se pudo conectar (ej. CORS, DNS, certificado inválido)
+    // If it was an Axios error because it could not connect (e.g. CORS, DNS, invalid certificate)
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-       throw new ApiError(`No se pudo establecer conexión con el endpoint personalizado (${error.code}). Verifica la URL.`, 502);
+       throw new ApiError(`Could not establish connection with the custom endpoint (${error.code}). Verify the URL.`, 502);
     }
     
-    throw new ApiError(`Error de red o desconocido al contactar el endpoint: ${error.message}`, 500);
+    throw new ApiError(`Network or unknown error when contacting the endpoint: ${error.message}`, 500);
   }
 }

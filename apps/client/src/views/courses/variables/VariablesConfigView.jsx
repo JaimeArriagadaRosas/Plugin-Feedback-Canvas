@@ -5,7 +5,7 @@ import { api } from '../../../api';
 import Toast from '../../../components/atoms/Toast';
 import styles from './VariablesConfigView.module.css';
 
-// Eliminado MOCKUP_VARIABLES - ahora se carga dinámicamente desde el backend
+// MOCKUP_VARIABLES removed - now loaded dynamically from the backend
 
 export default function VariablesConfigView() {
   const location = useLocation();
@@ -22,7 +22,7 @@ export default function VariablesConfigView() {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    // Cargar lista de cursos y variables maestras
+    // Load course list and master variables
     Promise.all([
       api.get('/courses'),
       api.get('/global-variables')
@@ -35,7 +35,7 @@ export default function VariablesConfigView() {
       }
     }).catch(err => {
       console.error(err);
-      setToast({ message: 'Error cargando datos iniciales', type: 'error' });
+      setToast({ message: 'Error loading initial data', type: 'error' });
     }).finally(() => {
       setInitialLoading(false);
     });
@@ -51,7 +51,7 @@ export default function VariablesConfigView() {
       })
       .catch(err => {
         console.error(err);
-        setToast({ message: 'Error al cargar la configuración.', type: 'error' });
+        setToast({ message: 'Error loading configuration.', type: 'error' });
       })
       .finally(() => setLoading(false));
   }, [selectedCourseId]);
@@ -84,7 +84,7 @@ export default function VariablesConfigView() {
     if (activeVars.length > 0) {
       const total = activeVars.reduce((sum, v) => sum + (v.ponderacion || 0), 0);
       if (total !== 100) {
-        setToast({ message: `Error: La suma de ponderaciones activas debe ser 100% (actual: ${total}%).`, type: 'error' });
+        setToast({ message: `Error: The sum of active weights must be 100% (current: ${total}%).`, type: 'error' });
         return;
       }
     }
@@ -92,10 +92,10 @@ export default function VariablesConfigView() {
     setSaving(true);
     try {
       await variablesClient.saveCourseVariables(selectedCourseId, variables);
-      setToast({ message: 'Configuración guardada correctamente.', type: 'success' });
+      setToast({ message: 'Configuration saved successfully.', type: 'success' });
     } catch (err) {
       console.error(err);
-      setToast({ message: 'Error al guardar la configuración.', type: 'error' });
+      setToast({ message: 'Error saving configuration.', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -103,7 +103,7 @@ export default function VariablesConfigView() {
 
   const handleDiscard = () => {
     if (!selectedCourseId) return;
-    // Recargar
+    // Reload
     setVariables({}); // force re-render
     setLoading(true);
     variablesClient.getCourseVariables(selectedCourseId).then(data => {
@@ -122,14 +122,14 @@ export default function VariablesConfigView() {
         />
       )}
       <header className={styles.header}>
-        <h1>PANEL DE ADMINISTRACIÓN - CONFIGURACIÓN DE VARIABLES</h1>
+        <h1>ADMINISTRATION PANEL — VARIABLE CONFIGURATION</h1>
       </header>
 
       <div className={styles.filtersSection}>
         <div className={styles.filterBox}>
-          <label>Curso:</label>
+          <label>Course:</label>
           <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)}>
-            <option value="" disabled>Seleccione curso...</option>
+            <option value="" disabled>Select course...</option>
             {courses.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -137,26 +137,26 @@ export default function VariablesConfigView() {
         </div>
         <div className={styles.actionButtonsTop}>
           <button className={styles.discardTopBtn} onClick={handleDiscard} disabled={saving || loading}>
-            Descartar
+            Discard
           </button>
           <button className={styles.syncTopBtn} onClick={handleSave} disabled={saving}>
-            Guardar
+            Save
           </button>
         </div>
       </div>
 
       <div className={styles.mainContent}>
         <div className={styles.leftPanel}>
-          <h2 className={styles.tableTitle}>GESTIÓN DE VARIABLES DEL ESTUDIANTE</h2>
+          <h2 className={styles.tableTitle}>STUDENT VARIABLE MANAGEMENT</h2>
           
           <div className={styles.tableContainer}>
             <table className={styles.variablesTable}>
             <thead>
               <tr>
-                <th>Habilitar</th>
-                <th>Nombre de la variable</th>
-                <th>Descripción granular</th>
-                <th style={{ width: '120px' }}>Ponderación (%)</th>
+                <th>Enable</th>
+                <th>Variable Name</th>
+                <th>Granular Description</th>
+                <th style={{ width: '120px' }}>Weight (%)</th>
               </tr>
             </thead>
             <tbody>
@@ -203,7 +203,7 @@ export default function VariablesConfigView() {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Ponderación (activas):</td>
+                <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Weight (active):</td>
                 <td className={styles.centerCell} style={{ fontWeight: 'bold' }}>
                   {Object.values(variables).filter(v => v.activa).reduce((sum, v) => sum + (v.ponderacion || 0), 0)}%
                 </td>

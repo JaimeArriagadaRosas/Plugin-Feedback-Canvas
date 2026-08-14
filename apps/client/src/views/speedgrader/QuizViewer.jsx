@@ -6,7 +6,7 @@ export default function QuizViewer({ quizDetails, studentName }) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.fallbackCard}>
-          <p>No se encontraron preguntas para este cuestionario o el formato no está soportado.</p>
+          <p>No questions found for this quiz or the format is not supported.</p>
         </div>
       </div>
     );
@@ -26,10 +26,10 @@ export default function QuizViewer({ quizDetails, studentName }) {
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <h3>Cuestionario de {studentName}</h3>
+        <h3>Quiz by {studentName}</h3>
         <p className={styles.scoreInfo}>
-          Puntaje: {latestAttempt?.score ?? 'N/A'} 
-          {latestAttempt?.score_before_regrade ? ` (Antes: ${latestAttempt.score_before_regrade})` : ''}
+          Score: {latestAttempt?.score ?? 'N/A'} 
+          {latestAttempt?.score_before_regrade ? ` (Before: ${latestAttempt.score_before_regrade})` : ''}
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export default function QuizViewer({ quizDetails, studentName }) {
             <div key={q.id} className={`${styles.questionCard} ${statusClass}`}>
               <div className={styles.questionHeader}>
                 <span className={styles.questionTitle}>
-                  {idx + 1}. {q.question_name || 'Pregunta'}
+                  {idx + 1}. {q.question_name || 'Question'}
                 </span>
                 <span className={styles.questionPoints}>
                   {studentAns?.points ?? 0} / {q.points_possible} pts

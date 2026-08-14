@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js';
 
-// Utilidad de escape HTML (OWASP A03: Injection Prevention)
+// HTML escape utility (OWASP A03: Injection Prevention)
 function escapeHtml(unsafe) {
   return String(unsafe)
     .replace(/&/g, '&amp;')
@@ -11,19 +11,19 @@ function escapeHtml(unsafe) {
 }
 
 /**
- * Renderiza una página HTML de error con estilos de la Universidad Andrés Bello.
- * Esta página intenta redirigir el top frame de Canvas automáticamente para recuperar la sesión.
- * Si el navegador bloquea la redirección cross-origin, el usuario puede usar el botón.
+ * Renders an HTML error page with Andrés Bello University styles.
+ * This page attempts to automatically redirect the Canvas top frame to recover the session.
+ * If the browser blocks cross-origin redirection, the user can use the button.
  *
- * @param {Object} res - Objeto de respuesta de Express.
- * @param {Error|String} error - El error original.
- * @param {String} referer - URL a la cual regresar (la página del curso en Canvas).
+ * @param {Object} res - Express response object.
+ * @param {Error|String} error - The original error.
+ * @param {String} referer - URL to return to (the Canvas course page).
  */
 export function handleLtiError(res, error, referer) {
   const errorMessage = error.message || error.toString();
   const safeReferer = referer || (process.env.CANVAS_BASE_URL || 'https://localhost:8443');
 
-  logger.info('[LtiErrorHandler] Renderizando página de autorreparación LTI', { safeReferer });
+  logger.info('[LtiErrorHandler] Rendering LTI self-repair page', { safeReferer });
 
   const html = `
 <!DOCTYPE html>
@@ -31,7 +31,7 @@ export function handleLtiError(res, error, referer) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sesión Interrumpida - Recuperación</title>
+  <title>Session Interrupted - Recovery</title>
   <style>
     body {
       margin: 0;
@@ -52,7 +52,7 @@ export function handleLtiError(res, error, referer) {
       max-width: 450px;
       padding: 30px;
       text-align: center;
-      border-top: 5px solid #0f2d53; /* Azul Institucional UNAB */
+      border-top: 5px solid #0f2d53; /* UNAB Institutional Blue */
     }
     h2 {
       color: #0f2d53;
@@ -77,7 +77,7 @@ export function handleLtiError(res, error, referer) {
     }
     .btn {
       display: inline-block;
-      background-color: #0f2d53; /* Azul Institucional UNAB */
+      background-color: #0f2d53; /* UNAB Institutional Blue */
       color: white;
       text-decoration: none;
       padding: 12px 25px;
@@ -93,10 +93,10 @@ export function handleLtiError(res, error, referer) {
 <body>
   <div class="card">
     <div id="manual-action">
-      <h2>Sesión Expirada</h2>
-      <p>Por motivos de seguridad, la sesión de lanzamiento ha expirado tras un periodo de inactividad.</p>
+      <h2>Session Expired</h2>
+      <p>For security reasons, the launch session has expired after a period of inactivity.</p>
       <div class="error-detail">${escapeHtml(errorMessage)}</div>
-      <p><strong>Por favor, vuelva a hacer clic en la herramienta "Feedback" en el menú lateral de su curso para reanudar.</strong></p>
+      <p><strong>Please click the "Feedback" tool again in the side menu of your course to resume.</strong></p>
     </div>
   </div>
 </body>

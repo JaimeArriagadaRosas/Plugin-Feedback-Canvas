@@ -1,9 +1,9 @@
 import logger from '../utils/logger.js';
 
 /**
- * CourseStatisticsService - Calcula el promedio y tendencias de un curso.
+ * CourseStatisticsService - Calculates the average and trends of a course.
  *
- * TODO (Deuda Técnica): Las variables matemáticas (GradeResolver, CourseStatisticsService y GradeConverter) asumen una escala chilena al 60% por defecto. Referencia: docs/TECHNICAL_DEBT.md
+ * TODO (Technical Debt): Mathematical variables (GradeResolver, CourseStatisticsService and GradeConverter) assume a Chilean scale at 60% by default. Reference: docs/TECHNICAL_DEBT.md
  */
 export default class CourseStatisticsService {
   constructor(canvasGateway) {
@@ -15,7 +15,7 @@ export default class CourseStatisticsService {
       const submissions = await this.canvasGateway.getAssignmentSubmissions(courseId, assignmentId, teacherId);
       
       if (!submissions || !Array.isArray(submissions) || submissions.length === 0) {
-        return null; // Plan C: sin entregas
+        return null; // Plan C: no submissions
       }
 
       let totalGrade = 0;
@@ -44,19 +44,19 @@ export default class CourseStatisticsService {
         }
       }
 
-      // Plan A: Notas explícitas (chilenas)
+      // Plan A: Explicit grades (Chilean)
       if (gradeCount > 0) {
         return { grade: totalGrade / gradeCount };
       }
       
-      // Plan B: Puntajes brutos
+      // Plan B: Raw scores
       if (scoreCount > 0) {
         return { score: totalScore / scoreCount };
       }
 
       return null;
     } catch (err) {
-      logger.error(`[CourseStatisticsService] Error calculando promedio: ${err.message}`);
+      logger.error(`[CourseStatisticsService] Error calculating average: ${err.message}`);
       return null;
     }
   }

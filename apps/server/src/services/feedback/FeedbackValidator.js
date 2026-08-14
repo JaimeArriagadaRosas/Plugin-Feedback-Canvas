@@ -2,11 +2,11 @@ import logger from '../../utils/logger.js';
 
 export default class FeedbackValidator {
   /**
-   * Verifica las reglas de negocio antes de generar un feedback.
-   * Retorna un objeto con `{ isValid: boolean, skipData: object }`
+   * Verifies business rules before generating feedback.
+   * Returns an object with `{ isValid: boolean, skipData: object }`
    */
   static validateGeneration(existingFeedbacks, assignmentId, studentId, isRegenerate) {
-    // Regla A: Jamás regenerar si ya está enviado o aprobado
+    // Rule A: Never regenerate if it is already sent or approved
     const sentOrApproved = existingFeedbacks.find(
       fb => fb.tarea_id == assignmentId && (fb.estado === 'ENVIADO' || fb.estado === 'APROBADO')
     );
@@ -15,11 +15,11 @@ export default class FeedbackValidator {
       logger.debug(`[DEBUG] student ${studentId} skipped (sentOrApproved)`);
       return {
         isValid: false,
-        skipData: { exito: false, omitido: true, data: null, mensaje: 'Feedback ya enviado o aprobado' }
+        skipData: { exito: false, omitido: true, data: null, mensaje: 'Feedback already sent or approved' }
       };
     }
 
-    // Regla B: Si ya tiene borrador, solo regeneramos si la intención explícita era regenerar
+    // Rule B: If it already has a draft, we only regenerate if the explicit intention was to regenerate
     const pending = existingFeedbacks.find(
       fb => fb.tarea_id == assignmentId && (fb.estado === 'PENDIENTE' || fb.estado === 'EDITADO' || !fb.estado)
     );
@@ -28,7 +28,7 @@ export default class FeedbackValidator {
       logger.debug(`[DEBUG] student ${studentId} skipped (pending && !isRegenerate)`);
       return {
         isValid: false,
-        skipData: { exito: false, omitido: true, data: null, mensaje: 'El estudiante ya tiene un borrador y la acción no es forzar regeneración' }
+        skipData: { exito: false, omitido: true, data: null, mensaje: 'The student already has a draft and the action is not to force regeneration' }
       };
     }
 

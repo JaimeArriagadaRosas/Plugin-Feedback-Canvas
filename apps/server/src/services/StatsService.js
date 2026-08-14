@@ -6,7 +6,7 @@ export default class StatsService {
   }
 
   async getCourseStats(courseId, assignmentId) {
-    logger.debug('[StatsService] Obteniendo estadísticas', { courseId, assignmentId });
+    logger.debug('[StatsService] Getting statistics', { courseId, assignmentId });
     const stats = await this.feedbackRepo.getStats(courseId, assignmentId);
     
     let total = 0;
@@ -39,7 +39,7 @@ export default class StatsService {
   }
 
   async getGradeDistribution(courseId, assignmentId) {
-    logger.debug('[StatsService] Obteniendo distribución de notas', { courseId, assignmentId });
+    logger.debug('[StatsService] Getting grade distribution', { courseId, assignmentId });
     const distribution = await this.feedbackRepo.getGradeDistribution(courseId, assignmentId);
     
     // Group grades in bins or return as is.
@@ -48,7 +48,7 @@ export default class StatsService {
   }
 
   async getStudentRatingDistribution(courseId, assignmentId) {
-    logger.debug('[StatsService] Obteniendo distribución de calificaciones de estudiantes', { courseId, assignmentId });
+    logger.debug('[StatsService] Getting student grade distribution', { courseId, assignmentId });
     return this.feedbackRepo.getStudentRatingDistribution(courseId, assignmentId);
   }
 }

@@ -6,7 +6,7 @@ export default class FeedbackPersistenceHandler {
   }
 
   /**
-   * Guarda o actualiza el feedback generado en la base de datos
+   * Saves or updates the generated feedback in the database
    */
   async saveGeneratedFeedback(params) {
     const { 

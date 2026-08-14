@@ -14,12 +14,12 @@ export default function TokenConfigTab({
 }) {
 
   const formatProviders = (providers) => {
-    if (!providers || providers.length === 0) return 'Ninguno configurado';
+    if (!providers || providers.length === 0) return 'None configured';
     const names = {
       openai: 'OpenAI',
       anthropic: 'Claude',
       gemini: 'Gemini',
-      otros: 'Otros (Custom)'
+      otros: 'Other (Custom)'
     };
     return providers.map(p => names[p] || p).join(', ');
   };
@@ -30,12 +30,12 @@ export default function TokenConfigTab({
     <div className={styles.tab}>
       {tokenValidationError && <Alert type="error" message={tokenValidationError} />}
       {tokenSaveSuccess && (
-        <Alert type="success" message={`Token guardado exitosamente. La API key para ${service} ha sido actualizada.`} />
+        <Alert type="success" message={`Token saved successfully. The API key for ${service} has been updated.`} />
       )}
 
       <div className={styles.row}>
         <div className={styles.col}>
-          <label className={styles.label}>Cambiar de Servicio IA</label>
+          <label className={styles.label}>Change AI Service</label>
           <Select
             value={service}
             onChange={(e) => setService(e.target.value)}
@@ -43,18 +43,18 @@ export default function TokenConfigTab({
               { value: 'openai', label: 'OpenAI' },
               { value: 'anthropic', label: 'Claude (Anthropic)' },
               { value: 'gemini', label: 'Gemini (Google)' },
-              { value: 'otros', label: 'Otros (Custom/Ollama)' },
+              { value: 'otros', label: 'Other (Custom/Ollama)' },
             ]}
           />
         </div>
         <div className={styles.col}>
-          <label className={styles.label}>Ingresar Nueva Llave API o Token</label>
+          <label className={styles.label}>Enter New API Key or Token</label>
           <Input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-........................"
-            helperText="Tokens existentes no se muestran. Ingrese uno nuevo para actualizar."
+            helperText="Existing tokens are not displayed. Enter a new one to update."
           />
         </div>
       </div>
@@ -62,19 +62,19 @@ export default function TokenConfigTab({
 
       <div className={styles.infoBox}>
         <div className={styles.infoRow}>
-          <strong>Tokens Almacenados Cifrados:</strong>{' '}
+          <strong>Encrypted Stored Tokens:</strong>{' '}
           {configuredProviders.length > 0 ? (
-            <span className={styles.successText}>✔ Sí ({formatProviders(configuredProviders)})</span>
+            <span className={styles.successText}>✔ Yes ({formatProviders(configuredProviders)})</span>
           ) : (
-            <span style={{ color: '#666' }}>Ninguno configurado</span>
+            <span style={{ color: '#666' }}>None configured</span>
           )}
         </div>
         <div className={styles.infoBoxInner}>
-          <strong>Estado de Token {service}:</strong>{' '}
+          <strong>{service} Token Status:</strong>{' '}
           {isConfigured ? (
-            <span className={styles.successText}>Activo, Cifrado</span>
+            <span className={styles.successText}>Active, Encrypted</span>
           ) : (
-            <span style={{ color: '#d32f2f' }}>No configurado</span>
+            <span style={{ color: '#d32f2f' }}>Not configured</span>
           )}
         </div>
       </div>

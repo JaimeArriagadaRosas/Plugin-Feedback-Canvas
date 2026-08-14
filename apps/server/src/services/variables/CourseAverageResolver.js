@@ -12,32 +12,32 @@ export default class CourseAverageResolver extends BaseVariableResolver {
   async resolve(context) {
     const { courseId, assignmentId, teacherToken } = context;
     if (!courseId || !assignmentId) {
-      return 'un promedio no calculado';
+      return 'an uncalculated average';
     }
 
     try {
       const stats = await this.courseStatisticsService.getAssignmentStats(courseId, assignmentId, teacherToken);
       
-      if (!stats) return 'un promedio no calculado';
+      if (!stats) return 'an uncalculated average';
 
       if (stats.score) {
         const parsedScore = parseFloat(stats.score);
         if (!isNaN(parsedScore)) {
           const formattedScore = Number(parsedScore.toFixed(1));
-          return this.sanitize(`un puntaje promedio de ${formattedScore}`);
+          return this.sanitize(`an average score of ${formattedScore}`);
         }
       }
       if (stats.grade) {
         const parsedGrade = parseFloat(stats.grade);
         if (!isNaN(parsedGrade)) {
           const formattedGrade = Number(parsedGrade.toFixed(1));
-          return this.sanitize(`una nota promedio de ${formattedGrade}`);
+          return this.sanitize(`an average grade of ${formattedGrade}`);
         }
       }
-      return 'un promedio no calculado';
+      return 'an uncalculated average';
     } catch (error) {
-      logger.warn(`[CourseAverageResolver] Error resolviendo promedio: ${error.message}`);
-      return 'un promedio no calculado';
+      logger.warn(`[CourseAverageResolver] Error resolving average: ${error.message}`);
+      return 'an uncalculated average';
     }
   }
 }

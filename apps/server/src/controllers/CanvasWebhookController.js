@@ -17,13 +17,13 @@ export default class CanvasWebhookController {
     const webhookSecret = getSecret('WEBHOOK_SECRET');
 
     if (!webhookSecret) {
-      logger.error('WEBHOOK_SECRET no configurado. Rechazando webhook por seguridad (fail-closed).');
+      logger.error('WEBHOOK_SECRET not configured. Rejecting webhook for security (fail-closed).');
       return false;
     }
 
     const signature = req.headers['x-canvas-signature'];
     if (!signature) {
-      logger.warn('Webhook rechazado: Falta cabecera X-Canvas-Signature');
+      logger.warn('Webhook rejected: Missing X-Canvas-Signature header');
       return false;
     }
 
@@ -31,7 +31,7 @@ export default class CanvasWebhookController {
     const match = verifyCanvasWebhook(rawBody, signature, webhookSecret);
 
     if (!match) {
-      logger.warn('Webhook rechazado: Firma HMAC inválida');
+      logger.warn('Webhook rejected: Invalid HMAC signature');
     }
 
     return match;
@@ -59,7 +59,7 @@ export default class CanvasWebhookController {
     const grade = (rawGrade === '' || rawGrade === null) ? undefined : Number(rawGrade);
 
     if (!courseId || !assignmentId || !studentId || grade === undefined || Number.isNaN(grade)) {
-      throw new AppError(`Campos requeridos faltantes en event_name=${eventName}: courseId=${courseId}, assignmentId=${assignmentId}, studentId=${studentId}, grade=${grade}`, 400);
+      throw new AppError(`Missing required fields in event_name=${eventName}: courseId=${courseId}, assignmentId=${assignmentId}, studentId=${studentId}, grade=${grade}`, 400);
     }
 
     const numericCourseId = Number(courseId);
@@ -69,10 +69,10 @@ export default class CanvasWebhookController {
     if (!Number.isInteger(numericCourseId) || numericCourseId < 1 ||
         !Number.isInteger(numericAssignmentId) || numericAssignmentId < 1 ||
         !Number.isInteger(numericStudentId) || numericStudentId < 1) {
-      throw new AppError(`IDs inválidos en event_name=${eventName}: courseId=${courseId}, assignmentId=${assignmentId}, studentId=${studentId}`, 400);
+      throw new AppError(`Invalid IDs in event_name=${eventName}: courseId=${courseId}, assignmentId=${assignmentId}, studentId=${studentId}`, 400);
     }
 
-    logger.info(`[Webhook] Detectado cambio de nota para estudiante ${studentId} en curso ${courseId}, tarea ${assignmentId}. Nota: ${grade}`);
+    logger.info(`[Webhook] Detected grade change for student ${studentId} in course ${courseId}, assignment ${assignmentId}. Grade: ${grade}`);
 
     let teacherId = null;
     let defaultTemplateId = 1;
@@ -86,17 +86,17 @@ export default class CanvasWebhookController {
     }
     
     if (!teacherId) {
-      logger.warn(`[Webhook] No se encontró profesor_id configurado para la tarea ${assignmentId} en el curso ${courseId}.`);
-      throw new AppError('Plugin no configurado para esta tarea (falta profesor_id)', 400);
+      logger.warn(`[Webhook] No teacher_id configured found for assignment ${assignmentId} in course ${courseId}.`);
+      throw new AppError('Plugin not configured for this assignment (missing teacher_id)', 400);
     }
 
     try {
       await this.feedbackService.generateFeedback(courseId, assignmentId, studentId, defaultTemplateId, grade, teacherId);
-      logger.info(`[Webhook] Generación automática exitosa (RF41) para ${studentId}`);
-      return { mensaje: 'Evento recibido y procesado (RF41)' };
+      logger.info(`[Webhook] Successful automatic generation (RF41) for ${studentId}`);
+      return { mensaje: 'Event received and processed (RF41)' };
     } catch (err) {
-      logger.error(`[Webhook] Error en generación automática (RF41):`, { error: err.message });
-      throw new AppError('Error procesando evento. Se reintentará.', 500);
+      logger.error(`[Webhook] Error in automatic generation (RF41):`, { error: err.message });
+      throw new AppError('Error processing event. Will retry.', 500);
     }
   }
 
@@ -106,7 +106,7 @@ export default class CanvasWebhookController {
     let claimed = false;
     try {
       if (!this.validarFirmaWebhook(req)) {
-        throw new AppError('Firma de webhook inválida o secreto no configurado', 401);
+        throw new AppError('Invalid webhook signature or secret not configured', 401);
       }
 
       const eventData = this._extractEventData(req);
@@ -114,19 +114,19 @@ export default class CanvasWebhookController {
       eventName = eventData.eventName;
 
       if (!eventName) {
-        throw new AppError(`Evento webhook sin nombre y cuerpo sin event_name`, 400);
+        throw new AppError(`Webhook event without name and body without event_name`, 400);
       }
 
       const claim = await this.webhookService.claimEvent(eventHash, eventName);
       if (!claim.claimed) {
         const messages = {
-          PROCESSED: 'Evento ya procesado (idempotente)',
-          PROCESSING: 'Evento actualmente en proceso',
-          DEAD_LETTER: 'Evento almacenado para revisión manual'
+          PROCESSED: 'Event already processed (idempotent)',
+          PROCESSING: 'Event currently processing',
+          DEAD_LETTER: 'Event stored for manual review'
         };
         return res.status(202).json({
           exito: true,
-          mensaje: messages[claim.status] || 'Evento no disponible para procesamiento',
+          mensaje: messages[claim.status] || 'Event not available for processing',
           estado: claim.status
         });
       }
@@ -139,9 +139,9 @@ export default class CanvasWebhookController {
       }
 
       await this.webhookService.markProcessed(eventHash);
-      return res.status(200).json({ exito: true, mensaje: 'Evento ignorado' });
+      return res.status(200).json({ exito: true, mensaje: 'Event ignored' });
     } catch (error) {
-      logger.error('[Webhook] Error procesando evento:', { error: error.message, stack: error.stack });
+      logger.error('[Webhook] Error processing event:', { error: error.message, stack: error.stack });
       if (claimed && eventHash) {
         try {
           const failure = await this.webhookService.markFailed(eventHash, error.message);
@@ -155,17 +155,17 @@ export default class CanvasWebhookController {
             );
             return res.status(202).json({
               exito: false,
-              mensaje: 'Evento excedió reintentos máximos y fue almacenado para revisión manual.'
+              mensaje: 'Event exceeded maximum retries and was stored for manual review.'
             });
           }
         } catch (trackingError) {
-          logger.error('[Webhook] No se pudo registrar el fallo del evento:', { error: trackingError.message, eventHash });
+          logger.error('[Webhook] Could not register event failure:', { error: trackingError.message, eventHash });
         }
       }
       if (error instanceof AppError) {
         return next(error);
       }
-      return next(new AppError('Error interno procesando el webhook. Consulte los logs del servidor.', 500));
+      return next(new AppError('Internal error processing the webhook. Check server logs.', 500));
     }
   }
 }

@@ -11,7 +11,7 @@ export default function SpeedGraderRubric({ onShowHistory, onShowTrajectory, gra
     if (hasRubric) {
       onShowRubric();
     } else {
-      setToastMessage("No existe rúbrica asociada a esta tarea");
+      setToastMessage("No rubric associated with this assignment");
       setToastType('info');
       setShowToast(true);
     }
@@ -19,7 +19,7 @@ export default function SpeedGraderRubric({ onShowHistory, onShowTrajectory, gra
 
   const handleSimulateClick = () => {
     if (!courseId || !studentId) {
-      setToastMessage("No se puede analizar: faltan datos del estudiante.");
+      setToastMessage("Cannot analyze: missing student data.");
       setToastType('error');
       setShowToast(true);
       return;
@@ -38,10 +38,10 @@ export default function SpeedGraderRubric({ onShowHistory, onShowTrajectory, gra
           onClose={() => setShowToast(false)} 
         />
       )}
-      <button className={styles.actionBtn} onClick={handleRubricClick}>■ Rúbrica</button>
-      <button className={styles.actionBtn} onClick={onShowHistory}>Ver Historial</button>
+      <button className={styles.actionBtn} onClick={handleRubricClick}>■ Rubric</button>
+      <button className={styles.actionBtn} onClick={onShowHistory}>View History</button>
       <button className={styles.actionBtn} onClick={handleSimulateClick}>
-        Analizar Trayectoria
+        Analyze Trajectory
       </button>
     </div>
   );

@@ -11,7 +11,7 @@ export default class PreviousGradesResolver extends BaseVariableResolver {
     if (!student || !student.id) return '';
 
     try {
-      // Simulación de llamada al sistema para obtener calificaciones pasadas.
+      // Simulation of call to the system to get past grades.
       const mockGradesData = await this._fetchMockData(student.id);
       
       if (!mockGradesData) {
@@ -22,16 +22,16 @@ export default class PreviousGradesResolver extends BaseVariableResolver {
 
       let description = '';
       if (hasGoodGrades) {
-        description = 'El estudiante ha mantenido buenas calificaciones en los semestres anteriores.';
+        description = 'The student has maintained good grades in previous semesters.';
       } else {
-        description = 'El estudiante ha tenido dificultades con sus calificaciones previamente.';
+        description = 'The student has had difficulties with their grades previously.';
       }
 
       return this.sanitize(description);
 
     } catch (err) {
-      logger.error(`[PreviousGradesResolver] Error resolviendo variable para ${student.id}: ${err.message}`);
-      return ''; // Fallback silencioso
+      logger.error(`[PreviousGradesResolver] Error resolving variable for ${student.id}: ${err.message}`);
+      return ''; // Silent fallback
     }
   }
 

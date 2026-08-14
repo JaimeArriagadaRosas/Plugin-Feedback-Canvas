@@ -5,24 +5,24 @@ import { BootResult } from './result.js';
 const CANVAS_DIR = getCanvasDirectory();
 
 /**
- * LtiBootstrap — Encapsula la inicialización LTI 1.3.
+ * LtiBootstrap — Encapsulates LTI 1.3 initialization.
  *
- * GARANTÍAS (requeridas por la auditoría):
- *  1. NUNCA se rompe el botón "Feedback": la activación de visibilidad en los
- *     cursos (activar_boton_cursos) se ejecuta SIEMPRE que Canvas esté vivo,
- *     tanto si la tool ya existe como si se acaba de instalar.
- *  2. Solo se instala/inyecta cuando corresponde (modo Canvas Local Docker).
- *     En modos LTI real (1) o API (2) NO se toca la instalación: el tool ya
- *     está configurado en la instancia de Canvas del usuario.
- *  3. Degradación elegante: si la activación del botón falla, se reporta como
- *     advertencia (no crítico) y se sugiere acción manual; el arranque continúa.
+ * GUARANTEES (required by audit):
+ *  1. The 'Feedback' button NEVER breaks: visibility activation in
+ *     courses (activar_boton_cursos) ALWAYS runs while Canvas is alive,
+ *     whether the tool already exists or was just installed.
+ *  2. It is only installed/injected when appropriate (Local Docker Canvas mode).
+ *     In real LTI (1) or API (2) modes, the installation is NOT touched: the tool is already
+ *     configured in the user's Canvas instance.
+ *  3. Graceful degradation: if button activation fails, it is reported as a
+ *     warning (non-critical) and manual action is suggested; boot continues.
  */
 export class LtiBootstrap {
   /**
    * @param {object} opts
-   * @param {string} opts.mode modo de arranque ('1'|'2'|'3')
+   * @param {string} opts.mode boot mode ('1'|'2'|'3')
    * @param {object} log BootLogger
-   * @param {Function} opts.installerFactory fábrica de LtiInstaller (inyectable para test)
+   * @param {Function} opts.installerFactory LtiInstaller factory (injectable for test)
    */
   constructor(opts) {
     this.mode = opts.mode;
@@ -43,34 +43,34 @@ export class LtiBootstrap {
 
 
   /**
-   * Ejecuta el flujo LTI. En modo no-local solo verifica; en modo local
-   * instala (si falta) y siempre activa el botón.
+   * Executes the LTI flow. In non-local mode it only verifies; in local mode
+   * it installs (if missing) and always activates the button.
    */
   async run() {
     const running = await this._canvasRunning();
     if (!running) {
       if (this.shouldInstall) {
-        // La capa Python de setup levantará Canvas; diferimos la activación.
-        this.log.warn('Canvas no está corriendo todavía; la activación LTI se hará tras levantar el stack.');
-        return BootResult.warn('LTI diferido (Canvas no disponible aún)',
-          'Se activará automáticamente una vez que Canvas Local esté listo.');
+        // The Python setup layer will bring up Canvas; we defer activation.
+        this.log.warn('Canvas is not running yet; LTI activation will be done after bringing up the stack.');
+        return BootResult.warn('Deferred LTI (Canvas not yet available)',
+          'It will activate automatically once Local Canvas is ready.');
       }
-      this.log.info('Modo no-local: no se requiere instalación LTI local.');
+      this.log.info('Non-local mode: local LTI installation is not required.');
       return BootResult.ok({ skipped: true });
     }
 
     if (!this.shouldInstall) {
-      this.log.info('Modo LTI/API real: se asume el tool LTI ya configurado en Canvas.');
+      this.log.info('Real LTI/API mode: assuming the LTI tool is already configured in Canvas.');
       return BootResult.ok({ verifiedOnly: true });
     }
 
-    // Modo local: instalar si falta y activar siempre.
+    // Local mode: install if missing and always activate.
     try {
       const Installer = await this.installerFactory();
       await Installer.verifyAndInstall();
       return BootResult.ok({ installed: true });
     } catch (e) {
-      return BootResult.fail(true, 'Fallo crítico en LTI Installer', 'Revise la salida de consola', { error: e.message });
+      return BootResult.fail(true, 'Critical failure in LTI Installer', 'Check the console output', { error: e.message });
     }
   }
 }

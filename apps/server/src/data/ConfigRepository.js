@@ -1,7 +1,7 @@
 import db from './db.js';
 
 /**
- * Repositorio de Configuraciones (PostgreSQL)
+ * Configuration Repository (PostgreSQL)
  */
 export default class ConfigRepository {
   async getConfigAsignacion(courseId, assignmentId) {

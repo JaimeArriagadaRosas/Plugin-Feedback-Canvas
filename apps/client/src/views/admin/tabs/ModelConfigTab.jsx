@@ -29,7 +29,7 @@ export default function ModelConfigTab({
       await logModelChange('ADMIN_MODEL_CHANGE', () => {
         setModel(newModel);
         
-        // Ajustar endpoint automáticamente si es posible, según el modelo seleccionado
+        // Automatically adjust endpoint if possible, based on selected model
         if (newModel.startsWith("gpt-") || newModel.startsWith("o1") || newModel.startsWith("o3")) {
           setEndpoint("https://api.openai.com/v1/chat/completions");
         } else if (newModel.startsWith("claude-")) {
@@ -43,25 +43,25 @@ export default function ModelConfigTab({
   );
 
   const availableOptions = isLoadingModels
-    ? [{ value: '', label: 'Cargando modelos...' }]
+    ? [{ value: '', label: 'Loading models...' }]
     : availableModels.length > 0 
       ? availableModels.map(m => ({ value: m.id, label: m.name }))
-      : [{ value: '', label: 'Sin modelos disponibles' }];
+      : [{ value: '', label: 'No models available' }];
 
   return (
     <div className={styles.tab}>
       {validationError && <Alert type="error" message={validationError} />}
-      {saveSuccess && <Alert type="success" message="Configuración guardada exitosamente. Los nuevos parámetros se aplicaron al motor de IA." />}
+      {saveSuccess && <Alert type="success" message="Configuration saved successfully. The new parameters were applied to the AI engine." />}
 
       <div className={styles.row}>
         <div className={styles.col}>
-          <label className={styles.label}>Cambiar de Modelo de Lenguaje</label>
+          <label className={styles.label}>Change Language Model</label>
           {service === 'otros' ? (
             <Input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="Ej: llama3-70b-8192 o mistral:latest"
+              placeholder="Ex: llama3-70b-8192 or mistral:latest"
             />
           ) : (
             <Select
@@ -73,7 +73,7 @@ export default function ModelConfigTab({
           )}
         </div>
         <div className={styles.col}>
-          <label className={styles.label}>Temperatura (0.0 a 2.0)</label>
+          <label className={styles.label}>Temperature (0.0 to 2.0)</label>
           <Input
             type="number"
             step="0.1"
@@ -85,7 +85,7 @@ export default function ModelConfigTab({
 
       <div className={styles.row}>
         <div className={styles.col}>
-          <label className={styles.label}>Longitud Máxima (Tokens: 1 a 4096)</label>
+          <label className={styles.label}>Maximum Length (Tokens: 1 to 4096)</label>
           <Input
             type="number"
             value={maxLength}
@@ -93,14 +93,14 @@ export default function ModelConfigTab({
           />
         </div>
         <div className={styles.col}>
-          <label className={styles.label}>Endpoint del Proveedor de IA</label>
+          <label className={styles.label}>AI Provider Endpoint</label>
           <Input
             type="text"
             value={endpoint}
             onChange={(e) => setEndpoint(e.target.value)}
             disabled={service !== 'otros'}
-            placeholder={service === 'otros' ? "Ej: http://localhost:11434/v1" : ""}
-            helperText={service !== 'otros' ? "El endpoint es gestionado automáticamente para servicios oficiales." : "URL base para la API tipo OpenAI"}
+            placeholder={service === 'otros' ? "Ex: http://localhost:11434/v1" : ""}
+            helperText={service !== 'otros' ? "The endpoint is automatically managed for official services." : "Base URL for OpenAI-like API"}
           />
         </div>
       </div>

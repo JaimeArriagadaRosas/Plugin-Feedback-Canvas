@@ -10,12 +10,12 @@ export default function RubricModal({ rubric, onClose }) {
     <Modal
       isOpen={!!rubric}
       onClose={onClose}
-      title="Rúbrica de la Tarea"
+      title="Assignment Rubric"
       className={styles.rubricModal}
     >
       <div className={styles.rubricContainer}>
         <div className={styles.rubricHeader}>
-          <span className={styles.totalText}>Puntaje Total Posible:</span>
+          <span className={styles.totalText}>Total Possible Score:</span>
           <span className={styles.totalPoints}>{totalPoints} pts</span>
         </div>
         

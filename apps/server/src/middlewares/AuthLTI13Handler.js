@@ -23,7 +23,7 @@ class SessionTokenIdentityProvider {
       const decoded = await verifySessionToken(bearerToken);
       return IdentityFactory.fromSessionToken(decoded);
     } catch (e) {
-      logger.debug(`[SESSION-AUTH] Token rechazado: ${e.message}`);
+      logger.debug(`[SESSION-AUTH] Token rejected: ${e.message}`);
       return null;
     }
   }
@@ -41,7 +41,7 @@ export const refreshLtiTokenCookie = (req, res, next) => {
     const cookie = refreshLtiCookieOptions(req, res);
     if (cookie) {
       res.cookie(cookie.name, cookie.value, cookie.options);
-      logger.info('[LTI-AUTH] Cookie lti-token refrescada', { maxAge: cookie.options.maxAge });
+      logger.info('[LTI-AUTH] Cookie lti-token refreshed', { maxAge: cookie.options.maxAge });
     }
   }
   next();
@@ -58,7 +58,7 @@ export const AuthLTI13Handler = async (req, res, next) => {
     if (isPublic) {
       const isHealthCheck = path.includes('/config/startup-mode') || path.includes('/health');
       if (!isHealthCheck) {
-        logger.info(`[HTTP] ${method} ${path} -> [LTI-AUTH] Ruta pública (OK)`);
+        logger.info(`[HTTP] ${method} ${path} -> [LTI-AUTH] Public route (OK)`);
       }
       return next();
     }
@@ -69,8 +69,8 @@ export const AuthLTI13Handler = async (req, res, next) => {
         if (identity) {
           req.appIdentity = identity;
           
-          // Mantenemos req.ltiContext por retrocompatibilidad temporal, 
-          // pero delegamos las propiedades a req.appIdentity.
+          // Keep req.ltiContext for temporary backward compatibility, 
+          // but delegate properties to req.appIdentity.
           req.ltiContext = {
             user: identity.ltiUserId,
             name: identity.name,
@@ -85,26 +85,26 @@ export const AuthLTI13Handler = async (req, res, next) => {
           };
           req.user = { id: identity.ltiUserId };
 
-          logger.info(`[HTTP] ${method} ${path} -> [AUTH] Sesión válida vía ${provider.name} | Usuario: ${identity.ltiUserId?.substring(0,8)}...`);
+          logger.info(`[HTTP] ${method} ${path} -> [AUTH] Valid session via ${provider.name} | User: ${identity.ltiUserId?.substring(0,8)}...`);
           return next();
         }
       } catch (error) {
-        // Si el provider lanza un error definitivo como 403 (deployment no permitido),
-        // detenemos la cadena.
-        // Si es 401 (token LTI inválido o expirado), permitimos que otro provider (ej. ApiToken) intente.
+        // If the provider throws a definitive error like 403 (deployment not allowed),
+        // we stop the chain.
+        // If it is 401 (invalid or expired LTI token), we allow another provider (e.g. ApiToken) to try.
         if (error instanceof AppError && error.statusCode === 403) {
           throw error;
         }
       }
     }
 
-    logger.error(`[LTI-AUTH] [${reqId}] [X] BLOQUEADO: Sin token válido y ruta protegida: ${path}`);
-    logger.error(`[LTI-AUTH] [${reqId}] CAUSA PROBABLE 1: El plugin no fue iniciado desde Canvas LMS.`);
-    logger.error(`[LTI-AUTH] [${reqId}] CAUSA PROBABLE 2: Las cookies de terceros están bloqueadas en tu navegador (necesario para LTI).`);
-    throw new AppError('No autorizado: Token LTI 1.3 ausente. Inicie el plugin desde Canvas LMS y permita cookies de terceros.', 401);
+    logger.error(`[LTI-AUTH] [${reqId}] [X] BLOCKED: Without valid token and protected route: ${path}`);
+    logger.error(`[LTI-AUTH] [${reqId}] PROBABLE CAUSE 1: The plugin was not started from Canvas LMS.`);
+    logger.error(`[LTI-AUTH] [${reqId}] PROBABLE CAUSE 2: Third-party cookies are blocked in your browser (required for LTI).`);
+    throw new AppError('Unauthorized: Missing LTI 1.3 Token. Start the plugin from Canvas LMS and allow third-party cookies.', 401);
 
   } catch (error) {
-    logger.error(`[LTI-AUTH] [${reqId}] Error en handler:`, error.message);
+    logger.error(`[LTI-AUTH] [${reqId}] Error in handler:`, error.message);
     next(error);
   }
 };
