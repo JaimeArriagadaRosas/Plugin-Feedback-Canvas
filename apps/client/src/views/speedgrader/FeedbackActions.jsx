@@ -20,7 +20,7 @@ export default function FeedbackActions({
         className={styles.action}
         style={{ backgroundColor: '#e2e8f0', color: '#718096', border: '1px solid #cbd5e0' }}
       >
-        GENERAR NUEVO FEEDBACK (Deshabilitado - RF64)
+        GENERAR NUEVO FEEDBACK (Deshabilitado)
       </Button>
     );
   }
