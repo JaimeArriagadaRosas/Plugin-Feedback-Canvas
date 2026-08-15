@@ -70,7 +70,7 @@ function rewriteLocationHeader(headers, requestUrl) {
 function respondWithProxyError(response, error) {
   console.error(`[TLS-PROXY] Error reenviando a Canvas: ${error.message}`);
   if (!response.headersSent) response.writeHead(502, { 'Content-Type': 'text/plain' });
-  response.end(`Bad Gateway: no se pudo contactar Canvas Local en ${canvasHttpHost}:${canvasHttpPort}`);
+  response.end(`Bad Gateway: could not contact Local Canvas at ${canvasHttpHost}:${canvasHttpPort}`);
 }
 
 function createHttpsProxy(proxy) {
@@ -137,7 +137,7 @@ export async function startTlsProxy() {
   } catch (error) {
     await close(server);
     await close(proxy);
-    throw new Error(`[TLS-PROXY] No se pudo abrir https://localhost:${tlsListenPort}: ${error.message}`);
+    throw new Error(`[TLS-PROXY] Could not open https://localhost:${tlsListenPort}: ${error.message}`);
   }
 
   server.on('error', (error) => console.error(`[TLS-PROXY] Error del servidor: ${error.message}`));

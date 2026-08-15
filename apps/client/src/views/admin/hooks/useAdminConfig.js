@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api';
 import logger from '../../../utils/logger';
 
 export function useAdminConfig() {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || "RF56");
   const [model, setModel] = useState("gemini-1.5-flash");
   const [service, setService] = useState("gemini");
@@ -16,9 +18,6 @@ export function useAdminConfig() {
   const [apiKey, setApiKey] = useState("");
   const [tokenValidationError, setTokenValidationError] = useState("");
   const [tokenSaveSuccess, setTokenSaveSuccess] = useState(false);
-  const [availableModels, setAvailableModels] = useState([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [configuredProviders, setConfiguredProviders] = useState([]);
 
   const clearErrors = useCallback(() => {
     setValidationError("");
@@ -35,20 +34,60 @@ export function useAdminConfig() {
     clearErrors();
   }, [clearErrors]);
 
-  const fetchConfiguredProviders = useCallback(async () => {
-    try {
+  const { data: configuredProviders = [], refetch: fetchConfiguredProviders } = useQuery({
+    queryKey: ['config', 'tokens', 'status'],
+    queryFn: async () => {
       const response = await api.get('/config/tokens/status');
       if (response.exito) {
-        setConfiguredProviders(response.data);
+        return response.data || [];
       }
-    } catch (error) {
-      logger.error('AdminPanel', 'Error fetching configured providers', { error });
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1
+  });
+
+  const { data: availableModels = [], isLoading: isLoadingModels } = useQuery({
+    queryKey: ['config', 'ia-models', service, configuredProviders],
+    queryFn: async () => {
+      if (!configuredProviders.includes(service) && service !== 'otros') {
+        return [{ id: 'default', name: 'Requires API Key configuration' }];
+      }
+      try {
+        const response = await api.get(`/config/ia-models?servicio=${service.toLowerCase()}`);
+        if (response.exito) {
+          return response.data || [];
+        }
+      } catch (error) {
+        // Omit frontend logger because the most likely error is a missing/corrupt credential
+      }
+      return [{ id: 'default', name: 'Missing token configuration or network error' }];
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false
+  });
+
+  // Sync model with available models
+  useEffect(() => {
+    if (availableModels.length > 0 && service !== 'otros') {
+      const found = availableModels.find(m => m.id === model);
+      if (!found) {
+        setModel(availableModels[0].id);
+      }
     }
-  }, []);
+  }, [availableModels, service, model]);
 
   useEffect(() => {
-    fetchConfiguredProviders();
-  }, [fetchConfiguredProviders]);
+    if (service === 'gemini') {
+      setEndpoint("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash");
+    } else if (service === 'openai') {
+      setEndpoint("https://api.openai.com/v1/chat/completions");
+    } else if (service === 'anthropic') {
+      setEndpoint("https://api.anthropic.com/v1/messages");
+    } else if (service === 'otros') {
+      setEndpoint("");
+    }
+  }, [service]);
 
   const resetTokens = useCallback(() => {
     setService("gemini");
@@ -62,18 +101,18 @@ export function useAdminConfig() {
 
     const tempNum = parseFloat(temperature);
     if (isNaN(tempNum) || tempNum < 0.0 || tempNum > 2.0) {
-      setValidationError("La temperatura debe ser un valor numérico entre 0.0 y 2.0 (Excepción 1).");
+      setValidationError("Temperature must be a numeric value between 0.0 and 2.0 (Exception 1).");
       return;
     }
 
     const maxTokens = parseInt(maxLength, 10);
     if (isNaN(maxTokens) || maxTokens < 1 || maxTokens > 4096) {
-      setValidationError("La longitud máxima (tokens) debe ser un entero entre 1 y 4096 (Excepción 1).");
+      setValidationError("Maximum length (tokens) must be an integer between 1 and 4096 (Exception 1).");
       return;
     }
 
     if (!endpoint || (!endpoint.startsWith("http://") && !endpoint.startsWith("https://"))) {
-      setValidationError("El endpoint debe ser una dirección URL válida que comience con http:// o https:// (Excepción 1).");
+      setValidationError("The endpoint must be a valid URL starting with http:// or https:// (Exception 1).");
       return;
     }
 
@@ -89,7 +128,7 @@ export function useAdminConfig() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 4000);
     } catch (e) {
-      logger.error('AdminPanel', 'Error guardando configuración motor IA', { error: e });
+      logger.error('AdminPanel', 'Error saving AI engine configuration', { error: e });
       setValidationError(e.message);
     }
   }, [model, temperature, maxLength, endpoint, service]);
@@ -99,12 +138,12 @@ export function useAdminConfig() {
     setTokenSaveSuccess(false);
 
     if (!apiKey || apiKey.trim() === "") {
-      setTokenValidationError("Debe ingresar una API key válida.");
+      setTokenValidationError("You must enter a valid API key.");
       return;
     }
 
     if (apiKey.trim().length < 10) {
-      setTokenValidationError("La API key ingresada es demasiado corta.");
+      setTokenValidationError("The entered API key is too short.");
       return;
     }
 
@@ -112,18 +151,19 @@ export function useAdminConfig() {
       await api.post('/config/tokens', {
         servicio: service.toLowerCase(),
         key: apiKey.trim(),
-        endpoint_personalizado: null // El endpoint se configura ahora en Motor IA
+        endpoint_personalizado: null // The endpoint is configured in Motor IA now
       });
 
       setTokenSaveSuccess(true);
       setApiKey("");
-      fetchConfiguredProviders();
+      await queryClient.invalidateQueries({ queryKey: ['config', 'tokens', 'status'] });
+      await queryClient.invalidateQueries({ queryKey: ['config', 'ia-models', service] });
       setTimeout(() => setTokenSaveSuccess(false), 4000);
     } catch (error) {
-      logger.error('AdminPanel', 'Error guardando token IA', { error });
-      setTokenValidationError(error.message || 'Error al guardar el token. Por favor, intente nuevamente.');
+      logger.error('AdminPanel', 'Error saving AI token', { error });
+      setTokenValidationError(error.message || 'Error saving token. Please try again.');
     }
-  }, [service, apiKey, fetchConfiguredProviders]);
+  }, [service, apiKey, queryClient]);
 
   const handleSave = useCallback(() => {
     if (activeTab === "RF55") {
@@ -132,44 +172,6 @@ export function useAdminConfig() {
       handleSaveTokenConfig();
     }
   }, [activeTab, handleSaveMotorConfig, handleSaveTokenConfig]);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    async function fetchModels() {
-      setIsLoadingModels(true);
-      try {
-        const response = await api.get(`/config/ia-models?servicio=${service.toLowerCase()}`);
-        if (isMounted && response.exito) {
-           setAvailableModels(response.data);
-           if (response.data.length > 0 && service !== 'otros' && !response.data.find(m => m.id === model)) {
-             setModel(response.data[0].id);
-           }
-        }
-      } catch (error) {
-        logger.error('AdminPanel', 'Error fetching models', { error });
-        if (isMounted) {
-          setAvailableModels([{ id: 'default', name: 'Falta configurar token o error de red' }]);
-        }
-      } finally {
-        if (isMounted) setIsLoadingModels(false);
-      }
-    }
-    
-    fetchModels();
-
-    if (service === 'gemini') {
-      setEndpoint("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash");
-    } else if (service === 'openai') {
-      setEndpoint("https://api.openai.com/v1/chat/completions");
-    } else if (service === 'anthropic') {
-      setEndpoint("https://api.anthropic.com/v1/messages");
-    } else if (service === 'otros') {
-      setEndpoint("");
-    }
-    
-    return () => { isMounted = false; };
-  }, [service]);
 
   return {
     activeTab,

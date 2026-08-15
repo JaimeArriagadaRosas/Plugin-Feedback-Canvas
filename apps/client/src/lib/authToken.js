@@ -79,7 +79,7 @@ export async function logout() {
   try {
     await fetch('/api/auth/lti-logout', { method: 'POST', credentials: 'include' });
   } catch (e) {
-    logger.warn('AuthToken', '[Auth] No se pudo notificar logout al backend:', { error: e?.message });
+    logger.warn('AuthToken', '[Auth] Could not notify backend of logout:', { error: e?.message });
   } finally {
     memoryToken = null;
     memorySessionToken = null;

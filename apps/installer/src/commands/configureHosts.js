@@ -24,7 +24,7 @@ function readHosts() {
   try {
     return readFileSync(HOSTS_PATH, "utf8");
   } catch (err) {
-    logger.error(`No se pudo leer ${HOSTS_PATH}:`, { error: err.message });
+    logger.error(`Could not read ${HOSTS_PATH}:`, { error: err.message });
     process.exit(1);
   }
 }
@@ -34,7 +34,7 @@ function writeHosts(content) {
     writeFileSync(HOSTS_PATH, content, "utf8");
   } catch (err) {
     logger.error(
-      `No se pudo escribir ${HOSTS_PATH} (¿ejecutaste como administrador/root?):`, { error: err.message }
+      `Could not write ${HOSTS_PATH} (did you run as administrator/root?):`, { error: err.message }
     );
     process.exit(1);
   }

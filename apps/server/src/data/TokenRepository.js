@@ -5,7 +5,7 @@ import EncryptionService from '../services/infrastructure/EncryptionService.js';
  * Repositorio de Tokens y Llaves de IA (PostgreSQL + Encryption)
  */
 export default class TokenRepository {
-  async getActiveKey(service) {
+  async getActiveKey(service, quiet = false) {
     const res = await db.query(
       'SELECT api_key_encriptada, endpoint_personalizado FROM Llaves_API_IA WHERE servicio = $1 AND activo = TRUE',
       [service]
@@ -14,19 +14,19 @@ export default class TokenRepository {
     const row = res.rows[0];
     if (!row || !row.api_key_encriptada) return null;
 
-    // Desencriptar antes de retornar a la capa de servicios
+    // Decrypt safely before returning
+    const apiKey = EncryptionService.safeDecrypt(row.api_key_encriptada, `API Key IA (Usage) ${service}`, quiet);
+    if (!apiKey) return null;
+
     return {
-      apiKey: EncryptionService.decrypt(row.api_key_encriptada),
+      apiKey,
       customEndpoint: row.endpoint_personalizado
     };
   }
 
   async hasActiveKey(service) {
-    const res = await db.query(
-      'SELECT id FROM Llaves_API_IA WHERE servicio = $1 AND activo = TRUE',
-      [service]
-    );
-    return res.rowCount > 0;
+    const keyInfo = await this.getActiveKey(service);
+    return keyInfo !== null;
   }
 
   async registerKey(service, plainKey, customEndpoint = null) {
@@ -65,8 +65,15 @@ export default class TokenRepository {
 
   async getAllActiveServices() {
     const res = await db.query(
-      'SELECT servicio FROM Llaves_API_IA WHERE activo = TRUE'
+      'SELECT servicio, api_key_encriptada FROM Llaves_API_IA WHERE activo = TRUE'
     );
-    return res.rows.map(row => row.servicio);
+    const validServices = [];
+    for (const row of res.rows) {
+      const decrypted = EncryptionService.safeDecrypt(row.api_key_encriptada, `API Key IA ${row.servicio}`);
+      if (decrypted) {
+        validServices.push(row.servicio);
+      }
+    }
+    return validServices;
   }
 }

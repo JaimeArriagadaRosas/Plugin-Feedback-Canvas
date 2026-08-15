@@ -52,7 +52,7 @@ class TokenFallbackServiceLocal {
         logger.info(`[LocalTokenFallback] Sub LTI ${canvasSub} registrado en BD con token local.`);
       }
     } catch (dbErr) {
-      logger.warn(`[LocalTokenFallback] No se pudo registrar sub LTI en BD (no crítico): ${dbErr.message}`);
+      logger.warn(`[LocalTokenFallback] Could not register LTI sub in DB (non-critical): ${dbErr.message}`);
     }
   }
 }

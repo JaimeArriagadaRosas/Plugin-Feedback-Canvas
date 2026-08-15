@@ -8,7 +8,7 @@ export class LinuxContainerWorkspacePermissions {
       'compose', 'exec', '-T', '--user', 'root', 'web', 'chmod', 'o+x', '/home/docker'
     ], { cwd: canvasDir, logFile });
     if (!traversal.success) {
-      boot.error(`No se pudo habilitar el acceso al cache de gems: ${traversal.err}`);
+      boot.error(`Could not enable gems cache access: ${traversal.err}`);
       return null;
     }
     return [

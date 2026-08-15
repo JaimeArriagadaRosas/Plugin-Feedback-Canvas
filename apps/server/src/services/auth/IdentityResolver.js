@@ -39,11 +39,11 @@ class IdentityResolver {
         logger.warn(`[IDENTITY] No se encontró canvas_user_id en usuarios_local para: ${canvasSub}`);
       }
     } catch (error) {
-      logger.error(`[IDENTITY] Error al consultar usuarios_local para ${canvasSub}:`, { error: error.message });
+      logger.error(`[IDENTITY] Error querying local_users for ${canvasSub}:`, { error: error.message });
     }
 
     // Fallback original si falla la resolución
-    logger.warn(`[IDENTITY] Fallback: Devolviendo UUID original ${canvasSub} porque no se pudo resolver un ID numérico.`);
+    logger.warn(`[IDENTITY] Fallback: Returning original UUID ${canvasSub} because a numeric ID could not be resolved.`);
     return String(canvasSub);
   }
 }

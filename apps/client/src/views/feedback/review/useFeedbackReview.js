@@ -75,8 +75,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setToastMessage({ message: "Feedback aprobado con éxito", type: "success" });
     },
     onError: (e) => {
-      logger.error('FeedbackReview', "Error al intentar aprobar el feedback", { error: e });
-      setToastMessage({ message: "Error al intentar aprobar el feedback.", type: "error" });
+      logger.error('FeedbackReview', "Error trying to approve feedback", { error: e });
+      setToastMessage({ message: "Error trying to approve feedback.", type: "error" });
     }
   });
 
@@ -93,8 +93,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setToastMessage({ message: "Feedback rechazado y regeneración solicitada con éxito", type: "success" });
     },
     onError: (e) => {
-      logger.error('FeedbackReview', "Error al intentar rechazar el feedback", { error: e });
-      setToastMessage({ message: "Error al intentar rechazar el feedback.", type: "error" });
+      logger.error('FeedbackReview', "Error trying to reject feedback", { error: e });
+      setToastMessage({ message: "Error trying to reject feedback.", type: "error" });
     }
   });
 
@@ -111,8 +111,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setToastMessage({ message: "Valoración guardada con éxito", type: "success" });
     },
     onError: (e) => {
-      logger.error('FeedbackReview', "Error al guardar valoración", { error: e });
-      setToastMessage({ message: "Error al intentar guardar la valoración.", type: "error" });
+      logger.error('FeedbackReview', "Error saving rating", { error: e });
+      setToastMessage({ message: "Error trying to save rating.", type: "error" });
     }
   });
 
@@ -129,8 +129,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setToastMessage({ message: "Feedback editado con éxito", type: "success" });
     },
     onError: (e) => {
-      logger.error('FeedbackReview', "Error al intentar editar el feedback", { error: e });
-      setToastMessage({ message: "Error al intentar editar el feedback.", type: "error" });
+      logger.error('FeedbackReview', "Error trying to edit feedback", { error: e });
+      setToastMessage({ message: "Error trying to edit feedback.", type: "error" });
     }
   });
 
@@ -146,7 +146,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setToastMessage({ message: "Nota privada guardada con éxito", type: "success" });
     },
     onError: (error) => {
-      setToastMessage({ message: error.message || "Error al guardar nota privada", type: "error" });
+      setToastMessage({ message: error.message || "Error saving private note", type: "error" });
     }
   });
 
@@ -164,7 +164,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     },
     onError: (e) => {
       logger.error('FeedbackReview', "Error en aprobación masiva", { error: e });
-      setToastMessage({ message: "Error al intentar aprobar masivamente los feedbacks.", type: "error" });
+      setToastMessage({ message: "Error trying to bulk approve feedbacks.", type: "error" });
       setPendingBulkApproval(null);
     }
   });
@@ -305,7 +305,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     try {
       await exportFeedbackExcel(filteredFeedbacks);
     } catch (error) {
-      setToastMessage({ message: "Error al generar el reporte Excel.", type: "error" });
+      setToastMessage({ message: "Error generating Excel report.", type: "error" });
     }
   }, [filteredFeedbacks]);
 

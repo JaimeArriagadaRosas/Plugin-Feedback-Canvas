@@ -28,8 +28,8 @@ export function useFeedbackDetail(feedback, onBack) {
         setToast({ message: "Error: " + result.mensaje, type: "error" });
       }
     } catch (e) {
-      logger.error('FeedbackDetail', "Error al intentar aprobar el feedback", { error: e });
-      setToast({ message: "Error al intentar aprobar el feedback.", type: "error" });
+      logger.error('FeedbackDetail', "Error trying to approve feedback", { error: e });
+      setToast({ message: "Error trying to approve feedback.", type: "error" });
     }
   };
 
@@ -41,8 +41,8 @@ export function useFeedbackDetail(feedback, onBack) {
         setToast({ message: "Edición guardada exitosamente.", type: "success" });
       }
     } catch (e) {
-      logger.error('FeedbackDetail', "Error al guardar edición", { error: e });
-      setToast({ message: "Error al guardar edición.", type: "error" });
+      logger.error('FeedbackDetail', "Error saving edit", { error: e });
+      setToast({ message: "Error saving edit.", type: "error" });
     }
   };
 

@@ -31,7 +31,7 @@ export function useCourseData(onApiError) {
       const json = await api.get("/courses");
 
       if (!json || !json.exito) {
-        throw new Error(json?.error?.mensaje || json?.mensaje || "Error al obtener cursos");
+        throw new Error(json?.error?.mensaje || json?.mensaje || "Error fetching courses");
       }
 
       const raw = json.data || [];
@@ -52,7 +52,7 @@ export function useCourseData(onApiError) {
     throwOnError: false,
   });
 
-  // Propagar error al padre (onApiError es solo notificación, no controla el estado)
+  // Propagate error to parent (onApiError es solo notificación, no controla el estado)
   if (isError && error && onApiError) {
     onApiError(error);
   }
@@ -71,7 +71,7 @@ export function useCourseData(onApiError) {
           ? "Sesión LTI inválida o expirada. Por favor, recargue el plugin desde Canvas."
           : error?.status === 403
           ? "Su cuenta no tiene permisos de profesor para ver cursos."
-          : "Error al conectar con la API de Canvas.")
+          : "Error connecting to Canvas API.")
       : null,
     retrying: false,
     retryCountdown: null,

@@ -32,7 +32,7 @@ export default class AcademicHistoryService {
         logger.warn(`[AcademicHistoryService] No se pudieron obtener las tareas: ${aErr.message}`);
       }
     } catch (err) {
-      logger.warn(`[AcademicHistoryService] No se pudo obtener el historial de entregas de Canvas: ${err.message}`);
+      logger.warn(`[AcademicHistoryService] Could not fetch Canvas submission history: ${err.message}`);
       // Fallback a base de datos si Canvas falla
       const cached = await this.studentRepo.getHistory(studentId, courseId);
       if (cached && cached.length > 0) {

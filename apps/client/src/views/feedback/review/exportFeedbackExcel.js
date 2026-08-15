@@ -102,7 +102,7 @@ export async function exportFeedbackExcel(filteredFeedbacks) {
     const errorDescriptions = {
       'CANVAS_CONNECTION_FAILED': 'El servidor no pudo comunicarse con la API de Canvas (timeout o endpoint inaccesible). Verifica que Canvas esté operativo y respondiendo.',
       'AI_GENERATION_FAILED': 'Ocurrió un fallo con la Inteligencia Artificial al procesar el prompt (ej. límite de peticiones alcanzado o error interno del proveedor).',
-      'INSUFFICIENT_DATA': 'No se pudo procesar la solicitud porque el estudiante no ha entregado la asignación o la rúbrica carece de evaluación.',
+      'INSUFFICIENT_DATA': 'Could not process request because the student has not submitted the assignment or the rubric lacks evaluation.',
       'NOTIFICATION_FAILED': 'El sistema falló al intentar despachar el mensaje o correo de notificación de feedback generado al estudiante.'
     };
 

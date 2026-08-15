@@ -45,7 +45,7 @@ export class DockerInstaller {
 
   async installDocker() {
     if (!this.strategy) {
-      this.boot.error(`Sistema operativo no soportado para instalación automática: ${this.platform}`);
+      this.boot.error(`Unsupported operating system for automatic installation: ${this.platform}`);
       return false;
     }
     return this.strategy.install();
@@ -53,20 +53,20 @@ export class DockerInstaller {
 
   async waitForDaemon(timeout = this.policy.waitTimeoutSeconds, interval = 5) {
     const { createSpinner } = await import('nanospinner');
-    const spinner = createSpinner('Esperando a que el daemon de Docker esté disponible...').start();
+    const spinner = createSpinner('Waiting for the Docker daemon to become available...').start();
     const state = await this.probe.waitUntilActive({
       timeoutSeconds: timeout,
       intervalSeconds: interval,
       onAttempt: ({ attempt, attempts }) => {
         const remaining = Math.max(0, (attempts - attempt) * interval);
-        spinner.update({ text: `Esperando el runtime ${this.policy.id} (${remaining}s restantes)...` });
+        spinner.update({ text: `Waiting for runtime ${this.policy.id} (${remaining}s remaining)...` });
       }
     });
     if (!state) {
-      spinner.error({ text: 'Timeout: el daemon de Docker no inició' });
+      spinner.error({ text: 'Timeout: Docker daemon did not start' });
       return false;
     }
-    spinner.success({ text: 'Docker daemon disponible', mark: '  √' });
+    spinner.success({ text: 'Docker daemon available', mark: '  √' });
     return true;
   }
 
@@ -77,7 +77,26 @@ export class DockerInstaller {
     this.boot.warn(guidance.message);
     this.boot.action(guidance.action);
     this.boot.action(guidance.fix);
-    if (denied) return false;
+
+    if (denied && this.host.isLinux && this.strategy && this.strategy.rootlessInstaller) {
+      const { askConfirm } = await import('../../orchestration/cli.js');
+      this.boot.info('Docker client exists but you lack permissions on the system socket.');
+      const useRootless = await askConfirm('Do you want to configure Docker Rootless in your local user account (recommended)?', true);
+      if (useRootless) {
+        const manager = await this.strategy._detectPackageManager() || 'apt';
+        const rootless = await this.strategy.rootlessInstaller.install(manager, this.strategy.username());
+        if (rootless.success) {
+          this.boot.success('Docker rootless configured successfully.');
+          return this.waitForDaemon();
+        } else {
+          this.boot.error(`Failed to configure Rootless: ${rootless.err}`);
+        }
+      }
+      return false;
+    } else if (denied) {
+      return false;
+    }
+
     return this.waitForDaemon();
   }
 }

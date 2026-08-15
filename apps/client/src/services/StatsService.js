@@ -13,7 +13,7 @@ export const StatsService = {
         ratings: ratingsRes.data || []
       };
     } catch (error) {
-      logger.error('StatsService', 'Error al obtener estadísticas', { error: error.message });
+      logger.error('StatsService', 'Error fetching statistics', { error: error.message });
       throw error;
     }
   },
@@ -33,7 +33,7 @@ export const StatsService = {
       link.click();
       link.remove();
     } catch (error) {
-      logger.error('StatsService', 'Error al exportar reporte', { error: error.message, format });
+      logger.error('StatsService', 'Error exporting report', { error: error.message, format });
       throw error;
     }
   }

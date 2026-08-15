@@ -38,7 +38,7 @@ class ConfigManager {
         this.envCache = parsed;
       }
     } catch (e) {
-      console.warn(`[ConfigManager] No se pudo recargar el .env: ${e.message}`);
+      console.warn(`[ConfigManager] Could not reload .env: ${e.message}`);
     }
   }
 
