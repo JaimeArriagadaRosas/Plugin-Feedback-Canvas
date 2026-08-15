@@ -63,12 +63,12 @@ function rewriteLocationHeader(headers, requestUrl) {
     // eslint-disable-next-line security/detect-non-literal-regexp
     .replace(new RegExp(`https?://${canvasDockerDomain}(:\\d+)?`), tlsTarget);
 
-  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirige a ${location}`);
+  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirects to ${location}`);
   return { ...headers, location };
 }
 
 function respondWithProxyError(response, error) {
-  console.error(`[TLS-PROXY] Error reenviando a Canvas: ${error.message}`);
+  console.error(`[TLS-PROXY] Error forwarding to Canvas: ${error.message}`);
   if (!response.headersSent) response.writeHead(502, { 'Content-Type': 'text/plain' });
   response.end(`Bad Gateway: could not contact Local Canvas at ${canvasHttpHost}:${canvasHttpPort}`);
 }
@@ -99,8 +99,8 @@ function createHttpsProxy(proxy) {
 
 function ensureCertificates() {
   if (fs.existsSync(certificatePath) && fs.existsSync(keyPath)) return;
-  throw new Error(`[TLS-PROXY] Certificados mkcert no encontrados en ${certificatesDirectory}. ` +
-    'Instala mkcert y genera certificados para localhost y 127.0.0.1.');
+  throw new Error(`[TLS-PROXY] mkcert certificates not found in ${certificatesDirectory}. ` +
+    'Install mkcert and generate certificates for localhost and 127.0.0.1.');
 }
 
 export function assertTlsProxyConfiguration() {
@@ -140,10 +140,10 @@ export async function startTlsProxy() {
     throw new Error(`[TLS-PROXY] Could not open https://localhost:${tlsListenPort}: ${error.message}`);
   }
 
-  server.on('error', (error) => console.error(`[TLS-PROXY] Error del servidor: ${error.message}`));
+  server.on('error', (error) => console.error(`[TLS-PROXY] Server error: ${error.message}`));
   proxyInstance = proxy;
   serverInstance = server;
-  console.info(`    [TLS-PROXY] HTTPS activo: https://localhost:${tlsListenPort} -> HTTP ${canvasHttpHost}:${canvasHttpPort}`);
+  console.info(`    [TLS-PROXY] HTTPS active: https://localhost:${tlsListenPort} -> HTTP ${canvasHttpHost}:${canvasHttpPort}`);
   return server;
 }
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Configura la resolución local de "canvas.docker" -> 127.0.0.1:8080
-// para que el navegador y el plugin (que usan localhost:8080) coincidan
-// con el dominio de desarrollo de Canvas LMS (domain.yml: development=canvas.docker).
+// Configures local resolution of "canvas.docker" -> 127.0.0.1:8080
+// so that the browser and the plugin (which use localhost:8080) match
+// with the Canvas LMS development domain (domain.yml: development=canvas.docker).
 //
-// Uso (Windows, como administrador):
-//   npm run setup:hosts            # añade la entrada si falta
-//   npm run setup:hosts --remove   # elimina la entrada
+// Usage (Windows, as administrator):
+//   npm run setup:hosts            # adds the entry if missing
+//   npm run setup:hosts --remove   # removes the entry
 
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
@@ -50,7 +50,7 @@ const current = readHosts();
 
 if (remove) {
   if (!entryExists(current)) {
-    logger.info("La entrada canvas.docker no está presente. Nada que hacer.");
+    logger.info("The entry canvas.docker is not present. Nothing to do.");
     process.exit(0);
   }
   const next = current
@@ -58,16 +58,16 @@ if (remove) {
     .filter((line) => line.trim() !== HOST_ENTRY)
     .join("\n");
   writeHosts(next);
-  logger.info("Entrada canvas.docker eliminada de hosts.");
+  logger.info("Entry canvas.docker removed from hosts.");
   process.exit(0);
 }
 
 if (entryExists(current)) {
-  logger.info("canvas.docker ya está mapeado a 127.0.0.1 en hosts.");
+  logger.info("canvas.docker is already mapped to 127.0.0.1 in hosts.");
   process.exit(0);
 }
 
 appendFileSync(HOSTS_PATH, `\n${HOST_ENTRY}\n`, "utf8");
 logger.info(
-  "Añadido: 127.0.0.1 canvas.docker\nAhora Canvas (localhost:8080) responde también en https://canvas.docker"
+  "Added: 127.0.0.1 canvas.docker\nNow Canvas (localhost:8080) also responds at https://canvas.docker"
 );

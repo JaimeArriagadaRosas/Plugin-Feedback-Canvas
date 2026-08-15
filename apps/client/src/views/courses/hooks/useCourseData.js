@@ -1,10 +1,10 @@
 /**
- * useCourseData — Carga los cursos del profesor desde la API de Canvas.
+ * useCourseData — Loads the teacher's courses from the Canvas API.
  *
- * Usa React Query (useQuery) para manejar loading, caching, y errores.
- * Esto elimina la complejidad del hook manual con useEffect + cancelled ref
- * que causaba bucles infinitos cuando el componente padre pasaba una función
- * inline como onApiError (nueva referencia en cada render).
+ * Uses React Query (useQuery) to handle loading, caching, and errors.
+ * This eliminates the complexity of the manual hook with useEffect + cancelled ref
+ * that caused infinite loops when the parent component passed an inline function
+ * like onApiError (new reference on each render).
  */
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +27,7 @@ export function useCourseData(onApiError) {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: async () => {
-      logger.info("CourseData", "Solicitando cursos al backend...");
+      logger.info("CourseData", "Requesting courses from backend...");
       const json = await api.get("/courses");
 
       if (!json || !json.exito) {
@@ -37,22 +37,22 @@ export function useCourseData(onApiError) {
       const raw = json.data || [];
       const courses = raw.filter((c) => c.name).map(mapCourse);
 
-      logger.info("CourseData", `Cursos recibidos: ${courses.length}`);
+      logger.info("CourseData", `Courses received: ${courses.length}`);
       return courses;
     },
-    staleTime: 5 * 60 * 1000,   // 5 min — no re-fetch en navegación
-    gcTime: 10 * 60 * 1000,     // 10 min en caché después de desmontar
+    staleTime: 5 * 60 * 1000,   // 5 min — no re-fetch on navigation
+    gcTime: 10 * 60 * 1000,     // 10 min in cache after unmounting
     retry: (failureCount, err) => {
       const status = err?.status;
-      // No reintentar en errores de auth/permisos
+      // Do not retry on auth/permissions errors
       if (status === 401 || status === 403) return false;
       return failureCount < 2;
     },
-    // Notificar errores al padre sin alterar las dependencias del hook
+    // Notify errors to parent without altering hook dependencies
     throwOnError: false,
   });
 
-  // Propagate error to parent (onApiError es solo notificación, no controla el estado)
+  // Propagate error to parent (onApiError is only notification, it does not control state)
   if (isError && error && onApiError) {
     onApiError(error);
   }
@@ -68,9 +68,9 @@ export function useCourseData(onApiError) {
     loading: isLoading,
     error: isError
       ? (error?.status === 401
-          ? "Sesión LTI inválida o expirada. Por favor, recargue el plugin desde Canvas."
+          ? "Invalid or expired LTI session. Please reload the plugin from Canvas."
           : error?.status === 403
-          ? "Su cuenta no tiene permisos de profesor para ver cursos."
+          ? "Your account does not have instructor permissions to view courses."
           : "Error connecting to Canvas API.")
       : null,
     retrying: false,

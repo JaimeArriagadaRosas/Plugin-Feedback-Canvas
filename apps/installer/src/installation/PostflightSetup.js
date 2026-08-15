@@ -22,7 +22,7 @@ export class PostflightSetup {
   }
 
   async runChecks() {
-    this.boot.info('Iniciando verificación post-arranque de la Universidad y el plugin LTI');
+    this.boot.info('Starting post-boot verification of the University and the LTI plugin');
 
     const verifier = this.verifierFactory(this.boot, this.canvasDir);
     const seeder = this.seederFactory(this.boot, this.pluginDir, this.canvasDir);
@@ -30,12 +30,12 @@ export class PostflightSetup {
     const hasData = await verifier.isDataPopulated();
 
     if (!hasData) {
-      this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
+      this.boot.warn('Missing base University data. Attempting to inject data...');
       
       const gemInstaller = this.gemInstallerFactory(this.boot, this.canvasDir);
       const gemsOk = await gemInstaller.ensureBundlerPlugins();
       if (!gemsOk) {
-        this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
+        this.boot.error('Failed to install required Bundler plugins.');
         return false;
       }
       
@@ -44,33 +44,33 @@ export class PostflightSetup {
       
       const seeded = await seeder.seedData();
       if (!seeded) {
-        this.boot.error('No se pudieron inyectar los datos base automáticamente.');
+        this.boot.error('Failed to automatically inject base data.');
         return false;
       }
       
       const hasDataAfter = await verifier.isDataPopulated(3, 5);
       if (!hasDataAfter) {
-        this.boot.error('La verificación final de datos falló incluso después de inyectar.');
+        this.boot.error('Final data verification failed even after injection.');
         return false;
       }
     } else {
-      this.boot.info('Datos base de la Universidad validados. Sincronizando tokens locales desde Docker...');
+      this.boot.info('University base data validated. Synchronizing local tokens from Docker...');
       await seeder.synchronizeLocalToken();
     }
 
-    // Verificar que Canvas esté respondiendo antes de continuar con la fase LTI.
-    // El healTokenViaFile se realiza dentro de LtiBootstrap → TeacherTokenGenerator,
-    // que es el único responsable de gestión de tokens (principio DRY).
-    const spinner = createSpinner('Verificando conectividad con Canvas...').start();
+    // Verify that Canvas is responding before continuing with the LTI phase.
+    // The healTokenViaFile is performed inside LtiBootstrap → TeacherTokenGenerator,
+    // which is solely responsible for token management (DRY principle).
+    const spinner = createSpinner('Verifying connectivity with Canvas...').start();
     const { ready, error: pingError } = await pingCanvasAPI();
     if (!ready) {
-      spinner.warn({ text: `Canvas no está respondiendo aún (${pingError || 'timeout'}). El token se validará durante la inicialización LTI.`, mark: '  !' });
+      spinner.warn({ text: `Canvas is not responding yet (${pingError || 'timeout'}). The token will be validated during LTI initialization.`, mark: '  !' });
     } else {
-      spinner.success({ text: 'Canvas responde correctamente.', mark: '  √' });
+      spinner.success({ text: 'Canvas is responding correctly.', mark: '  √' });
     }
 
     
-    this.boot.info('Verificación post-arranque exitosa.');
+    this.boot.info('Post-boot verification successful.');
     return true;
   }
 }

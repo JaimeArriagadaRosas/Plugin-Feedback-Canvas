@@ -1,30 +1,30 @@
 /**
- * Módulo encargado de procesar texto enriquecido (Markdown básico)
- * y convertirlo a caracteres Unicode matemáticos para saltarse la limitación
- * de texto plano de la API de Canvas LMS.
+ * Module in charge of processing rich text (basic Markdown)
+ * and converting it to mathematical Unicode characters to bypass the limitation
+ * of plain text of the Canvas LMS API.
  */
 export class RichTextProcessor {
   /**
-   * Procesa un texto en Markdown básico y devuelve su representación en Unicode.
-   * @param {string} text - Texto original con Markdown
-   * @returns {string} Texto formateado con caracteres Unicode
+   * Processes a basic Markdown text and returns its Unicode representation.
+   * @param {string} text - Original text with Markdown
+   * @returns {string} Formatted text with Unicode characters
    */
   static process(text) {
     if (!text) return text;
     
     let processed = text;
     
-    // 1. Negrita: **texto**
+    // 1. Bold: **text**
     processed = processed.replace(/\*\*(.*?)\*\*/g, (match, p1) => this.toBold(p1));
     
-    // 2. Cursiva: *texto* o _texto_ (evitando ** o __)
+    // 2. Italic: *text* or _text_ (avoiding ** or __)
     processed = processed.replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, (match, p1) => this.toItalic(p1));
     processed = processed.replace(/(?<!_)_(?!_)(.*?)(?<!_)_(?!_)/g, (match, p1) => this.toItalic(p1));
     
-    // 3. Listas no ordenadas (- o *) a inicio de línea
+    // 3. Unordered lists (- or *) at the beginning of the line
     processed = processed.replace(/^[-*]\s+/gm, '• ');
     
-    // 4. Subrayado: <u>texto</u>
+    // 4. Underline: <u>text</u>
     processed = processed.replace(/<u>(.*?)<\/u>/g, (match, p1) => this.toUnderline(p1));
 
     return processed;

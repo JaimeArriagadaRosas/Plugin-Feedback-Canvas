@@ -78,7 +78,7 @@ export class LinuxAptDockerInstaller {
     if (!distribution.repository || !distribution.codename) {
       return {
         success: false,
-        err: 'La distribución APT no está soportada oficialmente por el repositorio Docker.'
+        err: 'The APT distribution is not officially supported by the Docker repository.'
       };
     }
 
@@ -86,7 +86,7 @@ export class LinuxAptDockerInstaller {
     if (conflicts.length > 0) {
       return {
         success: false,
-        err: `Paquetes Docker conflictivos detectados: ${conflicts.join(', ')}. Elimínelos explícitamente antes de continuar.`
+        err: `Conflicting Docker packages detected: ${conflicts.join(', ')}. Remove them explicitly before continuing.`
       };
     }
 

@@ -20,11 +20,11 @@ export function useFeedbackDetail(feedback, onBack) {
         content: text
       });
       if (result.exito) {
-        logger.info('FeedbackDetail', "Feedback aprobado y enviado a Canvas.", { feedbackId: feedback.id });
-        setToast({ message: "Feedback aprobado y enviado a Canvas.", type: "success" });
+        logger.info('FeedbackDetail', "Feedback approved and sent to Canvas.", { feedbackId: feedback.id });
+        setToast({ message: "Feedback approved and sent to Canvas.", type: "success" });
         setTimeout(() => onBack(), 2000);
       } else {
-        logger.error('FeedbackDetail', `Error aprobando feedback: ${result.mensaje}`, { feedbackId: feedback.id });
+        logger.error('FeedbackDetail', `Error approving feedback: ${result.mensaje}`, { feedbackId: feedback.id });
         setToast({ message: "Error: " + result.mensaje, type: "error" });
       }
     } catch (e) {
@@ -37,8 +37,8 @@ export function useFeedbackDetail(feedback, onBack) {
     try {
       const result = await api.put(`/feedback/${feedback.id}`, { nuevoContenido: text });
       if (result.exito) {
-        logger.info('FeedbackDetail', "Edición guardada exitosamente.", { feedbackId: feedback.id });
-        setToast({ message: "Edición guardada exitosamente.", type: "success" });
+        logger.info('FeedbackDetail', "Edit saved successfully.", { feedbackId: feedback.id });
+        setToast({ message: "Edit saved successfully.", type: "success" });
       }
     } catch (e) {
       logger.error('FeedbackDetail', "Error saving edit", { error: e });

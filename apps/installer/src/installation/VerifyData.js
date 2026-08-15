@@ -8,19 +8,19 @@ export class VerifyData {
   }
 
   async isDataPopulated(maxRetries = 12, waitSeconds = 5) {
-    this.boot.info('Verificando existencia de la base de datos de la Universidad (Cursos, Usuarios)...');
+    this.boot.info('Verifying the existence of the University database (Courses, Users)...');
     
     // Check if web container is up
     const { success: webUp, out: webOut } = await runCommand('docker', ['compose', 'ps', '-q', 'web'], { cwd: this.canvasDir, captureAll: true });
     if (!webUp || !webOut.trim()) {
-      this.boot.error("El contenedor 'web' de Canvas no está corriendo. No se puede verificar la BD.");
+      this.boot.error("The Canvas 'web' container is not running. Cannot verify the DB.");
       return false;
     }
 
     const sqlCheck = "SELECT 1 FROM users LIMIT 1;";
-    const spinner = createSpinner('Verificando datos institucionales (SQL puro)...').start();
+    const spinner = createSpinner('Verifying institutional data (pure SQL)...').start();
 
-    // Aumentado a 12 reintentos para evitar fallos tempranos durante inicialización pesada
+    // Increased to 12 retries to avoid early failures during heavy initialization
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const { success, out, err } = await runCommand('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', 'canvas_development', '-tAc', sqlCheck], { 
         cwd: this.canvasDir,
@@ -29,30 +29,30 @@ export class VerifyData {
       });
 
       if (err && ((err.includes('relation') && err.includes('does not exist')) || (err.includes('database') && err.includes('does not exist')))) {
-        spinner.error({ text: 'La base de datos no está migrada o no existe la tabla users.', mark: '  ×' });
-        this.boot.error('La base de datos de Canvas no está inicializada. Ejecute migraciones.');
+        spinner.error({ text: 'The database is not migrated or the users table does not exist.', mark: '  ×' });
+        this.boot.error('The Canvas database is not initialized. Run migrations.');
         return false;
       }
 
       if (success) {
         if (out.trim() === '1') {
-          spinner.success({ text: 'Datos base de la institución encontrados en Canvas.', mark: '  √' });
+          spinner.success({ text: 'Base institutional data found in Canvas.', mark: '  √' });
           return true;
         } else {
-          spinner.warn({ text: 'Los datos base de la institución no están instalados.', mark: '  !' });
+          spinner.warn({ text: 'Base institutional data is not installed.', mark: '  !' });
           return false;
         }
       }
 
-      this.boot.debug(`Intento ${attempt} fallido para Datos Base. Out: ${out}, Err: ${err}`);
+      this.boot.debug(`Attempt ${attempt} failed for Base Data. Out: ${out}, Err: ${err}`);
       
       if (attempt < maxRetries) {
-        spinner.update({ text: `Verificando datos institucionales... (Intento ${attempt + 1}/${maxRetries})` });
+        spinner.update({ text: `Verifying institutional data... (Attempt ${attempt + 1}/${maxRetries})` });
         await new Promise(r => setTimeout(r, waitSeconds * 1000));
       }
     }
 
-    spinner.error({ text: 'Los datos base de la institución no están instalados.', mark: '  !' });
+    spinner.error({ text: 'Base institutional data is not installed.', mark: '  !' });
     return false;
   }
 }

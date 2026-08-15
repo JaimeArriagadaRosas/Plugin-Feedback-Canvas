@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../../../views/speedgrader/SubmissionViewer.module.css'; // Reutilizamos estilos
+import styles from '../../../views/speedgrader/SubmissionViewer.module.css'; // We reuse styles
 
 export default function UnsubmittedViewer({ studentName }) {
   return (
@@ -7,11 +7,11 @@ export default function UnsubmittedViewer({ studentName }) {
       <div className={styles.fallbackCard}>
         <div className={styles.fallbackHeader} style={{ background: 'linear-gradient(135deg, #4b5563 0%, #374151 100%)' }}>
           <span className={styles.fallbackIcon}>📝</span>
-          <h3 className={styles.fallbackTitle}>Sin Entrega</h3>
+          <h3 className={styles.fallbackTitle}>No Submission</h3>
         </div>
         <div className={styles.fallbackBody}>
           <p className={styles.fallbackMessage}>
-            El estudiante <strong>{studentName}</strong> aún no ha entregado esta tarea.
+            The student <strong>{studentName}</strong> has not submitted this assignment yet.
           </p>
         </div>
       </div>

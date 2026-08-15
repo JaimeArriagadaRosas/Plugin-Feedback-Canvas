@@ -20,7 +20,7 @@ export class LinuxRootlessDockerInstaller {
 
   async _installPrerequisites(manager) {
     const packages = rootlessPackagesFor(manager);
-    if (!packages) return { success: false, err: `Rootless no automatizado para ${manager}.` };
+    if (!packages) return { success: false, err: `Rootless not automated for ${manager}.` };
     if (manager === 'apt') return this._runRoot('apt-get', ['install', '-y', ...packages]);
     if (manager === 'dnf') return this._runRoot('dnf', ['install', '-y', ...packages]);
     return this._runRoot('pacman', ['-S', '--needed', '--noconfirm', ...packages]);
@@ -32,7 +32,7 @@ export class LinuxRootlessDockerInstaller {
 
     const tool = await this.runner('which', ['dockerd-rootless-setuptool.sh'], { captureAll: true });
     if (!tool.success) {
-      return { success: false, err: 'dockerd-rootless-setuptool.sh no está disponible.' };
+      return { success: false, err: 'dockerd-rootless-setuptool.sh is not available.' };
     }
 
     const linger = await this._runRoot('loginctl', ['enable-linger', username]);

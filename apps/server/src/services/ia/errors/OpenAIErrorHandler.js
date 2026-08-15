@@ -15,12 +15,12 @@ export default class OpenAIErrorHandler {
         throw new ApiError('Límite de cuota o rate limit de OpenAI excedido.', 429);
       }
       if (status >= 500) {
-        throw new ApiError(`Error en los servidores de OpenAI: ${message}`, status);
+        throw new ApiError(`Error in OpenAI servers: ${message}`, status);
       }
-      throw new ApiError(`Error de OpenAI: ${message}`, status || 400);
+      throw new ApiError(`OpenAI error: ${message}`, status || 400);
     }
     
     // Errores de red u otros
-    throw new ApiError(`Error de red al conectar con OpenAI: ${error.message}`, 500);
+    throw new ApiError(`Network error when connecting to OpenAI: ${error.message}`, 500);
   }
 }

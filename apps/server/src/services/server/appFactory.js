@@ -25,7 +25,7 @@ async function executeMigrations() {
       logger.info('[BOOTSTRAP] Auto-migración desactivada. Ejecutar "npm run db:migrate" manualmente en despliegue.');
     }
   } catch (err) {
-    logger.error('[BOOTSTRAP] Fallo critico en migraciones:', err.message);
+    logger.error('[BOOTSTRAP] Critical failure in migrations:', err.message);
     process.exit(1);
   }
 }

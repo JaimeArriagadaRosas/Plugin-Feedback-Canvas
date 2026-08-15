@@ -7,15 +7,15 @@ export default function UnsupportedFileViewer({ fileName, studentName, fileUrl }
       <div className={styles.fallbackCard}>
         <div className={styles.fallbackHeader}>
           <span className={styles.fallbackIcon}>📦</span>
-          <h3 className={styles.fallbackTitle}>Recepción Confirmada</h3>
+          <h3 className={styles.fallbackTitle}>Receipt Confirmed</h3>
         </div>
         <div className={styles.fallbackBody}>
           <p className={styles.fallbackMessage}>
-            La tarea <strong>{fileName}</strong> entregada por <strong>{studentName}</strong> se ha recibido correctamente.
+            The assignment <strong>{fileName}</strong> submitted by <strong>{studentName}</strong> has been received successfully.
           </p>
           {fileUrl && (
             <a href={fileUrl} target="_blank" rel="noreferrer" className={styles.downloadBtn}>
-              Descargar Tarea
+              Download Assignment
             </a>
           )}
         </div>

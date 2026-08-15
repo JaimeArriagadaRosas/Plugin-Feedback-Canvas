@@ -21,14 +21,14 @@ export default function AccessDenied({ apiError }) {
         if (document.hasStorageAccess) {
           const hasAccess = await document.hasStorageAccess();
           if (!hasAccess) {
-            setTokenStatus('⚠️ Sin acceso al almacenamiento (iframe). Habilite las cookies de terceros.');
+            setTokenStatus('⚠️ No storage access (iframe). Enable third-party cookies.');
             return;
           }
         }
         const token = localStorage.getItem('lti_token');
-        setTokenStatus(token ? `✅ Existe (${token.length} chars)` : '❌ No existe');
+        setTokenStatus(token ? `✅ Exists (${token.length} chars)` : '❌ Does not exist');
       } catch {
-        setTokenStatus('⚠️ Bloqueado (third-party cookies). Abra el plugin en una pestaña nueva.');
+        setTokenStatus('⚠️ Blocked (third-party cookies). Open the plugin in a new tab.');
       }
     }
     checkToken();
@@ -48,7 +48,7 @@ export default function AccessDenied({ apiError }) {
         setLocalError('Invalid credentials');
       }
     } catch (e) {
-      log.error('Error en login local:', { message: e.message });
+      log.error('Error in local login:', { message: e.message });
       setLocalError(e.response?.data?.error || 'Server error');
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function AccessDenied({ apiError }) {
         <div style={{ marginBottom: '25px' }}>
           <button
             onClick={() => {
-              log.info('Usuario solicitó reintento de conexión LTI');
+              log.info('User requested LTI connection retry');
               window.location.reload();
             }}
             style={{
@@ -90,17 +90,17 @@ export default function AccessDenied({ apiError }) {
           </button>
         </div>
 
-        {/* Panel de información de depuración */}
+        {/* Debugging information panel */}
         <div style={{ padding: '12px 16px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', textAlign: 'left', marginBottom: '20px', fontFamily: 'monospace' }}>
           <strong>ℹ️ DIAGNOSTICS:</strong><br />
           API Error: {apiError || 'No API error reported'}<br />
-          URL Actual: {window.location.href}<br />
-          Token en LocalStorage: {tokenStatus}<br />
+          Current URL: {window.location.href}<br />
+          Token in LocalStorage: {tokenStatus}<br />
           Cookie LTI: {(() => {
             try {
               return document.cookie.includes('lti_token') ? '✅ Present' : '❌ Absent';
             } catch {
-              return '⚠️ Bloqueado';
+              return '⚠️ Blocked';
             }
           })()}<br />
           Environment: {import.meta.env.DEV ? 'Development (DEV)' : 'Production'}
@@ -112,7 +112,7 @@ export default function AccessDenied({ apiError }) {
           </div>
         )}
 
-        {/* Formulario de login local — SOLO visible en Desarrollo y FUERA de un iframe */}
+        {/* Local login form — ONLY visible in Development and OUTSIDE an iframe */}
         {import.meta.env.DEV && !isIframe && (
           <div style={{ marginTop: '30px', borderTop: '2px dashed #c7cdd1', paddingTop: '30px', background: '#f0f7ff', borderRadius: '6px', padding: '20px' }}>
             <h3 style={{ color: '#0770a3', fontSize: '16px', margin: '0 0 10px 0', fontWeight: '700' }}>
@@ -132,7 +132,7 @@ export default function AccessDenied({ apiError }) {
               />
               <input
                 type="password"
-                placeholder="Password (ej: password123)"
+                placeholder="Password (e.g.: password123)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -152,7 +152,7 @@ export default function AccessDenied({ apiError }) {
           </div>
         )}
 
-        {/* Mensaje de seguridad para iframes */}
+        {/* Security message for iframes */}
         {isIframe && (
           <div style={{ marginTop: '30px', padding: '15px', background: '#f8f9fa', borderLeft: '4px solid #e74c3c', borderRadius: '4px', textAlign: 'left' }}>
             <p style={{ margin: 0, fontSize: '13px', color: '#555', lineHeight: '1.5' }}>

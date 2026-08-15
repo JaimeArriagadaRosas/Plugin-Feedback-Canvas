@@ -25,7 +25,7 @@ export function useAssignmentList(course) {
         return result.data.map(a => ({
           id: a.id,
           name: a.name,
-          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'Sin fecha',
+          due: a.due_at ? new Date(a.due_at).toLocaleDateString() : 'No date',
           rubric: a.use_rubric_for_grading === true || a.has_rubric === true || !!(Array.isArray(a.rubric) && a.rubric.length > 0),
           template: a.template || "",
           plantilla_id: a.template || null,
@@ -38,12 +38,12 @@ export function useAssignmentList(course) {
     enabled: !!course?.id,
   });
 
-  // Task 23: Reseteo inicial por sesión
+  // Task 23: Initial reset per session
   useEffect(() => {
     if (!course?.id) return;
     const sessionKey = `plugin_session_init_${course.id}`;
     if (!sessionStorage.getItem(sessionKey)) {
-      logger.info('AssignmentList', `Primera visita de la sesión para curso ${course.id}. Desactivando tareas por defecto...`);
+      logger.info('AssignmentList', `First visit of the session for course ${course.id}. Deactivating assignments by default...`);
       sessionStorage.setItem(sessionKey, 'true');
       api.post(`/courses/${course.id}/assignments/reset-active`).then(() => {
         queryClient.invalidateQueries({ queryKey: assignmentKeys.all });

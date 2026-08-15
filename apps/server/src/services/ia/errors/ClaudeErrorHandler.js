@@ -32,12 +32,12 @@ export default class ClaudeErrorHandler {
       }
 
       if (status >= 500) {
-        throw new ApiError(`Error en los servidores de Claude: ${message}`, status);
+        throw new ApiError(`Error in Claude servers: ${message}`, status);
       }
       
-      throw new ApiError(`Error de Claude: ${message}`, status || 400);
+      throw new ApiError(`Claude error: ${message}`, status || 400);
     }
     
-    throw new ApiError(`Error de red al conectar con Claude: ${error.message}`, 500);
+    throw new ApiError(`Network error when connecting to Claude: ${error.message}`, 500);
   }
 }

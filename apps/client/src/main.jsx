@@ -1,14 +1,14 @@
 /**
- * main.jsx — Punto de entrada del frontend.
+ * main.jsx — Frontend entry point.
  *
- * Responsabilidad única: capturar el token LTI de arranque, importar los
- * estilos globales y montar la app dentro del ErrorBoundary.
+ * Single responsibility: capture the startup LTI token, import global
+ * styles and mount the app inside the ErrorBoundary.
  *
- * La lógica que antes vivía aquí se movió a módulos dedicados:
+ * The logic that used to live here was moved to dedicated modules:
  *   - Logger .................. lib/logger.js
  *   - Token LTI / iframe ...... lib/authToken.js
- *   - Inyección de token HTTP . api/apiClient.js (interceptor, ya no monkey-patch)
- *   - Router y providers ...... app/App.jsx
+ *   - HTTP token injection .... api/apiClient.js (interceptor, no longer monkey-patch)
+ *   - Router and providers .... app/App.jsx
  *   - ErrorBoundary ........... app/ErrorBoundary.jsx
  */
 import ReactDOM from 'react-dom/client';
@@ -34,7 +34,7 @@ setLoggerContextProvider(() => ({
   timestampISO: new Date().toISOString()
 }));
 
-logger.info('Main', 'Token LTI capturado. Montando aplicación React.', {
+logger.info('Main', 'LTI token captured. Mounting React application.', {
   tokenPresent: !!getToken(),
   isIframe
 });

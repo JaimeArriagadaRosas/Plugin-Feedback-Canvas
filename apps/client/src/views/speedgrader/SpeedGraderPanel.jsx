@@ -30,7 +30,7 @@ export default function SpeedGraderPanel({ onExit }) {
   const [isManualMode, setIsManualMode] = useState(false);
   const taskSelectorRef = useRef(null);
 
-  // Cierra el selector de tarea al hacer clic fuera
+  // Close the task selector when clicking outside
   useEffect(() => {
     if (!taskSelectorOpen) return;
     function handleClickOutside(e) {
@@ -93,8 +93,8 @@ export default function SpeedGraderPanel({ onExit }) {
     navigate(`/teacher/templates/${courseId}/${currentAssignmentId}`);
   }, [navigate, courseId, currentAssignmentId]);
 
-  // Neutraliza el paddingBottom del main#main-content del layout padre
-  // para que el SpeedGrader ocupe el alto completo sin barra gris inferior
+  // Neutralizes paddingBottom of parent layout main#main-content
+  // so that the SpeedGrader takes full height without a bottom gray bar
   useEffect(() => {
     const mainEl = document.getElementById('main-content');
     if (mainEl) {
@@ -194,7 +194,7 @@ export default function SpeedGraderPanel({ onExit }) {
 
           {!isManualMode ? (
             <>
-              {/* Botones de acción: Rúbrica, Ver Historial, Simular Trayectoria */}
+              {/* Action buttons: Rubric, View History, Simulate Trajectory */}
               <SpeedGraderRubric 
                 onShowHistory={() => setShowHistory(true)} 
                 onShowTrajectory={() => setShowTrajectoryModal(true)}

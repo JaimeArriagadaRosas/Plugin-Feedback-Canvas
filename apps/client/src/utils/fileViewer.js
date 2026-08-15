@@ -1,9 +1,9 @@
 /**
- * Verifica si una extensión de archivo es soportada nativamente por el visor de Canvas (Canvadocs).
- * Se utiliza para determinar si se debe intentar cargar el iframe de previsualización.
+ * Verifies if a file extension is natively supported by the Canvas viewer (Canvadocs).
+ * Used to determine if the preview iframe should be attempted to load.
  * 
- * @param {string} filename - Nombre del archivo o extensión.
- * @returns {boolean} - True si el archivo es soportado, false en caso contrario.
+ * @param {string} filename - File name or extension.
+ * @returns {boolean} - True if the file is supported, false otherwise.
  */
 export const isSupportedForPreview = (filename) => {
   if (!filename) return false;

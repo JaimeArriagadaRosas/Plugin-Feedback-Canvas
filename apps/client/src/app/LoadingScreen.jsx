@@ -1,8 +1,8 @@
 import { colors, font } from '@/tokens';
 
 /**
- * LoadingScreen — Indicador de carga a pantalla parcial.
- * La keyframe `spin` está definida globalmente en styles/theme.css.
+ * LoadingScreen — Partial screen loading indicator.
+ * The `spin` keyframe is defined globally in styles/theme.css.
  */
 export default function LoadingScreen({ message }) {
   return (

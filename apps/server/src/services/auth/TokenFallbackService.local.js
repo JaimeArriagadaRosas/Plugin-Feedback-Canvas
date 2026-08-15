@@ -25,17 +25,17 @@ class TokenFallbackServiceLocal {
         }
         
         if (!user) {
-           // Si no se encuentra un usuario explícito, fallar de manera estricta
+           // If no explicit user is found, fail strictly
            return null;
         }
 
         if (user && user.token) {
-          logger.info(`[LocalTokenFallback] Modo Docker local: Token asignado (basado en rol) desde canvas_local_users.json para sub ${canvasSub} (mapeado a ${user.email}).`);
+          logger.info(`[LocalTokenFallback] Local Docker mode: Token assigned (role-based) from canvas_local_users.json for sub ${canvasSub} (mapped to ${user.email}).`);
           return user.token;
         }
       }
     } catch (e) {
-      logger.warn(`[LocalTokenFallback] Error leyendo canvas_local_users.json: ${e.message}`);
+      logger.warn(`[LocalTokenFallback] Error reading canvas_local_users.json: ${e.message}`);
     }
 
     return null;
@@ -46,10 +46,10 @@ class TokenFallbackServiceLocal {
       const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
       if (typeof canvasTokenManagerOrRepo.tokenRepo?.saveToken === 'function') {
         await canvasTokenManagerOrRepo.tokenRepo.saveToken(canvasSub, localToken, null, expiresAt);
-        logger.info(`[LocalTokenFallback] Sub LTI ${canvasSub} registrado en BD con token local.`);
+        logger.info(`[LocalTokenFallback] LTI sub ${canvasSub} registered in DB with local token.`);
       } else if (typeof canvasTokenManagerOrRepo.saveToken === 'function') {
         await canvasTokenManagerOrRepo.saveToken(canvasSub, localToken, null, expiresAt);
-        logger.info(`[LocalTokenFallback] Sub LTI ${canvasSub} registrado en BD con token local.`);
+        logger.info(`[LocalTokenFallback] LTI sub ${canvasSub} registered in DB with local token.`);
       }
     } catch (dbErr) {
       logger.warn(`[LocalTokenFallback] Could not register LTI sub in DB (non-critical): ${dbErr.message}`);

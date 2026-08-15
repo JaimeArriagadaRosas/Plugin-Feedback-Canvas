@@ -8,5 +8,5 @@ export function createCertificateToolInstaller(platform, dependencies) {
     return new WslCertificateToolInstaller(dependencies);
   }
   if (platform === 'linux') return new LinuxCertificateToolInstaller(dependencies);
-  throw new Error(`La instalación automática de certificados no está disponible para ${platform}.`);
+  throw new Error(`Automatic certificate installation is not available for ${platform}.`);
 }

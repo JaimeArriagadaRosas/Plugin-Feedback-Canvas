@@ -7,7 +7,7 @@ import QuizViewer from './QuizViewer';
 import TextEntryViewer from './TextEntryViewer';
 import logger from '../../utils/logger';
 
-const IFRAME_TIMEOUT_MS = 15000; // 15 segundos antes de declarar fallo del iframe
+const IFRAME_TIMEOUT_MS = 15000; // 15 seconds before declaring iframe failure
 
 export default function SubmissionViewer({
   submission,
@@ -35,18 +35,18 @@ export default function SubmissionViewer({
   const zoomOutText = () => setTextScale(prev => Math.max(0.5, prev - 0.1));
   const zoomInText = () => setTextScale(prev => Math.min(3.0, prev + 0.1));
 
-  // Reset iframe states cuando cambia la submission
+  // Reset iframe states when submission changes
   useEffect(() => {
     setIframeLoaded(false);
     setIframeTimedOut(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, [submission]);
 
-  // Timeout para el iframe: si no carga en 15s, mostrar tarjeta de error
+  // Iframe timeout: if it doesn't load in 15s, show error card
   useEffect(() => {
     if (hasPreviewUrl && !isFile && !hasBody && !iframeLoaded && !iframeTimedOut) {
       timeoutRef.current = setTimeout(() => {
-        logger.warn('SubmissionViewer', `Iframe timeout (${IFRAME_TIMEOUT_MS}ms) — preview_url no respondió.`);
+        logger.warn('SubmissionViewer', `Iframe timeout (${IFRAME_TIMEOUT_MS}ms) — preview_url did not respond.`);
         setIframeTimedOut(true);
       }, IFRAME_TIMEOUT_MS);
       return () => clearTimeout(timeoutRef.current);
@@ -58,7 +58,7 @@ export default function SubmissionViewer({
       submittedAt = new Date(submission.submitted_at).toLocaleString();
     }
     
-    // Revisar si hay adjuntos (attachments)
+    // Check if there are attachments
     if (submission.attachments && submission.attachments.length > 0) {
       const attachment = submission.attachments[0];
       fileName = attachment.filename || attachment.display_name || 'document';
@@ -69,13 +69,13 @@ export default function SubmissionViewer({
       isUnsupportedFile = !isSupportedForPreview(fileName);
     }
     
-    // Revisar si hay un enlace de previsualización (Canvadocs)
+    // Check if there is a preview link (Canvadocs)
     if (submission.preview_url) {
       hasPreviewUrl = true;
       previewUrl = submission.preview_url;
     }
     
-    // Revisar si hay body HTML
+    // Check if there is an HTML body
     if (submission.body) {
       hasBody = true;
       textBody = submission.body.replace(/<[^>]+>/g, '');
@@ -86,7 +86,7 @@ export default function SubmissionViewer({
     textBody = "No submission.";
   }
 
-  // Logging de diagnóstico en consola del navegador
+  // Diagnostic logging in the browser console
   if (submission) {
     const branch = !submission ? 'NO_SUBMISSION'
       : isUnsupportedFile ? 'UNSUPPORTED_FILE'
@@ -94,7 +94,7 @@ export default function SubmissionViewer({
       : hasBody ? 'BODY_TEXT'
       : hasPreviewUrl ? 'IFRAME_PREVIEW'
       : 'FALLBACK_EMPTY';
-    logger.debug('SubmissionViewer', `Rama: ${branch}`, { type: submission.submission_type || 'N/A', attachments: submission.attachments?.length || 0, hasBody, hasPreviewUrl });
+    logger.debug('SubmissionViewer', `Branch: ${branch}`, { type: submission.submission_type || 'N/A', attachments: submission.attachments?.length || 0, hasBody, hasPreviewUrl });
   }
 
   const renderContent = () => {
@@ -134,7 +134,7 @@ export default function SubmissionViewer({
       );
     }
 
-    // 1. Tarjeta de Contingencia Altamente Estética para archivos no soportados
+    // 1. Highly Aesthetic Contingency Card for unsupported files
     if (isUnsupportedFile) {
       return (
         <div className={styles.scrollableWrapper}>
@@ -158,14 +158,14 @@ export default function SubmissionViewer({
       );
     }
 
-    // 2. Visor Nativo de PDF (originales o convertidos vía Gotenberg)
+    // 2. Native PDF Viewer (original or converted via Gotenberg)
     if (isFile && fileUrl) {
-      // Usar nuestro proxy interno para conversión a PDF y evadir bloqueos
+      // Use our internal proxy for PDF conversion to evade blocks
       const proxyUrl = `/api/courses/file/preview?url=${encodeURIComponent(fileUrl)}`;
       return <NativePdfViewer fileUrl={proxyUrl} />;
     }
 
-    // 2.5. PRIORIDAD: Visor Nativo de Cuestionarios (Quizzes)
+    // 2.5. PRIORITY: Native Quiz Viewer
     if (submission && submission.submission_type === 'online_quiz') {
       return (
         <div className={styles.textEntryContainer}>
@@ -174,7 +174,7 @@ export default function SubmissionViewer({
       );
     }
 
-    // 3. PRIORIDAD: Contenido de texto/HTML de la entrega (online_text_entry)
+    // 3. PRIORITY: Text/HTML content of the submission (online_text_entry)
     if (hasBody) {
       return (
         <div className={styles.textEntryContainer}>
@@ -187,10 +187,10 @@ export default function SubmissionViewer({
       );
     }
 
-    // 4. Último recurso: iframe de preview_url (Canvadocs/DocViewer)
-    //    Solo se usa cuando no hay attachments ni body — ej: online_url, student_annotation
+    // 4. Last resort: preview_url iframe (Canvadocs/DocViewer)
+    //    Only used when there are no attachments or body — e.g. online_url, student_annotation
     if (hasPreviewUrl) {
-      // Si el iframe excedió el timeout, mostrar tarjeta informativa
+      // If the iframe exceeded the timeout, show info card
       if (iframeTimedOut) {
         return (
           <div className={styles.scrollableWrapper}>
@@ -230,7 +230,7 @@ export default function SubmissionViewer({
       );
     }
 
-    // 5. Fallback final
+    // 5. Final fallback
     return renderTextCard(textBody || "No submission content.");
   };
 

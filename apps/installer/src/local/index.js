@@ -1,2 +1,2 @@
 export { Orchestrator } from './Orchestrator.js';
-// Aquí se irán exportando todas las dependencias exclusivas para desarrollo local
+// All exclusive dependencies for local development will be exported here

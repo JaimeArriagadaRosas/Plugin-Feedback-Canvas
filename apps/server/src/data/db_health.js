@@ -17,8 +17,8 @@ export async function pingDatabase(pool) {
     await client.query('SELECT 1');
     return true;
   } catch (error) {
-    logger.debug('[DB-HEALTH] Fallo al hacer ping a la base de datos:', error.message);
-    throw new DatabaseConnectionError('Fallo en healthcheck de PostgreSQL', error);
+    logger.debug('[DB-HEALTH] Failed to ping the database:', error.message);
+    throw new DatabaseConnectionError('PostgreSQL healthcheck failed', error);
   } finally {
     if (client) {
       client.release();

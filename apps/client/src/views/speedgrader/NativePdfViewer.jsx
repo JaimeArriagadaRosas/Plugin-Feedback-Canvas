@@ -4,7 +4,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import styles from './NativePdfViewer.module.css';
 
-// Configurar el worker para react-pdf
+// Configure the worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const PdfSkeleton = () => (
@@ -21,10 +21,10 @@ const NativePdfViewer = ({ fileUrl }) => {
   const [error, setError] = useState(null);
 
   React.useEffect(() => {
-    console.log(`[NativePdfViewer] Iniciando carga de documento proxyUrl: ${fileUrl}`);
+    console.log(`[NativePdfViewer] Starting document load proxyUrl: ${fileUrl}`);
     console.time('PDF_Load_Time');
     return () => {
-      // Si el componente se desmonta antes de cargar, limpiaremos el timer (aunque puede dar un warning en consola, es preferible)
+      // If the component unmounts before loading, we'll clear the timer (although it might give a warning in console, it's preferable)
     };
   }, [fileUrl]);
 
@@ -36,7 +36,7 @@ const NativePdfViewer = ({ fileUrl }) => {
 
   const onDocumentLoadError = (err) => {
     console.error('[NativePdfViewer] Error loading PDF:', err);
-    try { console.timeEnd('PDF_Load_Time'); } catch (e) {} // Evitar error si no había timer activo
+    try { console.timeEnd('PDF_Load_Time'); } catch (e) {} // Avoid error if there was no active timer
     setError('Could not load document.');
   };
 

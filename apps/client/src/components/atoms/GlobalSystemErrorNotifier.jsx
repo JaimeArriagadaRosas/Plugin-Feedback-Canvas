@@ -22,10 +22,10 @@ export default function GlobalSystemErrorNotifier() {
   const totalErrors = systemErrors.reduce((acc, curr) => acc + parseInt(curr.cantidad || 0, 10), 0);
 
   useEffect(() => {
-    // Si incrementa la cantidad de errores, mostrar toast global
+    // If error count increases, show global toast
     if (totalErrors > previousErrorsRef.current) {
       setGlobalToast({
-        message: '¡Atención! Ha ocurrido un nuevo error de sistema. Revisa tus notificaciones de sistema.',
+        message: 'Attention! A new system error has occurred. Please check your system notifications.',
         type: 'error'
       });
     }

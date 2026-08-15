@@ -2,7 +2,7 @@ import api from '../api/apiClient';
 
 export const variablesClient = {
   /**
-   * Obtiene la configuración de variables para un curso
+   * Gets the variable configuration for a course
    */
   async getCourseVariables(courseId) {
     const response = await api.get(`/courses/${courseId}/variables`);
@@ -10,7 +10,7 @@ export const variablesClient = {
   },
 
   /**
-   * Guarda la configuración de variables para un curso
+   * Saves the variable configuration for a course
    */
   async saveCourseVariables(courseId, variables) {
     const response = await api.put(`/courses/${courseId}/variables`, { variables });

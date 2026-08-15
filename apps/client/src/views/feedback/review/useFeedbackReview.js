@@ -26,8 +26,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [activeFeedback, setActiveFeedback] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(initialSelectedCourse || "Todos");
-  const [selectedAssignment, setSelectedAssignment] = useState("Todas");
+  const [selectedCourse, setSelectedCourse] = useState(initialSelectedCourse || "All");
+  const [selectedAssignment, setSelectedAssignment] = useState("All");
   const [toastMessage, setToastMessage] = useState(null);
   const [pendingBulkApproval, setPendingBulkApproval] = useState(null);
   const approvalKeysRef = useRef(new Map());
@@ -36,8 +36,8 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
   const { data: feedbacks = [], isLoading: loading } = useQuery({
     queryKey: ['feedback-list'],
     queryFn: async () => {
-      // Obtenemos todos los feedbacks del profesor para que los filtros
-      // (coursesList, assignmentsList) siempre tengan todas las opciones disponibles.
+      // We fetch all the teacher's feedbacks so that the filters
+      // (coursesList, assignmentsList) always have all options available.
       const result = await api.get('/feedback/list');
       if (result.exito && result.data) {
         return result.data;
@@ -72,7 +72,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Feedback aprobado con éxito", type: "success" });
+      setToastMessage({ message: "Feedback approved successfully", type: "success" });
     },
     onError: (e) => {
       logger.error('FeedbackReview', "Error trying to approve feedback", { error: e });
@@ -90,7 +90,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Feedback rechazado y regeneración solicitada con éxito", type: "success" });
+      setToastMessage({ message: "Feedback rejected and regeneration requested successfully", type: "success" });
     },
     onError: (e) => {
       logger.error('FeedbackReview', "Error trying to reject feedback", { error: e });
@@ -108,7 +108,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setShowApprovalModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Valoración guardada con éxito", type: "success" });
+      setToastMessage({ message: "Rating saved successfully", type: "success" });
     },
     onError: (e) => {
       logger.error('FeedbackReview', "Error saving rating", { error: e });
@@ -126,7 +126,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       setShowEditModal(false);
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Feedback editado con éxito", type: "success" });
+      setToastMessage({ message: "Feedback edited successfully", type: "success" });
     },
     onError: (e) => {
       logger.error('FeedbackReview', "Error trying to edit feedback", { error: e });
@@ -143,7 +143,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Nota privada guardada con éxito", type: "success" });
+      setToastMessage({ message: "Private note saved successfully", type: "success" });
     },
     onError: (error) => {
       setToastMessage({ message: error.message || "Error saving private note", type: "error" });
@@ -159,11 +159,11 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
-      setToastMessage({ message: "Feedbacks aprobados masivamente con éxito.", type: "success" });
+      setToastMessage({ message: "Feedbacks bulk approved successfully.", type: "success" });
       setPendingBulkApproval(null);
     },
     onError: (e) => {
-      logger.error('FeedbackReview', "Error en aprobación masiva", { error: e });
+      logger.error('FeedbackReview', "Error in bulk approval", { error: e });
       setToastMessage({ message: "Error trying to bulk approve feedbacks.", type: "error" });
       setPendingBulkApproval(null);
     }
@@ -173,36 +173,36 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
     const uniqueCourses = new Map();
     feedbacks.forEach(fb => {
       if (fb.courseId) {
-        uniqueCourses.set(String(fb.courseId), fb.courseName || `Curso ${fb.courseId}`);
+        uniqueCourses.set(String(fb.courseId), fb.courseName || `Course ${fb.courseId}`);
       }
     });
     return [
-      { value: 'Todos', label: 'Todos los Cursos' },
+      { value: 'All', label: 'All Courses' },
       ...Array.from(uniqueCourses.entries()).map(([id, name]) => ({ value: id, label: name }))
     ];
   }, [feedbacks]);
 
   const assignmentsList = useMemo(() => {
     let list = feedbacks;
-    if (selectedCourse !== "Todos") {
+    if (selectedCourse !== "All") {
       list = feedbacks.filter(fb => String(fb.courseId) === String(selectedCourse));
     }
     const uniqueAssignments = new Map();
     list.forEach(fb => {
       if (fb.assignmentId) {
-        uniqueAssignments.set(String(fb.assignmentId), fb.assignmentName || `Asignación ${fb.assignmentId}`);
+        uniqueAssignments.set(String(fb.assignmentId), fb.assignmentName || `Assignment ${fb.assignmentId}`);
       }
     });
     return [
-      { value: 'Todas', label: 'Todas las Asignaciones' },
+      { value: 'All', label: 'All Assignments' },
       ...Array.from(uniqueAssignments.entries()).map(([id, name]) => ({ value: id, label: name }))
     ];
   }, [feedbacks, selectedCourse]);
 
   const filteredFeedbacks = useMemo(() => {
     const filtered = feedbacks.filter(fb => {
-      const matchCourse = selectedCourse === "Todos" || String(fb.courseId) === String(selectedCourse);
-      const matchAssignment = selectedAssignment === "Todas" || String(fb.assignmentId) === String(selectedAssignment);
+      const matchCourse = selectedCourse === "All" || String(fb.courseId) === String(selectedCourse);
+      const matchAssignment = selectedAssignment === "All" || String(fb.assignmentId) === String(selectedAssignment);
       return matchCourse && matchAssignment;
     });
 
@@ -274,7 +274,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
 
   const handleBulkApprove = useCallback(() => {
     if (selectedIds.size === 0) {
-      setToastMessage({ message: "Debes seleccionar al menos un feedback pendiente o editado usando las casillas.", type: "info" });
+      setToastMessage({ message: "You must select at least one pending or edited feedback using the checkboxes.", type: "info" });
       return;
     }
     const pendingIds = filteredFeedbacks
@@ -282,7 +282,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       .map(fb => fb.id);
       
     if (pendingIds.length === 0) {
-      setToastMessage({ message: "Los feedbacks seleccionados no están pendientes ni editados.", type: "info" });
+      setToastMessage({ message: "The selected feedbacks are not pending or edited.", type: "info" });
       return;
     }
     setPendingBulkApproval(pendingIds);
@@ -293,7 +293,7 @@ export function useFeedbackReview({ initialSelectedCourse } = {}) {
       const ids = pendingBulkApproval;
       setPendingBulkApproval(null);
       bulkApproveMutation.mutate(ids);
-      setToastMessage({ message: "Iniciando aprobación masiva en segundo plano...", type: "info" });
+      setToastMessage({ message: "Starting bulk approval in the background...", type: "info" });
     }
   }, [bulkApproveMutation, pendingBulkApproval]);
 

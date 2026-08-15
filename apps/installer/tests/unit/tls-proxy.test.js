@@ -13,7 +13,7 @@ vi.mock('node:fs', async (importOriginal) => {
 import { assertTlsProxyConfiguration, startTlsProxy } from '../../src/local/TlsProxyServer.js';
 
 describe('startTlsProxy', () => {
-  it('rechaza antes de abrir un puerto si faltan certificados', async () => {
+  it('rejects before opening a port if certificates are missing', async () => {
     expect(() => assertTlsProxyConfiguration()).toThrow(/Certificados mkcert no encontrados/);
     await expect(startTlsProxy()).rejects.toThrow(/Certificados mkcert no encontrados/);
   });

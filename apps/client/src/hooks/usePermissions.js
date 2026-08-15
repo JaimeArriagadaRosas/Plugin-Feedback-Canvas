@@ -6,7 +6,7 @@ export function usePermissions() {
   const isTrueAdmin = role === 'admin' || (rawRoles && rawRoles.some(r => r.includes('Administrator')));
 
   const hasPermission = (key) => {
-    // Los administradores (por rol explícito o por claims IMS) tienen todos los permisos.
+    // Administrators (by explicit role or IMS claims) have all permissions.
     if (isTrueAdmin) return true; 
     return !!permissions?.[key]?.value;
   };

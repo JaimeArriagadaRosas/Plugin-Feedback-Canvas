@@ -11,7 +11,7 @@ import styles from './StudentFeedbackView.module.css';
 export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
   const { courseId, courseName, user, studentId: contextStudentId } = useAuth();
   
-  // Si studentId explícito de Canvas existe, lo usamos. Si no, fallback al user (UUID) o al inicial.
+  // If explicit Canvas studentId exists, we use it. If not, fallback to user (UUID) or the initial one.
   const studentId = contextStudentId || (user && user !== 'system' ? user : initialStudentId);
 
   const [showPreferences, setShowPreferences] = useState(false);

@@ -7,7 +7,7 @@ import logger from '../utils/logger.js';
  * @param {number} [options.maxAttempts=10] - Máximo número de intentos.
  * @param {number} [options.baseDelayMs=1500] - Retraso base inicial.
  * @param {number} [options.maxDelayMs=15000] - Retraso máximo.
- * @param {Function} [options.onAttemptFailed] - Callback para cada fallo.
+ * @param {Function} [options.onAttemptFailed] - Callback for each failure.
  * @param {Function} [options.shouldRetry] - Función que determina si el error es transitorio.
  * @returns {Promise<any>}
  */
@@ -17,7 +17,7 @@ export async function withExponentialBackoff(operation, options = {}) {
     baseDelayMs = 1500,
     maxDelayMs = 15000,
     onAttemptFailed = (err, attempt, delay) => {
-      logger.progress(`[DB-RETRY] Fallo intento ${attempt}. Esperando ${delay}ms para reintentar...`);
+      logger.progress(`[DB-RETRY] Attempt ${attempt} failed. Waiting ${delay}ms to retry...`);
     },
     shouldRetry = () => true
   } = options;
