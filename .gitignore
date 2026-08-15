@@ -49,6 +49,7 @@ blob-report/
 # Estado generado por el setup de Canvas
 .setup_complete
 .assets_built
+.canvas_container_id
 canvas-lms-master/
 storybook-static/
 *storybook.log
