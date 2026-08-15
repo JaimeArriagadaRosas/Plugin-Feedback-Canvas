@@ -137,10 +137,10 @@ export class TeacherTokenGenerator {
           const expiresAt = new Date(Date.now() + LOCAL_TOKEN_EXPIRY_MS);
           const tokenKey = userId ? String(userId) : canvasSub;
           await store.saveToken(tokenKey, tokenData.token, null, expiresAt);
-          log(`Token sincronizado en PostgreSQL (token_key: ${tokenKey}, canvas_sub: ${canvasSub}, canvas_user_id: ${userId}).`);
+          log(`Token synchronized in PostgreSQL for teacher.`);
 
           if (!spinner) {
-            console.log(`  √ Token sincronizado en PostgreSQL (canvas_user_id=${userId}).`);
+            console.log(`  √ Token synchronized in PostgreSQL for teacher.`);
           }
           return true;
         } finally {
