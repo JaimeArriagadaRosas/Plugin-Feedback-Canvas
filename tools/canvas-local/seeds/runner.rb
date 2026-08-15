@@ -11,6 +11,7 @@ UserFactory.migrate_existing_to_english
 
 # 1. Create users
 users = UserFactory.create_users
+system = users[:system]
 admin = users[:admin]
 teachers = users[:teachers]
 students = users[:students]
@@ -22,6 +23,7 @@ courses = CourseFactory.create_courses(admin, teachers, students)
 SubmissionFactory.create_assignments_and_submissions(courses, admin, students)
 
 # 4. Generate local tokens for the frontend
+system_token = UserFactory.regenerate_dev_token(system)
 admin_token = UserFactory.regenerate_dev_token(admin)
 teacher1_token = UserFactory.regenerate_dev_token(teachers[0])
 teacher2_token = UserFactory.regenerate_dev_token(teachers[1])
@@ -34,6 +36,7 @@ students_with_tokens = students.map do |s|
 end
 
 puts "=== CANVAS DATA ==="
+puts "SYSTEM_TOKEN:#{system_token}"
 puts "COURSE_ID:#{courses[0].id}"
 puts "TEACHER_EMAIL:teacher@canvas.local"
 puts "CANVAS_API_TOKEN:#{teacher1_token}"
@@ -45,6 +48,7 @@ puts "========================="
 
 profiles = {
   "users" => [
+    { "id" => system.id, "uuid" => system.uuid, "name" => system.name, "email" => "system@canvas.local", "role" => "system", "token" => system_token },
     { "id" => admin.id, "uuid" => admin.uuid, "name" => admin.name, "email" => "admin@canvas.local", "role" => "admin", "token" => admin_token },
     { "id" => teachers[0].id, "uuid" => teachers[0].uuid, "name" => teachers[0].name, "email" => "teacher@canvas.local", "role" => "teacher", "token" => teacher1_token },
     { "id" => teachers[1].id, "uuid" => teachers[1].uuid, "name" => teachers[1].name, "email" => "teacher2@canvas.local", "role" => "teacher", "token" => teacher2_token },

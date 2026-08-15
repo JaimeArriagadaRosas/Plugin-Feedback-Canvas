@@ -19,9 +19,9 @@ import { runCommand } from './Runner.js';
 const CANVAS_LOCAL_URL = 'http://127.0.0.1:8080';
 const CANVAS_VALIDATION_ENDPOINT = '/api/v1/users/self/profile';
 const CANVAS_PING_ENDPOINT = '/api/v1/brand_variables';
-// We use the root of the project to prevent the 'tmp' folder (which is a separate Docker volume) 
-// from intercepting the write and hiding the file from the host (Path shadowing).
-const TOKEN_HANDOFF_PATH_IN_CONTAINER = '/usr/src/app/.token_handoff.json';
+// We use the 'tmp' folder because the docker user inside the container has write permissions to it.
+// To avoid path shadowing issues with Docker volumes, we read the file using docker exec cat instead of fs.readFile.
+const TOKEN_HANDOFF_PATH_IN_CONTAINER = '/usr/src/app/tmp/.token_handoff.json';
 
 // --- Utilities ---
 
@@ -174,19 +174,24 @@ File.write('${TOKEN_HANDOFF_PATH_IN_CONTAINER}', JSON.generate(result))
     throw new Error(`[TOKEN-MANAGER] Rails runner failed. Stderr: ${err?.slice(0, 500)}`);
   }
 
-  // Read the handoff file from the host (shared volume)
-  const hostHandoffPath = path.join(canvasDir, '.token_handoff.json');
+  // Read the handoff file directly from the container to avoid path shadowing issues with Docker volumes
   let raw;
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    raw = await fs.readFile(hostHandoffPath, 'utf-8');
+    const { success: catSuccess, out: catOut, err: catErr } = await runCommand(
+      'docker',
+      ['compose', 'exec', '-T', 'web', 'cat', TOKEN_HANDOFF_PATH_IN_CONTAINER],
+      { cwd: canvasDir, captureAll: true }
+    );
+    if (!catSuccess) {
+      throw new Error(`Docker cat failed: ${catErr}`);
+    }
+    raw = catOut;
   } catch (e) {
-    throw new Error(`[TOKEN-MANAGER] Could not find the handoff file at ${hostHandoffPath}. The Ruby script may have failed silently.`);
+    throw new Error(`[TOKEN-MANAGER] Could not read the handoff file at ${TOKEN_HANDOFF_PATH_IN_CONTAINER}. The Ruby script may have failed silently. Error: ${e.message}`);
   }
 
-  // Delete the file immediately (do not leave tokens on disk longer than necessary)
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
-  await fs.unlink(hostHandoffPath).catch(e => { console.debug('Error unlinking handoff file', e.message); });
+  // Clean up the handoff file immediately
+  await runCommand('docker', ['compose', 'exec', '-T', 'web', 'rm', '-f', TOKEN_HANDOFF_PATH_IN_CONTAINER], { cwd: canvasDir }).catch(() => {});
 
   let data;
   try {

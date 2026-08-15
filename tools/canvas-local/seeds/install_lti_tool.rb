@@ -69,7 +69,7 @@ tool_config.assign_attributes(
 tool_config.save!
 
 puts "=== LTI CONFIGURATION ==="
-puts "LTI_CLIENT_ID:#{key.global_id}"
+puts "LTI_CLIENT_ID:#{key.id % 10_000_000_000_000}"
 puts "========================="
 
 begin

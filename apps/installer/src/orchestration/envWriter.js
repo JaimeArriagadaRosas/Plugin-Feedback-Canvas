@@ -36,7 +36,7 @@ export function updateEnvVars(pluginDir, variables) {
   
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
-  console.log(`  · Variables de entorno actualizadas en .env`);
+  console.log(`  · Environment variables updated in .env`);
 
 }
 
@@ -51,15 +51,15 @@ export function writeEnvOverrides(pluginDir, mode, useLocalData = true, role = '
   if (mode === '1' || mode === '2') {
     lines.push('USE_LOCAL_DATA=false');
     lines.push('VITE_USE_LOCAL_DATA=false');
-    console.log(`  · Variables de entorno configuradas (modo: ${mode}, local_data: false).`);
+    console.log(`  · Environment variables configured (mode: ${mode}, local_data: false).`);
   } else if (mode === '3') {
     lines.push('USE_LOCAL_DATA=false');
     lines.push('VITE_USE_LOCAL_DATA=false');
-    console.log(`  · Variables de entorno configuradas (modo: 3, local_data: false).`);
+    console.log(`  · Environment variables configured (mode: 3, local_data: false).`);
   } else {
     lines.push(`USE_LOCAL_DATA=${useLocalData}`);
     lines.push(`VITE_USE_LOCAL_DATA=${useLocalData}`);
-    console.log(`  · Variables de entorno configuradas (modo: ${mode}, local_data: ${useLocalData}).`);
+    console.log(`  · Environment variables configured (mode: ${mode}, local_data: ${useLocalData}).`);
   }
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   fs.writeFileSync(envPath, lines.join('\n') + '\n', 'utf8');
