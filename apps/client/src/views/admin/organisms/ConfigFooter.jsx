@@ -24,7 +24,7 @@ export default function ConfigFooter({ onSave, onDiscard, saveLabel = 'Sincroniz
   return (
     <div className={styles.footer}>
       <Button variant="secondary" onClick={handleDiscard}>
-        Descartar Cambios
+        Discard Changes
       </Button>
       <Button variant="primary" onClick={handleSave}>
         {saveLabel}
