@@ -86,7 +86,7 @@ export class ReportsService {
       return await this.excelExport.generateExcel(data, auditData.logs, migrationLogs, systemNotifications, templatesHistory);
     } catch (err) {
       logger.error('[ReportsService] Error exportToExcel', { error: err });
-      throw new ApiError('Error al generar archivo Excel', 500);
+      throw new ApiError('Error generating Excel file', 500);
     }
   }
 
@@ -98,7 +98,7 @@ export class ReportsService {
       return await this.pdfExport.generateReport(data, auditData.logs, migrationLogs);
     } catch (err) {
       logger.error('[ReportsService] Error exportToPdf', { error: err });
-      throw new ApiError('Error al generar reporte PDF', 500);
+      throw new ApiError('Error generating PDF report', 500);
     }
   }
 }

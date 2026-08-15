@@ -100,7 +100,7 @@ export default class SystemConfigController {
       let isAiServiceAvailable = false;
       if (iaConfigManager) {
         try {
-          const aiConfig = await iaConfigManager.getGlobalActiveConfig();
+          const aiConfig = await iaConfigManager.getGlobalActiveConfig(true);
           if (aiConfig && aiConfig.service) {
             isAiServiceAvailable = true;
           }

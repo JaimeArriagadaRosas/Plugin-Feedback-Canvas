@@ -50,11 +50,16 @@ export class ApiError extends Error {
   }
 }
 
+let isRedirectingToOAuth = false;
+
 function handleTokenRefresh(response, data) {
   if (response.status === 401 && data?.error?.requireOAuth && data?.error?.oauthUrl) {
-    logApi('warn', `Session requires OAuth. Redirecting to ${data.error.oauthUrl}`);
-    if (typeof window !== 'undefined') {
-      window.location.href = data.error.oauthUrl;
+    if (!isRedirectingToOAuth) {
+      isRedirectingToOAuth = true;
+      logApi('warn', `Session requires OAuth. Redirecting to ${data.error.oauthUrl}`);
+      if (typeof window !== 'undefined') {
+        window.location.href = data.error.oauthUrl;
+      }
     }
     return new Promise(() => {});
   }

@@ -41,10 +41,10 @@ export const authorizeRole = (requiredRoles) => {
       }
     }
 
-    logger.info(`[AUTHZ] Effective role: ${effective} | Required: [${requiredRoles.join(',')}] | Authorized: ${authorized}`);
+    logger.debug(`[AUTHZ] Effective role: ${effective} | Required: [${requiredRoles.join(',')}] | Authorized: ${authorized}`);
 
     if (!authorized) {
-      return next(new AppError(`Access denied: Role required [${requiredRoles.join(' o ')}], pero el usuario tiene rol '${effective}'.`, 403));
+      return next(new AppError(`Access denied: Role required [${requiredRoles.join(' or ')}], but the user has role '${effective}'.`, 403));
     }
     next();
   };

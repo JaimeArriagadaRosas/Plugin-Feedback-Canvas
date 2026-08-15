@@ -118,7 +118,7 @@ export async function startServer(app, PORT) {
 
       resolve(server);
     }).on('error', (err) => {
-      logger.error(`[SERVER] ERROR al escuchar en el puerto ${PORT}: ${err.message}`);
+      logger.error(`[SERVER] ERROR listening on port ${PORT}: ${err.message}`);
       // Notificar vía IPC al orquestador que ocurrió un error
       if (process.send) {
         process.send({ type: 'server-error', message: err.message });

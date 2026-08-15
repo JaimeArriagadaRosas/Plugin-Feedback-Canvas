@@ -59,7 +59,7 @@ logger.info('[SERVER] Entorno configurado. Esperando conexiones de autenticació
 startServer(app, PORT).then((server) => {
   serverInstance = server;
 }).catch((err) => {
-  logger.error('[SERVER] No se pudo iniciar el backend:', err);
+  logger.error('[SERVER] Could not start backend:', err);
   shutdown('STARTUP_ERROR', err.message);
 });
 

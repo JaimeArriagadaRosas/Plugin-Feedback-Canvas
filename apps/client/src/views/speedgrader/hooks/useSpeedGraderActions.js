@@ -92,7 +92,7 @@ export function useSpeedGraderActions({
       logger.error('SpeedGrader', "Error crítico al generar feedback", { error });
       if (currentStudentRef.current === targetStudentId) {
         // Enviar el error directamente a la caja de review
-        setFeedback(`[ERROR] ${error.message || "Error al contactar con la IA"}`);
+        setFeedback(`[ERROR] ${error.message || "Error contacting AI"}`);
         setStatusMsg("Error en la generación.");
       }
     } finally {
@@ -116,14 +116,14 @@ export function useSpeedGraderActions({
         grade: grade,
         rating: rating,
       });
-      if (!result.exito) throw new Error("Error al aprobar feedback");
+      if (!result.exito) throw new Error("Error approving feedback");
       setStatusMsg("¡Enviado exitosamente a Canvas!");
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (e) {
-      logger.error('SpeedGrader', "Error al enviar feedback", { error: e });
-      setStatusMsg("Error al enviar.");
+      logger.error('SpeedGrader', "Error sending feedback", { error: e });
+      setStatusMsg("Error sending.");
     } finally {
       setLoading(false);
     }
@@ -146,7 +146,7 @@ export function useSpeedGraderActions({
         content: text,
         grade: grade
       });
-      if (!result.exito) throw new Error("Error al enviar feedback manual");
+      if (!result.exito) throw new Error("Error sending feedback manual");
       setStatusMsg("¡Feedback manual guardado como pendiente exitosamente!");
       
       if (result.data) {
@@ -161,8 +161,8 @@ export function useSpeedGraderActions({
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (e) {
-      logger.error('SpeedGrader', "Error al enviar feedback manual", { error: e });
-      setStatusMsg("Error al enviar feedback manual.");
+      logger.error('SpeedGrader', "Error sending feedback manual", { error: e });
+      setStatusMsg("Error sending feedback manual.");
     } finally {
       setLoading(false);
     }

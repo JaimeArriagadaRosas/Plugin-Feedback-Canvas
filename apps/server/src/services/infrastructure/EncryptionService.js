@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { getSecret } from '../../config/secrets.js';
+import logger from '../../utils/logger.js';
 
 dotenv.config({ quiet: true });
 
@@ -72,6 +73,22 @@ export default class EncryptionService {
       return decrypted;
     } catch (error) {
       throw new Error('Failed to decrypt data. The key may be incorrect or the data might be corrupted.');
+    }
+  }
+
+  /**
+   * Safely decrypts cipher text, catching exceptions and logging them.
+   * Returns null if decryption fails.
+   */
+  static safeDecrypt(encryptedData, context = 'Unknown data', quiet = false) {
+    if (!encryptedData) return null;
+    try {
+      return this.decrypt(encryptedData);
+    } catch (error) {
+      if (!quiet) {
+        logger.error(`[EncryptionService] Failed to decrypt for: ${context}. Possible ENCRYPTION_KEY change or corrupted data.`);
+      }
+      return null;
     }
   }
 }

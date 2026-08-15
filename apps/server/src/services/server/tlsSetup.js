@@ -51,7 +51,7 @@ export async function createServerInstance(app) {
       };
       logger.info('[HTTPS] Certificados leídos correctamente. Creando servidor TLS...');
     } catch (err) {
-      logger.error(`[HTTPS] ERROR al leer los certificados SSL: ${err.message}`);
+      logger.error(`[HTTPS] ERROR reading SSL certificates: ${err.message}`);
       logger.error('[HTTPS] No se puede arrancar en HTTPS. Revise los archivos en apps/server/certs/.');
       throw err;
     }

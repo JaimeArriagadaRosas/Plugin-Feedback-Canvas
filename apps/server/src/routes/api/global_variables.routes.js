@@ -123,7 +123,7 @@ export default class ${className} extends BaseVariableResolver {
 
       res.status(200).json({ message: 'Variable eliminada exitosamente.' });
     } catch (error) {
-      console.error('[GlobalVariablesRoutes] Error al eliminar:', error);
+      console.error('[GlobalVariablesRoutes] Error deleting:', error);
       res.status(500).json({ error: 'Error interno al eliminar la variable.' });
     }
   });

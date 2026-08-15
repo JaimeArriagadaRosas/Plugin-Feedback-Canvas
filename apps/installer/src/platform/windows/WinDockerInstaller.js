@@ -33,7 +33,7 @@ export class WinDockerInstaller {
     }
 
     if (!success) {
-      this.boot.error(`No se pudo descargar Docker Desktop: ${err}`);
+      this.boot.error(`Could not download Docker Desktop: ${err}`);
       return false;
     }
 

@@ -19,7 +19,7 @@ export function useAssignmentList(course) {
       if (!id) return [];
       const result = await api.get(`/courses/${id}/assignments`);
       if (!result.exito) {
-        throw new Error(result.mensaje || 'Error al obtener tareas');
+        throw new Error(result.mensaje || 'Error fetching assignments');
       }
       if (result.data) {
         return result.data.map(a => ({
@@ -48,7 +48,7 @@ export function useAssignmentList(course) {
       api.post(`/courses/${course.id}/assignments/reset-active`).then(() => {
         queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
       }).catch(err => {
-        logger.warn('AssignmentList', 'No se pudo reiniciar el estado de la sesión:', err);
+        logger.warn('AssignmentList', 'Could not reset session state:', err);
       });
     }
   }, [course?.id, queryClient]);
@@ -88,7 +88,7 @@ export function useAssignmentList(course) {
         queryClient.setQueryData(assignmentKeys.byCourse(course?.id), context.previous);
       }
       logger.error('AssignmentList', "Error updating assignment status", { err });
-      setErrorMsg(err.message || "Error al actualizar la tarea");
+      setErrorMsg(err.message || "Error updating assignment");
     },
     onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
@@ -136,7 +136,7 @@ export function useAssignmentList(course) {
         queryClient.setQueryData(assignmentKeys.byCourse(course?.id), context.previous);
       }
       logger.error('AssignmentList', "Error updating assignment template", { err });
-      setErrorMsg(err.message || "Error al asignar la plantilla");
+      setErrorMsg(err.message || "Error assigning template");
     },
     onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });

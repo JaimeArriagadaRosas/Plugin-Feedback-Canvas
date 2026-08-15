@@ -58,7 +58,7 @@ export default function PermissionsTable() {
       setShowToast(true);
     } catch (err) {
       logger.error('PermissionsTable', 'Error updating permissions', { error: err });
-      setToastMessage('Error al actualizar permisos');
+      setToastMessage('Error updating permissions');
       setToastType('error');
       setShowToast(true);
     }

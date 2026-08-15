@@ -36,7 +36,7 @@ export class WindowsDockerMemoryConfigurator {
     try {
       this.shutdownWsl();
     } catch (error) {
-      log.debug('No se pudo reiniciar WSL automáticamente.', { error: error.message });
+      log.debug('Could not automatically restart WSL.', { error: error.message });
     }
     log.info('Configuración de WSL actualizada. Esperando el reinicio del runtime (8s)...');
     await this.delay(8000);
