@@ -4,7 +4,7 @@ import { createSpinner } from 'nanospinner';
 
 import { getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
 import { DockerLtiConfigurator } from './DockerLtiConfigurator.js';
-import { TeacherTokenGenerator } from './TeacherTokenGenerator.js';
+import { SystemTokenManager } from './SystemTokenManager.js';
 import { LtiVerifier } from './LtiVerifier.js';
 
 export function getLtiJsonPath() {
@@ -30,7 +30,7 @@ export class LtiInstaller {
     const installed = await LtiVerifier.checkLtiStatus() === 'OK';
     if (installed) {
       spinner.update({ text: 'La herramienta LTI ya está instalada correctamente.' });
-      await TeacherTokenGenerator.generate(spinner);
+      await SystemTokenManager.generate(spinner);
       return;
     }
 
@@ -39,7 +39,7 @@ export class LtiInstaller {
       await DockerLtiConfigurator.cleanDatabase(spinner);
       const clientId = await DockerLtiConfigurator.injectLtiTool(getLtiJsonPath(), spinner);
       if (clientId) spinner.update({ text: `LTI_CLIENT_ID actualizado en .env: ${clientId}` });
-      await TeacherTokenGenerator.generate(spinner);
+      await SystemTokenManager.generate(spinner);
     } catch (error) {
       spinner.error({ text: `Error crítico durante la instalación de LTI: ${error.message}` });
       throw error;
@@ -70,7 +70,7 @@ export class LtiInstaller {
     return DockerLtiConfigurator.runDockerCommand(args, envs);
   }
 
-  static async generateTeacherTokenIfMissing() {
-    return TeacherTokenGenerator.generate();
+  static async generateSystemTokenIfMissing() {
+    return SystemTokenManager.generate();
   }
 }

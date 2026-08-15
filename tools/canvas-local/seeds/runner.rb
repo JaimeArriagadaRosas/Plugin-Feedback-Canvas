@@ -8,6 +8,7 @@ puts "=== Iniciando inyección modular de semillas de prueba ==="
 
 # 1. Crear usuarios
 users = UserFactory.create_users
+system = users[:system]
 admin = users[:admin]
 teachers = users[:teachers]
 students = users[:students]
@@ -19,6 +20,7 @@ courses = CourseFactory.create_courses(admin, teachers, students)
 SubmissionFactory.create_assignments_and_submissions(courses, admin, students)
 
 # 4. Generar tokens locales para el frontend
+system_token = UserFactory.regenerate_dev_token(system)
 admin_token = UserFactory.regenerate_dev_token(admin)
 teacher1_token = UserFactory.regenerate_dev_token(teachers[0])
 teacher2_token = UserFactory.regenerate_dev_token(teachers[1])
@@ -31,6 +33,7 @@ students_with_tokens = students.map do |s|
 end
 
 puts "=== CANVAS DATA ==="
+puts "SYSTEM_TOKEN:#{system_token}"
 puts "COURSE_ID:#{courses[0].id}"
 puts "TEACHER_EMAIL:profesor@canvas.local"
 puts "CANVAS_API_TOKEN:#{teacher1_token}"
@@ -42,6 +45,7 @@ puts "========================="
 
 perfiles = {
   "usuarios" => [
+    { "id" => system.id, "uuid" => system.uuid, "nombre" => system.name, "email" => "system@canvas.local", "rol" => "system", "token" => system_token },
     { "id" => admin.id, "uuid" => admin.uuid, "nombre" => admin.name, "email" => "admin@canvas.local", "rol" => "admin", "token" => admin_token },
     { "id" => teachers[0].id, "uuid" => teachers[0].uuid, "nombre" => teachers[0].name, "email" => "profesor@canvas.local", "rol" => "teacher", "token" => teacher1_token },
     { "id" => teachers[1].id, "uuid" => teachers[1].uuid, "nombre" => teachers[1].name, "email" => "profesor2@canvas.local", "rol" => "teacher", "token" => teacher2_token },
