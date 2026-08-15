@@ -91,9 +91,9 @@ export class DataSeeder {
       fs.writeFileSync(localPath, JSON.stringify(perfiles, null, 2));
       this.boot.info(`Usuarios y tokens exportados a ${localPath}`);
 
-      const teacher = perfiles.usuarios?.find((user) => user.rol === 'teacher');
-      if (teacher?.token) this._writeTokenToEnv(teacher.token);
-      else this.boot.warn('No se encontro token de profesor en perfiles_data.json');
+      const systemUser = perfiles.usuarios?.find((user) => user.rol === 'system') || perfiles.users?.find((user) => user.role === 'system');
+      if (systemUser?.token) this._writeTokenToEnv(systemUser.token);
+      else this.boot.warn('No se encontro token de sistema en perfiles_data.json');
       await this._migrateAndSyncUsers(localPath);
     } catch (error) {
       this.boot.warn(`Error parseando perfiles_data.json: ${error.message}`);

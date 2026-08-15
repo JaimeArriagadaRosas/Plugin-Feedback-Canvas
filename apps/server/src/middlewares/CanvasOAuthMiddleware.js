@@ -1,39 +1,33 @@
 import logger from '../utils/logger.js';
 
-// Mutex en memoria para evitar Thundering Herd en refrescos de token LTI
+// In-memory mutex to prevent Thundering Herd on LTI token refreshes
 const refreshLocks = new Map();
 
 /**
- * Middleware para asegurar que el usuario tenga un Canvas API Token (OAuth2)
- * o solicitar autorización a través del frontend.
+ * Middleware to ensure the user has a Canvas API Token (OAuth2).
  *
- * Modo Docker Local (STARTUP_MODE=3):
- * En este modo, el token del profesor fue generado por TeacherTokenGenerator y
- * guardado en PostgreSQL bajo el `canvas_sub` de Rails (ej: 86157096483e...).
- * Sin embargo, el JWT de LTI 1.3 emite un `sub` diferente (UUID v4, ej: dc6074c0-...).
- * Para evitar el 401 durante el desarrollo local, este middleware usa directamente
- * CANVAS_ACCESS_TOKEN del .env como fallback cuando no se encuentra el token por
- * el sub del JWT. Esto es correcto en desarrollo local ya que hay un único profesor.
- *
- * En producción este fallback no aplica y se requiere el flujo OAuth2 real.
+ * Each user must authorize individually through the OAuth2 flow.
+ * The CANVAS_ACCESS_TOKEN in .env is a system/infrastructure token used
+ * only for boot-time operations (LTI verification, maintenance scripts).
+ * It is never used as a fallback for user authentication.
  */
 export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
   return async (req, res, next) => {
     try {
-      // req.appIdentity es poblado por AuthLTI13Handler.
-      // En modo LTI, ltiUserId es el Canvas UUID o sub.
-      // req.user.id también apunta a este valor.
+      // req.appIdentity is populated by AuthLTI13Handler.
+      // In LTI mode, ltiUserId is the Canvas UUID or sub.
+      // req.user.id also points to this value.
       const canvasSub = req.appIdentity?.ltiUserId || req.user?.id;
 
       if (!canvasSub) {
-         logger.warn('[CanvasOAuthMiddleware] No se pudo determinar canvasSub desde ltiContext. Se procederá sin token.');
+         logger.warn('[CanvasOAuthMiddleware] Could not determine canvasSub from ltiContext. Proceeding without token.');
          return next();
       }
 
       let accessToken = null;
 
       if (typeof canvasTokenManagerOrRepo.getValidToken === 'function') {
-        // Usar CanvasTokenManager para obtener o refrescar el token de forma segura (Mutex)
+        // Use CanvasTokenManager to securely get or refresh the token (Mutex)
         try {
           if (!refreshLocks.has(canvasSub)) {
             const tokenPromise = canvasTokenManagerOrRepo.getValidToken(canvasSub)
@@ -43,17 +37,17 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
           accessToken = await refreshLocks.get(canvasSub);
         } catch (e) {
           if (!e.metadata?.requireOAuth) throw e;
-          // No relanzar aquí: se manejará en el if (!accessToken) más abajo
+          // Do not re-throw here: it will be handled in if (!accessToken) below
         }
       } else {
-        // Fallback al repositorio si no se inyectó el manager
+        // Fallback to the repository if the manager was not injected
         const tokenData = await canvasTokenManagerOrRepo.getToken(canvasSub);
         accessToken = tokenData?.accessToken;
       }
 
       if (!accessToken) {
-        // Enviar un 401 estructurado que el Frontend interpretará para lanzar el flujo OAuth
-        logger.info(`[CanvasOAuthMiddleware] Token Canvas no encontrado para sub ${canvasSub}. Requiriendo OAuth.`);
+        // Send a structured 401 that the Frontend will interpret to launch the OAuth flow
+        logger.info(`[CanvasOAuthMiddleware] Canvas Token not found for sub ${canvasSub}. Requiring OAuth.`);
         return res.status(401).json({
           exito: false,
           error: {
@@ -65,12 +59,12 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
         });
       }
 
-      // Inyectar el token en la petición para el controlador
+      // Inject the token into the request for the controller
       req.canvasToken = accessToken;
       next();
     } catch (err) {
       if (err.name === 'AppError' && err.statusCode === 401 && err.metadata?.requireOAuth) {
-        logger.info(`[CanvasOAuthMiddleware] Token inválido o expirado sin refresco para sub ${req.appIdentity?.ltiUserId || req.user?.id}. Requiriendo OAuth.`);
+        logger.info(`[CanvasOAuthMiddleware] Invalid or expired token without refresh for sub ${req.appIdentity?.ltiUserId || req.user?.id}. Requiring OAuth.`);
         return res.status(401).json({
           exito: false,
           error: {
@@ -82,7 +76,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
         });
       }
       
-      logger.error('[CanvasOAuthMiddleware] Error verificando token de Canvas', err);
+      logger.error('[CanvasOAuthMiddleware] Error verifying Canvas token', err);
       next(err);
     }
   };

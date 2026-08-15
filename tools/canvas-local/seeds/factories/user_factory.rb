@@ -19,8 +19,12 @@ module UserFactory
   def self.create_users
     puts "Creando usuarios ficticios..."
     
-    admin = get_or_create_user("admin@canvas.local", "Admin Sistema", "password123")
+    # System service account (infrastructure only, not a real person)
+    system = get_or_create_user("system@canvas.local", "Cuenta de Sistema Plugin", "password123")
     Account.default.update!(default_locale: 'es')
+    Account.default.account_users.create!(user: system) unless Account.default.account_users.find_by(user_id: system.id)
+
+    admin = get_or_create_user("admin@canvas.local", "Admin Sistema", "password123")
     Account.default.account_users.create!(user: admin) unless Account.default.account_users.find_by(user_id: admin.id)
 
     teacher1 = get_or_create_user("profesor@canvas.local", "Dr. Elena Ramirez", "password123")
@@ -41,6 +45,7 @@ module UserFactory
     end
 
     {
+      system: system,
       admin: admin,
       teachers: [teacher1, teacher2, teacher3],
       students: students
