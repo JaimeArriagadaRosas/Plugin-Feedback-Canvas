@@ -16,7 +16,7 @@ export default function NotificationPreferencesForm({ onClose }) {
         setMetodo(data.metodo);
         setFrecuencia(data.frecuencia);
       } catch (err) {
-        console.warn('Could not load preferences, using default values:', err);
+        console.warn('No se pudieron cargar las preferencias, usando valores por defecto:', err);
         setMetodo('both');
         setFrecuencia('inmediata');
       } finally {
@@ -34,22 +34,22 @@ export default function NotificationPreferencesForm({ onClose }) {
       await updatePreferences(metodo, frecuencia);
       if (onClose) onClose();
     } catch (err) {
-      setError('Error saving preferences.');
+      setError('Error al guardar las preferencias.');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className={styles.container}>Loading...</div>;
+  if (loading) return <div className={styles.container}>Cargando...</div>;
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>STUDENT NOTIFICATION CONFIGURATION</h3>
+      <h3 className={styles.title}>CONFIGURACIÓN DE NOTIFICACIÓN ESTUDIANTE</h3>
       {error && <div className={styles.error}>{error}</div>}
       <form onSubmit={handleSave} className={styles.form}>
         <div className={styles.columns}>
           <div className={styles.column}>
-            <label className={styles.labelTitle}>Choose Notification Method</label>
+            <label className={styles.labelTitle}>Elegir Método de Notificación</label>
             <div className={styles.radioGroup}>
               <label className={styles.radioLabel}>
                 <input 
@@ -59,7 +59,7 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={metodo === 'both'}
                   onChange={(e) => setMetodo(e.target.value)}
                 />
-                Both methods
+                Ambos métodos
               </label>
               <label className={styles.radioLabel}>
                 <input 
@@ -69,7 +69,7 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={metodo === 'canvas_inapp'}
                   onChange={(e) => setMetodo(e.target.value)}
                 />
-                In-app Canvas Notification
+                Notificación In-app Canvas
               </label>
               <label className={styles.radioLabel}>
                 <input 
@@ -79,7 +79,7 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={metodo === 'email'}
                   onChange={(e) => setMetodo(e.target.value)}
                 />
-                Institutional Email
+                Correo Institucional
               </label>
               <label className={styles.radioLabel}>
                 <input 
@@ -89,12 +89,12 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={metodo === 'none'}
                   onChange={(e) => setMetodo(e.target.value)}
                 />
-                No Notifications
+                Sin Notificaciones
               </label>
             </div>
           </div>
           <div className={styles.column}>
-            <label className={styles.labelTitle}>Notification Frequency</label>
+            <label className={styles.labelTitle}>Frecuencia de Notificación</label>
             <div className={styles.radioGroup}>
               <label className={styles.radioLabel}>
                 <input 
@@ -104,7 +104,7 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={frecuencia === 'inmediata'}
                   onChange={(e) => setFrecuencia(e.target.value)}
                 />
-                Immediate
+                Inmediata
               </label>
               <label className={styles.radioLabel}>
                 <input 
@@ -114,15 +114,15 @@ export default function NotificationPreferencesForm({ onClose }) {
                   checked={frecuencia === 'diario'}
                   onChange={(e) => setFrecuencia(e.target.value)}
                 />
-                Daily (Summary)
+                Diario (Resumen)
               </label>
             </div>
           </div>
         </div>
         <div className={styles.actions}>
-          <button type="button" onClick={onClose} className={styles.cancelBtn} disabled={saving}>Cancel</button>
+          <button type="button" onClick={onClose} className={styles.cancelBtn} disabled={saving}>Cancelar</button>
           <button type="submit" className={styles.saveBtn} disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </form>
