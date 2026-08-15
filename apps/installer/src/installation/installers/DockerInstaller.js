@@ -77,7 +77,26 @@ export class DockerInstaller {
     this.boot.warn(guidance.message);
     this.boot.action(guidance.action);
     this.boot.action(guidance.fix);
-    if (denied) return false;
+
+    if (denied && this.host.isLinux && this.strategy && this.strategy.rootlessInstaller) {
+      const { askConfirm } = await import('../../orchestration/cli.js');
+      this.boot.info('El cliente Docker existe pero careces de permisos en el socket del sistema.');
+      const useRootless = await askConfirm('¿Deseas configurar Docker Rootless en tu cuenta de usuario local (recomendado)?', true);
+      if (useRootless) {
+        const manager = await this.strategy._detectPackageManager() || 'apt';
+        const rootless = await this.strategy.rootlessInstaller.install(manager, this.strategy.username());
+        if (rootless.success) {
+          this.boot.success('Docker rootless configurado exitosamente.');
+          return this.waitForDaemon();
+        } else {
+          this.boot.error(`No se pudo configurar Rootless: ${rootless.err}`);
+        }
+      }
+      return false;
+    } else if (denied) {
+      return false;
+    }
+
     return this.waitForDaemon();
   }
 }
