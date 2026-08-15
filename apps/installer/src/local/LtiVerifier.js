@@ -71,7 +71,7 @@ export class LtiVerifier {
           else
              puts "[Rails-LtiVerifier] [$] Dominio OIDC sincronizado (#{target_domain})."
           end
-          puts "LTI_OK_ID:#{dk.id}"
+          puts "LTI_OK_ID:#{dk.id % 10_000_000_000_000}"
           puts "LTI_CLIENT_SECRET:#{dk.api_key}"
         else
           puts "[Rails-LtiVerifier] Faltan campos, o public_jwk_url no usa host.docker.internal."

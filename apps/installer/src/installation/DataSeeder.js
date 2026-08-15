@@ -78,7 +78,7 @@ export class DataSeeder {
   async synchronizeLocalToken() {
     this.boot.info('Extracting complete profiles and tokens from the Canvas container...');
     const { success, out } = await this.runner('docker', [
-      'compose', 'exec', '-T', 'web', 'cat', '/usr/src/app/tmp/perfiles_data.json'
+      'compose', 'exec', '-T', 'web', 'cat', '/usr/src/app/tmp/profiles_data.json'
     ], { cwd: this.canvasDir, captureAll: true });
     if (!success || !out?.trim()) return;
 
@@ -91,12 +91,12 @@ export class DataSeeder {
       fs.writeFileSync(localPath, JSON.stringify(perfiles, null, 2));
       this.boot.info(`Users and tokens exported to ${localPath}`);
 
-      const teacher = perfiles.usuarios?.find((user) => user.rol === 'teacher');
-      if (teacher?.token) this._writeTokenToEnv(teacher.token);
-      else this.boot.warn('Could not find teacher token in perfiles_data.json');
+      const systemUser = perfiles.users?.find((user) => user.role === 'system');
+      if (systemUser?.token) this._writeTokenToEnv(systemUser.token);
+      else this.boot.warn('Could not find system account token in profiles_data.json');
       await this._migrateAndSyncUsers(localPath);
     } catch (error) {
-      this.boot.warn(`Error parsing perfiles_data.json: ${error.message}`);
+      this.boot.warn(`Error parsing profiles_data.json: ${error.message}`);
     }
   }
 

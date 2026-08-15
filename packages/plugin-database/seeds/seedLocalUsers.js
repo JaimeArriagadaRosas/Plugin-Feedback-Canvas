@@ -29,18 +29,20 @@ async function seed() {
       const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
       
       let estIndex = 1;
-      users = data.usuarios.map(u => {
+      const dataUsers = data.usuarios || data.users || [];
+      users = dataUsers.map(u => {
         let eIdx = null;
-        if (u.rol === 'student') {
+        const role = u.rol || u.role;
+        if (role === 'student') {
           eIdx = estIndex++;
         }
         return {
           email: u.email,
-          nombre: u.nombre,
+          nombre: u.nombre || u.name,
           // semgrep-ignore
           // eslint-disable-next-line
           password: 'password123', // Mantenemos la clave local igual por simplicidad
-          rol: u.rol,
+          rol: role,
           estudiante_index: eIdx,
           canvas_user_id: u.id.toString(),
           canvas_user_uuid: u.uuid || `00000000-0000-0000-0000-${u.id.toString().padStart(12, '0')}`

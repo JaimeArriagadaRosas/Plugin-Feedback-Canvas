@@ -149,7 +149,7 @@ function buildScriptFooter(globalJsUrl) {
       end
     end
 
-    puts "LTI_CLIENT_ID:#{key.global_id}"
+    puts "LTI_CLIENT_ID:#{key.id % 10_000_000_000_000}"
     puts "LTI_CLIENT_SECRET:#{key.api_key}"
     puts "SUCCESS"
   `;
