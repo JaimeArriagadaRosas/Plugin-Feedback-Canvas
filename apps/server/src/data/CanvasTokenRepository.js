@@ -12,9 +12,20 @@ export default class CanvasTokenRepository {
     if (res.rowCount === 0) return null;
 
     const row = res.rows[0];
+    const accessToken = EncryptionService.safeDecrypt(row.access_token, `Canvas AccessToken sub ${canvasSub}`);
+    const refreshToken = row.refresh_token ? EncryptionService.safeDecrypt(row.refresh_token, `Canvas RefreshToken sub ${canvasSub}`) : null;
+
+    if (!accessToken) {
+      if (process.env.STARTUP_MODE === '3') {
+        // En entorno local forzamos la eliminación del token dañado para limpiar la sesión
+        await this.deleteToken(canvasSub);
+      }
+      return null;
+    }
+
     return {
-      accessToken: EncryptionService.decrypt(row.access_token),
-      refreshToken: row.refresh_token ? EncryptionService.decrypt(row.refresh_token) : null,
+      accessToken,
+      refreshToken,
       expiresAt: row.expires_at
     };
   }
@@ -43,11 +54,14 @@ export default class CanvasTokenRepository {
       [thresholdDate]
     );
 
-    return res.rows.map(row => ({
-      canvas_sub: row.canvas_sub,
-      refresh_token: row.refresh_token ? EncryptionService.decrypt(row.refresh_token) : null,
-      expires_at: row.expires_at
-    }));
+    return res.rows.map(row => {
+      const refreshToken = row.refresh_token ? EncryptionService.safeDecrypt(row.refresh_token, `Canvas RefreshToken sub ${row.canvas_sub} (Rotación)`) : null;
+      return {
+        canvas_sub: row.canvas_sub,
+        refresh_token: refreshToken,
+        expires_at: row.expires_at
+      };
+    }).filter(row => row.refresh_token !== null);
   }
 
   async deleteToken(canvasSub) {

@@ -13,17 +13,17 @@ export default class IAConfigManager {
   /**
    * Obtiene la configuración activa global usando la DB como fuente de la verdad
    */
-  async getGlobalActiveConfig() {
+  async getGlobalActiveConfig(quiet = false) {
     const config = this.configRepo ? await this.configRepo.getConfigIA() : null;
     const serviceName = config?.proveedor_preferido || 'gemini';
-    return this.getActiveConfig(serviceName);
+    return this.getActiveConfig(serviceName, quiet);
   }
 
   /**
    * Obtiene la configuración activa para un servicio dado
    */
-  async getActiveConfig(serviceName) {
-    const keyData = await this.tokenRepo.getActiveKey(serviceName);
+  async getActiveConfig(serviceName, quiet = false) {
+    const keyData = await this.tokenRepo.getActiveKey(serviceName, quiet);
     
     // Si se solicitó un proveedor específico y no tiene llave, fallamos
     if (!keyData || !keyData.apiKey) {

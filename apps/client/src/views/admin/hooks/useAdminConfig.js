@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api';
 import logger from '../../../utils/logger';
 
 export function useAdminConfig() {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || "RF56");
   const [model, setModel] = useState("gemini-1.5-flash");
   const [service, setService] = useState("gemini");
@@ -16,9 +18,6 @@ export function useAdminConfig() {
   const [apiKey, setApiKey] = useState("");
   const [tokenValidationError, setTokenValidationError] = useState("");
   const [tokenSaveSuccess, setTokenSaveSuccess] = useState(false);
-  const [availableModels, setAvailableModels] = useState([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [configuredProviders, setConfiguredProviders] = useState([]);
 
   const clearErrors = useCallback(() => {
     setValidationError("");
@@ -35,20 +34,60 @@ export function useAdminConfig() {
     clearErrors();
   }, [clearErrors]);
 
-  const fetchConfiguredProviders = useCallback(async () => {
-    try {
+  const { data: configuredProviders = [], refetch: fetchConfiguredProviders } = useQuery({
+    queryKey: ['config', 'tokens', 'status'],
+    queryFn: async () => {
       const response = await api.get('/config/tokens/status');
       if (response.exito) {
-        setConfiguredProviders(response.data);
+        return response.data || [];
       }
-    } catch (error) {
-      logger.error('AdminPanel', 'Error fetching configured providers', { error });
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1
+  });
+
+  const { data: availableModels = [], isLoading: isLoadingModels } = useQuery({
+    queryKey: ['config', 'ia-models', service, configuredProviders],
+    queryFn: async () => {
+      if (!configuredProviders.includes(service) && service !== 'otros') {
+        return [{ id: 'default', name: 'Requiere configurar API Key' }];
+      }
+      try {
+        const response = await api.get(`/config/ia-models?servicio=${service.toLowerCase()}`);
+        if (response.exito) {
+          return response.data || [];
+        }
+      } catch (error) {
+        // Omite el logger frontend porque el error más probable es credencial corrupta/faltante
+      }
+      return [{ id: 'default', name: 'Falta configurar token o error de red' }];
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false
+  });
+
+  // Sync model with available models
+  useEffect(() => {
+    if (availableModels.length > 0 && service !== 'otros') {
+      const found = availableModels.find(m => m.id === model);
+      if (!found) {
+        setModel(availableModels[0].id);
+      }
     }
-  }, []);
+  }, [availableModels, service, model]);
 
   useEffect(() => {
-    fetchConfiguredProviders();
-  }, [fetchConfiguredProviders]);
+    if (service === 'gemini') {
+      setEndpoint("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash");
+    } else if (service === 'openai') {
+      setEndpoint("https://api.openai.com/v1/chat/completions");
+    } else if (service === 'anthropic') {
+      setEndpoint("https://api.anthropic.com/v1/messages");
+    } else if (service === 'otros') {
+      setEndpoint("");
+    }
+  }, [service]);
 
   const resetTokens = useCallback(() => {
     setService("gemini");
@@ -112,18 +151,19 @@ export function useAdminConfig() {
       await api.post('/config/tokens', {
         servicio: service.toLowerCase(),
         key: apiKey.trim(),
-        endpoint_personalizado: null // El endpoint se configura ahora en Motor IA
+        endpoint_personalizado: null
       });
 
       setTokenSaveSuccess(true);
       setApiKey("");
-      fetchConfiguredProviders();
+      await queryClient.invalidateQueries({ queryKey: ['config', 'tokens', 'status'] });
+      await queryClient.invalidateQueries({ queryKey: ['config', 'ia-models', service] });
       setTimeout(() => setTokenSaveSuccess(false), 4000);
     } catch (error) {
       logger.error('AdminPanel', 'Error guardando token IA', { error });
       setTokenValidationError(error.message || 'Error al guardar el token. Por favor, intente nuevamente.');
     }
-  }, [service, apiKey, fetchConfiguredProviders]);
+  }, [service, apiKey, queryClient]);
 
   const handleSave = useCallback(() => {
     if (activeTab === "RF55") {
@@ -132,44 +172,6 @@ export function useAdminConfig() {
       handleSaveTokenConfig();
     }
   }, [activeTab, handleSaveMotorConfig, handleSaveTokenConfig]);
-
-  useEffect(() => {
-    let isMounted = true;
-    
-    async function fetchModels() {
-      setIsLoadingModels(true);
-      try {
-        const response = await api.get(`/config/ia-models?servicio=${service.toLowerCase()}`);
-        if (isMounted && response.exito) {
-           setAvailableModels(response.data);
-           if (response.data.length > 0 && service !== 'otros' && !response.data.find(m => m.id === model)) {
-             setModel(response.data[0].id);
-           }
-        }
-      } catch (error) {
-        logger.error('AdminPanel', 'Error fetching models', { error });
-        if (isMounted) {
-          setAvailableModels([{ id: 'default', name: 'Falta configurar token o error de red' }]);
-        }
-      } finally {
-        if (isMounted) setIsLoadingModels(false);
-      }
-    }
-    
-    fetchModels();
-
-    if (service === 'gemini') {
-      setEndpoint("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash");
-    } else if (service === 'openai') {
-      setEndpoint("https://api.openai.com/v1/chat/completions");
-    } else if (service === 'anthropic') {
-      setEndpoint("https://api.anthropic.com/v1/messages");
-    } else if (service === 'otros') {
-      setEndpoint("");
-    }
-    
-    return () => { isMounted = false; };
-  }, [service]);
 
   return {
     activeTab,

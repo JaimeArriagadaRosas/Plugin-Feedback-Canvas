@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { getSecret } from '../../config/secrets.js';
+import logger from '../../utils/logger.js';
 
 dotenv.config({ quiet: true });
 
@@ -53,7 +54,7 @@ export default class EncryptionService {
   }
 
   /**
-   * Desencripta un texto cifrado
+   * Desencripta un texto cifrado. Arroja excepción en caso de fallo.
    */
   static decrypt(encryptedData) {
     try {
@@ -72,6 +73,22 @@ export default class EncryptionService {
       return decrypted;
     } catch (error) {
       throw new Error('Fallo al desencriptar los datos. La clave puede ser incorrecta o los datos estar corruptos.');
+    }
+  }
+
+  /**
+   * Desencripta un texto de manera segura, atrapando excepciones y registrándolas.
+   * Retorna null si la desencriptación falla.
+   */
+  static safeDecrypt(encryptedData, context = 'Dato desconocido', quiet = false) {
+    if (!encryptedData) return null;
+    try {
+      return this.decrypt(encryptedData);
+    } catch (error) {
+      if (!quiet) {
+        logger.error(`[EncryptionService] Fallo al desencriptar para: ${context}. Posible cambio de ENCRYPTION_KEY o dato corrupto.`);
+      }
+      return null;
     }
   }
 }
