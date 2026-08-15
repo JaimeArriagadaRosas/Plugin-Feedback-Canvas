@@ -8,8 +8,8 @@ export default function ReviewFilters({
   setSelectedCourse,
   selectedAssignment,
   setSelectedAssignment,
-  coursesList = [{ value: 'Todos', label: 'All Courses' }],
-  assignmentsList = [{ value: 'Todas', label: 'All Assignments' }],
+  coursesList = [{ value: 'All', label: 'All Courses' }],
+  assignmentsList = [{ value: 'All', label: 'All Assignments' }],
   onClear,
 }) {
   const logClear = useButtonLogger();

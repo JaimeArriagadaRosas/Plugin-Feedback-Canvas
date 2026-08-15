@@ -15,7 +15,7 @@ function createBoot() {
 }
 
 describe('PostflightSetup', () => {
-  it('sincroniza el token mediante la interfaz pública cuando los datos ya existen', async () => {
+  it('synchronizes the token through the public interface when the data already exists', async () => {
     const verifier = { isDataPopulated: vi.fn().mockResolvedValue(true) };
     const seeder = { synchronizeLocalToken: vi.fn().mockResolvedValue() };
     const setup = new PostflightSetup(createBoot(), '/plugin', '/canvas', {

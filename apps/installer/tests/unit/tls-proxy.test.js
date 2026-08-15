@@ -14,7 +14,7 @@ import { assertTlsProxyConfiguration, startTlsProxy } from '../../src/local/TlsP
 
 describe('startTlsProxy', () => {
   it('rejects before opening a port if certificates are missing', async () => {
-    expect(() => assertTlsProxyConfiguration()).toThrow(/Certificados mkcert no encontrados/);
-    await expect(startTlsProxy()).rejects.toThrow(/Certificados mkcert no encontrados/);
+    expect(() => assertTlsProxyConfiguration()).toThrow(/mkcert certificates not found/);
+    await expect(startTlsProxy()).rejects.toThrow(/mkcert certificates not found/);
   });
 });

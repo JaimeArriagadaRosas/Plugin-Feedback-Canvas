@@ -26,7 +26,7 @@ function safeSetLocalStorage(key, value) {
   try {
     localStorage.setItem(key, value);
   } catch {
-    logger.warn('AuthToken', 'localStorage no disponible (posible iframe cross-origin)');
+    logger.warn('AuthToken', 'localStorage not available (possible cross-origin iframe)');
   }
 }
 
@@ -71,7 +71,7 @@ export function captureTokenFromUrl() {
     } catch {
       /* ignore */
     }
-    logger.info('AuthToken', 'Ejecución en iframe detectada. dev-token eliminado de localStorage.');
+    logger.info('AuthToken', 'Iframe execution detected. dev-token removed from localStorage.');
   }
 }
 

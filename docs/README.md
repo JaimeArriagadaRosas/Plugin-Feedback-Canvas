@@ -136,12 +136,12 @@ Do not move or mix plugin code inside `canvas-lms-master`. Also, do not commit C
 
 ### 1. Clone the project
 
-From Ubuntu/WSL2, clone the stable version of the project from `main`:
+From Ubuntu/WSL2, clone the stable version of the project from `english-version`:
 
 ```bash
 mkdir -p ~/projects
 cd ~/projects
-git clone --branch main --single-branch \
+git clone --branch english-version --single-branch \
   https://github.com/JaimeArriagadaRosas/Plugin-Feedback-Canvas.git
 cd ~/projects/Plugin-Feedback-Canvas
 ```
@@ -167,7 +167,7 @@ If `node_modules` does not exist or is incomplete, the pre-boot automatically in
 When the menu appears, select:
 
 ```text
-[3] Ejecutar localmente Canvas LMS (Entorno Docker de desarrollo)
+[3] Run Canvas LMS locally (Development Docker Environment)
 ```
 
 Keep the console open while Canvas is installing or running. To stop the processes initiated by the orchestrator, use `Ctrl+C` only once and wait for the orderly shutdown.
