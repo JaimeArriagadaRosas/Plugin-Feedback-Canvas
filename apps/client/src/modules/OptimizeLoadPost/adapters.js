@@ -1,9 +1,9 @@
 import { isSupportedForPreview } from '../../utils/fileViewer';
 
 /**
- * Determina el tipo de contenido basado en los datos crudos de la submission
+ * Determines the content type based on raw submission data
  * @param {Object} submission 
- * @returns {string} tipo de contenido
+ * @returns {string} content type
  */
 export function resolveContentType(submission) {
   if (!submission) return 'fallback_empty';
@@ -11,7 +11,7 @@ export function resolveContentType(submission) {
 
   if (submission.attachments && submission.attachments.length > 0) {
     const attachment = submission.attachments[0];
-    const fileName = attachment.filename || attachment.display_name || 'documento';
+    const fileName = attachment.filename || attachment.display_name || 'document';
     if (!isSupportedForPreview(fileName)) {
       return 'unsupported_file';
     }
@@ -26,12 +26,12 @@ export function resolveContentType(submission) {
 }
 
 /**
- * Adaptador base para extraer propiedades estándar
+ * Base adapter to extract standard properties
  */
 export function baseAdapter(payload, type) {
   const { submission, studentName, assignmentName } = payload;
   
-  let submittedAt = 'Sin fecha';
+  let submittedAt = 'No date';
   if (submission && submission.submitted_at) {
     submittedAt = new Date(submission.submitted_at).toLocaleString();
   }
@@ -42,13 +42,13 @@ export function baseAdapter(payload, type) {
     type,
     submittedAt,
     attempt,
-    studentName: studentName || 'Estudiante',
+    studentName: studentName || 'Student',
     assignmentName
   };
 }
 
 /**
- * Adapters específicos por tipo para entregar props limpias a cada Strategy
+ * Specific adapters by type to deliver clean props to each Strategy
  */
 export const adapters = {
   unsubmitted: (payload, type) => {
@@ -60,7 +60,7 @@ export const adapters = {
   unsupported_file: (payload, type) => {
     const { submission } = payload;
     const attachment = submission.attachments[0];
-    const fileName = attachment.filename || attachment.display_name || 'documento';
+    const fileName = attachment.filename || attachment.display_name || 'document';
     const fileUrl = attachment.url || '';
     
     return {
@@ -108,9 +108,9 @@ export const adapters = {
   
   fallback_empty: (payload, type) => {
     const { submission } = payload;
-    let textBody = "Sin entrega.";
+    let textBody = "No submission.";
     if (submission) {
-      textBody = "Sin contenido de entrega.";
+      textBody = "No submission content.";
     }
     return {
       ...baseAdapter(payload, type),

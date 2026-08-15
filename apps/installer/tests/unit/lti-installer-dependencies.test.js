@@ -17,7 +17,7 @@ describe('LtiInstaller.ensureCanvasDependencies', () => {
     expect(command).toHaveBeenCalledTimes(1);
   });
 
-  it('propaga un fallo al reparar Bundle en lugar de ignorarlo', async () => {
+  it('propagates a failure when repairing Bundle instead of ignoring it', async () => {
     vi.spyOn(DockerLtiConfigurator, 'runDockerCommand')
       .mockResolvedValueOnce({ success: false, err: 'missing' })
       .mockResolvedValueOnce({ success: false, err: 'plugin denied' });

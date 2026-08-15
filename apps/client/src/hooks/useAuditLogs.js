@@ -22,19 +22,19 @@ export function useAuditLogs(limit = 50) {
           setLoading(false);
           break;
         } else {
-          throw new Error(response.error?.mensaje || 'Error desconocido');
+          throw new Error(response.error?.mensaje || 'Unknown error');
         }
       } catch (err) {
         if (err.response?.status === 429 && retries > 1) {
           const retryAfter = parseInt(err.response.headers?.['retry-after'] || '0', 10);
           const waitMs = retryAfter > 0 ? retryAfter * 1000 : delay;
-          logger.warn('useAuditLogs', `Rate limit excedido (429). Reintentando en ${waitMs}ms...`);
+          logger.warn('useAuditLogs', `Rate limit exceeded (429). Retrying in ${waitMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, waitMs));
           if (!retryAfter) delay *= 2;
           retries--;
         } else {
           logger.error('useAuditLogs', 'Error fetching audit logs', { error: err });
-          setError('No se pudieron cargar los logs de auditoría.');
+          setError('Could not load audit logs.');
           setLoading(false);
           break;
         }

@@ -16,7 +16,7 @@ const loginHandler = async (req, res) => {
   logger.debug(`[LTI-LOGIN] OIDC Init Request recibida -> Iniciando flujo login`);
 
   if (!iss || !login_hint || !target_link_uri) {
-    logger.warn(`[LTI-LOGIN] Parámetros LTI insuficientes detectados (Faltan: ${[!iss&&'iss', !login_hint&&'login_hint', !target_link_uri&&'target_link_uri'].filter(Boolean).join(', ')})`);
+    logger.warn(`[LTI-LOGIN] Insufficient LTI parameters detected (Missing: ${[!iss&&'iss', !login_hint&&'login_hint', !target_link_uri&&'target_link_uri'].filter(Boolean).join(', ')})`);
     
     // No exponemos req.body / req.query completos en la respuesta: pueden
     // contener login_hint, lti_message_hint u otros datos sensibles del launch.

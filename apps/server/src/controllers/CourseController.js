@@ -125,7 +125,7 @@ export default class CourseController {
         } 
       });
     } catch (error) {
-      logger.error(`[CourseController] Error en getQuizDetails: ${error.message}`, { stack: error.stack });
+      logger.error(`[CourseController] Error in getQuizDetails: ${error.message}`, { stack: error.stack });
       next(error);
     }
   }
@@ -158,7 +158,7 @@ export default class CourseController {
         data: fullConfig
       });
     } catch (error) {
-      logger.error('Error en togglePlugin', { error: error.message, courseId: req.params.courseId, assignmentId: req.params.assignmentId });
+      logger.error('Error in togglePlugin', { error: error.message, courseId: req.params.courseId, assignmentId: req.params.assignmentId });
       next(error);
     }
   }

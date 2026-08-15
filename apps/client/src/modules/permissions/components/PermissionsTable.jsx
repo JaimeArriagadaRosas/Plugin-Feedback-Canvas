@@ -4,12 +4,12 @@ import styles from '../../../views/admin/AdminPanel.module.css';
 import logger from '../../../utils/logger';
 import Toast from '../../../components/atoms/Toast';
 
-// Utilidad para traducir las llaves del backend a etiquetas amigables
+// Utility to translate backend keys to friendly labels
 const PERMISSION_LABELS = {
-  view_feedback: 'Ver Feedback',
-  edit_feedback: 'Editar Feedback',
-  submit_feedback: 'Enviar Feedback',
-  config_llm: 'Configurar LLM'
+  view_feedback: 'View Feedback',
+  edit_feedback: 'Edit Feedback',
+  submit_feedback: 'Submit Feedback',
+  config_llm: 'Configure LLM'
 };
 
 export default function PermissionsTable() {
@@ -36,7 +36,7 @@ export default function PermissionsTable() {
 
   const handleToggle = async (role, permKey, currentValue) => {
     try {
-      // Obtenemos los overrides actuales que se están mostrando y calculamos la actualización
+      // Get the current overrides being shown and calculate the update
       const roleData = matrix.find(m => m.rol === role);
       if (!roleData) return;
 
@@ -53,7 +53,7 @@ export default function PermissionsTable() {
       await apiClient.put(`/config/permissions/${role}`, newPermissions);
       fetchPermissions();
       
-      setToastMessage('Permisos actualizados correctamente');
+      setToastMessage('Permissions updated successfully');
       setToastType('success');
       setShowToast(true);
     } catch (err) {
@@ -64,11 +64,11 @@ export default function PermissionsTable() {
     }
   };
 
-  if (loading) return <div>Cargando matriz de permisos...</div>;
-  if (!matrix || matrix.length === 0) return <div>No hay datos de permisos.</div>;
+  if (loading) return <div>Loading permissions matrix...</div>;
+  if (!matrix || matrix.length === 0) return <div>No permissions data available.</div>;
 
-  // Extraemos dinámicamente las columnas basándonos en las llaves devueltas por el backend
-  // Usamos el primer rol como referencia para las columnas
+  // Dynamically extract columns based on the keys returned by the backend
+  // Use the first role as a reference for the columns
   const permissionKeys = Object.keys(matrix[0]?.permisos || {});
 
   return (
@@ -84,7 +84,7 @@ export default function PermissionsTable() {
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
       <thead>
         <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-          <th style={{ padding: '10px', textAlign: 'left' }}>Rol</th>
+          <th style={{ padding: '10px', textAlign: 'left' }}>Role</th>
           {permissionKeys.map(key => (
             <th key={key} style={{ padding: '10px' }}>
               {PERMISSION_LABELS[key] || key}
@@ -107,7 +107,7 @@ export default function PermissionsTable() {
                     checked={permData.value}
                     onChange={() => handleToggle(row.rol, permKey, permData.value)}
                     disabled={!permData.isMutable} 
-                    title={!permData.isMutable ? "Este permiso está bloqueado por el sistema para este rol" : "Haz clic para cambiar"}
+                    title={!permData.isMutable ? "This permission is locked by the system for this role" : "Click to change"}
                   />
                 </td>
               );

@@ -40,7 +40,7 @@ export class DockerLtiConfigurator {
       { input: normalizedScript }
     );
     if (!cleanerProc.success) {
-      throw new Error(`Limpieza de BD fallo.\nOut: ${cleanerProc.out}\nErr: ${cleanerProc.err}`);
+      throw new Error(`DB cleanup failed.\nOut: ${cleanerProc.out}\nErr: ${cleanerProc.err}`);
     }
   }
 
@@ -70,7 +70,7 @@ export class DockerLtiConfigurator {
       }
       return clientId;
     } else {
-      throw new Error(`Fallo en rails runner. Stderr: ${installProc.err}\nStdout: ${installProc.out}`);
+      throw new Error(`Rails runner failed. Stderr: ${installProc.err}\nStdout: ${installProc.out}`);
     }
   }
 

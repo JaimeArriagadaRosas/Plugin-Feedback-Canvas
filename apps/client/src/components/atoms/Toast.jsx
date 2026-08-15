@@ -26,7 +26,7 @@ export default function Toast({
         {type === 'info' && 'ℹ️'}
       </span>
       <span className={styles.message}>{message}</span>
-      <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar notificación">
+      <button type="button" className={styles.close} onClick={onClose} aria-label="Close notification">
         ×
       </button>
     </div>

@@ -2,8 +2,8 @@ import logger from '../utils/logger.js';
 import { nowIso } from '../utils/datetime.js';
 
 /**
- * Servicio de Historial Académico
- * Coordina la obtención de datos de Canvas y la persistencia local del historial.
+ * Academic History Service
+ * Coordinates fetching data from Canvas and local persistence of the history.
  */
 export default class AcademicHistoryService {
   constructor(canvasGateway, studentRepo) {
@@ -12,12 +12,12 @@ export default class AcademicHistoryService {
   }
 
   /**
-   * Obtiene y procesa el historial de un estudiante en un curso específico.
-   * Phase 8 y 9: Descarga submissions reales de Canvas.
+   * Fetches and processes a student's history in a specific course.
+   * Phase 8 and 9: Download real submissions from Canvas.
    */
   async getStudentAcademicProfile(courseId, studentId, teacherToken = null) {
-    // Intentar obtener de cache local primero (si aplica)
-    // Para reflejar el historial real y fresco, consultamos a Canvas.
+    // Try to get from local cache first (if applicable)
+    // To reflect the real and fresh history, we query Canvas.
     
     let submissions = [];
     let assignmentsMap = {};
@@ -29,11 +29,11 @@ export default class AcademicHistoryService {
           assignmentsMap[a.id] = { name: a.name, points_possible: a.points_possible };
         });
       } catch (aErr) {
-        logger.warn(`[AcademicHistoryService] No se pudieron obtener las tareas: ${aErr.message}`);
+        logger.warn(`[AcademicHistoryService] Could not fetch assignments: ${aErr.message}`);
       }
     } catch (err) {
       logger.warn(`[AcademicHistoryService] Could not fetch Canvas submission history: ${err.message}`);
-      // Fallback a base de datos si Canvas falla
+      // Fallback to database if Canvas fails
       const cached = await this.studentRepo.getHistory(studentId, courseId);
       if (cached && cached.length > 0) {
         return {
@@ -45,27 +45,27 @@ export default class AcademicHistoryService {
       return { history: [], trend: 'NONE', source: 'empty' };
     }
 
-    // Filtrar entregas que no tienen score y mapear
+    // Filter submissions that have no score and map them
     const validHistory = submissions
       .filter(sub => sub.score !== null && sub.score !== undefined)
       .map(sub => {
         const assignmentInfo = assignmentsMap[sub.assignment_id] || {};
         return {
           assignmentId: sub.assignment_id,
-          assignmentName: sub.assignment?.name || assignmentInfo.name || `Tarea ${sub.assignment_id}`,
+          assignmentName: sub.assignment?.name || assignmentInfo.name || `Assignment ${sub.assignment_id}`,
           grade: sub.score,
           pointsPossible: sub.assignment?.points_possible || assignmentInfo.points_possible || 100,
           date: sub.submitted_at || sub.graded_at || nowIso()
         };
       })
-      .sort((a, b) => new Date(a.date) - new Date(b.date)); // Orden cronológico (más antiguo primero)
+      .sort((a, b) => new Date(a.date) - new Date(b.date)); // Chronological order (oldest first)
 
     const trend = this._calculateTrend(validHistory);
 
-    // Guardar en BD para caché de lecturas offline
+    // Save to DB for offline read cache
     if (validHistory.length > 0) {
       this.studentRepo.updateHistory(studentId, courseId, validHistory).catch(e => {
-         logger.error(`Error guardando historial en caché: ${e.message}`);
+         logger.error(`Error saving history to cache: ${e.message}`);
       });
     }
 
@@ -77,17 +77,17 @@ export default class AcademicHistoryService {
   }
 
   /**
-   * Phase 9: Analiza la trayectoria del estudiante
-   * Compara los últimos rendimientos para definir tendencia.
+   * Phase 9: Analyzes the student's trajectory
+   * Compares recent performance to define a trend.
    */
   _calculateTrend(history) {
     if (!history || history.length < 2) return 'NONE';
 
-    // Tomamos las dos últimas calificaciones como base simple de tendencia
+    // We take the last two grades as a simple baseline for the trend
     const last = history[history.length - 1];
     const prev = history[history.length - 2];
 
-    // Normalizar a porcentaje
+    // Normalize to percentage
     const lastPct = (last.grade / (last.pointsPossible || 100)) * 100;
     const prevPct = (prev.grade / (prev.pointsPossible || 100)) * 100;
 

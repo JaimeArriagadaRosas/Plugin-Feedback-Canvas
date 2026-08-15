@@ -19,25 +19,25 @@ export async function generateLtiKeys() {
     use: 'sig',
     kid: `lti-key-${Date.now()}`
   };
-  logger.info('[LTI] Par de claves LTI generado exitosamente.', { kid: ltiPublicJwk.kid });
+  logger.info('[LTI] LTI key pair generated successfully.', { kid: ltiPublicJwk.kid });
   return ltiPublicJwk;
 }
 
 export async function createServerInstance(app) {
-  logger.info(`[HTTPS] Esquema de transporte configurado (STARTUP_MODE: ${process.env.STARTUP_MODE ?? '(indefinido)'}).`);
-  logger.debug(`[HTTPS] HTTPS env flag : ${process.env.HTTPS ?? '(indefinido / auto-detección)'}`);
-  logger.debug(`[HTTPS] NODE_ENV       : ${process.env.NODE_ENV ?? '(indefinido)'}`);
+  logger.info(`[HTTPS] Transport scheme configured (STARTUP_MODE: ${process.env.STARTUP_MODE ?? '(undefined)'}).`);
+  logger.debug(`[HTTPS] HTTPS env flag : ${process.env.HTTPS ?? '(undefined / auto-detection)'}`);
+  logger.debug(`[HTTPS] NODE_ENV       : ${process.env.NODE_ENV ?? '(undefined)'}`);
 
   const sslContext = await SSLService.initializeSSLContext();
   const shouldUseHttps = isHttpsEnabled();
   const { cert, key } = getSslCertPaths();
   
-  logger.debug(`[HTTPS] Entorno SSL detectado : ${JSON.stringify(sslContext.env)}`);
+  logger.debug(`[HTTPS] SSL environment detected : ${JSON.stringify(sslContext.env)}`);
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  logger.debug(`[HTTPS] Certificado (pem)    : ${cert} -> ${fs.existsSync(cert) ? 'ENCONTRADO' : 'AUSENTE'}`);
+  logger.debug(`[HTTPS] Certificate (pem)    : ${cert} -> ${fs.existsSync(cert) ? 'FOUND' : 'MISSING'}`);
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  logger.debug(`[HTTPS] Clave privada (key)  : ${key} -> ${fs.existsSync(key) ? 'ENCONTRADA' : 'AUSENTE'}`);
-  logger.debug(`[HTTPS] DECISIÓN FINAL       : ${shouldUseHttps ? 'HTTPS (TLS)' : 'HTTP (plano)'}`);
+  logger.debug(`[HTTPS] Private key (key)    : ${key} -> ${fs.existsSync(key) ? 'FOUND' : 'MISSING'}`);
+  logger.debug(`[HTTPS] FINAL DECISION       : ${shouldUseHttps ? 'HTTPS (TLS)' : 'HTTP (plain)'}`);
 
   if (shouldUseHttps) {
     const https = await import('node:https');
@@ -49,10 +49,10 @@ export async function createServerInstance(app) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         cert: fs.readFileSync(cert),
       };
-      logger.info('[HTTPS] Certificados leídos correctamente. Creando servidor TLS...');
+      logger.info('[HTTPS] Certificates read successfully. Creating TLS server...');
     } catch (err) {
       logger.error(`[HTTPS] ERROR reading SSL certificates: ${err.message}`);
-      logger.error('[HTTPS] No se puede arrancar en HTTPS. Revise los archivos en apps/server/certs/.');
+      logger.error('[HTTPS] Cannot start in HTTPS. Check the files in apps/server/certs/.');
       throw err;
     }
     return https.default.createServer(sslOptions, app);

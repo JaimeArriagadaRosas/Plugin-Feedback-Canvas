@@ -46,7 +46,7 @@ class CanvasJwksClient {
           logger.error(`[JWKS-CLIENT] getPublicKey falló definitivamente tras ${maxRetries} intentos: ${error.message}`);
           throw error;
         }
-        logger.warn(`[JWKS-CLIENT] Fallo obteniendo JWKS (intento ${attempt}/${maxRetries}): ${error.message}. Reintentando en breve...`);
+        logger.warn(`[JWKS-CLIENT] Failed to fetch JWKS (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying shortly...`);
         await new Promise(r => setTimeout(r, 2000 * attempt));
       }
     }

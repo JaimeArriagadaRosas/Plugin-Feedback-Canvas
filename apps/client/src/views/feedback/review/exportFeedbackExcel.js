@@ -36,27 +36,27 @@ export async function exportFeedbackExcel(filteredFeedbacks) {
       });
     };
 
-    const sheetUtilidad = workbook.addWorksheet('Utilidad del Feedback');
+    const sheetUtilidad = workbook.addWorksheet('Feedback Utility');
     sheetUtilidad.columns = [
-      { header: 'Métrica de Utilidad (Estudiantes)', key: 'metrica', width: 45 },
-      { header: 'Valor', key: 'valor', width: 20 }
+      { header: 'Utility Metric (Students)', key: 'metrica', width: 45 },
+      { header: 'Value', key: 'valor', width: 20 }
     ];
-    sheetUtilidad.addRow({ metrica: 'Total de Evaluaciones de Utilidad', valor: countTotalEvaluacionesUtilidad });
-    sheetUtilidad.addRow({ metrica: 'Total de Feedbacks Considerados Útiles', valor: countEvaluacionesUtiles });
-    sheetUtilidad.addRow({ metrica: 'Porcentaje de Utilidad', valor: porcentajeUtilidad });
-    sheetUtilidad.addRow({ metrica: 'Promedio Valoración (Escala 1-5)', valor: avgEstudiante !== 'N/A' ? `${avgEstudiante} ⭐` : 'N/A' });
+    sheetUtilidad.addRow({ metrica: 'Total Utility Evaluations', valor: countTotalEvaluacionesUtilidad });
+    sheetUtilidad.addRow({ metrica: 'Total Feedbacks Considered Useful', valor: countEvaluacionesUtiles });
+    sheetUtilidad.addRow({ metrica: 'Utility Percentage', valor: porcentajeUtilidad });
+    sheetUtilidad.addRow({ metrica: 'Average Rating (Scale 1-5)', valor: avgEstudiante !== 'N/A' ? `${avgEstudiante} ⭐` : 'N/A' });
     styleHeader(sheetUtilidad);
 
     const worksheet = workbook.addWorksheet('Feedbacks');
     worksheet.columns = [
-      { header: 'Estudiante', key: 'student', width: 25 },
-      { header: 'Curso', key: 'courseId', width: 10 },
-      { header: 'Asignacion', key: 'assignmentId', width: 15 },
-      { header: 'Estado', key: 'status', width: 15 },
-      { header: 'Calificacion IA', key: 'grade', width: 20 },
-      { header: 'Perfil Academico', key: 'profile', width: 25 },
-      { header: '¿Fue Útil? (Sí/No)', key: 'isUseful', width: 20 },
-      { header: 'Valoración Estudiante', key: 'studentRating', width: 20 }
+      { header: 'Student', key: 'student', width: 25 },
+      { header: 'Course', key: 'courseId', width: 10 },
+      { header: 'Assignment', key: 'assignmentId', width: 15 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'AI Grade', key: 'grade', width: 20 },
+      { header: 'Academic Profile', key: 'profile', width: 25 },
+      { header: 'Was Useful? (Yes/No)', key: 'isUseful', width: 20 },
+      { header: 'Student Rating', key: 'studentRating', width: 20 }
     ];
 
     filteredFeedbacks.forEach(fb => {
@@ -67,14 +67,14 @@ export async function exportFeedbackExcel(filteredFeedbacks) {
         status: fb.status || '',
         grade: fb.grade || '',
         profile: fb.profile || '',
-        isUseful: fb.isUseful !== null && fb.isUseful !== undefined ? (fb.isUseful ? 'Sí' : 'No') : 'N/A',
+        isUseful: fb.isUseful !== null && fb.isUseful !== undefined ? (fb.isUseful ? 'Yes' : 'No') : 'N/A',
         studentRating: fb.studentRating ? `${fb.studentRating} ⭐` : 'N/A'
       });
     });
 
     styleHeader(worksheet);
 
-    // --- Hoja: Notificaciones de Sistema ---
+    // --- Hoja: System Notifications ---
     let systemErrors = [];
     try {
       const errorRes = await api.get('/system-notifications/pending');
@@ -85,39 +85,39 @@ export async function exportFeedbackExcel(filteredFeedbacks) {
       logger.error('exportFeedbackExcel', "Error fetching system notifications for excel", { error: e });
     }
 
-    const sheetErrores = workbook.addWorksheet('Notificaciones de Sistema');
+    const sheetErrores = workbook.addWorksheet('System Notifications');
     sheetErrores.columns = [
-      { header: 'Tipo Error', key: 'tipo_error', width: 25 },
-      { header: 'Descripción', key: 'descripcion', width: 60 },
-      { header: 'Cantidad', key: 'count', width: 15 }
+      { header: 'Error Type', key: 'tipo_error', width: 25 },
+      { header: 'Description', key: 'descripcion', width: 60 },
+      { header: 'Count', key: 'count', width: 15 }
     ];
     
     const errorLabels = {
-      'CANVAS_CONNECTION_FAILED': 'Fallo conexión Canvas',
-      'AI_GENERATION_FAILED': 'Error generación IA',
-      'INSUFFICIENT_DATA': 'Datos insuficientes',
-      'NOTIFICATION_FAILED': 'Fallo envío notificación'
+      'CANVAS_CONNECTION_FAILED': 'Canvas Connection Failed',
+      'AI_GENERATION_FAILED': 'AI Generation Error',
+      'INSUFFICIENT_DATA': 'Insufficient Data',
+      'NOTIFICATION_FAILED': 'Notification Sending Failed'
     };
 
     const errorDescriptions = {
-      'CANVAS_CONNECTION_FAILED': 'El servidor no pudo comunicarse con la API de Canvas (timeout o endpoint inaccesible). Verifica que Canvas esté operativo y respondiendo.',
-      'AI_GENERATION_FAILED': 'Ocurrió un fallo con la Inteligencia Artificial al procesar el prompt (ej. límite de peticiones alcanzado o error interno del proveedor).',
+      'CANVAS_CONNECTION_FAILED': 'The server could not communicate with the Canvas API (timeout or unreachable endpoint). Verify that Canvas is operational and responding.',
+      'AI_GENERATION_FAILED': 'An AI failure occurred when processing the prompt (e.g., request limit reached or provider internal error).',
       'INSUFFICIENT_DATA': 'Could not process request because the student has not submitted the assignment or the rubric lacks evaluation.',
-      'NOTIFICATION_FAILED': 'El sistema falló al intentar despachar el mensaje o correo de notificación de feedback generado al estudiante.'
+      'NOTIFICATION_FAILED': 'The system failed to dispatch the generated feedback notification message or email to the student.'
     };
 
     if (systemErrors.length > 0) {
       systemErrors.forEach(err => {
         sheetErrores.addRow({
           tipo_error: errorLabels[err.tipo_error] || err.tipo_error,
-          descripcion: errorDescriptions[err.tipo_error] || 'Error detectado en el sistema sin descripción detallada.',
+          descripcion: errorDescriptions[err.tipo_error] || 'Error detected in the system without detailed description.',
           count: err.cantidad
         });
       });
     } else {
       sheetErrores.addRow({
-        tipo_error: 'No hay notificaciones',
-        descripcion: 'Sin errores',
+        tipo_error: 'No notifications',
+        descripcion: 'No errors',
         count: 0
       });
     }
@@ -128,14 +128,14 @@ export async function exportFeedbackExcel(filteredFeedbacks) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "reporte_feedbacks.xlsx");
+    link.setAttribute("download", "feedbacks_report.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    logger.info('exportFeedbackExcel', "Export Excel generado.", { count: filteredFeedbacks.length });
+    logger.info('exportFeedbackExcel', "Excel export generated.", { count: filteredFeedbacks.length });
     return true;
   } catch (error) {
-    logger.error('exportFeedbackExcel', "Error generando Excel", { error });
+    logger.error('exportFeedbackExcel', "Error generating Excel", { error });
     throw error;
   }
 }

@@ -9,8 +9,8 @@ export function handleDbError(err, context = '') {
   const errorMessage = err?.message || err?.toString() || 'Error desconocido en DB';
   
   if (process.env.NODE_ENV === 'production') {
-    logger.error(`[DB] Fallo en operación de producción (${context}): ${errorMessage}`, { stack: err?.stack });
+    logger.error(`[DB] Production operation failed (${context}): ${errorMessage}`, { stack: err?.stack });
   } else {
-    logger.warn(`[DB] Fallo en operación (${context}): ${errorMessage}`, { stack: err?.stack });
+    logger.warn(`[DB] Operation failed (${context}): ${errorMessage}`, { stack: err?.stack });
   }
 }

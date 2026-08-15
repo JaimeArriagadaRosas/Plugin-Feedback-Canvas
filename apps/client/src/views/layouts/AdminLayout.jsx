@@ -1,17 +1,17 @@
 /**
- * AdminLayout — Layout exclusivo para el rol Administrador.
+ * AdminLayout — Exclusive layout for the Administrator role.
  *
- * REGLA DE SEPARACIÓN VISUAL (innegociable):
- *   ▸ En /admin o /  → Barra negra de administración visible.
- *   ▸ En /teacher/*  → Barra de admin COMPLETAMENTE OCULTA.
- *                      El admin ve exactamente lo mismo que un docente real.
- *                      Solo aparece un pequeño botón flotante "Volver a Admin".
+ * VISUAL SEPARATION RULE (non-negotiable):
+ *   ▸ On /admin or /  → Black admin bar visible.
+ *   ▸ On /teacher/*  → Admin bar COMPLETELY HIDDEN.
+ *                      The admin sees exactly what a real teacher sees.
+ *                      Only a small floating "Return to Admin" button appears.
  *
- * Esta separación garantiza que:
- *   1. Un docente real (role=teacher) jamás llega a este componente.
- *   2. Un admin en vista docente no puede distinguirse de un docente real
- *      mirando la pantalla — la vista es idéntica.
- *   3. El botón flotante es discreto y no interfiere con la interfaz del docente.
+ * This separation ensures that:
+ *   1. A real teacher (role=teacher) never reaches this component.
+ *   2. An admin in teacher view cannot be distinguished from a real teacher
+ *      by looking at the screen — the view is identical.
+ *   3. The floating button is discreet and does not interfere with the teacher interface.
  */
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -21,15 +21,15 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ── Determinar en qué vista estamos ────────────────────────────────────────
+  // ── Determine which view we are in ────────────────────────────────────────
   const esVistaAdmin   = location.pathname.startsWith('/admin') || location.pathname === '/';
 
   return (
     <ErrorBoundary>
       <div className="admin-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', fontFamily: "'Lato', sans-serif" }}>
-        <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
 
-        {/* Contenido principal — <Outlet /> renderiza la ruta activa */}
+        {/* Main content — <Outlet /> renders the active route */}
         <main id="main-content" style={{ flex: 1 }}>
           <Outlet />
         </main>

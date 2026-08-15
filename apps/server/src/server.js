@@ -11,7 +11,7 @@ export async function shutdown(signal = 'SIGINT', errorDetails = null) {
   const isOrchestrated = !!process.env.STARTUP_MODE;
 
   if (!isOrchestrated) {
-    logger.info(`[SHUTDOWN] Recibida señal ${signal}. Cerrando servidor gracefully...`);
+    logger.info(`[SHUTDOWN] Received signal ${signal}. Closing server gracefully...`);
   }
 
   if (serverInstance) {
@@ -19,15 +19,15 @@ export async function shutdown(signal = 'SIGINT', errorDetails = null) {
       serverInstance.tokenRotationJob.stop();
     }
     serverInstance.close(() => {
-      if (!isOrchestrated) logger.info('[SHUTDOWN] Servidor HTTP cerrado (no acepta nuevas conexiones).');
+      if (!isOrchestrated) logger.info('[SHUTDOWN] HTTP server closed (not accepting new connections).');
     });
   }
   if (db.pool) {
     try {
       await db.pool.end();
-      if (!isOrchestrated) logger.info('[SHUTDOWN] Pool de PostgreSQL cerrado.');
+      if (!isOrchestrated) logger.info('[SHUTDOWN] PostgreSQL pool closed.');
     } catch (e) {
-      if (!isOrchestrated) logger.warn('[SHUTDOWN] Error cerrando pool de PostgreSQL:', { error: e.message });
+      if (!isOrchestrated) logger.warn('[SHUTDOWN] Error closing PostgreSQL pool:', { error: e.message });
     }
   }
   
@@ -35,10 +35,10 @@ export async function shutdown(signal = 'SIGINT', errorDetails = null) {
   const exitCode = isError ? 1 : 0;
   
   if (isError && process.send) {
-    process.send({ type: 'server-error', message: errorDetails || `Error de inicialización (${signal})` });
+    process.send({ type: 'server-error', message: errorDetails || `Initialization error (${signal})` });
   }
 
-  if (!isOrchestrated) logger.info(`[SHUTDOWN] Proceso terminando con código ${exitCode}.`);
+  if (!isOrchestrated) logger.info(`[SHUTDOWN] Process terminating with code ${exitCode}.`);
   process.exit(exitCode);
 }
 
@@ -46,16 +46,16 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 process.on('uncaughtException', (err) => {
-  logger.error('[SERVER] Excepción no capturada (uncaughtException):', err);
+  logger.error('[SERVER] Uncaught exception (uncaughtException):', err);
   shutdown('uncaughtException', err.message);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('[SERVER] Promesa rechazada no manejada (unhandledRejection):', { reason, promise });
+  logger.error('[SERVER] Unhandled promise rejection (unhandledRejection):', { reason, promise });
   shutdown('unhandledRejection', reason?.message || String(reason));
 });
 
-logger.info('[SERVER] Entorno configurado. Esperando conexiones de autenticación...');
+logger.info('[SERVER] Environment configured. Waiting for authentication connections...');
 startServer(app, PORT).then((server) => {
   serverInstance = server;
 }).catch((err) => {

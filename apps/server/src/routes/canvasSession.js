@@ -141,7 +141,7 @@ router.get('/canvas-logs.js', (req, res) => {
     observer.observe(document.body, { childList: true, subtree: true });
 
   } catch (e) {
-    console.error('[Unida LTI] Error en script global de Canvas:', e);
+    console.error('[Unida LTI] Error in Canvas global script:', e);
   }
 })();
   `);

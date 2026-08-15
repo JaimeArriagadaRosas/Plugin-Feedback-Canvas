@@ -3,12 +3,12 @@ import path from 'node:path';
 import { BootResult } from './../result.js';
 
 /**
- * DependenciesCheck — Verificación inteligente de node_modules del plugin.
+ * DependenciesCheck — Intelligent verification of the plugin's node_modules.
  *
- * Estrategia: 
- *  - Ausencia total de node_modules => preboot instala con `npm ci` bloqueado.
- *  - Ausencia de package-lock.json => advertencia de desactualización.
- *  - Ausencia de Playwright => informa una accion explicita, sin alterar dependencias.
+ * Strategy: 
+ *  - Total absence of node_modules => preboot installs with locked `npm ci`.
+ *  - Absence of package-lock.json => outdated warning.
+ *  - Absence of Playwright => informs an explicit action, without altering dependencies.
  */
 export class DependenciesCheck {
   constructor(pluginDir) {
@@ -17,8 +17,8 @@ export class DependenciesCheck {
 
   run(log) {
     const nm = path.join(this.pluginDir, 'node_modules');
-    // La instalacion bloqueada de dependencias es responsabilidad de preboot.js.
-    // Este check solo informa si falta un componente opcional de E2E.
+    // The locked installation of dependencies is the responsibility of preboot.js.
+    // This check only informs if an optional E2E component is missing.
 
     const lock = path.join(this.pluginDir, 'package-lock.json');
     const pkg = path.join(this.pluginDir, 'package.json');
@@ -30,21 +30,21 @@ export class DependenciesCheck {
     const pkgMtime = fs.existsSync(pkg) ? fs.statSync(pkg).mtimeMs : 0;
 
     if (lockMtime && pkgMtime > lockMtime) {
-      log.warn('package.json fue modificado después del package-lock.json (posible desactualización).');
+      log.warn('package.json was modified after package-lock.json (possible desynchronization).');
     }
 
-    // Verificación específica de Playwright para E2E
+    // Specific verification of Playwright for E2E
     const playwrightPath = path.join(nm, '@playwright', 'test');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(playwrightPath)) {
-       log.warn('Faltan dependencias de Caja Negra/E2E (@playwright/test).');
+       log.warn('Missing Black Box/E2E dependencies (@playwright/test).');
        return BootResult.warn(
-         'Playwright no esta disponible para las pruebas E2E.',
-         'Ejecute npm start para restaurar dependencias bloqueadas y despues npx playwright install.'
+         'Playwright is not available for E2E tests.',
+         'Run npm start to restore locked dependencies and then npx playwright install.'
        );
     }
 
-    log.success('Dependencias del plugin verificadas.');
+    log.success('Plugin dependencies verified.');
     return BootResult.ok({ cached: true });
   }
 }

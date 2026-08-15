@@ -15,7 +15,7 @@ export function useSpeedGraderData() {
   const [feedback, setFeedback] = useState("");
   const [generatedFeedbackId, setGeneratedFeedbackId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("Cargando datos desde Canvas...");
+  const [statusMsg, setStatusMsg] = useState("Loading data from Canvas...");
 
   const { data: meData } = useQuery({
     queryKey: ['config', 'me'],
@@ -53,7 +53,7 @@ export function useSpeedGraderData() {
     enabled: !!courseId,
   });
 
-  // Inicializar o auto-corregir la tarea seleccionada (Watchdog SRP)
+  // Initialize or auto-correct the selected assignment (Watchdog SRP)
   useEffect(() => {
     if (assignments.length === 0) {
       if (currentAssignmentId !== null) setCurrentAssignmentId(null);
@@ -65,7 +65,7 @@ export function useSpeedGraderData() {
       return;
     }
     
-    // Si hay un ID pero ya no existe en la lista de tareas activas, forzamos corrección
+    // If there is an ID but it no longer exists in the active assignment list, force correction
     const isStillValid = assignments.some(a => a.id === currentAssignmentId);
     if (!isStillValid) {
       setCurrentAssignmentId(assignments[0].id);
@@ -85,13 +85,13 @@ export function useSpeedGraderData() {
     enabled: !!courseId,
   });
 
-  const currentStudent = students[currentIndex] || { id: 0, name: "Sin Estudiante" };
+  const currentStudent = students[currentIndex] || { id: 0, name: "No Student" };
 
   const { data: submissionData, error: submissionError, isFetching: isFetchingSubmissionQuery, isPending: isSubmissionPending } = useQuery({
     queryKey: ['submission', courseId, currentAssignmentId, currentStudent.id],
     queryFn: async () => {
       if (!courseId || !currentAssignmentId || !currentStudent.id) return null;
-      // Usamos quiz-details porque devuelve la entrega y, si es un cuestionario, las preguntas
+      // We use quiz-details because it returns the submission and, if it is a quiz, the questions
       const result = await api.get(`/courses/${courseId}/assignments/${currentAssignmentId}/quiz-details/${currentStudent.id}`);
       if (result.exito && result.data) {
         return result.data; // { submission, questions, latestAttempt }
@@ -105,10 +105,10 @@ export function useSpeedGraderData() {
     ? (isFetchingSubmissionQuery || isSubmissionPending) 
     : false;
 
-  // Limpiar estado cuando se cambia la tarea o el estudiante
+  // Clear state when the assignment or student changes
   useEffect(() => {
     setGrade(0);
-    setStatusMsg("Cargando datos desde Canvas...");
+    setStatusMsg("Loading data from Canvas...");
     setFeedback("");
     setGeneratedFeedbackId(null);
   }, [currentAssignmentId, currentStudent.id]);
@@ -124,7 +124,7 @@ export function useSpeedGraderData() {
       return null;
     },
     enabled: !!courseId && !!currentStudent.id,
-    refetchInterval: 15000, // Polling cada 15 segundos para actualizar feedback generado en segundo plano
+    refetchInterval: 15000, // Polling every 15 seconds to update background generated feedback
   });
 
   const feedbackDetail = feedbackDetailList?.find(fb => fb.assignmentId == currentAssignmentId) || null;
@@ -138,22 +138,22 @@ export function useSpeedGraderData() {
   useEffect(() => {
     if (!isAiServiceAvailable) {
       setGrade(0);
-      setStatusMsg("Modo de solo lectura. API de IA inactiva.");
+      setStatusMsg("Read-only mode. AI API inactive.");
       return;
     }
     
     if (submission) {
-      const body = submission.body || submission.preview_url || "Sin contenido de entrega.";
+      const body = submission.body || submission.preview_url || "No submission content.";
       queryClient.setQueryData(['submissions', courseId, currentAssignmentId], (old = {}) => ({
         ...old,
         [currentStudent.id]: sanitizeHtml(body, { allowedTags: [], allowedAttributes: {} })
       }));
       setGrade(submission.score || 0);
-      setStatusMsg("Listo para generar feedback.");
+      setStatusMsg("Ready to generate feedback.");
     }
   }, [submission, courseId, currentAssignmentId, currentStudent.id, queryClient, isAiServiceAvailable]);
 
-  // Si hay feedback pendiente en la base de datos para este estudiante/tarea, lo inyectamos
+  // If there is pending feedback in the database for this student/assignment, inject it
   useEffect(() => {
     if (feedbackDetail) {
       setFeedback(feedbackDetail.feedback || "");
@@ -166,8 +166,8 @@ export function useSpeedGraderData() {
 
   useEffect(() => {
     if (submissionError) {
-      logger.error('SpeedGrader', "Error cargando entrega", { error: submissionError });
-      setStatusMsg("Error cargando entrega.");
+      logger.error('SpeedGrader', "Error loading submission", { error: submissionError });
+      setStatusMsg("Error loading submission.");
     }
   }, [submissionError]);
 

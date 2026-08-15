@@ -2,7 +2,7 @@ import styles from './StarRating.module.css';
 
 export default function StarRating({ value = 0, onChange, readonly = false, className = '' }) {
   return (
-    <div className={`${styles.rating} ${className}`} role="radiogroup" aria-label="Calificación">
+    <div className={`${styles.rating} ${className}`} role="radiogroup" aria-label="Rating">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -11,7 +11,7 @@ export default function StarRating({ value = 0, onChange, readonly = false, clas
           onClick={() => !readonly && onChange?.(star)}
           disabled={readonly}
           aria-checked={star === value}
-          aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
+          aria-label={`${star} star${star > 1 ? 's' : ''}`}
         >
           ★
         </button>

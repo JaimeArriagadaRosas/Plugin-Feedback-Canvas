@@ -32,7 +32,7 @@ export function useTemplateEditor(template) {
   useEffect(() => {
     const currentText = content[currentTab] || "";
     let text = currentText
-      .replace(/{{nombre_estudiante}}/g, "Juan Pérez")
+      .replace(/{{nombre_estudiante}}/g, "John Doe")
       .replace(/{{calificacion}}/g, "3.5")
       .replace(/{{promedio_curso}}/g, "5.2");
     setPreview(text);

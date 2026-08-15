@@ -44,7 +44,7 @@ export function isLocalModeAllowed() {
 }
 
 /**
- * Lanza si faltan variables de entorno críticas en producción.
+ * Throws if critical environment variables are missing in production.
  * Devuelve la lista de faltantes en otros entornos (para warning).
  */
 export function requireSecretsOrThrow(required = []) {
@@ -52,7 +52,7 @@ export function requireSecretsOrThrow(required = []) {
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length && isProduction()) {
     throw new Error(
-      `Faltan variables de entorno requeridas en producción: ${missing.join(', ')}`
+      `Required environment variables missing in production: ${missing.join(', ')}`
     );
   }
   return missing;

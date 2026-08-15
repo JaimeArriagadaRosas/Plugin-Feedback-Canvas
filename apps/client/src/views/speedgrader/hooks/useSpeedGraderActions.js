@@ -31,12 +31,12 @@ export function useSpeedGraderActions({
 
   const handleGenerateMassive = useCallback(async (isRegenerate = false) => {
     if (isAssignmentsLoading) {
-      alert("Por favor espere a que todas las tareas terminen de cargar antes de generar el feedback masivo.");
+      alert("Please wait for all assignments to finish loading before generating mass feedback.");
       return;
     }
 
     setLoading(true);
-    setStatusMsg(isRegenerate ? "Generando y regenerando masivamente..." : "Generando masivamente...");
+    setStatusMsg(isRegenerate ? "Mass generating and regenerating..." : "Mass generating...");
     
     const targetStudentId = currentStudent?.id;
     
@@ -45,27 +45,27 @@ export function useSpeedGraderActions({
       const otherStudents = students.filter(s => s.id !== targetStudentId);
       const otherAssignments = activeAssignments.filter(a => a.id !== currentAssignmentId);
 
-      // 1. Disparar generación masiva en background para los DEMÁS estudiantes (en todas las tareas)
+      // 1. Trigger mass generation in background for OTHER students (across all assignments)
       if (otherStudents.length > 0) {
         api.post('/feedback/generate-all', {
           courseId,
           activeAssignments,
           students: otherStudents,
           isRegenerate
-        }).catch(err => logger.error('SpeedGrader', "Error en background generate-all others", { err }));
+        }).catch(err => logger.error('SpeedGrader', "Error in background generate-all others", { err }));
       }
 
-      // 2. Disparar generación masiva en background para el ESTUDIANTE ACTUAL (en las demás tareas)
+      // 2. Trigger mass generation in background for CURRENT STUDENT (across other assignments)
       if (otherAssignments.length > 0 && targetStudentId) {
         api.post('/feedback/generate-all', {
           courseId,
           activeAssignments: otherAssignments,
           students: [{ id: targetStudentId }],
           isRegenerate
-        }).catch(err => logger.error('SpeedGrader', "Error en background generate-all current student", { err }));
+        }).catch(err => logger.error('SpeedGrader', "Error in background generate-all current student", { err }));
       }
 
-      // 3. Generar síncronamente para el actual en la tarea actual, permitiendo capturar errores y mostrar estado de 'Generando...'
+      // 3. Generate synchronously for the current student in the current assignment, allowing error capture and displaying 'Generating...' status
       const result = await api.post('/feedback/generate', {
         courseId,
         assignmentId: currentAssignmentId,
@@ -74,14 +74,14 @@ export function useSpeedGraderActions({
         isRegenerate
       });
 
-      // Solo actualizar la UI si no hemos cambiado de estudiante mientras cargaba
+      // Only update the UI if we haven't changed students while loading
       if (currentStudentRef.current === targetStudentId) {
         if (result.exito && result.data) {
           setFeedback(result.data.content);
           setGeneratedFeedbackId(result.data.id);
-          setStatusMsg(isRegenerate ? "Regeneración exitosa. El proceso masivo continúa." : "Generación exitosa. El proceso masivo continúa.");
+          setStatusMsg(isRegenerate ? "Regeneration successful. Mass process continues." : "Generation successful. Mass process continues.");
         } else if (result.omitido) {
-          setStatusMsg("Estudiante actual omitido (ya tiene feedback o no aplica).");
+          setStatusMsg("Current student skipped (already has feedback or not applicable).");
         }
       }
       
@@ -89,11 +89,11 @@ export function useSpeedGraderActions({
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
     } catch (error) {
-      logger.error('SpeedGrader', "Error crítico al generar feedback", { error });
+      logger.error('SpeedGrader', "Critical error generating feedback", { error });
       if (currentStudentRef.current === targetStudentId) {
-        // Enviar el error directamente a la caja de review
+        // Send the error directly to the review box
         setFeedback(`[ERROR] ${error.message || "Error contacting AI"}`);
-        setStatusMsg("Error en la generación.");
+        setStatusMsg("Error generating.");
       }
     } finally {
       if (currentStudentRef.current === targetStudentId) {
@@ -105,7 +105,7 @@ export function useSpeedGraderActions({
   const handleApprove = useCallback(async (rating) => {
     if (!generatedFeedbackId) return;
     setLoading(true);
-    setStatusMsg("Guardando y enviando feedback y nota...");
+    setStatusMsg("Saving and sending feedback and grade...");
     try {
       const result = await api.post('/feedback/approve', {
         feedbackId: generatedFeedbackId,
@@ -117,7 +117,7 @@ export function useSpeedGraderActions({
         rating: rating,
       });
       if (!result.exito) throw new Error("Error approving feedback");
-      setStatusMsg("¡Enviado exitosamente a Canvas!");
+      setStatusMsg("Successfully sent to Canvas!");
       queryClient.invalidateQueries({ queryKey: ['feedbackDetail', courseId, currentStudent.id] });
       queryClient.invalidateQueries({ queryKey: ['pending-summary'] });
       queryClient.invalidateQueries({ queryKey: ['feedback-list'] });
@@ -131,13 +131,13 @@ export function useSpeedGraderActions({
 
   const handleManualSubmit = useCallback(async (text) => {
     if (!text) return;
-    // Guard Clause (OCP/SRP): Prevención de desincronización de base de datos
+    // Guard Clause (OCP/SRP): Prevention of database desynchronization
     if (activeAssignment?.id && currentAssignmentId !== activeAssignment.id) {
-      setStatusMsg("Error de Sincronización: La tarea mostrada no coincide con el estado interno. Por favor, recargue la página.");
+      setStatusMsg("Synchronization Error: The displayed assignment does not match the internal state. Please reload the page.");
       return;
     }
     setLoading(true);
-    setStatusMsg("Guardando feedback manual como pendiente...");
+    setStatusMsg("Saving manual feedback as pending...");
     try {
       const result = await api.post('/feedback/manual', {
         courseId,
@@ -147,7 +147,7 @@ export function useSpeedGraderActions({
         grade: grade
       });
       if (!result.exito) throw new Error("Error sending feedback manual");
-      setStatusMsg("¡Feedback manual guardado como pendiente exitosamente!");
+      setStatusMsg("Manual feedback successfully saved as pending!");
       
       if (result.data) {
         setFeedback(result.data.contenido_generado || text);

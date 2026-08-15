@@ -113,7 +113,7 @@ export default class CanvasClient {
             canvasCircuitBreaker.recordFailure();
             throw err;
           }
-          // No registramos fallo en el Circuit Breaker para errores del cliente (4xx)
+          // We don't register a failure in the Circuit Breaker for client errors (4xx)
           if (options.returnFullResponse) {
              return response;
           }
@@ -131,7 +131,7 @@ export default class CanvasClient {
       } catch (error) {
         clearTimeout(timer);
         if (error.statusCode === 401 || error.statusCode === 403) {
-          // No registramos fallo por ser error esperado (sesión expirada o revocado)
+          // We don't register a failure because it is an expected error (session expired or revoked)
           throw error;
         }
         if (error.isCircuitOpen) {
@@ -150,7 +150,7 @@ export default class CanvasClient {
           attempt++;
           if (attempt >= maxRetries) {
             if (!(error instanceof AppError)) {
-               throw new AppError(error.message || 'Error de conexión', 503, null, null, 'CANVAS_CONNECTION_FAILED');
+               throw new AppError(error.message || 'Connection error', 503, null, null, 'CANVAS_CONNECTION_FAILED');
             }
             if (error instanceof AppError && !error.errorCode) {
                error.errorCode = 'CANVAS_CONNECTION_FAILED';

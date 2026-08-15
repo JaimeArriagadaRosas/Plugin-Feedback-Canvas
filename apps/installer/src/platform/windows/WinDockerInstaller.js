@@ -15,18 +15,18 @@ export class WinDockerInstaller {
   }
 
   async install() {
-    this.boot.info('Descargando Docker Desktop Installer para Windows...');
+    this.boot.info('Downloading Docker Desktop Installer for Windows...');
     const url = 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe';
     const dest = path.join(process.env.TEMP || 'C:\\Windows\\Temp', 'DockerDesktopInstaller.exe');
     
-    // Mitigación: Usar curl.exe nativo de Windows (más rápido y eficiente)
+    // Mitigation: Use native Windows curl.exe (faster and more efficient)
     let success, err;
     try {
       const curlRes = await runCommand('curl.exe', ['-L', '-o', dest, url], { logFile: this.logFile });
       success = curlRes.success;
       err = curlRes.err;
     } catch {
-      // Fallback a powershell si no hay curl.exe
+      // Fallback to powershell if curl.exe is not available
       const psRes = await runCommand('powershell', ['-Command', `Invoke-WebRequest -Uri "${url}" -OutFile "${dest}"`], { logFile: this.logFile });
       success = psRes.success;
       err = psRes.err;
@@ -37,18 +37,18 @@ export class WinDockerInstaller {
       return false;
     }
 
-    this.boot.warn('Se requerirán permisos de Administrador (UAC) para instalar Docker.');
-    this.boot.action('Por favor, confirme el cuadro de diálogo que aparecerá a continuación.');
+    this.boot.warn('Administrator (UAC) permissions will be required to install Docker.');
+    this.boot.action('Please confirm the dialog box that will appear next.');
     
-    // start-process con -Wait y -Verb RunAs para elevación
+    // start-process with -Wait and -Verb RunAs for elevation
     const installRes = await runCommand('powershell', ['-Command', `Start-Process -FilePath "${dest}" -ArgumentList "install --quiet --accept-license" -Wait -Verb RunAs`]);
     
     if (!installRes.success) {
-      this.boot.error('La instalación falló (posiblemente canceló los permisos UAC o falló el instalador).');
+      this.boot.error('Installation failed (possibly canceled UAC permissions or installer failed).');
       return false;
     }
 
-    this.boot.warn('IMPORTANTE: Es probable que deba reiniciar su equipo o cerrar sesión para que Docker sea funcional.');
+    this.boot.warn('IMPORTANT: You may need to restart your computer or log out for Docker to be functional.');
     return true;
   }
 

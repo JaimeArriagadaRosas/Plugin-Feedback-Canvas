@@ -2,10 +2,10 @@ import { execFileSync } from 'node:child_process';
 import { BootResult } from './../result.js';
 
 /**
- * NodeCheck — Verifica Node.js y NPM con validación de versión mínima.
+ * NodeCheck — Verifies Node.js and NPM with minimum version validation.
  *
- * No reinstala nada (la instalación de Node es competencia de la capa Python
- * de setup). Solo detecta y reporta.
+ * Does not reinstall anything (Node installation is handled by the Python layer
+ * setup). It only detects and reports.
  */
 const REQUIRED_NPM_VERSION = '11.8.0';
 
@@ -35,22 +35,22 @@ export class NodeCheck {
   run(log) {
     const nodeVer = this.runCommand('node', ['--version']);
     if (!nodeVer) {
-      log.error('Node.js no encontrado.');
-      log.action('Instale Node.js 20.19+ o 22.12+ desde https://nodejs.org.');
-      return BootResult.fail(true, 'Node.js no instalado',
-        'Instale Node.js 20.19+ o 22.12+ desde https://nodejs.org');
+      log.error('Node.js not found.');
+      log.action('Install Node.js 20.19+ or 22.12+ from https://nodejs.org.');
+      return BootResult.fail(true, 'Node.js not installed',
+        'Install Node.js 20.19+ or 22.12+ from https://nodejs.org');
     }
 
     const npmVer = this.runCommand('npm', ['--version']);
     if (!isSupportedNode(nodeVer)) {
-      log.error(`Node.js ${nodeVer} no cumple ^20.19.0 || >=22.12.0.`);
-      return BootResult.fail(true, 'Versión de Node.js incompatible',
-        `Actualice Node.js; la versión detectada es ${nodeVer}.`);
+      log.error(`Node.js ${nodeVer} does not meet ^20.19.0 || >=22.12.0.`);
+      return BootResult.fail(true, 'Incompatible Node.js version',
+        `Update Node.js; the detected version is ${nodeVer}.`);
     }
     if (npmVer !== REQUIRED_NPM_VERSION) {
-      log.warn(`npm ${npmVer || 'no disponible'} no coincide con packageManager npm@${REQUIRED_NPM_VERSION}.`);
-      return BootResult.warn('npm global distinto al fijado por el monorepo',
-        `Para instalaciones manuales use: npx --yes npm@${REQUIRED_NPM_VERSION} ci.`);
+      log.warn(`npm ${npmVer || 'not available'} does not match packageManager npm@${REQUIRED_NPM_VERSION}.`);
+      return BootResult.warn('global npm different from the one set by the monorepo',
+        `For manual installations use: npx --yes npm@${REQUIRED_NPM_VERSION} ci.`);
     }
 
     log.success(`Node.js ${nodeVer} compatible${npmVer ? ` · npm ${npmVer}` : ''}.`);

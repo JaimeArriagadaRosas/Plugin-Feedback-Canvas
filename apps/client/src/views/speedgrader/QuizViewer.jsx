@@ -14,10 +14,10 @@ export default function QuizViewer({ quizDetails, studentName }) {
 
   const { questions, latestAttempt } = quizDetails;
   
-  // Extraer las respuestas del último intento
+  // Extract answers from the latest attempt
   const submissionData = latestAttempt?.submission_data || [];
   
-  // Mapa para búsqueda rápida de respuestas
+  // Map for fast answer lookup
   const answersMap = new Map();
   submissionData.forEach(ans => {
     answersMap.set(String(ans.question_id), ans);
@@ -65,7 +65,7 @@ export default function QuizViewer({ quizDetails, studentName }) {
                 <div className={styles.answersList}>
                   {q.answers.map(ans => {
                     const isSelected = studentAns && String(studentAns.answer_id) === String(ans.id);
-                    // Si es una pregunta de opción múltiple con respuestas múltiples, `answer_id` podría no aplicar así, pero cubrimos lo básico
+                    // If it is a multiple-choice question with multiple answers, `answer_id` might not apply like this, but we cover the basics
                     return (
                       <div 
                         key={ans.id} 

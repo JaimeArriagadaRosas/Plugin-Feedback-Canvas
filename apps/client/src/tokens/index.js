@@ -1,25 +1,25 @@
 /**
- * Design Tokens — Fuente única de verdad para el sistema visual.
+ * Design Tokens — Single source of truth for the visual system.
  *
- * Centraliza colores, tipografía, espaciados, radios y sombras que antes
- * estaban hardcodeados y duplicados en decenas de componentes.
+ * Centralizes colors, typography, spacing, radii and shadows that were previously
+ * hardcoded and duplicated in dozens of components.
  *
- * Uso en JS/JSX:
+ * Usage in JS/JSX:
  *   import { colors, font } from '../../styles/tokens';
  *   <div style={{ color: colors.text, fontFamily: font.family }} />
  *
- * Los mismos valores están expuestos como variables CSS en theme.css
- * (p. ej. var(--color-primary)) para su uso desde CSS Modules.
+ * The same values are exposed as CSS variables in theme.css
+ * (e.g. var(--color-primary)) for use from CSS Modules.
  */
 
 export const colors = {
-  // Marca / acentos (paleta Canvas LMS)
-  primary: '#0770a3',      // azul Canvas (enlaces, acciones)
-  text: '#2d3b45',         // slate oscuro (texto principal)
-  border: '#c7cdd1',       // gris de bordes
-  borderLight: '#e0e4e8',  // gris de bordes suaves
+  // Brand / accents (Canvas LMS palette)
+  primary: '#0770a3',      // Canvas blue (links, actions)
+  text: '#2d3b45',         // dark slate (main text)
+  border: '#c7cdd1',       // border gray
+  borderLight: '#e0e4e8',  // soft border gray
 
-  // Fondos
+  // Backgrounds
   bg: '#f5f5f5',
   surface: '#ffffff',
   surfaceAlt: '#f9f9f9',
@@ -27,12 +27,12 @@ export const colors = {
   surfaceMuted: '#eee',
   docBg: '#e0e4e7',
 
-  // Texto secundario
+  // Secondary text
   textMuted: '#666',
   textFaint: '#888',
   textDisabled: '#aaa',
 
-  // Estados semánticos
+  // Semantic states
   success: '#27ae60',
   successBg: '#e9f7ef',
   successText: '#1d8348',
@@ -48,7 +48,7 @@ export const colors = {
   infoBorder: '#bce8f1',
   star: '#f1c40f',
 
-  // Superpuestos
+  // Overlays
   overlay: 'rgba(0,0,0,0.5)',
 };
 

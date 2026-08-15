@@ -6,7 +6,7 @@ export const queryClient = new QueryClient({
     queries: {
       retry: (failureCount, error) => {
         const status = error?.status || error?.response?.status;
-        // Política Fail-Fast: Rechazar promesas inmediatamente para 401 y 403
+        // Fail-Fast Policy: Reject promises immediately for 401 and 403
         if (status === 401 || status === 403 || status === 400) return false;
         return failureCount < 2;
       },
@@ -14,7 +14,7 @@ export const queryClient = new QueryClient({
         const status = error?.status || error?.response?.status;
         const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
         if (status === 429) {
-          // Exponential Backoff + Jitter para errores 429 (Too Many Requests)
+          // Exponential Backoff + Jitter for 429 errors (Too Many Requests)
           const jitter = Math.random() * 1000;
           return baseDelay + jitter;
         }

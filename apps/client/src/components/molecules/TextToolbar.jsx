@@ -23,14 +23,14 @@ export default function TextToolbar({ onFormat, onClear }) {
 
   return (
     <div className={styles.toolbar}>
-      <Button variant="ghost" size="sm" onClick={() => handleFormat('bold')} title="Negrita"><b>B</b></Button>
-      <Button variant="ghost" size="sm" onClick={() => handleFormat('italic')} title="Cursiva"><i>I</i></Button>
-      <Button variant="ghost" size="sm" onClick={() => handleFormat('underline')} title="Subrayado"><u>U</u></Button>
+      <Button variant="ghost" size="sm" onClick={() => handleFormat('bold')} title="Bold"><b>B</b></Button>
+      <Button variant="ghost" size="sm" onClick={() => handleFormat('italic')} title="Italic"><i>I</i></Button>
+      <Button variant="ghost" size="sm" onClick={() => handleFormat('underline')} title="Underline"><u>U</u></Button>
       <div className={styles.divider} />
-      <Button variant="ghost" size="sm" onClick={() => handleFormat('list')} title="Lista con viñetas">•≡</Button>
-      <Button variant="ghost" size="sm" onClick={() => handleFormat('numlist')} title="Lista numerada">1≡</Button>
+      <Button variant="ghost" size="sm" onClick={() => handleFormat('list')} title="Bulleted list">•≡</Button>
+      <Button variant="ghost" size="sm" onClick={() => handleFormat('numlist')} title="Numbered list">1≡</Button>
       <div className={styles.divider} />
-      <Button variant="ghost" size="sm" onClick={handleClear} title="Limpiar todo">🗑️</Button>
+      <Button variant="ghost" size="sm" onClick={handleClear} title="Clear all">🗑️</Button>
     </div>
   );
 }

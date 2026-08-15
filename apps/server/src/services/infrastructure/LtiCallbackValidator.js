@@ -28,8 +28,8 @@ export async function validateLtiCallback(req) {
   logger.info(`[LTI-CALLBACK-VALIDATOR] Inicio validación | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
 
   if (oidcError) {
-    logger.error('[LTI-CALLBACK] Canvas devolvió error en OIDC', { error: oidcError });
-    throw new AppError(`Error de Canvas: ${oidcError}`, 401);
+    logger.error('[LTI-CALLBACK] Canvas returned an OIDC error', { error: oidcError });
+    throw new AppError(`Canvas error: ${oidcError}`, 401);
   }
 
   if (!id_token) {
