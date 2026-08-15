@@ -99,7 +99,7 @@ export default class ConfigController {
     try {
       const { servicio, key, endpoint_personalizado } = req.body;
       
-      // Validaciones básicas
+      // Basic validations
       if (!servicio || !key) {
         const error = new Error('Service and key are required');
         error.statusCode = 400;

@@ -48,7 +48,7 @@ export default function FeedbackTable({
   const logReview = useButtonLogger();
   const logEdit = useButtonLogger();
 
-  // Obtenemos los IDs de los feedbacks pendientes para la casilla "Seleccionar Todos"
+  // Get the pending feedback IDs for the "Select All" checkbox
   const pendingFeedbacks = feedbacks.filter((feedback) => isReviewableFeedbackState(feedback.status));
   const allPendingSelected = pendingFeedbacks.length > 0 && pendingFeedbacks.every(fb => selectedIds.has(fb.id));
 

@@ -15,18 +15,18 @@ export default class FeedbackWorkflowService {
    * Rejects a feedback and requests its regeneration (RF27, RF67)
    */
   async rejectAndRegenerate(feedbackId, newVariables) {
-    // Obtener el feedback original ANTES de modificarlo
+    // Get original feedback BEFORE modifying it
     const fb = await this.feedbackRepo.getById(feedbackId);
     if (!fb) {
       throw new Error(`Feedback ${feedbackId} not found`);
     }
     const contenidoOriginal = fb.contenido_generado;
 
-    // 1. Cambiar estado a RECHAZADO
+    // 1. Change status to REJECTED
     await this.feedbackRepo.updateStatusAndContent(feedbackId, 'RECHAZADO', 'Waiting for regeneration...');
 
     try {
-      // 2. Regenerar el feedback (RF67)
+      // 2. Regenerate feedback (RF67)
       const regenerated = await this.feedbackService.generateFeedback(
         fb.curso_id,
         fb.tarea_id,
@@ -36,7 +36,7 @@ export default class FeedbackWorkflowService {
       );
       return regenerated;
     } catch (error) {
-      // Si la regeneración falla, restaurar el estado y contenido original para no perderlo
+      // If regeneration fails, restore original status and content to avoid losing it
       logger.warn(`[Workflow] Regeneration failed for feedback ${feedbackId}. Restoring original state.`, { error: error.message });
       await this.feedbackRepo.updateStatusAndContent(feedbackId, fb.estado, contenidoOriginal);
       throw error;
