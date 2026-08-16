@@ -20,8 +20,8 @@ export class AssetBuilder {
     this.logFile = logFile;
     this.canvasDir = canvasDir;
     this.runner = runner;
-    this.configuration = configuration || new CanvasLocalConfiguration(boot, canvasDir);
     this.dockerProfile = dockerProfile;
+    this.configuration = configuration || new CanvasLocalConfiguration(boot, canvasDir, { dockerProfile: this.dockerProfile });
     this.containerExecArgs = [];
   }
 

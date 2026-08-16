@@ -9,14 +9,23 @@ function wait(milliseconds) {
 }
 
 function createDefaultHealthCheck() {
+  let consecutive500 = 0;
   return async (url) => {
     try {
       const response = await fetch(url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(5000)
       });
+      if (response.status >= 500 && response.status < 600) {
+        consecutive500++;
+        if (consecutive500 >= 5) throw new Error(`HTTP ${response.status} persistente devuelto por Canvas.`);
+      } else {
+        consecutive500 = 0;
+      }
       return response.status >= 200 && response.status < 400;
-    } catch {
+    } catch (e) {
+      if (e.message.includes('persistente')) throw e;
+      consecutive500 = 0;
       return false;
     }
   };
@@ -45,6 +54,12 @@ export class CanvasBringup {
     this.boot.info('Iniciando stack de Canvas LMS...');
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
+
+    const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
+    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { runner: this.runner });
+    const probeResult = await probe.runChecks();
+    if (!probeResult.ok) return false;
+
     if (!(await this.ensureRubyDependencies())) return false;
     return this.waitForReady();
   }
@@ -144,10 +159,17 @@ export class CanvasBringup {
         return false;
       }
 
-      if (isRunning && await this.healthCheck(this.healthUrl)) {
+      try {
+        if (isRunning && await this.healthCheck(this.healthUrl)) {
+          tailProcess.kill();
+          spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
+          return true;
+        }
+      } catch (err) {
         tailProcess.kill();
-        spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
-        return true;
+        spinner.error({ text: `El arranque falló: ${err.message}`, mark: '  ×' });
+        await this._printEarlyDiagnosis();
+        return false;
       }
       
       attempts++;

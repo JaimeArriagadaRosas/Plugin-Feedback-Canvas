@@ -23,7 +23,7 @@ export async function runDiagnosis() {
   checkEnvironment(state, readEnv());
   const backendRunning = await checkServices(state);
   await checkApi(state, backendRunning);
-  checkDocker(state);
+  await checkDocker(state);
   checkNodeAndLogs(state);
   printSummary(state);
   return state.failures === 0;
@@ -159,20 +159,50 @@ async function reportCurrentUser(state) {
   }
 }
 
-function checkDocker(state) {
+async function checkDocker(state) {
   section('Docker');
   try {
-    ok(state, 'Docker instalado', commandOutput('docker', ['--version'], PLUGIN_DIR, 3000));
-  } catch {
-    warn(state, 'Docker no detectado', dockerInstallGuidance());
-    return;
-  }
-  try {
-    const status = commandOutput('docker', ['compose', 'ps'], CANVAS_DIR, 5000);
-    if (/running|up/i.test(status)) ok(state, 'Canvas Docker Compose', 'Contenedores activos detectados');
-    else warn(state, 'Canvas Docker Compose', 'No se detectaron contenedores activos.');
-  } catch {
-    warn(state, 'Canvas Docker Compose', 'No se pudo consultar el estado de los contenedores.');
+    const { DockerInstaller } = await import('../installation/installers/DockerInstaller.js');
+    const silentLogger = {
+      info: () => {}, warn: () => {}, error: () => {}, success: () => {}, action: () => {}, plain: () => {}
+    };
+    const installer = new DockerInstaller(silentLogger, '/dev/null');
+    const profile = await installer.getRuntimeState();
+
+    if (profile.daemonAvailable) {
+      ok(state, 'Docker', `Daemon activo (${profile.backend})`);
+    } else {
+      warn(state, 'Docker', 'Daemon no disponible o permisos insuficientes.');
+    }
+
+    if (profile.composeAvailable) {
+      ok(state, 'Docker Compose', 'Disponible');
+    } else {
+      warn(state, 'Docker Compose', 'No disponible o error al consultar.');
+    }
+
+    try {
+      const status = commandOutput('docker', ['compose', 'ps'], CANVAS_DIR, 5000);
+      if (/running|up/i.test(status)) {
+        ok(state, 'Canvas Docker Compose', 'Contenedores activos detectados');
+        
+        const { CanvasWorkspaceProbe } = await import('../installation/CanvasWorkspaceProbe.js');
+        const probe = new CanvasWorkspaceProbe(silentLogger, CANVAS_DIR);
+        const probeResult = await probe.runChecks();
+        if (probeResult.ok) {
+           ok(state, 'Workspace de Canvas', 'Permisos correctos');
+        } else {
+           for (const err of probeResult.errors) {
+             fail(state, 'Error de permisos de Canvas', err.message);
+           }
+        }
+      }
+      else warn(state, 'Canvas Docker Compose', 'No se detectaron contenedores activos.');
+    } catch {
+      warn(state, 'Canvas Docker Compose', 'No se pudo consultar el estado de los contenedores.');
+    }
+  } catch (error) {
+    warn(state, 'Error consultando Docker', error.message);
   }
 }
 

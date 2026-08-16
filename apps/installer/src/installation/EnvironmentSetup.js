@@ -51,6 +51,14 @@ export class EnvironmentSetup {
     if (!(await bringup.startStack())) {
       throw new Error('No se pudieron iniciar los contenedores de Canvas LMS con Docker Compose.');
     }
+
+    const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
+    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir);
+    const probeResult = await probe.runChecks();
+    if (!probeResult.ok) {
+      throw new Error('Permisos de workspace inválidos. Revisa el log para más detalles.');
+    }
+
     if (!(await bringup.waitForReady())) {
       throw new Error('Canvas LMS no quedó operativo dentro del tiempo permitido.');
     }
@@ -146,9 +154,15 @@ export class EnvironmentSetup {
 
   async _provisionMissing(missing, dockerProfile) {
     await this._ensureDocker(missing, dockerProfile);
-    await this._ensureCompose(missing, dockerProfile);
-    await this._ensureCanvasFiles(missing, dockerProfile);
+    
+    const installer = this._createDockerInstaller();
+    const updatedProfile = await installer.getRuntimeState();
+    
+    await this._ensureCompose(missing, updatedProfile);
+    await this._ensureCanvasFiles(missing, updatedProfile);
     await this._ensurePluginDatabase(missing);
+    
+    return updatedProfile;
   }
 
   async _verifyPostInstall() {
@@ -169,7 +183,7 @@ export class EnvironmentSetup {
     
     // Obtener el perfil Docker una única vez para toda la orquestación
     const installer = this._createDockerInstaller();
-    const dockerProfile = await installer.getRuntimeState();
+    let dockerProfile = await installer.getRuntimeState();
 
     if (process.env.FAST_BOOT === 'true') return this._runFastBoot(dockerProfile);
 
@@ -179,7 +193,7 @@ export class EnvironmentSetup {
     const { allOk, missing } = await preflight.runChecks();
     if (!allOk) {
       this.boot.warn('Componentes faltantes detectados. Iniciando setup reanudable...');
-      await this._provisionMissing(missing, dockerProfile);
+      dockerProfile = await this._provisionMissing(missing, dockerProfile);
       await this._verifyPostInstall();
     }
 
