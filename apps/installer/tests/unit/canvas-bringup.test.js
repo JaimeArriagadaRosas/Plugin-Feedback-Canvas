@@ -12,7 +12,7 @@ vi.mock('execa', () => ({
 
 vi.mock('../../src/platform/shared/ContainerExecutionPolicy.js', () => ({
   ContainerExecutionPolicy: vi.fn().mockImplementation(() => ({
-    getExecutionArgs: vi.fn().mockReturnValue(['--user', 'root', '-e', 'HOME=/tmp', '-e', 'BUNDLE_USER_PLUGIN=/home/docker/.bundle/plugin'])
+    getExecutionArgs: vi.fn().mockReturnValue([])
   }))
 }));
 
@@ -26,9 +26,7 @@ function createBoot() {
   };
 }
 
-const workspaceArgs = [
-  '--user', 'root', '-e', 'HOME=/tmp', '-e', 'BUNDLE_USER_PLUGIN=/home/docker/.bundle/plugin'
-];
+const workspaceArgs = [];
 
 describe('CanvasBringup', () => {
   it('prepara permisos Linux y confirma la disponibilidad por HTTP', async () => {
@@ -44,7 +42,7 @@ describe('CanvasBringup', () => {
       if (args.includes('bash') && args.some(a => a.includes('touch'))) return { success: true, out: '' };
       throw new Error(`Comando inesperado: ${args.join(' ')}`);
     });
-    const healthCheck = vi.fn().mockResolvedValue(true);
+    const healthCheck = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     const bringup = new CanvasBringup(boot, '/canvas', {
       runner,
       healthCheck
@@ -56,6 +54,11 @@ describe('CanvasBringup', () => {
       'compose', 'exec', '-T', ...workspaceArgs, 'web', 'bundle', 'check'
     ], { cwd: '/canvas' });
     expect(healthCheck).toHaveBeenCalledWith('http://localhost:8080');
+    
+    // Explicit regression check: never uses --user root
+    const allCalls = runner.mock.calls.map(c => c[1].join(' '));
+    const hasRoot = allCalls.some(cmd => cmd.includes('--user root'));
+    expect(hasRoot).toBe(false);
   });
 
   it('reinstala gems con el contexto correcto y reinicia web y jobs', async () => {
@@ -84,7 +87,7 @@ describe('CanvasBringup', () => {
   it('no considera listo a Canvas hasta obtener respuesta HTTP', async () => {
     const boot = createBoot();
     const runner = vi.fn().mockResolvedValue({ success: true, out: '{"State":"running"}' });
-    const healthCheck = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const healthCheck = vi.fn().mockResolvedValueOnce({ ok: false, status: 0 }).mockResolvedValueOnce({ ok: true, status: 200 });
     const sleep = vi.fn().mockResolvedValue();
     const bringup = new CanvasBringup(boot, '/canvas', { runner, healthCheck, sleep });
 

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { getCanvasResourceLimits } from '../../src/installation/installers/CanvasResourcePolicy.js';
 import { AssetBuilder } from '../../src/installation/installers/AssetBuilder.js';
-import { LinuxContainerWorkspacePermissions } from '../../src/platform/linux/LinuxContainerWorkspacePermissions.js';
 
 const GIB = 1024 ** 3;
 
@@ -57,30 +56,4 @@ describe('CanvasResourcePolicy', () => {
     expect(startup[0]).not.toContain('jobs');
   });
 
-  it('ejecuta assets con root interno para escribir el checkout rootless de Linux', async () => {
-    const runner = vi.fn(async () => ({ success: true, out: '', err: '' }));
-    const permissions = new LinuxContainerWorkspacePermissions({ runner });
-    const boot = { warn: vi.fn(), error: vi.fn() };
-
-    await expect(permissions.prepare({ canvasDir: '/canvas', logFile: null, boot }))
-      .resolves.toEqual([
-        '--user', 'root', '-e', 'HOME=/tmp', '-e', 'BUNDLE_USER_PLUGIN=/home/docker/.bundle/plugin'
-      ]);
-    expect(runner).toHaveBeenCalledWith('docker', [
-      'compose', 'exec', '-T', '--user', 'root', 'web', 'chmod', 'o+x', '/home/docker'
-    ], { cwd: '/canvas', logFile: null });
-
-    const builder = new AssetBuilder(boot, null, '/canvas');
-    builder.containerExecArgs = [
-      '--user', 'root', '-e', 'HOME=/tmp', '-e', 'BUNDLE_USER_PLUGIN=/home/docker/.bundle/plugin'
-    ];
-    expect(builder._applyContainerUser(['docker', 'compose', 'exec', '-T', 'web', 'bundle']))
-      .toEqual([
-        'docker', 'compose', 'exec', '-T', '--user', 'root', '-e', 'HOME=/tmp',
-        '-e', 'BUNDLE_USER_PLUGIN=/home/docker/.bundle/plugin', 'web', 'bundle'
-      ]);
-    expect(builder._applyContainerUser([
-      'docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'
-    ])).toEqual(['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock']);
-  });
 });

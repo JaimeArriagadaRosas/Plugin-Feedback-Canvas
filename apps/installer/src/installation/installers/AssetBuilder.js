@@ -7,7 +7,6 @@ import { analyzeLogAndDiagnose, printDiagnosisBox } from '../utils/Diagnostics.j
 import { runCommand } from '../utils/Runner.js';
 import { CanvasLocalConfiguration } from './CanvasLocalConfiguration.js';
 import { getCanvasResourceLimits } from './CanvasResourcePolicy.js';
-import { createContainerWorkspacePermissions } from '../../platform/shared/ContainerWorkspacePermissionsFactory.js';
 
 export class AssetBuilder {
   constructor(boot, logFile, canvasDir, {

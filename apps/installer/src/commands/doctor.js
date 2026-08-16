@@ -171,6 +171,16 @@ async function checkDocker(state) {
 
     if (profile.daemonAvailable) {
       ok(state, 'Docker', `Daemon activo (${profile.backend})`);
+      const { rootless, usernsRemap, hostUid } = profile.capabilities || {};
+      const contextInfo = profile.context ? `Contexto: ${profile.context}` : 'Contexto: default';
+      const endpointInfo = profile.contextEndpoint ? `Endpoint: ${profile.contextEndpoint}` : 'Endpoint: default';
+      const isRootless = rootless ? 'Sí' : 'No';
+      const isUsernsRemap = usernsRemap ? 'Sí' : 'No';
+      ok(state, 'Docker Runtime', `${contextInfo} | ${endpointInfo} | Rootless: ${isRootless} | Userns-remap: ${isUsernsRemap}`);
+      
+      const isLinuxEngine = profile.backend === 'docker-engine-linux';
+      const userIdStrategy = (isLinuxEngine && !rootless && !usernsRemap && hostUid > 0) ? `Inyección de USER_ID=${hostUid}` : 'Predeterminado de imagen (9999)';
+      ok(state, 'USER_ID Strategy', userIdStrategy);
     } else {
       warn(state, 'Docker', 'Daemon no disponible o permisos insuficientes.');
     }

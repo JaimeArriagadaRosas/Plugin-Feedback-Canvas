@@ -12,8 +12,9 @@ function firstLine(value = '') {
   return value.split(/\r?\n/).map(line => line.trim()).find(Boolean) || '';
 }
 
-export function classifyDockerCliOrigin({ host, cliPath, clientPlatform, dockerHost }) {
+export function classifyDockerCliOrigin({ host, cliPath, clientPlatform, dockerHost, contextEndpoint }) {
   if (dockerHost) return 'remote';
+  if (contextEndpoint && (contextEndpoint.startsWith('ssh://') || contextEndpoint.startsWith('tcp://'))) return 'remote';
   const mountedWindowsPath = /^\/mnt\/[a-z]\//i.test(cliPath || '');
   const windowsClient = /^windows(?:\/|$)/i.test(clientPlatform || '');
   if (host.isWsl && (mountedWindowsPath || windowsClient)) return 'windows-interop';
@@ -70,12 +71,25 @@ export class DockerRuntimeProbe {
       this.runner('docker', ['compose', 'version'], { captureAll: true, timeout: 8000 })
     ]);
 
+    let contextEndpoint = '';
+    let contextName = '';
+    if (contextResult.success) {
+      try {
+        const contexts = JSON.parse(contextResult.out);
+        if (contexts && contexts.length > 0) {
+          contextName = contexts[0].Name || '';
+          contextEndpoint = contexts[0].Endpoints?.docker?.Host || '';
+        }
+      } catch (e) {}
+    }
+
     const clientPlatform = firstLine(clientResult.out);
     const cliOrigin = classifyDockerCliOrigin({
       host,
       cliPath,
       clientPlatform,
-      dockerHost: this.env.DOCKER_HOST
+      dockerHost: this.env.DOCKER_HOST,
+      contextEndpoint
     });
 
     let daemonError = '';
@@ -95,18 +109,6 @@ export class DockerRuntimeProbe {
       }
     } else {
       daemonError = `${infoResult.err || ''}\n${infoResult.out || ''}`.trim();
-    }
-
-    let contextEndpoint = '';
-    let contextName = '';
-    if (contextResult.success) {
-      try {
-        const contexts = JSON.parse(contextResult.out);
-        if (contexts && contexts.length > 0) {
-          contextName = contexts[0].Name || '';
-          contextEndpoint = contexts[0].Endpoints?.docker?.Host || '';
-        }
-      } catch (e) {}
     }
 
     const isRootless = securityOptions.includes('name=rootless') || contextName === 'rootless';

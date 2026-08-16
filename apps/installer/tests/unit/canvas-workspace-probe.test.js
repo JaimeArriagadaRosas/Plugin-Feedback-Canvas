@@ -12,48 +12,12 @@ function createBootLog() {
 }
 
 describe('CanvasWorkspaceProbe', () => {
-  it('detects CANVAS_LOG_PERMISSION_DENIED when development.log is root:root 0644 and user is not root', async () => {
+  it('passes when all essential paths are writable', async () => {
     const boot = createBootLog();
-    
     const runner = vi.fn().mockImplementation(async (cmd, args) => {
       const fullCmd = [cmd, ...args].join(' ');
-      if (fullCmd.includes('id -u')) {
-        return { success: true, out: '9999\n' }; // Usuario no root
-      }
-      if (fullCmd.includes('stat -c %U:%G %a /usr/src/app/log/development.log')) {
-        return { success: true, out: 'root:root 644\n' };
-      }
-      if (fullCmd.includes('tmp/.probe')) {
-        return { success: true, out: '' }; // tmp escribible
-      }
-      return { success: false, err: 'Unknown command' };
-    });
-
-    const probe = new CanvasWorkspaceProbe(boot, '/canvas', { runner });
-    const result = await probe.runChecks();
-
-    expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0].type).toBe('CANVAS_LOG_PERMISSION_DENIED');
-    expect(result.errors[0].details).toBe('root:root 644');
-    
-    expect(boot.error).toHaveBeenCalledWith('Se detectaron problemas de permisos en los volúmenes de Canvas.');
-  });
-
-  it('passes when development.log belongs to docker user', async () => {
-    const boot = createBootLog();
-    
-    const runner = vi.fn().mockImplementation(async (cmd, args) => {
-      const fullCmd = [cmd, ...args].join(' ');
-      if (fullCmd.includes('id -u')) {
-        return { success: true, out: '9999\n' };
-      }
-      if (fullCmd.includes('stat -c %U:%G %a /usr/src/app/log/development.log')) {
-        return { success: true, out: 'docker:docker 644\n' };
-      }
-      if (fullCmd.includes('tmp/.probe')) {
-        return { success: true, out: '' };
-      }
+      if (fullCmd.includes('id -u')) return { success: true, out: '1000\n' };
+      if (fullCmd.includes('.probe')) return { success: true, out: '' };
       return { success: false, err: 'Unknown command' };
     });
 
@@ -65,20 +29,14 @@ describe('CanvasWorkspaceProbe', () => {
     expect(boot.success).toHaveBeenCalledWith('Workspace verificado correctamente.');
   });
 
-  it('detects CANVAS_TMP_PERMISSION_DENIED when tmp is not writable', async () => {
+  it('detects CANVAS_TMP_PERMISSION_DENIED when /usr/src/app/tmp is not writable', async () => {
     const boot = createBootLog();
-    
     const runner = vi.fn().mockImplementation(async (cmd, args) => {
       const fullCmd = [cmd, ...args].join(' ');
-      if (fullCmd.includes('id -u')) {
-        return { success: true, out: '9999\n' };
-      }
-      if (fullCmd.includes('stat -c %U:%G %a /usr/src/app/log/development.log')) {
-        return { success: true, out: 'docker:docker 644\n' };
-      }
-      if (fullCmd.includes('tmp/.probe')) {
-        return { success: false, err: 'touch: cannot touch \'/usr/src/app/tmp/.probe\': Permission denied' };
-      }
+      if (fullCmd.includes('id -u')) return { success: true, out: '1000\n' };
+      if (fullCmd.includes('tmp/.probe')) return { success: false, err: 'Permission denied' };
+      if (fullCmd.includes('stat -c %u:%g %a /usr/src/app/tmp')) return { success: true, out: '0:0 755\n' };
+      if (fullCmd.includes('.probe')) return { success: true, out: '' };
       return { success: false, err: 'Unknown command' };
     });
 
@@ -88,5 +46,23 @@ describe('CanvasWorkspaceProbe', () => {
     expect(result.ok).toBe(false);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].type).toBe('CANVAS_TMP_PERMISSION_DENIED');
+    expect(result.errors[0].details).toContain('Stat: 0:0 755');
+  });
+
+  it('detects CANVAS_WORKSPACE_PERMISSION_DENIED when root is not writable', async () => {
+    const boot = createBootLog();
+    const runner = vi.fn().mockImplementation(async (cmd, args) => {
+      const fullCmd = [cmd, ...args].join(' ');
+      if (fullCmd.includes('id -u')) return { success: true, out: '1000\n' };
+      if (fullCmd.includes('/usr/src/app/.probe')) return { success: false, err: 'Read-only file system' };
+      if (fullCmd.includes('.probe')) return { success: true, out: '' };
+      return { success: true, out: '0:0 755\n' }; // Para stat
+    });
+
+    const probe = new CanvasWorkspaceProbe(boot, '/canvas', { runner });
+    const result = await probe.runChecks();
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.find(e => e.type === 'CANVAS_WORKSPACE_PERMISSION_DENIED')).toBeDefined();
   });
 });

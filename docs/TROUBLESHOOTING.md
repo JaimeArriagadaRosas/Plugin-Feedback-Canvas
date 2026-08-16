@@ -207,6 +207,14 @@ curl -I http://localhost:8080/login
 
 Busque el primer contenedor `Exited`, `Unhealthy` o error de migración. No borre volúmenes antes de guardar logs y confirmar que los datos son descartables.
 
+## HTTP 500 Persistente / Mismatch UID en Rootless
+
+Si el instalador o la aplicación detectan fallos recurrentes de permisos (`EACCES`, `HTTP 500` persistente durante el arranque):
+
+1. **Usa `npm run diagnose`**: Revisa la salida detallada. Verificará si tu Docker está en modo rootless/userns-remap y confirmará si el mapeo UID entre el host y el contenedor está roto.
+2. En entornos **rootless**, el daemon mapea los usuarios. Si los logs muestran "Permission denied" en directorios clave, puede ser que el usuario de la imagen (9999) no tenga privilegios en el bind mount `.:/usr/src/app`.
+3. Evita reconfigurar el `USER_ID` a mano. La comprobación temprana (`CanvasWorkspaceProbe`) te indicará el directorio exacto que rechaza la escritura.
+
 ## Testcontainers no encuentra runtime
 
 ```bash

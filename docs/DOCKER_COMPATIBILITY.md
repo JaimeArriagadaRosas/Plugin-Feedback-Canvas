@@ -17,15 +17,14 @@ Históricamente, el instalador utilizaba el flag `--user root` en comandos de `d
 
 **Solución actual:**
 1. **Sin `--user root`**: El flujo normal de `AssetBuilder` y `CanvasBringup` utiliza el usuario predeterminado de la imagen (usualmente `docker` UID 9999).
-2. **Inyección de `USER_ID`**: Si se detecta un entorno Linux nativo (`docker-engine-linux`), el instalador inyecta el UID del host en `build.args.USER_ID` mediante un override en `docker-compose.override.yml`. Posteriormente, `docker compose build` reconstruye la imagen ajustando los permisos del contenedor al UID del host.
-3. **Validación Temprana**: Se ha implementado `CanvasWorkspaceProbe` para verificar si un despliegue previo generó archivos con permisos corruptos (propiedad de root) antes de intentar iniciar los servicios, deteniendo la instalación y guiando al usuario hacia la solución manual.
+2. **Inyección de `USER_ID`**: Si se detecta un entorno Linux nativo rootful (`docker-engine-linux` convencional), el instalador inyecta el UID del host en `build.args.USER_ID` mediante un override en `docker-compose.override.yml`.
+3. **Estrategia Rootless**: En configuraciones rootless o userns-remap, **NO** se inyecta `USER_ID` asumiendo equivalencia. Docker mapea el root interno al usuario host de manera transparente. El instalador ejecutará pruebas reales de escritura (`CanvasWorkspaceProbe`) usando el usuario normal de la imagen para garantizar que el bind mount es compatible. Si no lo es, fallará tempranamente con un diagnóstico explícito.
+4. **Validación Temprana**: Se ha implementado `CanvasWorkspaceProbe` para verificar si es posible escribir en los volúmenes, comprobando proactivamente en lugar de suponer éxito.
 
 ## Evitando Ejecución con `sudo`
 
-Se bloquea y desaconseja fuertemente ejecutar el instalador (`npm start` o `npm run diagnose`) mediante `sudo`. Al hacerlo:
-- El UID detectado es `0`.
-- El instalador se negará a inyectar `USER_ID=0` para evitar corromper los contenedores.
-- Se recomienda el uso de Docker Rootless o la adición del usuario al grupo `docker`.
+Se bloquea y rechaza terminantemente la ejecución del instalador principal (`npm start`) mediante `sudo`. Al intentarlo, el instalador abortará inmediatamente.
+El comando `npm run diagnose` sí puede ejecutarse con `sudo` al ser una herramienta de solo lectura, pero emitirá un warning informando que el entorno podría ser alterado.
 
 ## Diagnóstico y Solución de Problemas
 

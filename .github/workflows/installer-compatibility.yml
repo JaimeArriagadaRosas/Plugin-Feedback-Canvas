@@ -6,11 +6,15 @@ on:
     paths:
       - 'apps/installer/**'
       - '.github/workflows/installer-compatibility.yml'
+      - 'package.json'
+      - 'package-lock.json'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'apps/installer/**'
       - '.github/workflows/installer-compatibility.yml'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   test:
@@ -27,7 +31,10 @@ jobs:
           cache: 'npm'
           
       - name: Install Dependencies
-        run: npm ci
+        run: npx --yes npm@11.8.0 ci
+
+      - name: Lint Code
+        run: npm run lint
 
       - name: Run Installer Unit Tests
         run: npx vitest run --project @plugin-feedback/installer
