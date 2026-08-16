@@ -4,7 +4,7 @@ import path from 'path';
 
 export default class EmailServiceLocal {
   constructor() {
-    this.logFilePath = path.join(process.cwd(), 'local-emails.log');
+    this.logFilePath = path.join(process.cwd(), 'logs', 'local-emails.log');
   }
 
   async sendNotification(estudianteId, courseId, asunto) {

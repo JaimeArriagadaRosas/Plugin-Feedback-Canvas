@@ -14,15 +14,14 @@ export class AssetBuilder {
     runner = runCommand,
     configuration,
     platform = process.platform,
-    containerWorkspacePermissions
+    dockerProfile = null
   } = {}) {
     this.boot = boot;
     this.logFile = logFile;
     this.canvasDir = canvasDir;
     this.runner = runner;
     this.configuration = configuration || new CanvasLocalConfiguration(boot, canvasDir);
-    this.containerWorkspacePermissions = containerWorkspacePermissions ||
-      createContainerWorkspacePermissions(platform, { runner });
+    this.dockerProfile = dockerProfile;
     this.containerExecArgs = [];
   }
 
@@ -31,8 +30,6 @@ export class AssetBuilder {
     const resourceLimits = await this._getResourceLimits();
     this.configuration.configure(resourceLimits);
 
-    await this.runner('docker', ['compose', 'up', '-d', 'postgres', 'redis'], { cwd: this.canvasDir });
-    await this.runner('docker', ['compose', 'up', '-d', '--force-recreate', 'web'], { cwd: this.canvasDir });
     if (!(await this._prepareContainerWorkspace())) return false;
 
     for (const step of this._buildSteps()) {
@@ -54,6 +51,7 @@ export class AssetBuilder {
   _buildSteps() {
     return [
       [['docker', 'info'], 'Verificando daemon Docker...', 'Docker no responde.', 'Docker en ejecucion'],
+      [['docker', 'compose', 'build', 'web', 'jobs'], 'Construyendo imagenes Docker...', 'Fallo al construir imagenes.', 'Imagenes Docker construidas'],
       [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Iniciando contenedores...', 'Fallo el inicio.', 'Contenedores iniciados'],
       [['docker', 'compose', 'exec', '-T', 'web', 'chmod', '-R', 'go-w', '/home/docker/.gem'],
       'Asegurando permisos del cache de gems...', 'Fallo al asegurar permisos del cache de gems.', 'Permisos del cache de gems asegurados'],
@@ -86,13 +84,9 @@ export class AssetBuilder {
   }
 
   async _prepareContainerWorkspace() {
-    const args = await this.containerWorkspacePermissions.prepare({
-      canvasDir: this.canvasDir,
-      logFile: this.logFile,
-      boot: this.boot
-    });
-    if (args === null) return false;
-    this.containerExecArgs = args;
+    const { ContainerExecutionPolicy } = await import('../../platform/shared/ContainerExecutionPolicy.js');
+    this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
+    this.containerExecArgs = this.executionPolicy.getExecutionArgs();
     return true;
   }
 

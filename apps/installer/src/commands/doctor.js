@@ -56,7 +56,8 @@ function checkStructure(state) {
 }
 
 function checkEnvironment(state, env) {
-  section('Variables de entorno');
+  section('Entorno de ejecución y variables');
+  checkRootUser(state);
   const required = [
     ['VITE_CANVAS_BASE_URL', 'URL base de Canvas LMS'],
     ['LTI_CLIENT_ID', 'Client ID del tool LTI'],
@@ -69,6 +70,15 @@ function checkEnvironment(state, env) {
     else fail(state, `${key} no configurado`, `Agrega ${key}=<valor> en .env`);
   }
   reportLocalMode(state, env);
+}
+
+function checkRootUser(state) {
+  const isRoot = process.getuid && process.getuid() === 0;
+  if (isRoot) {
+    warn(state, 'Ejecutando como root/sudo', 'Se recomienda ejecutar el diagnóstico con tu usuario normal. Usar root puede alterar permisos y generar errores en los volúmenes de Docker.');
+  } else {
+    ok(state, 'Usuario sin privilegios root', 'Ejecución normal recomendada');
+  }
 }
 
 function reportLocalMode(state, env) {

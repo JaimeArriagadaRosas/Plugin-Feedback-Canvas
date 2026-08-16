@@ -2,14 +2,14 @@ import { createSpinner } from 'nanospinner';
 import { VerifyData } from './VerifyData.js';
 import { DataSeeder } from './DataSeeder.js';
 import { DatabaseHealth } from './DatabaseHealth.js';
-import { GemInstaller } from './installers/GemInstaller.js';
+import { RubyDependencyInstaller } from './installers/RubyDependencyInstaller.js';
 import { pingCanvasAPI } from './utils/TokenManager.js';
 
 export class PostflightSetup {
   constructor(boot, pluginDir, canvasDir, {
     verifierFactory = (...args) => new VerifyData(...args),
     seederFactory = (...args) => new DataSeeder(...args),
-    gemInstallerFactory = (...args) => new GemInstaller(...args),
+    rubyDependencyInstallerFactory = (...args) => new RubyDependencyInstaller(...args),
     databaseHealthFactory = (...args) => new DatabaseHealth(...args)
   } = {}) {
     this.boot = boot;
@@ -17,7 +17,7 @@ export class PostflightSetup {
     this.canvasDir = canvasDir;
     this.verifierFactory = verifierFactory;
     this.seederFactory = seederFactory;
-    this.gemInstallerFactory = gemInstallerFactory;
+    this.rubyDependencyInstallerFactory = rubyDependencyInstallerFactory;
     this.databaseHealthFactory = databaseHealthFactory;
   }
 
@@ -32,8 +32,8 @@ export class PostflightSetup {
     if (!hasData) {
       this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
       
-      const gemInstaller = this.gemInstallerFactory(this.boot, this.canvasDir);
-      const gemsOk = await gemInstaller.ensureBundlerPlugins();
+      const rubyDependencyInstaller = this.rubyDependencyInstallerFactory(this.boot, this.canvasDir);
+      const gemsOk = await rubyDependencyInstaller.ensureBundlerPlugins();
       if (!gemsOk) {
         this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
         return false;

@@ -98,7 +98,7 @@ describe('DockerRuntimeProbe', () => {
       const key = `${command} ${args.join(' ')}`;
       if (key === 'docker --version') return { success: true, out: 'Docker version 29', err: '' };
       if (key === 'which docker') return { success: true, out: '/mnt/c/Program Files/Docker/docker', err: '' };
-      if (key === 'docker context show') return { success: true, out: 'desktop-linux', err: '' };
+      if (key === 'docker context inspect') return { success: true, out: '[{"Name":"desktop-linux","Endpoints":{"docker":{"Host":"unix:///var/run/docker.sock"}}}]', err: '' };
       if (key.startsWith('docker version')) return { success: false, out: 'windows/amd64', err: 'daemon unavailable' };
       if (key.startsWith('docker info')) return { success: false, out: '', err: 'daemon unavailable' };
       if (key === 'docker compose version') return { success: true, out: 'v2', err: '' };

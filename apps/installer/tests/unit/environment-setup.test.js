@@ -13,38 +13,35 @@ function createBootLog() {
 }
 
 describe('EnvironmentSetup', () => {
-  it('re-probes Compose instead of reusing the preflight state', async () => {
+  it('uses the provided dockerProfile to check compose availability', async () => {
     const boot = createBootLog();
-    const freshState = { composeAvailable: true };
-    const installer = { getRuntimeState: vi.fn().mockResolvedValue(freshState) };
+    const dockerProfile = { composeAvailable: true };
+    const installer = {};
     const setup = new EnvironmentSetup(boot, '/plugin', '/canvas', {
       dockerInstallerFactory: vi.fn(() => installer)
     });
     const missing = {
-      missing_compose: true,
-      docker_state: { composeAvailable: false }
+      missing_compose: true
     };
 
-    await expect(setup._ensureCompose(missing)).resolves.toBeUndefined();
+    await expect(setup._ensureCompose(missing, dockerProfile)).resolves.toBeUndefined();
 
-    expect(installer.getRuntimeState).toHaveBeenCalledOnce();
-    expect(missing).toMatchObject({ missing_compose: false, docker_state: freshState });
+    expect(missing).toMatchObject({ missing_compose: false, docker_state: dockerProfile });
     expect(boot.success).toHaveBeenCalledWith('Docker Compose V2 disponible.');
     expect(boot.error).not.toHaveBeenCalled();
   });
 
-  it('keeps the Compose failure when the fresh probe still fails', async () => {
+  it('throws an error if compose is not available in the dockerProfile', async () => {
     const boot = createBootLog();
-    const freshState = { composeAvailable: false };
+    const dockerProfile = { composeAvailable: false };
     const installer = {
-      getRuntimeState: vi.fn().mockResolvedValue(freshState),
       policy: { compose: vi.fn().mockReturnValue('Install Compose V2.') }
     };
     const setup = new EnvironmentSetup(boot, '/plugin', '/canvas', {
       dockerInstallerFactory: vi.fn(() => installer)
     });
 
-    await expect(setup._ensureCompose({ missing_compose: true })).rejects.toThrow(/Compose V2/);
+    await expect(setup._ensureCompose({ missing_compose: true }, dockerProfile)).rejects.toThrow(/Compose V2/);
 
     expect(boot.error).toHaveBeenCalledOnce();
     expect(boot.action).toHaveBeenCalledWith('Install Compose V2.');

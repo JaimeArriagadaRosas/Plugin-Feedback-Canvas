@@ -1,7 +1,7 @@
 import { runCommand } from '../utils/Runner.js';
 import { createSpinner } from 'nanospinner';
 
-export class GemInstaller {
+export class RubyDependencyInstaller {
   constructor(boot, canvasDir) {
     this.boot = boot;
     this.canvasDir = canvasDir;

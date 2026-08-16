@@ -26,7 +26,7 @@ export class CanvasBringup {
   constructor(boot, canvasDir, {
     runner = runCommand,
     platform = process.platform,
-    containerWorkspacePermissions,
+    dockerProfile = null,
     healthCheck = createDefaultHealthCheck(),
     healthUrl = process.env.CANVAS_HEALTH_URL || DEFAULT_HEALTH_URL,
     sleep = wait
@@ -37,8 +37,7 @@ export class CanvasBringup {
     this.healthCheck = healthCheck;
     this.healthUrl = healthUrl;
     this.sleep = sleep;
-    this.containerWorkspacePermissions = containerWorkspacePermissions ||
-      createContainerWorkspacePermissions(platform, { runner });
+    this.dockerProfile = dockerProfile;
     this.containerExecArgs = [];
   }
 
@@ -93,7 +92,7 @@ export class CanvasBringup {
     return true;
   }
 
-  async waitForReady(interval = 5) {
+  async waitForReady(timeoutSeconds = 300, interval = 5) {
     const { createSpinner } = await import('nanospinner');
     const spinner = createSpinner('Iniciando lectura de logs de Canvas...').start();
     
@@ -114,28 +113,66 @@ export class CanvasBringup {
       }
     });
 
-    while (true) {
-      const web = await this.runner('docker', ['compose', 'ps', '-q', 'web'], {
+    const maxAttempts = Math.ceil(timeoutSeconds / interval);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const psResult = await this.runner('docker', ['compose', 'ps', '--format', 'json', 'web'], {
         cwd: this.canvasDir,
         captureAll: true
       });
-      if (web.success && web.out.trim() && await this.healthCheck(this.healthUrl)) {
+      
+      let isRunning = false;
+      let isExit = false;
+      if (psResult.success && psResult.out) {
+        try {
+          const containers = psResult.out.trim().split('\n').filter(Boolean).map(JSON.parse);
+          if (containers.length > 0) {
+            const state = containers[0].State;
+            if (state === 'running') isRunning = true;
+            if (state === 'exited') isExit = true;
+          }
+        } catch (e) {
+          isRunning = psResult.out.trim().length > 0;
+        }
+      }
+
+      if (isExit) {
+        tailProcess.kill();
+        spinner.error({ text: 'El contenedor web de Canvas se detuvo inesperadamente.', mark: '  ×' });
+        await this._printEarlyDiagnosis();
+        return false;
+      }
+
+      if (isRunning && await this.healthCheck(this.healthUrl)) {
         tailProcess.kill();
         spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
         return true;
       }
+      
+      attempts++;
       await this.sleep(interval * 1000);
+    }
+    
+    tailProcess.kill();
+    spinner.error({ text: 'Tiempo de espera agotado al iniciar Canvas LMS.', mark: '  ×' });
+    await this._printEarlyDiagnosis();
+    return false;
+  }
+
+  async _printEarlyDiagnosis() {
+    const logs = await this.runner('docker', ['compose', 'logs', '--tail=150', 'web'], { cwd: this.canvasDir, captureAll: true });
+    if (logs.success && logs.out) {
+      const { analyzeLogString, printDiagnosisBox } = await import('./utils/Diagnostics.js');
+      const diagnosis = analyzeLogString(logs.out);
+      if (diagnosis) printDiagnosisBox(this.boot, diagnosis);
     }
   }
 
   async _prepareContainerWorkspace() {
-    const args = await this.containerWorkspacePermissions.prepare({
-      canvasDir: this.canvasDir,
-      logFile: null,
-      boot: this.boot
-    });
-    if (args === null) return false;
-    this.containerExecArgs = args;
+    const { ContainerExecutionPolicy } = await import('../platform/shared/ContainerExecutionPolicy.js');
+    this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
+    this.containerExecArgs = this.executionPolicy.getExecutionArgs();
     return true;
   }
 

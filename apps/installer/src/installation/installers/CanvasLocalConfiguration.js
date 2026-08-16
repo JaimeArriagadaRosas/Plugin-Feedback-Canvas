@@ -18,11 +18,12 @@ const DEFAULT_VOLUMES = [
 ];
 
 export class CanvasLocalConfiguration {
-  constructor(boot, canvasDir, { fileSystem = fs, yamlParser = yaml } = {}) {
+  constructor(boot, canvasDir, { fileSystem = fs, yamlParser = yaml, dockerProfile = null } = {}) {
     this.boot = boot;
     this.canvasDir = canvasDir;
     this.fs = fileSystem;
     this.yaml = yamlParser;
+    this.dockerProfile = dockerProfile;
   }
 
   configure(resourceLimits) {
@@ -128,10 +129,24 @@ export class CanvasLocalConfiguration {
     }
   }
 
+  _applyUserIdArgs(service = {}) {
+    if (!this.dockerProfile) return service;
+    
+    const isLinuxEngine = this.dockerProfile.backend === 'docker-engine-linux';
+    const hostUid = this.dockerProfile.capabilities?.hostUid;
+    
+    if (isLinuxEngine && hostUid && hostUid > 0) {
+      service.build = service.build || { context: '.' };
+      service.build.args = service.build.args || {};
+      service.build.args.USER_ID = hostUid.toString();
+    }
+    return service;
+  }
+
   _configureJobs(service = {}, resourceLimits) {
     const configured = this._withResourceLimits(service, resourceLimits.jobs, '1');
     configured.environment = this._canvasEnvironment(configured.environment);
-    return configured;
+    return this._applyUserIdArgs(configured);
   }
 
   _configureWeb(service = {}, resourceLimits) {
@@ -142,7 +157,7 @@ export class CanvasLocalConfiguration {
       RSPACK: 'true',
       CANVAS_LTI_COURSE_NAVIGATION: 'true'
     };
-    return configured;
+    return this._applyUserIdArgs(configured);
   }
 
   _canvasEnvironment(environment = {}) {

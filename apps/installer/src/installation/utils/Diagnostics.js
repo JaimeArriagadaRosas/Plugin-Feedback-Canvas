@@ -62,6 +62,12 @@ const ERROR_SIGNATURES = [
     type: 'MALFORMED_JSON_CONFIG',
     diagnosis: 'Un JSON de configuración de Canvas no es válido.',
     solution: 'Corrige el archivo indicado en el log antes de reintentar.'
+  },
+  {
+    pattern: /permission denied|eacces/i,
+    type: 'PERMISSION_DENIED',
+    diagnosis: 'El contenedor intentó acceder a un archivo o directorio pero carece de permisos.',
+    solution: 'Verifica la propiedad de los archivos montados. Puede que un proceso previo como root haya creado archivos que ahora bloquean el acceso al usuario normal del contenedor.'
   }
 ];
 
@@ -82,22 +88,27 @@ export function readLogTail(logFilePath, maxBytes = MAX_LOG_TAIL_BYTES) {
   return buffer.toString('utf8');
 }
 
+/** Analiza una cadena de texto buscando errores conocidos. */
+export function analyzeLogString(logString) {
+  for (const signature of ERROR_SIGNATURES) {
+    const match = logString.match(signature.pattern);
+    if (match) return { ...signature, details: match[1] || '' };
+  }
+  const lastLines = logString.split('\n').filter((line) => line.trim()).slice(-15).join('\n  | ');
+  return {
+    type: 'UNKNOWN',
+    diagnosis: 'No se pudo identificar la causa exacta automáticamente.',
+    solution: `Revisa el resumen final del registro:\n\n  | ${lastLines}`
+  };
+}
+
 /** Busca errores conocidos sin cargar el registro completo en memoria. */
 export function analyzeLogAndDiagnose(logFilePath, numLines = 150) {
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(logFilePath)) return null;
     const recentLog = readLogTail(logFilePath).split('\n').slice(-numLines).join('\n');
-    for (const signature of ERROR_SIGNATURES) {
-      const match = recentLog.match(signature.pattern);
-      if (match) return { ...signature, details: match[1] || '' };
-    }
-    const lastLines = recentLog.split('\n').filter((line) => line.trim()).slice(-15).join('\n  | ');
-    return {
-      type: 'UNKNOWN',
-      diagnosis: 'No se pudo identificar la causa exacta automáticamente.',
-      solution: `Revisa el resumen final del registro:\n\n  | ${lastLines}`
-    };
+    return analyzeLogString(recentLog);
   } catch {
     return null;
   }

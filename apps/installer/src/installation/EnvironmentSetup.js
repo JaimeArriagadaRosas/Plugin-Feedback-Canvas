@@ -40,15 +40,14 @@ export class EnvironmentSetup {
     process.env.FAST_BOOT = 'false';
   }
 
-  async _runFastBoot() {
+  async _runFastBoot(dockerProfile) {
     this.boot.info('Modo Fast Boot detectado: verificando runtime y contenedores...');
     const installer = this._createDockerInstaller();
-    const state = await installer.getRuntimeState();
-    if (!state.daemonAvailable && !(await installer.handleDockerDaemonDown(state))) {
+    if (!dockerProfile.daemonAvailable && !(await installer.handleDockerDaemonDown(dockerProfile))) {
       throw new Error('Docker no está disponible. Corrija la acción indicada y reanude npm start.');
     }
 
-    const bringup = new CanvasBringup(this.boot, this.canvasDir);
+    const bringup = new CanvasBringup(this.boot, this.canvasDir, { dockerProfile });
     if (!(await bringup.startStack())) {
       throw new Error('No se pudieron iniciar los contenedores de Canvas LMS con Docker Compose.');
     }
@@ -89,10 +88,10 @@ export class EnvironmentSetup {
     }
   }
 
-  async _ensureDocker(missing) {
+  async _ensureDocker(missing, dockerProfile) {
     if (!missing.missing_docker && !missing.docker_daemon_down && !missing.docker_permission_denied) return;
     const installer = this._createDockerInstaller();
-    const state = missing.docker_state || await installer.getRuntimeState();
+    const state = missing.docker_state || dockerProfile;
 
     if (missing.missing_docker) {
       await this._installMissingDocker(installer, state);
@@ -106,10 +105,10 @@ export class EnvironmentSetup {
     }
   }
 
-  async _ensureCompose(missing) {
+  async _ensureCompose(missing, dockerProfile) {
     if (!missing.missing_compose) return;
     const installer = this._createDockerInstaller();
-    const state = await installer.getRuntimeState();
+    const state = dockerProfile;
     missing.docker_state = state;
     if (state.composeAvailable) {
       missing.missing_compose = false;
@@ -121,14 +120,14 @@ export class EnvironmentSetup {
     throw new Error('Docker Compose V2 es obligatorio para el entorno local.');
   }
 
-  async _ensureCanvasFiles(missing) {
+  async _ensureCanvasFiles(missing, dockerProfile) {
     if (missing.missing_canvas_clone) {
       const cloner = new CanvasCloner(this.boot, this.logFile, this.canvasDir);
       if (!(await cloner.cloneCanvas())) throw new Error('Fallo durante el clonado de Canvas LMS.');
       missing.missing_canvas_assets = true;
     }
     if (missing.missing_canvas_assets) {
-      const builder = new AssetBuilder(this.boot, this.logFile, this.canvasDir);
+      const builder = new AssetBuilder(this.boot, this.logFile, this.canvasDir, { dockerProfile });
       if (!(await builder.setupAssets())) throw new Error('Fallo al preparar Canvas LMS. Revisa el diagnóstico mostrado antes de reintentar.');
     }
   }
@@ -145,10 +144,10 @@ export class EnvironmentSetup {
     }
   }
 
-  async _provisionMissing(missing) {
-    await this._ensureDocker(missing);
-    await this._ensureCompose(missing);
-    await this._ensureCanvasFiles(missing);
+  async _provisionMissing(missing, dockerProfile) {
+    await this._ensureDocker(missing, dockerProfile);
+    await this._ensureCompose(missing, dockerProfile);
+    await this._ensureCanvasFiles(missing, dockerProfile);
     await this._ensurePluginDatabase(missing);
   }
 
@@ -158,8 +157,8 @@ export class EnvironmentSetup {
     if (!result.allOk) throw new Error('Verificación post-instalación fallida; aún faltan componentes.');
   }
 
-  async _bringupAndVerify() {
-    const bringup = new CanvasBringup(this.boot, this.canvasDir);
+  async _bringupAndVerify(dockerProfile) {
+    const bringup = new CanvasBringup(this.boot, this.canvasDir, { dockerProfile });
     if (!(await bringup.bringup())) throw new Error('Fallo en el bringup de Canvas LMS.');
     const postflight = new PostflightSetup(this.boot, this.pluginDir, this.canvasDir);
     if (!(await postflight.runChecks())) throw new Error('Fallo en la verificación post-arranque.');
@@ -167,20 +166,25 @@ export class EnvironmentSetup {
 
   async ensureSetup() {
     this._recoverInvalidFastBoot();
-    if (process.env.FAST_BOOT === 'true') return this._runFastBoot();
+    
+    // Obtener el perfil Docker una única vez para toda la orquestación
+    const installer = this._createDockerInstaller();
+    const dockerProfile = await installer.getRuntimeState();
+
+    if (process.env.FAST_BOOT === 'true') return this._runFastBoot(dockerProfile);
 
     this.boot.info('Iniciando verificación del entorno local de Canvas LMS.');
     this._ensureLogsDirectory();
-    const preflight = new PreflightChecks(this.boot, this.canvasDir, this.pluginDir);
+    const preflight = new PreflightChecks(this.boot, this.canvasDir, this.pluginDir, { dockerState: dockerProfile });
     const { allOk, missing } = await preflight.runChecks();
     if (!allOk) {
       this.boot.warn('Componentes faltantes detectados. Iniciando setup reanudable...');
-      await this._provisionMissing(missing);
+      await this._provisionMissing(missing, dockerProfile);
       await this._verifyPostInstall();
     }
 
     this.boot.success('Todos los componentes requeridos están instalados.');
-    await this._bringupAndVerify();
+    await this._bringupAndVerify(dockerProfile);
     this.boot.info('Verificación de entorno completada exitosamente.');
     return true;
   }
