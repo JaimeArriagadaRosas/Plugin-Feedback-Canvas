@@ -12,11 +12,11 @@ const pool = new Pool(createDatabaseConfig());
 
 const SALT_ROUNDS = 10;
 
-// Usuarios estáticos por defecto (fallback)
+// Default static users (fallback)
 let users = [
   // semgrep-ignore
   // eslint-disable-next-line
-  { email: 'admin@canvas.local', nombre: 'Admin Sistema', password: 'password123', rol: 'admin', estudiante_index: null, canvas_user_id: '10000001', canvas_user_uuid: 'a6e2e413-4afb-4b60-90d1-8b0344df3e91' },
+  { email: 'admin@canvas.local', nombre: 'System Admin', password: 'password123', rol: 'admin', estudiante_index: null, canvas_user_id: '10000001', canvas_user_uuid: 'a6e2e413-4afb-4b60-90d1-8b0344df3e91' },
 ];
 
 async function seed() {
@@ -25,7 +25,7 @@ async function seed() {
   if (jsonPath) {
     const fullPath = path.resolve(jsonPath);
     if (fs.existsSync(fullPath)) {
-      console.log(`[SEED] Leyendo usuarios desde ${fullPath}`);
+      console.log(`[SEED] Reading users from ${fullPath}`);
       const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
       
       let estIndex = 1;
@@ -41,7 +41,7 @@ async function seed() {
           nombre: u.nombre || u.name,
           // semgrep-ignore
           // eslint-disable-next-line
-          password: 'password123', // Mantenemos la clave local igual por simplicidad
+          password: 'password123', // Keeping the local password the same for simplicity
           rol: role,
           estudiante_index: eIdx,
           canvas_user_id: u.id.toString(),
@@ -49,11 +49,11 @@ async function seed() {
         };
       });
     } else {
-      console.warn(`[SEED] Archivo JSON no encontrado en ${fullPath}, usando fallback estático.`);
+      console.warn(`[SEED] JSON file not found at ${fullPath}, using static fallback.`);
     }
   }
 
-  console.log(`[SEED] Iniciando seed de ${users.length} usuarios locales...`);
+  console.log(`[SEED] Starting seed of ${users.length} local users...`);
   
   for (const user of users) {
     const passwordHash = await bcrypt.hash(user.password, SALT_ROUNDS);
@@ -74,17 +74,17 @@ async function seed() {
       );
       console.log(`[SEED] OK: ${user.email} (${user.rol}) -> id=${res.rows[0].id} | canvas_id=${user.canvas_user_id}`);
     } catch (error) {
-      console.error(`[SEED] ERROR con ${user.email}:`, error.message);
+      console.error(`[SEED] ERROR with ${user.email}:`, error.message);
     }
   }
-  console.log('[SEED] Seed completado.');
+  console.log('[SEED] Seed completed.');
 }
 
 seed()
   .then(() => pool.end())
   .then(() => process.exit(0))
   .catch(err => {
-    console.error('[SEED] Error fatal:', err);
+    console.error('[SEED] Fatal error:', err);
     pool.end().catch(() => {});
     process.exit(1);
   });

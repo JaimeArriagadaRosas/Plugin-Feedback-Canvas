@@ -22,13 +22,13 @@ export default class NotificationDiagnosticsLocal {
     
     const message = `[DIAGNOSTICS] Bulk Approval:\n${JSON.stringify(summary, null, 2)}\n\n`;
     
-    logger.info(`[DIAGNOSTICS] Registrando resumen de lote aprobado (${summary.totalProcessed} feedbacks)`);
+    logger.info(`[DIAGNOSTICS] Logging approved batch summary (${summary.totalProcessed} feedbacks)`);
     
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.appendFileSync(this.logFilePath, message);
     } catch (err) {
-      logger.error('Error escribiendo log de diagnóstico local:', err);
+      logger.error('Error writing local diagnostic log:', err);
     }
   }
 }

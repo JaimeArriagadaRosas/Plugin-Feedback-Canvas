@@ -15,13 +15,13 @@ function createDependencies(environment = {}) {
 }
 
 describe('createCertificateToolInstaller', () => {
-  it('usa el adaptador WSL cuando Linux expone una distribución WSL', () => {
+  it('uses the WSL adapter when Linux exposes a WSL distribution', () => {
     const installer = createCertificateToolInstaller('linux', createDependencies({ WSL_DISTRO_NAME: 'Ubuntu' }));
 
     expect(installer).toBeInstanceOf(WslCertificateToolInstaller);
   });
 
-  it('usa el adaptador nativo de Windows', () => {
+  it('uses the native Windows adapter', () => {
     const installer = createCertificateToolInstaller('win32', createDependencies());
 
     expect(installer).toBeInstanceOf(WindowsCertificateToolInstaller);

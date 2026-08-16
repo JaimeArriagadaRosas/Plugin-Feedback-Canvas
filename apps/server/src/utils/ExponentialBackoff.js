@@ -2,17 +2,17 @@ import logger from './logger.js';
 import { AppError } from './errors.js';
 
 /**
- * Utilidad genérica para manejar el límite de tasa (429) usando Exponential Backoff
- * con soporte para la cabecera Retry-After y Jitter.
- * Implementa la directiva 3: Exponential Backoff para límites de tasa 429.
+ * Generic utility to handle rate limit (429) using Exponential Backoff
+ * with support for the Retry-After header and Jitter.
+ * Implements directive 3: Exponential Backoff for 429 rate limits.
  */
 export class ExponentialBackoff {
   /**
-   * Ejecuta una función que retorna una promesa, reintentando si se recibe un 429.
+   * Executes a function that returns a promise, retrying if a 429 is received.
    * 
-   * @param {Function} asyncOperation - Función que realiza la llamada HTTP y retorna Promise.
-   * @param {string} context - Nombre o contexto de la operación (para logs).
-   * @param {number} maxRetries - Número máximo de reintentos.
+   * @param {Function} asyncOperation - Function that makes the HTTP call and returns a Promise.
+   * @param {string} context - Name or context of the operation (for logs).
+   * @param {number} maxRetries - Maximum number of retries.
    */
   static async execute(asyncOperation, context = 'Operation', maxRetries = 4) {
     let attempt = 0;
@@ -26,8 +26,8 @@ export class ExponentialBackoff {
           attempt++;
           let delay = baseDelay * Math.pow(2, attempt - 1);
           
-          // Soporte para Retry-After (si la API lo expone en el error o respuesta)
-          // Asumimos que el AppError o un error enriquecido trae los headers originales en error.headers
+          // Support for Retry-After (if the API exposes it in the error or response)
+          // We assume that the AppError or an enriched error brings the original headers in error.headers
           let retryAfter = null;
           if (error.headers && (error.headers.get('retry-after') || error.headers.get('Retry-After'))) {
             const headerVal = error.headers.get('retry-after') || error.headers.get('Retry-After');
@@ -44,19 +44,19 @@ export class ExponentialBackoff {
 
           if (retryAfter && retryAfter > 0) {
             delay = retryAfter;
-            logger.warn(`[BACKOFF] ${context} Rate Limit (429). Retry-After detectado: ${delay}ms`);
+            logger.warn(`[BACKOFF] ${context} Rate Limit (429). Retry-After detected: ${delay}ms`);
           } else {
-            // Añadir Jitter (0 - 500ms) si no hay Retry-After estricto
+            // Add Jitter (0 - 500ms) if there is no strict Retry-After
             const jitter = Math.random() * 500;
             delay += jitter;
-            logger.warn(`[BACKOFF] ${context} Rate Limit (429). Reintentando en ${Math.round(delay)}ms (Intento ${attempt})`);
+            logger.warn(`[BACKOFF] ${context} Rate Limit (429). Retrying in ${Math.round(delay)}ms (Attempt ${attempt})`);
           }
 
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
 
-        // Si no es 429 o superamos los reintentos, lanzar el error
+        // If it is not 429 or we exceed retries, throw the error
         throw error;
       }
     }

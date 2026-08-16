@@ -14,13 +14,13 @@ export async function startLocalOrchestrator() {
   
   app.use('/api', (req, res, next) => {
     if (global.canvasState === 'ERROR') {
-      return res.status(503).json({ error: 'Canvas LMS inicialización fallida. Entorno degradado.' });
+      return res.status(503).json({ error: 'Canvas LMS initialization failed. Degraded environment.' });
     }
     next();
   });
   
   CanvasConfigurator.copyDefaultConfigs();
-  logger.info('[CANVAS] Gestionando contenedores de Canvas local en Docker...');
+  logger.info('[CANVAS] Managing local Canvas containers in Docker...');
   global.canvasState = 'INITIALIZING';
   global.isCanvasInitializing = true;
   
@@ -38,7 +38,7 @@ export async function startLocalOrchestrator() {
     global.isCanvasInitializing = false;
     global.canvasState = 'ERROR';
     notifyCanvasError(error);
-    logger.error('[CANVAS] Error crítico al iniciar Canvas local:', { error: error.message });
+    logger.error('[CANVAS] Critical error starting local Canvas:', { error: error.message });
     shutdown('SIGINT');
   }
 }

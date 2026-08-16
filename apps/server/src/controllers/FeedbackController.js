@@ -3,10 +3,10 @@ import { ApiError } from '../utils/errors.js';
 import { assertOwnStudent } from '../authz/requireOwnStudent.js';
 
 /**
- * Controlador de Feedback (RF23, RF24, RF25, RF26, RF30, RF31)
+ * Feedback Controller (RF23, RF24, RF25, RF26, RF30, RF31)
  *
- * Capa fina: valida el transporte (req/res) y delega toda la lógica
- * de negocio al FeedbackService. No accede a repositorios ni a Canvas.
+ * Thin layer: validates the transport (req/res) and delegates all business logic
+ * to the FeedbackService. Does not access repositories or Canvas directly.
  */
 export default class FeedbackController {
   constructor(feedbackService, canvasService) {
@@ -59,7 +59,7 @@ export default class FeedbackController {
     if (grade !== undefined && grade !== null) {
       const numGrade = Number(grade);
       if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
-        throw new ApiError('La calificación debe ser un número entre 0 y 100', 400);
+        throw new ApiError('The grade must be a number between 0 and 100', 400);
       }
     }
     const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
@@ -72,10 +72,10 @@ export default class FeedbackController {
     const { courseId, activeAssignments, students, isRegenerate = false } = req.body;
     const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
     
-    // Responder inmediatamente (procesamiento en segundo plano)
-    res.json({ exito: true, mensaje: 'Generación masiva iniciada en segundo plano' });
+    // Respond immediately (background processing)
+    res.json({ exito: true, mensaje: 'Massive generation started in the background' });
 
-    // Procesar iterativamente en background
+    // Process iteratively in background
     this.feedbackService.generateMassive(courseId, activeAssignments, students, teacherId, isRegenerate);
   }
 
@@ -83,14 +83,14 @@ export default class FeedbackController {
     const { id } = req.params;
     const { nuevoContenido } = req.body;
     const data = await this.feedbackService.editFeedback(id, nuevoContenido);
-    res.json({ exito: true, mensaje: 'Feedback editado', data });
+    res.json({ exito: true, mensaje: 'Feedback edited', data });
   }
 
   async approveAndSend(req, res) {
     const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
-    // Se pasa req.appIdentity al servicio en lugar de ltiContext
+    // Pass req.appIdentity to the service instead of ltiContext
     const result = await this.feedbackService.approveAndSend(req.body, req.appIdentity, teacherId);
-    res.json({ exito: true, mensaje: 'Feedback aprobado y enviado a Canvas SpeedGrader. Notificación enviada.', data: result });
+    res.json({ exito: true, mensaje: 'Feedback approved and sent to Canvas SpeedGrader. Notification sent.', data: result });
   }
 
 
@@ -100,7 +100,7 @@ export default class FeedbackController {
     const { rating } = req.body;
     const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
     const result = await this.feedbackService.rateByTeacher(id, rating, teacherId);
-    res.json({ exito: true, mensaje: 'Valoración guardada correctamente', data: result });
+    res.json({ exito: true, mensaje: 'Rating saved successfully', data: result });
   }
 
   async getHistory(req, res) {

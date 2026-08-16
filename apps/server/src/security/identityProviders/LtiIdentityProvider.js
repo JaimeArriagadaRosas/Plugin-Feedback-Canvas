@@ -14,7 +14,7 @@ export class LtiIdentityProvider {
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
     const cookieToken = req.cookies?.['lti-token'] || null;
 
-    // Probar primero el cookie, ya que es la forma segura y oficial de LTI 1.3
+    // Try the cookie first, as it is the safe and official way for LTI 1.3
     const tokensToTry = [cookieToken, bearerToken].filter(t => t && !isDevToken(t));
 
     for (const token of tokensToTry) {
@@ -27,14 +27,14 @@ export class LtiIdentityProvider {
           .filter(Boolean);
 
         if (allowedDeploymentIds.length > 0 && !allowedDeploymentIds.includes(deploymentId)) {
-          throw new AppError('Deployment ID no permitido', 403);
+          throw new AppError('Deployment ID not allowed', 403);
         }
 
         return IdentityFactory.fromLtiClaims(decoded);
       } catch (e) {
-        // En lugar de lanzar 401 y abortar la autenticación (Error Shadowing), 
-        // silenciamos el error para probar el siguiente Identity Provider.
-        // Si el error es 403 (Deployment ID bloqueado), sí debemos abortar.
+        // Instead of throwing 401 and aborting authentication (Error Shadowing), 
+        // we silence the error to try the next Identity Provider.
+        // If the error is 403 (Deployment ID blocked), we must abort.
         if (e instanceof AppError && e.statusCode === 403) {
           throw e;
         }

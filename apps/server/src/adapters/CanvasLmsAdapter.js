@@ -8,16 +8,16 @@ import MessageFacade from './canvas/MessageFacade.js';
 import AssignmentFacade from './canvas/AssignmentFacade.js';
 
 /**
- * Patrón Facade para centralizar y orquestar las llamadas a la API de Canvas.
- * Delega en sub-fachadas para respetar el Principio de Responsabilidad Única.
- * Elimina la lógica _local, la cual será implementada en CanvasLmsAdapter.local.js mediante herencia.
+ * Facade pattern to centralize and orchestrate calls to the Canvas API.
+ * Delegates to sub-facades to respect the Single Responsibility Principle.
+ * Removes _local logic, which will be implemented in CanvasLmsAdapter.local.js via inheritance.
  */
 export default class CanvasLmsAdapter {
   constructor(canvasHttpClient, canvasTokenManager, env) {
     this.httpClient = canvasHttpClient;
     this.tokenManager = canvasTokenManager;
 
-    // Sub-fachadas inyectadas
+    // Injected sub-facades
     this.courseApi = new CourseFacade(this);
     this.submissionApi = new SubmissionFacade(this);
     this.messageApi = new MessageFacade(this);
@@ -25,14 +25,14 @@ export default class CanvasLmsAdapter {
   }
 
   /**
-   * Resuelve el token. Puede ser sobrescrito por clases hijas (ej. CanvasLmsAdapter.local.js)
+   * Resolves the token. Can be overridden by child classes (e.g. CanvasLmsAdapter.local.js)
    */
   async resolveToken(teacherId) {
     return await this.tokenManager.getValidToken(teacherId);
   }
 
   /**
-   * Realiza una petición GET/POST/PUT sencilla usando Exponential Backoff.
+   * Performs a simple GET/POST/PUT request using Exponential Backoff.
    */
   async _fetchWithToken(endpoint, teacherId, options = {}) {
     return ExponentialBackoff.execute(async () => {
@@ -40,13 +40,13 @@ export default class CanvasLmsAdapter {
       
       try {
         const response = await this.httpClient.apiFetch(endpoint, token, options);
-        // Retornamos el JSON. El httpClient.apiFetch ya lanza AppError si el status no es OK.
+        // Return the JSON. httpClient.apiFetch already throws AppError if status is not OK.
         return response;
       } catch (error) {
         if (error instanceof AppError && error.statusCode === 401) {
-          logger.error(`[CanvasLmsAdapter] 401 recibido en _fetchWithToken para ${teacherId}. Revocando acceso.`);
+          logger.error(`[CanvasLmsAdapter] 401 received in _fetchWithToken for ${teacherId}. Revoking access.`);
           await this.tokenManager.invalidateToken(teacherId);
-          throw new AppError('Sesión LTI expirada o revocada por el LMS. Por favor, recargue el plugin.', 401);
+          throw new AppError('LTI session expired or revoked by the LMS. Please reload the plugin.', 401);
         }
         throw error;
       }
@@ -54,7 +54,7 @@ export default class CanvasLmsAdapter {
   }
 
   /**
-   * Realiza peticiones paginadas usando Exponential Backoff.
+   * Performs paginated requests using Exponential Backoff.
    */
   async _fetchAllWithToken(endpoint, teacherId, options = {}) {
     const results = [];
@@ -66,7 +66,7 @@ export default class CanvasLmsAdapter {
     try {
       token = await this.resolveToken(teacherId);
     } catch (tokenErr) {
-      logger.error(`[CanvasLmsAdapter] Error obteniendo token para ${teacherId}: ${tokenErr.message}`);
+      logger.error(`[CanvasLmsAdapter] Error getting token for ${teacherId}: ${tokenErr.message}`);
       throw tokenErr;
     }
 
@@ -82,9 +82,9 @@ export default class CanvasLmsAdapter {
           nextUrl = this.httpClient.getNextLink(res.headers.get('link'));
         } catch (error) {
           if (error instanceof AppError && error.statusCode === 401) {
-            logger.error(`[CanvasLmsAdapter] 401 recibido en _fetchAllWithToken para ${teacherId}. Revocando acceso.`);
+            logger.error(`[CanvasLmsAdapter] 401 received in _fetchAllWithToken for ${teacherId}. Revoking access.`);
             await this.tokenManager.invalidateToken(teacherId);
-            throw new AppError('Sesión LTI expirada o revocada por el LMS. Por favor, recargue el plugin.', 401);
+            throw new AppError('LTI session expired or revoked by the LMS. Please reload the plugin.', 401);
           }
           throw error;
         }
@@ -95,7 +95,7 @@ export default class CanvasLmsAdapter {
   }
 
   // =========================================================
-  // Métodos expuestos al resto de la aplicación (Delegación a Sub-fachadas)
+  // Methods exposed to the rest of the application (Delegation to Sub-facades)
   // =========================================================
 
   async getCourses(teacherId) {

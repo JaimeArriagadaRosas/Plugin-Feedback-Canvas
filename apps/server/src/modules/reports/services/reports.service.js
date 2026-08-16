@@ -21,7 +21,7 @@ export class ReportsService {
       return await this.statsService.getCourseStats(courseId, assignmentId);
     } catch (err) {
       logger.error('[ReportsService] Error getting global stats', { error: err });
-      throw new ApiError('Error obteniendo estadísticas globales', 500);
+      throw new ApiError('Error getting global stats', 500);
     }
   }
 
@@ -31,7 +31,7 @@ export class ReportsService {
       return this.histogramService.buildHistogram(rawData);
     } catch (err) {
       logger.error('[ReportsService] Error getting ratings', { error: err });
-      throw new ApiError('Error obteniendo distribucion de calificaciones', 500);
+      throw new ApiError('Error getting ratings distribution', 500);
     }
   }
 
@@ -40,7 +40,7 @@ export class ReportsService {
       const res = await db.query('SELECT version, status, logs, ejecutado_en FROM migration_logs ORDER BY ejecutado_en DESC LIMIT 100');
       return res.rows;
     } catch (err) {
-      // Si la tabla aún no existe, devolvemos array vacío
+      // If the table doesn't exist yet, we return an empty array
       return [];
     }
   }

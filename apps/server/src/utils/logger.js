@@ -1,6 +1,6 @@
 /**
- * Logger estructurado para el servidor del Plugin Feedback.
- * Basado en Pino, el logger más rápido de Node.js, para alto rendimiento y JSON logs.
+ * Structured logger for the Plugin Feedback server.
+ * Based on Pino, the fastest Node.js logger, for high performance and JSON logs.
  */
 
 import pino from 'pino';
@@ -42,7 +42,7 @@ if (LOG_TO_FILE) {
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
-// Fallback para producción sin archivos: imprimir JSON a stdout
+// Fallback for production without files: print JSON to stdout
 if (targets.length === 0 && !IS_DEV) {
   targets.push({ target: 'pino/file', options: { destination: 1 } });
 }
@@ -62,18 +62,18 @@ function formatDevLog(level, rawMessage) {
   
   if (redacted === '' ||
       /^[=\s-]{20,}$/.test(redacted.trim()) || 
-      redacted.includes('BACKEND INICIADO') || 
-      redacted.includes('Plugin Feedback Adaptativo') || 
-      redacted.includes('Puerto interno') || 
-      redacted.includes('Modo de inicio') || 
-      redacted.includes('• Base de datos') || 
-      redacted.includes('Sesión local') || 
-      redacted.includes('Interfaz UI') || 
-      redacted.includes('API Backend') || 
+      redacted.includes('BACKEND STARTED') || 
+      redacted.includes('Adaptive Feedback Plugin') || 
+      redacted.includes('Internal port') || 
+      redacted.includes('Startup mode') || 
+      redacted.includes('• Database') || 
+      redacted.includes('Local session') || 
+      redacted.includes('UI Interface') || 
+      redacted.includes('Backend API') || 
       redacted.includes('Logs') || 
-      redacted.includes('💡 NOTA:') || 
-      redacted.includes('bloquea el Iframe') || 
-      redacted.includes('en Canvas, haz clic') || 
+      redacted.includes('💡 NOTE:') || 
+      redacted.includes('blocks the Iframe') || 
+      redacted.includes('in Canvas, click') || 
       redacted.includes('👉 https://localhost')) {
     return redacted;
   }
@@ -96,16 +96,16 @@ function formatDevLog(level, rawMessage) {
   if (isHttpRequest) {
     const methodPath = finalMessage.replace('-> ', '').trim();
     const [method, ...rest] = methodPath.split(' ');
-    return `\n  ${pc.cyan('·')} Petición ${pc.bold(method)}: ${rest.join(' ')}`;
+    return `\n  ${pc.cyan('·')} Request ${pc.bold(method)}: ${rest.join(' ')}`;
   }
 
   if (isHttpResponse) {
     const parts = finalMessage.split(' ');
     const status = parts[parts.length - 1];
     if (status.startsWith('2') || status.startsWith('3')) {
-      return `    ${pc.green('√')} Petición completada (${status})`;
+      return `    ${pc.green('√')} Request completed (${status})`;
     } else {
-      return `    ${pc.red('×')} Petición finalizada con error (${status})`;
+      return `    ${pc.red('×')} Request finished with error (${status})`;
     }
   }
 
@@ -115,13 +115,13 @@ function formatDevLog(level, rawMessage) {
                        redacted.includes('[Auth]') ||
                        redacted.includes('verifyToken') ||
                        redacted.includes('VerifyToken') ||
-                       redacted.includes('Audience verificada') ||
-                       redacted.includes('INICIO DE SESION') ||
+                       redacted.includes('Audience verified') ||
+                       redacted.includes('LOGIN') ||
                        redacted.includes('OIDC') ||
-                       redacted.includes('Sesión válida') ||
-                       redacted.includes('Rol efectivo') ||
-                       redacted.includes('Estado activo') ||
-                       redacted.includes('Claves RSA') ||
+                       redacted.includes('Valid session') ||
+                       redacted.includes('Effective role') ||
+                       redacted.includes('Active status') ||
+                       redacted.includes('RSA keys') ||
                        redacted.includes('SESSION:') ||
                        redacted.includes('CanvasOAuth') ||
                        redacted.includes('OAuth');
@@ -136,32 +136,32 @@ function formatDevLog(level, rawMessage) {
   
   const lowerMsg = finalMessage.toLowerCase();
   if (level === 'info' && (
-      lowerMsg.includes('exitosa') || 
-      lowerMsg.includes('exitosamente') || 
-      lowerMsg.includes('completad') || 
-      lowerMsg.includes('permitido') || 
-      lowerMsg.includes('activo') || 
-      lowerMsg.includes('listo') || 
-      lowerMsg.includes('válid') || 
-      lowerMsg.includes('registrado') || 
+      lowerMsg.includes('successful') || 
+      lowerMsg.includes('successfully') || 
+      lowerMsg.includes('completed') || 
+      lowerMsg.includes('allowed') || 
+      lowerMsg.includes('active') || 
+      lowerMsg.includes('ready') || 
+      lowerMsg.includes('valid') || 
+      lowerMsg.includes('registered') || 
       lowerMsg.includes('ok') || 
-      lowerMsg.includes('generado') ||
-      lowerMsg.includes('éxito')
+      lowerMsg.includes('generated') ||
+      lowerMsg.includes('success')
   )) {
     icon = pc.green('√');
   }
 
   let text = finalMessage;
   
-  if (component === 'CORS' && text.includes('Solicitud con Origin:')) {
-    text = text.replace('Solicitud con Origin:', 'Origin validado:');
+  if (component === 'CORS' && text.includes('Request with Origin:')) {
+    text = text.replace('Request with Origin:', 'Origin validated:');
   }
 
   if (component && !isSubLog) {
      if (!['SERVER', 'BOOTSTRAP', 'TLS', 'SSL', 'HTTPS', 'FRONTEND', 'DATA', 'JOBS', 'DB', 'CANVAS-API', 'JWKS-CLIENT', 'KeyManager', 'TLS-PROXY'].includes(component)) {
        text = `${component}: ${text}`;
-     } else if (component === 'DB' && !text.toLowerCase().includes('postgresql') && !text.toLowerCase().includes('base de datos')) {
-       text = `Base de datos: ${text}`;
+     } else if (component === 'DB' && !text.toLowerCase().includes('postgresql') && !text.toLowerCase().includes('database')) {
+       text = `Database: ${text}`;
      }
   }
 
@@ -227,7 +227,7 @@ class Logger {
       }
       // If it's not a TTY, we suppress progress logs to avoid spamming buffered outputs (like child_process)
     }
-    // Escribimos en debug file, sin saturar log_level info si no es necesario.
+    // Write to debug file, without saturating log_level info if not necessary.
     this._pino.debug(meta, redactSensitiveStrings(message));
   }
 
@@ -252,7 +252,7 @@ class Logger {
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
     
     const isHealthCheck = req.originalUrl.includes('/config/startup-mode') || req.originalUrl.includes('/health');
-    // Solo registrar si no es health check, O si fue un error (status >= 400)
+    // Only log if it's not a health check, OR if it was an error (status >= 400)
     if (!isHealthCheck || res.statusCode >= 400) {
       // eslint-disable-next-line security/detect-object-injection
       this._pino[level]({ reqId, duration, statusCode: res.statusCode }, `<- ${req.method} ${req.originalUrl} ${res.statusCode}`);

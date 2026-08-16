@@ -2,10 +2,10 @@ import sanitizeHtml from 'sanitize-html';
 import { AppError } from '../utils/errors.js';
 
 /**
- * Controlador de Respaldo Manual (RF62)
+ * Manual Backup Controller (RF62)
  *
- * Capa fina: delega toda la lógica (persistencia + envío a Canvas)
- * al FeedbackService. No accede a repositorios ni a Canvas directamente.
+ * Thin layer: delegates all logic (persistence + send to Canvas)
+ * to FeedbackService. Does not access repositories or Canvas directly.
  */
 export default class ManualFeedbackController {
   constructor(feedbackService) {
@@ -19,13 +19,13 @@ export default class ManualFeedbackController {
       if (grade !== undefined && grade !== null) {
         const numGrade = Number(grade);
         if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
-          throw new AppError('La calificación debe ser un número entre 0 y 100', 400);
+          throw new AppError('The grade must be a number between 0 and 100', 400);
         }
       }
 
       const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';
       if (!courseId || !assignmentId || !studentId || !teacherId) {
-        throw new AppError('courseId, assignmentId, studentId y teacherId son obligatorios', 400);
+        throw new AppError('courseId, assignmentId, studentId and teacherId are required', 400);
       }
       
       const sanitizedContent = sanitizeHtml(content, {
@@ -44,7 +44,7 @@ export default class ManualFeedbackController {
         contenidoManual: sanitizedContent,
         grade
       });
-      res.json({ exito: true, mensaje: 'Feedback manual guardado como pendiente', data: fbGuardado });
+      res.json({ exito: true, mensaje: 'Manual feedback saved as pending', data: fbGuardado });
     } catch (error) {
       next(error);
     }

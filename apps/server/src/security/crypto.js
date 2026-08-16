@@ -6,7 +6,7 @@ function getDevTokenSecret() {
   if (!_devTokenSecret) {
     _devTokenSecret = process.env.DEV_TOKEN_SECRET;
     if (!_devTokenSecret) {
-      throw new Error('[SECURITY] DEV_TOKEN_SECRET no configurado. Defina esta variable de entorno para habilitar autenticación local.');
+      throw new Error('[SECURITY] DEV_TOKEN_SECRET not configured. Define this environment variable to enable local authentication.');
     }
   }
   return _devTokenSecret;
@@ -78,7 +78,7 @@ export function extractDevRoleFromSigned(signedRole) {
 export function signOAuthState(payload) {
   const secret = process.env.ENCRYPTION_KEY || process.env.DEV_TOKEN_SECRET;
   if (!secret) {
-    throw new Error('[SECURITY] Se requiere ENCRYPTION_KEY o DEV_TOKEN_SECRET para firmar estados OAuth. Operación rechazada (fail-closed).');
+    throw new Error('[SECURITY] ENCRYPTION_KEY or DEV_TOKEN_SECRET is required to sign OAuth states. Operation rejected (fail-closed).');
   }
   const hmac = crypto.createHmac('sha256', secret);
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64');

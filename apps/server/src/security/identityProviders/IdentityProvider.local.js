@@ -14,9 +14,9 @@ export class IdentityProviderLocal {
     const devTokenCookie = req.cookies?.['dev-token'];
     const devRole = extractDevRole(req);
 
-    // SEC: el dev-token debe estar firmado con el secreto estable del servidor.
-    // Antes solo se comprobaba el prefijo "dev-token:", permitiendo falsificar
-    // cookies dev-token:admin:1 (escalada de rol local). Ahora se valida la firma.
+    // SEC: the dev-token must be signed with the stable server secret.
+    // Previously only the "dev-token:" prefix was checked, allowing spoofing
+    // of dev-token:admin:1 cookies (local role escalation). Now the signature is validated.
     const hasSignedDevToken = (ltiTokenCookie && ltiTokenCookie.startsWith('dev-token') && verifyDevToken(ltiTokenCookie))
       || (devTokenCookie && devTokenCookie.startsWith('dev-token') && verifyDevToken(devTokenCookie));
     const hasDevRole = !!devRole;
@@ -24,7 +24,7 @@ export class IdentityProviderLocal {
     if (!hasSignedDevToken && !hasDevRole) return null;
 
     if ((ltiTokenCookie?.startsWith('dev-token') || devTokenCookie?.startsWith('dev-token')) && !hasSignedDevToken) {
-      logger.warn('[LOCAL-AUTH] dev-token con firma inválida rechazado', { ip: req.ip });
+      logger.warn('[LOCAL-AUTH] dev-token with invalid signature rejected', { ip: req.ip });
       return null;
     }
 
@@ -44,23 +44,23 @@ export class IdentityProviderLocal {
     const courseId = process.env.CANVAS_COURSE_ID || process.env.VITE_CANVAS_COURSE_ID || '1';
 
     let userId;
-    // NOTA DE SEGURIDAD: el dev-token es `dev-token:<rol>:<id>.<hmac>`. Nunca se
-    // usa el payload crudo como userId porque filtraría la firma HMAC a los logs
-    // (ej. "local-user-teacher.<hash>"). Se deriva un userId estable a partir
-    // del rol y, si existe, del id numérico (parte 2, sin la firma).
+    // SECURITY NOTE: the dev-token is `dev-token:<role>:<id>.<hmac>`. The raw
+    // payload is never used as userId because it would leak the HMAC signature to logs
+    // (e.g. "local-user-teacher.<hash>"). A stable userId is derived from
+    // the role and, if it exists, the numeric id (part 2, without the signature).
     const tokenParts = (ltiTokenCookie && ltiTokenCookie.startsWith('dev-token:') && ltiTokenCookie.includes('.'))
       ? ltiTokenCookie.split('.')[0].split(':')
       : [];
     const tokenUserId = tokenParts.length > 2 ? tokenParts[2] : null;
 
     if (tokenUserId) {
-      // Derivamos un pseudo UUID constante basado en el ID numérico
+      // We derive a constant pseudo UUID based on the numeric ID
       const paddedId = String(tokenUserId).padStart(12, '0');
       userId = baseRole === 'student'
         ? `00000000-0000-0000-0000-${paddedId}`
         : `00000000-0000-0000-0001-${paddedId}`;
     } else {
-      // Fallback estático
+      // Static fallback
       userId = baseRole === 'student'
         ? (studentMatch ? `00000000-0000-0000-0000-${String(studentMatch[1]).padStart(12, '0')}` : '00000000-0000-0000-0000-000000000002')
         : '00000000-0000-0000-0001-000000000003';

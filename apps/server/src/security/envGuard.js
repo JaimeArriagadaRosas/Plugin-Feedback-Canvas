@@ -3,17 +3,17 @@ export { isProduction };
 import { SSLConfig } from './SSLConfig.js';
 
 /**
- * Retorna true si debemos usar HTTPS en este entorno local.
- * En producción (isProduction=true) retorna false (se asume que un ingress/proxy
- * manejará el SSL y Express escuchará en HTTP).
+ * Returns true if we should use HTTPS in this local environment.
+ * In production (isProduction=true) returns false (it is assumed that an ingress/proxy
+ * will handle SSL and Express will listen on HTTP).
  */
 export function isHttpsEnabled() {
   if (isProduction()) return false;
-  // Usamos el flag inmutable establecido por SSLService en el arranque
+  // We use the immutable flag set by SSLService at startup
   return process.env._RUNTIME_IS_HTTPS === 'true';
 }
 
-/** Ruta absoluta a los certificados SSL locales del plugin. */
+/** Absolute path to the plugin's local SSL certificates. */
 export function getSslCertPaths() {
   return {
     cert: SSLConfig.CERT_PEM,
@@ -29,14 +29,14 @@ export function localDataEnabled() {
 }
 
 /**
- * ¿Se permite el modo local (auth relajada + datos en memoria)?
- * En producción siempre devuelve false (fail-closed).
+ * Is local mode allowed (relaxed auth + in-memory data)?
+ * In production always returns false (fail-closed).
  */
 export function isLocalModeAllowed() {
   if (!localDataEnabled()) return false;
   if (isProduction()) {
     console.error(
-      '[SECURITY] USE_LOCAL_DATA activo en producción. Modo local BLOQUEADO (fail-closed).'
+      '[SECURITY] USE_LOCAL_DATA active in production. Local mode BLOCKED (fail-closed).'
     );
     return false;
   }
@@ -45,7 +45,7 @@ export function isLocalModeAllowed() {
 
 /**
  * Throws if critical environment variables are missing in production.
- * Devuelve la lista de faltantes en otros entornos (para warning).
+ * Returns the list of missing variables in other environments (for warning).
  */
 export function requireSecretsOrThrow(required = []) {
   // eslint-disable-next-line security/detect-object-injection

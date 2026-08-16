@@ -46,8 +46,8 @@ export function initializeDataLayer() {
   const permissionsRepo = new PermissionsRepository(db);
   const systemNotificationRepo = new SystemNotificationRepository();
 
-  logger.info('[DATA] Repositorios de datos inicializados.', {
-    db: 'PostgreSQL real'
+  logger.info('[DATA] Data repositories initialized.', {
+    db: 'Real PostgreSQL'
   });
 
   return { feedbackRepo, templateRepo, configRepo, tokenRepo, canvasTokenRepo, studentRepo, permissionsRepo, systemNotificationRepo };
@@ -60,7 +60,7 @@ export async function initializeServiceLayer(env, repos) {
   const canvasTokenManager = new CanvasTokenManager(canvasTokenRepo, env, canvasClient);
 
   const canvasGateway = new CanvasLmsAdapter(canvasClient, canvasTokenManager, env);
-  logger.info(`[CANVAS] Servicio inicializado: CanvasLmsAdapter (Paridad Producción)`);
+  logger.info(`[CANVAS] Service initialized: CanvasLmsAdapter (Production Parity)`);
 
   const academicHistoryService = new AcademicHistoryService(canvasGateway, repos.studentRepo);
   const templateManager = new TemplateManager(templateRepo);
@@ -72,7 +72,7 @@ export async function initializeServiceLayer(env, repos) {
     ? new EmailServiceLocal()
     : null;
   if (!emailService) {
-    logger.warn('[EMAIL] No hay proveedor de correo productivo configurado. Los envíos por email se registrarán como fallidos.');
+    logger.warn('[EMAIL] No production email provider configured. Email deliveries will be logged as failed.');
   }
   const diagnosticsService = process.env.NODE_ENV !== 'production' ? new NotificationDiagnosticsLocal() : null;
   const systemNotificationService = new SystemNotificationService(repos.systemNotificationRepo);

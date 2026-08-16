@@ -20,23 +20,23 @@ export class SSLService {
    */
   static async initializeSSLContext() {
     const env = SSLConfig.getEnvironment();
-    logger.info('[SSL] Inicializando contexto inmutable para certificados.', { httpsRequested: env.httpsRequested });
+    logger.info('[SSL] Initializing immutable context for certificates.', { httpsRequested: env.httpsRequested });
 
     let isHttps = false;
 
     if (SSLConfig.shouldUseHttps()) {
-      logger.info('[SSL] Verificando/generando certificados con mkcert...');
+      logger.info('[SSL] Verifying/generating certificates with mkcert...');
       const certsReady = await SSLCertificateGenerator.ensureCertificates();
       
       if (certsReady) {
         isHttps = true;
         // Mensaje requerido: Configuración de dispositivo / entorno
-        logger.info('[SSL] ✅ Autoconfiguración HTTPS Completada (mkcert local).');
+        logger.info('[SSL] ✅ HTTPS Autoconfiguration Completed (local mkcert).');
       } else {
-        logger.warn('[SSL] No se pudieron asegurar los certificados. Fallback a HTTP plano (inseguro para LTI).');
+        logger.warn('[SSL] Certificates could not be secured. Fallback to plain HTTP (insecure for LTI).');
       }
     } else {
-      logger.info('[SSL] HTTPS no solicitado o es Producción. Usando HTTP.');
+      logger.info('[SSL] HTTPS not requested or is Production. Using HTTP.');
     }
 
     this.bustJwksCache();

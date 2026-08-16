@@ -35,7 +35,7 @@ export async function signSessionToken(claims) {
   const token = jwt.sign(payload, privateKeyPem, { algorithm: 'RS256' });
   const sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
   
-  // Guardar en BD para cumplir persistencia
+  // Save in DB to fulfill persistence
   await db.query(
     'INSERT INTO plugin_sessions (session_id, user_id, jwt_token, expires_at) VALUES ($1, $2, $3, to_timestamp($4)) ON CONFLICT DO NOTHING',
     [sessionId, claims.sub, token, expTimestamp]
@@ -48,16 +48,16 @@ export async function verifySessionToken(token) {
   const { publicKeyPem } = keyManagerService.ensureKeys();
   const decoded = jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] });
   if (decoded.iss !== 'plugin-session') {
-    throw new Error('Issuer inválido para session_token');
+    throw new Error('Invalid issuer for session_token');
   }
   if (decoded.aud !== 'plugin') {
-    throw new Error('Audience inválida para session_token');
+    throw new Error('Invalid audience for session_token');
   }
 
-  // Verificar si existe en BD y no ha expirado
+  // Verify if it exists in DB and has not expired
   const res = await db.query('SELECT session_id FROM plugin_sessions WHERE jwt_token = $1 AND expires_at > NOW()', [token]);
   if (res.rowCount === 0) {
-    throw new Error('Sesión expirada o no encontrada en BD (Persistencia requerida)');
+    throw new Error('Session expired or not found in DB (Persistence required)');
   }
 
   return decoded;

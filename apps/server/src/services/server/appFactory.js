@@ -18,11 +18,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function executeMigrations() {
   try {
     if (process.env.AUTO_MIGRATE === 'true') {
-      logger.info('[BOOTSTRAP] Ejecutando migraciones de base de datos (AUTO_MIGRATE=true)...');
+      logger.info('[BOOTSTRAP] Executing database migrations (AUTO_MIGRATE=true)...');
       await runMigrations();
-      logger.info('[BOOTSTRAP] Migraciones completadas.');
+      logger.info('[BOOTSTRAP] Migrations completed.');
     } else {
-      logger.info('[BOOTSTRAP] Auto-migración desactivada. Ejecutar "npm run db:migrate" manualmente en despliegue.');
+      logger.info('[BOOTSTRAP] Auto-migration disabled. Run "npm run db:migrate" manually in deployment.');
     }
   } catch (err) {
     logger.error('[BOOTSTRAP] Critical failure in migrations:', err.message);
@@ -31,7 +31,7 @@ async function executeMigrations() {
 }
 
 function configureStaticRouting(app, frontendDist) {
-  logger.info(`[FRONTEND] Servidor estático: Sirviendo SPA desde carpeta /dist.`);
+  logger.info(`[FRONTEND] Static server: Serving SPA from /dist folder.`);
   app.use(express.static(frontendDist, { index: false }));
 
   app.use((req, res, next) => {
@@ -39,13 +39,13 @@ function configureStaticRouting(app, frontendDist) {
     if (isApiLike || req.method !== 'GET') {
       return res.status(404).json({
         exito: false,
-        error: { mensaje: 'No encontrado', codigo: 404, path: req.originalUrl }
+        error: { mensaje: 'Not found', codigo: 404, path: req.originalUrl }
       });
     }
 
     res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
       if (err) {
-        res.status(404).send('Frontend no construido. Si estas en desarrollo, accede a través del puerto de Vite (5173).');
+        res.status(404).send('Frontend not built. If you are in development, access via the Vite port (5173).');
       }
     });
   });
@@ -77,9 +77,9 @@ export async function startServer(app, PORT) {
 
   return new Promise((resolve, reject) => {
     server.listen(PORT, () => {
-      const modeName = process.env.STARTUP_MODE === '1' ? 'LTI 1.3 (Canvas Real)' :
-                       process.env.STARTUP_MODE === '2' ? 'API Canvas (Token Manual)' :
-                       process.env.STARTUP_MODE === '3' ? 'Canvas Local (Docker)' : 'Local';
+      const modeName = process.env.STARTUP_MODE === '1' ? 'LTI 1.3 (Real Canvas)' :
+                       process.env.STARTUP_MODE === '2' ? 'Canvas API (Manual Token)' :
+                       process.env.STARTUP_MODE === '3' ? 'Local Canvas (Docker)' : 'Local';
 
       server.setTimeout(300000);
       server.headersTimeout = 120000;
@@ -88,24 +88,24 @@ export async function startServer(app, PORT) {
         server.tokenRotationJob = services.tokenRotationJob;
         services.tokenRotationJob.start();
       }
-      logger.info('[SERVER] Timeouts configurados: timeout=300s, headers=120s, keepAlive=60s');
+      logger.info('[SERVER] Configured timeouts: timeout=300s, headers=120s, keepAlive=60s');
 
       logger.info('');
       logger.info('===================================================');
-      logger.info(' 🚀 BACKEND INICIADO - Plugin Feedback Adaptativo');
+      logger.info(' 🚀 BACKEND STARTED - Adaptive Feedback Plugin');
       logger.info('===================================================');
-      logger.info(`  • Puerto interno : ${PORT}`);
-      logger.info(`  • Modo de inicio : ${modeName}`);
-      logger.info(`  • Base de datos  : PostgreSQL real`);
-      logger.info(`  • Sesión local   : ${env.useLocalData ? 'Activa (esperando dev-token cookie)' : 'Inactiva'}`);
+      logger.info(`  • Internal port : ${PORT}`);
+      logger.info(`  • Startup mode  : ${modeName}`);
+      logger.info(`  • Database      : Real PostgreSQL`);
+      logger.info(`  • Local session : ${env.useLocalData ? 'Active (waiting for dev-token cookie)' : 'Inactive'}`);
       logger.info('---------------------------------------------------');
       const scheme = isHttpsEnabled() ? 'https' : 'http';
-      logger.info(`  🌐 Interfaz UI   : ${process.env.FRONTEND_URL || 'https://localhost:5173/'}`);
-      logger.info(`  ⚙️  API Backend   : ${scheme}://localhost:${PORT}/`);
-      logger.info(`  📄 Logs          : ${console.logFile || 'Solo consola'}`);
+      logger.info(`  🌐 UI Interface : ${process.env.FRONTEND_URL || 'https://localhost:5173/'}`);
+      logger.info(`  ⚙️  Backend API : ${scheme}://localhost:${PORT}/`);
+      logger.info(`  📄 Logs         : ${console.logFile || 'Console only'}`);
       logger.info('===================================================');
       if (scheme === 'https') {
-        logger.info('  💡 NOTA: Si tu navegador bloquea el Iframe en Canvas, visita:');
+        logger.info('  💡 NOTE: If your browser blocks the Canvas Iframe, visit:');
         logger.info(`     👉 https://localhost:${PORT}/health`);
         logger.info('===================================================');
       }

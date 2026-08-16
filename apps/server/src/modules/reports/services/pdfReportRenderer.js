@@ -36,7 +36,7 @@ function updateMetrics(metrics, row) {
   addRating(metrics.teacherRatings, row.calificacion_teacher);
   addRating(metrics.studentRatings, row.calificacion_student, metrics.stars);
   const key = row.curso_id;
-  if (!metrics.courses.has(key)) metrics.courses.set(key, { name: row.nombre_curso || `Curso ${key}`, total: 0, approved: 0 });
+  if (!metrics.courses.has(key)) metrics.courses.set(key, { name: row.nombre_curso || `Course ${key}`, total: 0, approved: 0 });
   const course = metrics.courses.get(key);
   course.total += 1;
   if (status === 'APROBADO') course.approved += 1;
@@ -52,7 +52,7 @@ function addRating(ratings, value, stars) {
 }
 
 function renderReport(document, metrics, auditLogs, migrationLogs) {
-  drawDocumentHeader(document, 'Dashboard de IA - Feedback Global', `Generado: ${new Date().toLocaleString()}`);
+  drawDocumentHeader(document, 'AI Dashboard - Global Feedback', `Generated: ${new Date().toLocaleString()}`);
   drawDashboard(document, metrics);
   drawAuditAppendix(document, auditLogs);
   drawMigrationAppendix(document, migrationLogs);
@@ -78,8 +78,8 @@ function drawDashboard(document, metrics) {
 function drawKpiCards(document, total, approvalRate, teacherAverage, studentAverage) {
   const y = document.y;
   const cards = [
-    ['Total Feedbacks', String(total)], ['Tasa Aprobación', approvalRate],
-    ['Val. Teacheres', withStars(teacherAverage)], ['Val. Students', withStars(studentAverage)]
+    ['Total Feedbacks', String(total)], ['Approval Rate', approvalRate],
+    ['Teacher Rating', withStars(teacherAverage)], ['Student Rating', withStars(studentAverage)]
   ];
   cards.forEach(([title, value], index) => drawKpi(document, 50 + index * 120, y, title, value));
   document.y = y + 110;
@@ -92,8 +92,8 @@ function drawKpi(document, x, y, title, value) {
 }
 
 function drawStateDistribution(document, metrics) {
-  drawSectionTitle(document, 'Distribución por Estado');
-  const states = [['APROBADOS', metrics.approved], ['EDITADOS', metrics.edited], ['PENDIENTES', metrics.pending], ['RECHAZADOS', metrics.rejected]];
+  drawSectionTitle(document, 'State Distribution');
+  const states = [['APPROVED', metrics.approved], ['EDITED', metrics.edited], ['PENDING', metrics.pending], ['REJECTED', metrics.rejected]];
   states.forEach(([name, count]) => {
     document.fillColor(COLORS.text).fontSize(12).text(name, 50, document.y);
     document.text(String(count), 200, document.y);
@@ -103,7 +103,7 @@ function drawStateDistribution(document, metrics) {
 
 function drawRatingHistogram(document, stars) {
   document.y += 20;
-  drawSectionTitle(document, 'Histograma de Valoración (Students)');
+  drawSectionTitle(document, 'Rating Histogram (Students)');
   const max = Math.max(...Object.values(stars), 1);
   const baseY = document.y;
   [5, 4, 3, 2, 1].forEach((star, index) => {
@@ -120,11 +120,11 @@ function drawRatingHistogram(document, stars) {
 
 function drawCourseSummary(document, courses) {
   ensureSpace(document, 150);
-  drawSectionTitle(document, 'Resumen por Curso (Top 10)');
+  drawSectionTitle(document, 'Course Summary (Top 10)');
   document.fillColor('#777777').fontSize(10);
-  document.text('CURSO', 50, document.y);
+  document.text('COURSE', 50, document.y);
   document.text('TOTAL', 350, document.y);
-  document.text('APROBADOS', 450, document.y);
+  document.text('APPROVED', 450, document.y);
   document.y += 15;
   [...courses.values()].sort((a, b) => b.total - a.total).slice(0, 10).forEach((course) => {
     const name = course.name.length > 40 ? `${course.name.slice(0, 37)}...` : course.name;
@@ -139,34 +139,34 @@ function drawCourseSummary(document, courses) {
 
 function drawAuditAppendix(document, auditLogs = []) {
   document.addPage();
-  drawDocumentHeader(document, 'Anexo: Alertas de Seguridad', 'Incidentes Críticos Recientes');
-  drawSectionTitle(document, 'Resumen de Alertas de Seguridad');
+  drawDocumentHeader(document, 'Appendix: Security Alerts', 'Recent Critical Incidents');
+  drawSectionTitle(document, 'Security Alerts Summary');
   if (!auditLogs.length) {
-    document.fillColor('#137333').fontSize(12).text('No se detectaron incidentes de seguridad críticos en el periodo reportado.', 50, document.y);
+    document.fillColor('#137333').fontSize(12).text('No critical security incidents detected in the reported period.', 50, document.y);
     return;
   }
-  document.fillColor('#d32f2f').fontSize(12).text(`Se detectaron ${auditLogs.length} incidentes críticos/fallidos en los registros recientes.`, 50, document.y);
+  document.fillColor('#d32f2f').fontSize(12).text(`${auditLogs.length} critical/failed incidents detected in recent logs.`, 50, document.y);
   document.y += 20;
-  drawTableHeader(document, ['FECHA', 'USUARIO', 'ACCIÓN', 'DETALLE / IP'], [50, 150, 230, 350]);
+  drawTableHeader(document, ['DATE', 'USER', 'ACTION', 'DETAIL / IP'], [50, 150, 230, 350]);
   auditLogs.slice(0, 15).forEach((log) => drawAuditRow(document, log));
 }
 
 function drawAuditRow(document, log) {
   const y = document.y;
-  const values = [formatDate(log.fecha), log.usuario_id || 'SISTEMA', (log.accion || 'N/A').slice(0, 40), `${log.detalle || ''} | IP: ${log.ip_address || 'N/A'}`.slice(0, 60)];
+  const values = [formatDate(log.fecha), log.usuario_id || 'SYSTEM', (log.accion || 'N/A').slice(0, 40), `${log.detalle || ''} | IP: ${log.ip_address || 'N/A'}`.slice(0, 60)];
   drawTableRow(document, values, [50, 150, 230, 350], [90, 70, 110, 195]);
   document.y = Math.max(document.y, y + 15);
 }
 
 function drawMigrationAppendix(document, migrationLogs = []) {
   document.addPage();
-  drawDocumentHeader(document, 'Anexo: Métricas de Despliegue', 'Historial de Migraciones');
-  drawSectionTitle(document, 'Registro de Migraciones de Base de Datos');
+  drawDocumentHeader(document, 'Appendix: Deployment Metrics', 'Migration History');
+  drawSectionTitle(document, 'Database Migration Log');
   if (!migrationLogs.length) {
-    document.fillColor('#777777').fontSize(12).text('No hay registros de migración disponibles.', 50, document.y);
+    document.fillColor('#777777').fontSize(12).text('No migration records available.', 50, document.y);
     return;
   }
-  drawTableHeader(document, ['FECHA', 'VERSIÓN', 'ESTADO', 'LOGS / DETALLE'], [50, 140, 280, 340]);
+  drawTableHeader(document, ['DATE', 'VERSION', 'STATUS', 'LOGS / DETAIL'], [50, 140, 280, 340]);
   migrationLogs.slice(0, 20).forEach((log) => drawMigrationRow(document, log));
 }
 
@@ -174,7 +174,7 @@ function drawMigrationRow(document, log) {
   const status = log.status || 'N/A';
   const y = document.y;
   document.fillColor(status === 'FAILED' ? '#d32f2f' : status === 'SUCCESS' ? '#137333' : COLORS.text);
-  drawTableRow(document, [formatDate(log.ejecutado_en), String(log.version || 'N/A').slice(0, 35), status, String(log.logs || 'Sin detalle').slice(0, 60)], [50, 140, 280, 340], [90, 140, 60, 205]);
+  drawTableRow(document, [formatDate(log.ejecutado_en), String(log.version || 'N/A').slice(0, 35), status, String(log.logs || 'No details').slice(0, 60)], [50, 140, 280, 340], [90, 140, 60, 205]);
   document.y = Math.max(document.y, y + 15);
   ensureSpace(document, 50);
 }

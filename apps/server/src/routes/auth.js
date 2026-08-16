@@ -11,7 +11,7 @@ const router = express.Router();
 router.post('/session', asyncSafe(async (req, res) => {
   const { id_token } = req.body || {};
   if (!id_token) {
-    throw new AppError('id_token requerido', 400);
+    throw new AppError('id_token required', 400);
   }
 
   const ltiService = getLTITokenService();
@@ -31,7 +31,7 @@ router.post('/session', asyncSafe(async (req, res) => {
   const sessionTokenExpiryMs = parseInt(process.env.SESSION_TOKEN_EXPIRY_MS || '28800000', 10);
   const exp = Math.floor(Date.now() / 1000) + Math.floor(sessionTokenExpiryMs / 1000);
 
-  logger.info('[SESSION-TOKEN] Token de sesión emitido', { sub: claims.sub, exp });
+  logger.info('[SESSION-TOKEN] Session token issued', { sub: claims.sub, exp });
 
   res.json({
     exito: true,

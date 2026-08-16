@@ -8,13 +8,13 @@ class CanvasJwksClient {
     this.jwksUri = `${baseUrl}/api/lti/security/jwks`;
     const isLocal = this.jwksUri.includes('localhost') || process.env.STARTUP_MODE === '3';
     
-    logger.info('[JWKS-CLIENT] Cliente JWKS inicializado', { jwksUri: this.jwksUri, isLocal });
+    logger.info('[JWKS-CLIENT] JWKS client initialized', { jwksUri: this.jwksUri, isLocal });
     
     this.client = jwksClient({
       jwksUri: this.jwksUri,
       requestAgent: isLocal ? new https.Agent({ rejectUnauthorized: false }) : undefined,
       cache: true,
-      cacheMaxAge: 86400000,  // 24 horas en ms
+      cacheMaxAge: 86400000,  // 24 hours in ms
       rateLimit: true,
       jwksRequestsPerMinute: 10,
       timeout: 20000,
@@ -32,7 +32,7 @@ class CanvasJwksClient {
       try {
         return await new Promise((resolve, reject) => {
           const timer = setTimeout(() => {
-            reject(new Error(`Timeout esperando clave JWKS para kid=${header?.kid} (${this.jwksUri})`));
+            reject(new Error(`Timeout waiting for JWKS key for kid=${header?.kid} (${this.jwksUri})`));
           }, 25000);
           
           this.client.getSigningKey(header.kid, (err, key) => {
@@ -43,7 +43,7 @@ class CanvasJwksClient {
         });
       } catch (error) {
         if (attempt >= maxRetries) {
-          logger.error(`[JWKS-CLIENT] getPublicKey falló definitivamente tras ${maxRetries} intentos: ${error.message}`);
+          logger.error(`[JWKS-CLIENT] getPublicKey definitely failed after ${maxRetries} attempts: ${error.message}`);
           throw error;
         }
         logger.warn(`[JWKS-CLIENT] Failed to fetch JWKS (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying shortly...`);

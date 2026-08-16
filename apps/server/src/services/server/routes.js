@@ -25,9 +25,9 @@ function registerHealthRoutes(app, services, ltiPublicJwk) {
   app.get('/health', (req, res) => {
     res.send(`
       <div style="font-family: sans-serif; padding: 40px; text-align: center; color: #333;">
-        <h1 style="color: #4CAF50;">✅ Conexión Segura Establecida</h1>
-        <p>Has aceptado correctamente el certificado de desarrollo HTTPS (mkcert).</p>
-        <p><strong>Ya puedes cerrar esta pestaña y volver a Canvas. El plugin cargará sin problemas.</strong></p>
+        <h1 style="color: #4CAF50;">✅ Secure Connection Established</h1>
+        <p>You have successfully accepted the HTTPS development certificate (mkcert).</p>
+        <p><strong>You can now close this tab and return to Canvas. The plugin will load without issues.</strong></p>
       </div>
     `);
   });

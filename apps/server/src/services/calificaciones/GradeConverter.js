@@ -1,32 +1,32 @@
 /**
- * Utilidad de Conversión de Calificaciones
- * Canvas LMS: 0–100 puntos → Escala chilena: 1.0–7.0 (máximo = 7.0, mínima de aprobación = 4.0)
+ * Grade Conversion Utility
+ * Canvas LMS: 0–100 points → Chilean scale: 1.0–7.0 (maximum = 7.0, minimum passing = 4.0)
  *
- * Fórmula usada en Chile (escala típica universitaria):
- *   Si score >= 60 (aprobado): nota = 1 + (score - 55) * 6 / 45
- *   Si score <  60 (reprobado):  nota = 1 + score * 4  / 55
- * Umbral de aprobación en Canvas: 60% → equivale a nota 4.0 en Chile
+ * Formula used in Chile (typical university scale):
+ *   If score >= 60 (passed): grade = 1 + (score - 55) * 6 / 45
+ *   If score <  60 (failed):  grade = 1 + score * 4  / 55
+ * Passing threshold in Canvas: 60% → equivalent to grade 4.0 in Chile
  *
- * TODO (Deuda Técnica): Las variables matemáticas asumen una escala chilena al 60% por defecto. Referencia: docs/TECHNICAL_DEBT.md
+ * TODO (Technical Debt): Mathematical variables assume a Chilean scale at 60% by default. Reference: docs/TECHNICAL_DEBT.md
  */
 export default class GradeConverter {
 
   /**
-   * Convierte una calificación de escala 0–100 a nota chilena 1.0–7.0
-   * @param {number} canvasScore - Puntaje Canvas (0–100)
-   * @param {number} pointsPossible - Puntos máximos del examen
+   * Converts a 0-100 scale grade to a Chilean 1.0-7.0 grade
+   * @param {number} canvasScore - Canvas score (0-100)
+   * @param {number} pointsPossible - Maximum exam points
    * @returns {{ chileGrade: number, canvasScore: number, pointsPossible: number, approved: boolean }}
    */
   static toChileGrade(canvasScore, pointsPossible = 100) {
-    // Normalizar a escala 0–100 por si el examen no es de 100 pts
+    // Normalize to 0-100 scale in case the exam is not 100 pts
     const normalizedScore = (canvasScore / pointsPossible) * 100;
     let chileGrade;
 
     if (normalizedScore >= 60) {
-      // Aprobado: escala 60–100 → nota 4.0–7.0
+      // Passed: scale 60-100 -> grade 4.0-7.0
       chileGrade = 4.0 + ((normalizedScore - 60) * 3.0) / 40;
     } else {
-      // Reprobado: escala 0–59.99 → nota 1.0–3.9
+      // Failed: scale 0-59.99 -> grade 1.0-3.9
       chileGrade = 1.0 + (normalizedScore * 2.9) / 60;
     }
 
@@ -41,7 +41,7 @@ export default class GradeConverter {
   }
 
   /**
-   * Procesa la calificación (Canvas o sobreescrita) para generar el feedback
+   * Processes the grade (Canvas or overwritten) to generate feedback
    */
   static processGrade(currentGrade, submission) {
     const pointsPossibleRaw = submission?.points_possible;
@@ -50,7 +50,7 @@ export default class GradeConverter {
       : 100;
 
     if (pointsPossible <= 0) {
-      // Usamos Error genérico aquí, el llamador debe mapearlo a DomainError si es necesario
+      // Using generic Error here, the caller must map it to DomainError if necessary
       const err = new Error('points_possible debe ser mayor a 0');
       err.errorCode = 'INSUFFICIENT_DATA';
       err.statusCode = 422;
@@ -60,7 +60,7 @@ export default class GradeConverter {
     if (currentGrade !== undefined && currentGrade !== null && currentGrade !== '') {
       const parsedGrade = typeof currentGrade === 'number' ? currentGrade : parseFloat(currentGrade);
       if (!Number.isFinite(parsedGrade) || parsedGrade < 1.0 || parsedGrade > 7.0) {
-        const err = new Error('Nota chilena fuera de rango (1.0–7.0)');
+        const err = new Error('Chilean grade out of range (1.0-7.0)');
         err.errorCode = 'INSUFFICIENT_DATA';
         err.statusCode = 422;
         throw err;
@@ -77,7 +77,7 @@ export default class GradeConverter {
     if (submission && rawScore !== undefined && rawScore !== null) {
       const rawCanvasScore = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore);
       if (!Number.isFinite(rawCanvasScore) || rawCanvasScore < 0 || rawCanvasScore > pointsPossible) {
-        const err = new Error(`Calificación Canvas fuera de rango (0–${pointsPossible})`);
+        const err = new Error(`Canvas grade out of range (0-${pointsPossible})`);
         err.errorCode = 'INSUFFICIENT_DATA';
         err.statusCode = 422;
         throw err;
@@ -86,35 +86,35 @@ export default class GradeConverter {
       return { chileGrade, approved, canvasScore: Math.round(rawCanvasScore) };
     }
 
-    const err = new Error('No se puede generar feedback porque la entrega no tiene puntaje ni calificación asignada');
+    const err = new Error('Cannot generate feedback because the submission has no score or grade assigned');
     err.errorCode = 'INSUFFICIENT_DATA';
     err.statusCode = 422;
     throw err;
   }
 
   /**
-   * Selecciona el tono de feedback basado en la nota chilena (1.0–7.0)
-   * Umbrales estándar de universidades chilenas:
-   *   7.0–6.0 : Sobresaliente / Excelente
-   *   5.9–4.0 : Bueno / Aprobado
-   *   3.9–1.0 : Necesita reforzar
+   * Selects the feedback tone based on the Chilean grade (1.0-7.0)
+   * Standard thresholds for Chilean universities:
+   *   7.0-6.0 : Outstanding / Excellent
+   *   5.9-4.0 : Good / Passed
+   *   3.9-1.0 : Needs reinforcement
    * @param {number} chileGrade
    * @returns {string}
    */
   static getToneForChileGrade(chileGrade) {
-    if (chileGrade >= 6.0) return 'motivador y de excelencia';
-    if (chileGrade >= 4.0) return 'constructivo y estándar';
-    return 'de apoyo y refuerzo';
+    if (chileGrade >= 6.0) return 'motivating and excellent';
+    if (chileGrade >= 4.0) return 'constructive and standard';
+    return 'supportive and reinforcing';
   }
 
   /**
-   * Selecciona el tono de feedback basado en calificación Canvas (0–100)
+   * Selects the feedback tone based on the Canvas score (0-100)
    * @param {number} canvasScore
    * @returns {string}
    */
   static getToneForCanvasScore(canvasScore) {
-    if (canvasScore >= 70) return 'motivador y de excelencia';
-    if (canvasScore >= 60) return 'constructivo y estándar';
-    return 'de apoyo y refuerzo';
+    if (canvasScore >= 70) return 'motivating and excellent';
+    if (canvasScore >= 60) return 'constructive and standard';
+    return 'supportive and reinforcing';
   }
 }

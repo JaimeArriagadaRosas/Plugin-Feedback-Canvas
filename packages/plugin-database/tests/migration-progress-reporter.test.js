@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MigrationProgressReporter } from '../src/migrations/MigrationProgressReporter.js';
 
 describe('MigrationProgressReporter', () => {
-  it('actualiza una sola línea mientras se aplican migraciones interactivas', () => {
+  it('updates a single line while interactive migrations are applied', () => {
     const output = { isTTY: true, write: vi.fn() };
     const reporter = new MigrationProgressReporter({ output });
 
@@ -12,17 +12,17 @@ describe('MigrationProgressReporter', () => {
     reporter.migrationStart(2, '002_lti_nonces.sql');
     reporter.complete();
 
-    expect(output.write).toHaveBeenCalledWith('  · Aplicando 2 migraciones locales...\n');
-    expect(output.write).toHaveBeenCalledWith('\u001B[2K\r  · Migración 2/2: 002_lti_nonces');
-    expect(output.write).toHaveBeenLastCalledWith('\u001B[2K\r  √ Migraciones locales aplicadas (2/2).\n');
+    expect(output.write).toHaveBeenCalledWith('  · Applying 2 local migrations...\n');
+    expect(output.write).toHaveBeenCalledWith('\u001B[2K\r  · Migration 2/2: 002_lti_nonces');
+    expect(output.write).toHaveBeenLastCalledWith('\u001B[2K\r  √ Local migrations applied (2/2).\n');
   });
 
-  it('informa de forma compacta cuando no hay migraciones pendientes', () => {
+  it('reports compactly when there are no pending migrations', () => {
     const output = { isTTY: false, write: vi.fn() };
     const reporter = new MigrationProgressReporter({ output });
 
     reporter.noPending();
 
-    expect(output.write).toHaveBeenCalledWith('  √ Migraciones locales al día.\n');
+    expect(output.write).toHaveBeenCalledWith('  √ Local migrations up to date.\n');
   });
 });
