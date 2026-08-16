@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { getCanvasDirectory, getPluginDirectory } from '../../src/installation/utils/LocalWorkspacePaths.js';
 
 describe('LocalWorkspacePaths', () => {
-  it('ubica Canvas junto al repositorio del plugin por defecto', () => {
+  it('locates Canvas next to the default plugin repository', () => {
     expect(getCanvasDirectory()).toBe(path.resolve(getPluginDirectory(), '..', 'canvas-lms-master'));
   });
 
-  it('permite definir una ubicación explícita de Canvas', () => {
+  it('allows defining an explicit Canvas location', () => {
     expect(getCanvasDirectory({ CANVAS_LMS_DIR: '/work/canvas' })).toBe(path.resolve('/work/canvas'));
   });
 });

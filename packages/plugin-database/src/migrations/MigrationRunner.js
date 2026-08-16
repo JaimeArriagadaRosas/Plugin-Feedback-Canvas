@@ -64,7 +64,7 @@ async function applyMigration(client, migrationsDirectory, file, reporter, index
     await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
     await client.query(
       'INSERT INTO migration_logs (version, status, logs) VALUES ($1, $2, $3)',
-      [version, 'SUCCESS', `Ejecución exitosa de ${file}`],
+      [version, 'SUCCESS', `Successful execution of ${file}`],
     );
     await client.query('COMMIT');
 

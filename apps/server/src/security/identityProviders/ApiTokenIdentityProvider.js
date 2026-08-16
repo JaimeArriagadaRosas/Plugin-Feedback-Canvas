@@ -15,10 +15,10 @@ export class ApiTokenIdentityProvider {
     try {
       let user = null;
       if (process.env.USE_LOCAL_DATA === 'true') {
-         // Local mock: NO se otorga rol admin por defecto. Se deriva el rol
-         // real del claim de Canvas (USAR_LOCAL_ROL) o se asume 'teacher' con
-         // privilegio mínimo. Antes cualquier Bearer token no-dev en modo local
-         // otorgaba rol admin sin validación (escalada de privilegios).
+         // Local mock: Admin role is NOT granted by default. The real role
+         // is derived from the Canvas claim (USAR_LOCAL_ROL) or 'teacher' is assumed with
+         // minimum privilege. Previously any non-dev Bearer token in local mode
+         // granted admin role without validation (privilege escalation).
          const localRole = process.env.USE_LOCAL_API_ROLE || 'teacher';
          user = { id: 'local-user', roles: [localRole] };
       } else {

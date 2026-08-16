@@ -2,25 +2,25 @@ import { getEnv, isProduction } from './index.js';
 import logger from '../utils/logger.js';
 
 /**
- * Registro declarativo de secretos.
+ * Declarative secrets registry.
  *
- * Centraliza qué secretos existen, su criticidad y si son requeridos, para
- * validarlos en un único punto (fail-closed en producción) en lugar de tener
- * listas hardcodeadas dispersas (antes en bootstrap.js y EncryptionService).
+ * Centralizes what secrets exist, their criticality, and if they are required,
+ * to validate them in a single point (fail-closed in production) instead of having
+ * scattered hardcoded lists (previously in bootstrap.js and EncryptionService).
  *
- *  - required: true  -> en producción, ausencia o placeholder LANZA.
- *  - required: false -> en producción, la ausencia se permite pero el placeholder
- *                       sigue detectándose y LANZA (conserva el comportamiento previo
- *                       de WEBHOOK_SECRET / CANVAS_ACCESS_TOKEN / DB_PASSWORD).
+ *  - required: true  -> in production, absence or placeholder THROWS.
+ *  - required: false -> in production, absence is allowed but the placeholder
+ *                       is still detected and THROWS (preserves previous behavior
+ *                       of WEBHOOK_SECRET / CANVAS_ACCESS_TOKEN / DB_PASSWORD).
  */
 export const SECRET_REGISTRY = {
   WEBHOOK_SECRET:       { required: false, critical: true },
   CANVAS_ACCESS_TOKEN:  { required: false, critical: true },
   DB_PASSWORD:          { required: true,  critical: true },
-  ENCRYPTION_KEY:       { required: true,  critical: true }, // antes validado aparte en EncryptionService
+  ENCRYPTION_KEY:       { required: true,  critical: true }, // previously validated separately in EncryptionService
   DEV_TOKEN_SECRET:     { required: true,  critical: true },
-  LTI_CLIENT_SECRET:    { required: false, critical: true }, // Opcional pero crítico si se usa OAuth2
-  CANVAS_CLIENT_SECRET: { required: false, critical: true }, // Alias / alternativo para OAuth2
+  LTI_CLIENT_SECRET:    { required: false, critical: true }, // Optional but critical if OAuth2 is used
+  CANVAS_CLIENT_SECRET: { required: false, critical: true }, // Alias / alternative for OAuth2
   CANVAS_ADMIN_PASS:    { required: false, critical: true },
   CANVAS_TEACHER_PASS:  { required: false, critical: true },
   CANVAS_STUDENT_PASS:  { required: false, critical: true },
@@ -36,9 +36,9 @@ const PLACEHOLDER_PATTERNS = [
   'XXXX',
 ];
 
-/** Enmascara un secreto para logs: muestra solo los últimos 4 caracteres. */
+/** Masks a secret for logs: shows only the last 4 characters. */
 export function maskSecret(value) {
-  if (value === undefined || value === null || value === '') return '<vacío>';
+  if (value === undefined || value === null || value === '') return '<empty>';
   const s = String(value);
   if (s.length <= 4) return '****';
   return '****' + s.slice(-4);
@@ -58,9 +58,9 @@ function estimateEntropy(value) {
 }
 
 /**
- * Valida los secretos del registro.
- * Devuelve la lista de problemas en cualquier entorno; en producción LANZA si
- * hay alguno. En no-producción solo advierte (no rompe el arranque/local/test).
+ * Validates registry secrets.
+ * Returns the list of problems in any environment; in production THROWS if
+ * there are any. In non-production only warns (does not break boot/local/test).
  */
 export function validateSecretsOrThrow(registry = SECRET_REGISTRY) {
   const problems = [];
@@ -75,25 +75,25 @@ export function validateSecretsOrThrow(registry = SECRET_REGISTRY) {
       problems.push(name);
     }
     if (name === 'ENCRYPTION_KEY' && estimateEntropy(value) < 90) {
-      problems.push(`${name} (entropía insuficiente)`);
+      problems.push(`${name} (insufficient entropy)`);
     }
   }
 
   if (problems.length) {
     const list = problems.map(p => p.split(' ')[0]).join(', ');
-    logger.warn(`[SECURITY] ⚠️ Secretos usando placeholders o valores inseguros:`, { detalles: list });
+    logger.warn(`[SECURITY] ⚠️ Secrets using placeholders or insecure values:`, { details: list });
   }
 
   if (problems.length && isProduction()) {
     throw new Error(
-      `Secretos no configurados correctamente en producción: ${problems.join(', ')}`
+      `Secrets not configured correctly in production: ${problems.join(', ')}`
     );
   }
 
   return problems;
 }
 
-/** Lee un secreto de forma centralizada (proxy sobre process.env). */
+/** Reads a secret centrally (proxy over process.env). */
 export function getSecret(name) {
   return getEnv(name);
 }

@@ -2,7 +2,7 @@ import { CanvasApiError } from './CanvasApiError.js';
 import { getNextLink } from './pagination.js';
 
 function normalizeBaseUrl(baseUrl) {
-  if (!baseUrl) throw new TypeError('CanvasApiClient requiere baseUrl.');
+  if (!baseUrl) throw new TypeError('CanvasApiClient requires baseUrl.');
   return baseUrl.replace(/\/+$/u, '');
 }
 
@@ -15,7 +15,7 @@ function serializeBody(body, headers) {
 
 export class CanvasApiClient {
   constructor({ baseUrl, token, fetchImpl = globalThis.fetch, dispatcher, timeoutMs = 45_000 }) {
-    if (typeof fetchImpl !== 'function') throw new TypeError('No existe una implementación de fetch.');
+    if (typeof fetchImpl !== 'function') throw new TypeError('No fetch implementation exists.');
     this.baseUrl = normalizeBaseUrl(baseUrl);
     this.token = token;
     this.fetchImpl = fetchImpl;
@@ -51,7 +51,7 @@ export class CanvasApiClient {
       return response.json();
     } catch (error) {
       if (error instanceof CanvasApiError) throw error;
-      throw new CanvasApiError(`No fue posible llamar a Canvas: ${error.message}`, {
+      throw new CanvasApiError(`Could not call Canvas: ${error.message}`, {
         endpoint,
         cause: error,
       });
@@ -62,7 +62,7 @@ export class CanvasApiClient {
 
   async throwResponseError(endpoint, response) {
     const body = await response.text().catch(() => '');
-    throw new CanvasApiError(`Canvas respondió HTTP ${response.status}.`, {
+    throw new CanvasApiError(`Canvas responded HTTP ${response.status}.`, {
       status: response.status,
       body,
       endpoint,

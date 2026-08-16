@@ -18,7 +18,7 @@ function createDependencies(certificatesReady) {
 }
 
 describe('CertificateBootstrap', () => {
-  it('omite instalaciones y confirmaciones si el certificado sigue siendo válido', async () => {
+  it('skips installations and confirmations if the certificate is still valid', async () => {
     const dependencies = createDependencies(true);
     const bootstrap = new CertificateBootstrap(dependencies);
 
@@ -29,7 +29,7 @@ describe('CertificateBootstrap', () => {
     expect(dependencies.platformInstaller.ensureBrowserTrust).toHaveBeenCalledOnce();
   });
 
-  it('instala y genera certificados solo cuando hacen falta', async () => {
+  it('installs and generates certificates only when necessary', async () => {
     const dependencies = createDependencies(false);
     const bootstrap = new CertificateBootstrap(dependencies);
 

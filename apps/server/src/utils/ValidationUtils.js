@@ -1,36 +1,36 @@
 import { AppError } from './errors.js';
 
 /**
- * Utilidades de Validación de Entradas (RF40)
+ * Input Validation Utilities (RF40)
  */
 export const ValidationUtils = {
   /**
-   * Valida que un campo esté presente y no esté vacío
+   * Validates that a field is present and not empty
    */
   requerido: (valor, nombreCampo) => {
     if (valor === undefined || valor === null || valor === '') {
-      throw new AppError(`El campo ${nombreCampo} es requerido`, 400);
+      throw new AppError(`The field ${nombreCampo} is required`, 400);
     }
     return true;
   },
 
   /**
-   * Valida que un ID de Canvas sea numérico
+   * Validates that a Canvas ID is numeric
    */
   validarIdCanvas: (id, nombreCampo = 'ID') => {
     if (isNaN(parseInt(id))) {
-      throw new AppError(`${nombreCampo} debe ser un ID numérico válido de Canvas`, 400);
+      throw new AppError(`${nombreCampo} must be a valid numeric Canvas ID`, 400);
     }
     return parseInt(id);
   },
 
   /**
-   * Valida un formato de correo electrónico
+   * Validates an email format
    */
   validarEmail: (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!re.test(email)) {
-      throw new AppError('Formato de email no válido', 400);
+      throw new AppError('Invalid email format', 400);
     }
     return email;
   }

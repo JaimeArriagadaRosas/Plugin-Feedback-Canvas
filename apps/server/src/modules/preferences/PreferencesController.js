@@ -9,11 +9,11 @@ export default class PreferencesController {
   }
 
   async getPreferences(req, res) {
-    // El student solicita sus propias preferencias
+    // The student requests their own preferences
     const studentId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
     
     if (!studentId) {
-      throw new ApiError('Usuario no autenticado o ID de student no disponible', 401);
+      throw new ApiError('Unauthenticated user or student ID unavailable', 401);
     }
 
     const data = await this.preferencesService.getStudentPreference(studentId);
@@ -24,16 +24,16 @@ export default class PreferencesController {
     const studentId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId;
     
     if (!studentId) {
-      throw new ApiError('Usuario no autenticado o ID de student no disponible', 401);
+      throw new ApiError('Unauthenticated user or student ID unavailable', 401);
     }
 
     const { metodo, frecuencia } = req.body;
 
     if (!metodo || !frecuencia) {
-      throw new ApiError('Debe proporcionar método y frecuencia', 400);
+      throw new ApiError('Must provide method and frequency', 400);
     }
 
     const data = await this.preferencesService.saveStudentPreference(studentId, metodo, frecuencia);
-    res.json({ exito: true, mensaje: 'Preferencias actualizadas correctamente', data });
+    res.json({ exito: true, mensaje: 'Preferences updated successfully', data });
   }
 }

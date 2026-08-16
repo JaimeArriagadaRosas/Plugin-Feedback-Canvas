@@ -94,7 +94,7 @@ export function validateBody(schema, allowedFields) {
       return res.status(400).json({
         exito: false,
         error: {
-          mensaje: 'Validación de entrada fallida',
+          mensaje: 'Input validation failed',
           codigo: 400,
           detalles: result.error.issues.map((i) => ({
             campo: i.path.join('.'),
@@ -112,7 +112,7 @@ export function validateBody(schema, allowedFields) {
         return res.status(400).json({
           exito: false,
           error: {
-            mensaje: `Campos no permitidos: ${extra.join(', ')}`,
+            mensaje: `Fields not allowed: ${extra.join(', ')}`,
             codigo: 400,
           },
         });
@@ -132,7 +132,7 @@ export function requireDeploymentId(req, res, next) {
     return res.status(403).json({
       exito: false,
       error: {
-        mensaje: 'Falta deployment_id en el contexto LTI',
+        mensaje: 'Missing deployment_id in LTI context',
         codigo: 403
       }
     });

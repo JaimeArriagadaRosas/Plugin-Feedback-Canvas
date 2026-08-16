@@ -15,12 +15,12 @@ function createBootLog() {
   return { log, events };
 }
 
-describe('Adaptadores nativos de Docker', () => {
-  it('APT configura el repositorio oficial de Docker sin ejecutar un shell remoto', async () => {
+describe('Native Docker adapters', () => {
+  it('APT configures the official Docker repository without running a remote shell', async () => {
     const calls = [];
     const runner = vi.fn(async (command, args, options = {}) => {
       calls.push({ command, args, options });
-      if (command === 'dpkg-query') return { success: false, out: '', err: 'no instalado' };
+      if (command === 'dpkg-query') return { success: false, out: '', err: 'not installed' };
       if (command === 'dpkg') return { success: true, out: 'amd64\n', err: '' };
       return { success: true, out: '', err: '' };
     });
@@ -50,7 +50,7 @@ describe('Adaptadores nativos de Docker', () => {
     expect(commands.some((call) => call[0] === 'sh' || call[0] === 'bash')).toBe(false);
   });
 
-  it('delega APT y configura servicio y acceso por separado', async () => {
+  it('delegates APT and configures service and access separately', async () => {
     const calls = [];
     const runner = vi.fn(async (command, args) => {
       calls.push([command, ...args]);
@@ -75,7 +75,7 @@ describe('Adaptadores nativos de Docker', () => {
     expect(calls).toContainEqual(['sudo', 'usermod', '-aG', 'docker', 'test-user']);
   });
 
-  it('WSL no confunde el señuelo de Docker Desktop con un Engine Linux instalado', async () => {
+  it('WSL does not confuse the Docker Desktop decoy with an installed Linux Engine', async () => {
     const installer = new LinuxDockerInstaller(createBootLog().log, null, {
       host: wslHost,
       runner: vi.fn().mockResolvedValue({
@@ -88,7 +88,7 @@ describe('Adaptadores nativos de Docker', () => {
     await expect(installer.isInstalled()).resolves.toBe(false);
   });
 
-  it('recomienda rootless y no inicia el daemon privilegiado cuando funciona', async () => {
+  it('recommends rootless and does not start the privileged daemon when it works', async () => {
     const calls = [];
     const runner = vi.fn(async (command, args) => {
       calls.push([command, ...args]);
@@ -112,7 +112,7 @@ describe('Adaptadores nativos de Docker', () => {
     expect(calls.some((call) => call.includes('usermod'))).toBe(false);
   });
 
-  it('conserva una sola clave de memoria en Windows', async () => {
+  it('keeps a single memory key on Windows', async () => {
     let written = '';
     const configurator = new WindowsDockerMemoryConfigurator({
       homedir: () => 'C:\\Users\\test',
@@ -129,7 +129,7 @@ describe('Adaptadores nativos de Docker', () => {
     expect(written).toContain('processors=4');
   });
 
-  it('no concede el grupo docker sin confirmación separada', async () => {
+  it('does not grant the docker group without separate confirmation', async () => {
     const calls = [];
     const runner = vi.fn(async (command, args) => {
       calls.push([command, ...args]);

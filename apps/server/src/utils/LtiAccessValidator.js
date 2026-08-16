@@ -18,24 +18,24 @@ export const validateLtiLaunch = (tokenOrDecoded) => {
       : tokenOrDecoded;
 
     if (!decoded) {
-      logger.warn('[LTI] Token recibido nulo o mal formado');
+      logger.warn('[LTI] Null or malformed token received');
       return false;
     }
 
     if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-      logger.warn('[LTI] Token expirado');
+      logger.warn('[LTI] Expired token');
       return false;
     }
 
     const roles = decoded['https://purl.imsglobal.org/spec/lti/claim/roles'];
     if (!roles || !Array.isArray(roles)) {
-      logger.warn('[LTI] Token sin claim de roles válido');
+      logger.warn('[LTI] Token without valid roles claim');
       return false;
     }
 
     return isLaunchAllowed(decoded);
   } catch (err) {
-    logger.error('[LTI] Token inválido:', err.message);
+    logger.error('[LTI] Invalid token:', err.message);
     return false;
   }
 }
@@ -46,11 +46,11 @@ export const validateLtiLaunch = (tokenOrDecoded) => {
 export const renderAccessDenied = (res) => {
     const html = `
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Acceso Denegado</title>
+        <title>Access Denied</title>
         <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
             .container { background-color: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 500px; }
@@ -62,9 +62,9 @@ export const renderAccessDenied = (res) => {
     <body>
         <div class="container">
             <div class="icon">🚫</div>
-            <h1>Acceso Denegado</h1>
-            <p>Lo sentimos, el panel de <b>Unida</b> en el menú principal está diseñado para ser utilizado únicamente por profesores y administradores.</p>
-            <p>Si eres estudiante, solo podrás acceder a la herramienta si tu profesor la ha habilitado dentro de tu curso.</p>
+            <h1>Access Denied</h1>
+            <p>Sorry, the <b>Unida</b> panel in the main menu is designed to be used only by teachers and administrators.</p>
+            <p>If you are a student, you will only be able to access the tool if your teacher has enabled it in your course.</p>
         </div>
     </body>
     </html>

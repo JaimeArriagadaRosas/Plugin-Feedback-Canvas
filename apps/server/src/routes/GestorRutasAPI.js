@@ -58,13 +58,13 @@ export default class GestorRutasAPI {
     this.statsCtrl      = new StatsController(this.deps.statsService);
     this.permissionsCtrl = new PermissionsController(this.deps.permissionsService);
     
-    // Instanciar dependencias de preferencias
+    // Instantiate preferences dependencies
     const prefService = new PreferencesService();
     this.preferencesCtrl = new PreferencesController(prefService);
 
     this.privateNoteCtrl = new PrivateNoteController(this.deps.privateNoteService);
     
-    // Inyección condicional del controlador de auditoría según entorno
+    // Conditional injection of the audit controller based on environment
     if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
       this.auditLogCtrl = new AuditLogControllerLocal();
     } else {
@@ -76,14 +76,14 @@ export default class GestorRutasAPI {
     this.systemNotificationCtrl = new SystemNotificationController(this.deps.systemNotificationService);
     this.fileCtrl        = new FileController(this.deps.canvasService);
     this.reportsRouter   = initializeReportsModule(this.deps.statsService.feedbackRepo);
-    logger.debug('Controladores de API inicializados');
+    logger.debug('API controllers initialized');
   }
 
   configurarRutasPublicas() {
     this.router.get('/health', (req, res) => {
-      logger.debug('Health check solicitado');
+      logger.debug('Health check requested');
       res.json({
-        status: 'API Operativa',
+        status: 'Operational API',
         timestamp: nowIso(),
         version: '1.0.0',
         uptime: Math.floor(process.uptime()) + 's'
@@ -93,7 +93,7 @@ export default class GestorRutasAPI {
     ['post', 'put', 'delete', 'patch'].forEach(method => {
       // eslint-disable-next-line security/detect-object-injection
       this.router[method]('/health', (req, res) => {
-        res.status(405).json({ exito: false, error: { codigo: 405, mensaje: 'Método no permitido' } });
+        res.status(405).json({ exito: false, error: { codigo: 405, mensaje: 'Method not allowed' } });
       });
     });
 
@@ -121,13 +121,13 @@ export default class GestorRutasAPI {
     this.router.use('/system-notifications', this.systemNotificationCtrl.getRouter());
     this.router.use('/global-variables', createGlobalVariablesRoutes());
     
-    // Doble montaje eliminado (Phase 4.1)
+    // Double mounting removed (Phase 4.1)
 
     this.router.use('/reports', this.reportsRouter);
     
     this.router.post('/webhooks/canvas', webhookLimiter, (req, res, next) => this.webhookCtrl.handleWebhook(req, res, next));
 
-    logger.debug('Rutas protegidas de la API configuradas correctamente');
+    logger.debug('Protected API routes configured successfully');
   }
 
   getRouter() {

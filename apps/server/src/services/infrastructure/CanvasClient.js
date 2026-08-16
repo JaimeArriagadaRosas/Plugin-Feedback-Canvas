@@ -24,7 +24,7 @@ export default class CanvasClient {
       this.dispatcher = new Agent({
         connect: { ca: caBuffer }
       });
-      logger.info('[CANVAS-API] Usando custom dispatcher con certificado mkcert para fetch.');
+      logger.info('[CANVAS-API] Using custom dispatcher with mkcert certificate for fetch.');
     } else {
       this.dispatcher = undefined;
     }
@@ -55,9 +55,9 @@ export default class CanvasClient {
     
     while (attempt < maxRetries) {
       if (!canvasCircuitBreaker.canAttempt()) {
-        const err = new AppError('Canvas API temporalmente no disponible (circuito abierto).', 503, null, null, 'CANVAS_CONNECTION_FAILED');
+        const err = new AppError('Canvas API temporarily unavailable (circuit open).', 503, null, null, 'CANVAS_CONNECTION_FAILED');
         err.isCircuitOpen = true;
-        logger.warn('[CANVAS-API] Solicitud bloqueada por circuit breaker.');
+        logger.warn('[CANVAS-API] Request blocked by circuit breaker.');
         throw err;
       }
 
@@ -84,9 +84,9 @@ export default class CanvasClient {
         clearTimeout(timer);
 
         if (response.status === 403 && response.headers.get('x-rate-limit-remaining') === '0') {
-          const resetTime = response.headers.get('x-rate-limit-reset') || 'desconocido';
-          logger.error(`[CANVAS-API] Rate limit agotado (403). Reset en: ${resetTime}s. Abortando (fail-fast).`);
-          throw new AppError(`Canvas API rate limit agotado. Reintente en ${resetTime} segundos.`, 429, {
+          const resetTime = response.headers.get('x-rate-limit-reset') || 'unknown';
+          logger.error(`[CANVAS-API] Rate limit exhausted (403). Reset in: ${resetTime}s. Aborting (fail-fast).`);
+          throw new AppError(`Canvas API rate limit exhausted. Retry in ${resetTime} seconds.`, 429, {
             retryAfter: parseInt(resetTime, 10) || 60,
             isRateLimit: true
           }, response.headers);
@@ -94,14 +94,14 @@ export default class CanvasClient {
         
         if (response.status === 401 || response.status === 403) {
           const text = await response.text().catch(() => 'no body');
-          logger.warn(`[CANVAS-API] Acceso denegado (${response.status}) en la URL: ${url}. Body: ${text}`);
+          logger.warn(`[CANVAS-API] Access denied (${response.status}) on URL: ${url}. Body: ${text}`);
           const { ApiError } = await import('../../utils/errors.js');
-          throw new ApiError(`Acceso denegado a Canvas API: ${response.status}`, response.status);
+          throw new ApiError(`Access denied to Canvas API: ${response.status}`, response.status);
         }
 
         if (!response.ok) {
           if (response.status === 429) {
-            const err = new AppError(`Canvas API rate limit (429) excedido`, 429, { isTransient: true }, response.headers);
+            const err = new AppError(`Canvas API rate limit (429) exceeded`, 429, { isTransient: true }, response.headers);
             canvasCircuitBreaker.recordFailure();
             throw err;
           }
@@ -121,7 +121,7 @@ export default class CanvasClient {
         }
         
         canvasCircuitBreaker.recordSuccess();
-        // El estado global se consulta via canvasCircuitBreaker.state
+        // Global state is queried via canvasCircuitBreaker.state
 
         if (options.returnFullResponse) {
           return response;
@@ -139,7 +139,7 @@ export default class CanvasClient {
         }
         if (error.name === 'AbortError') {
           // Timeout reached, fail fast to avoid blocking the worker for 5 * 45s
-          throw new AppError(`Canvas API timeout al intentar ${method} ${url}`, 504, null, null, 'CANVAS_CONNECTION_TIMEOUT');
+          throw new AppError(`Canvas API timeout when attempting ${method} ${url}`, 504, null, null, 'CANVAS_CONNECTION_TIMEOUT');
         }
 
         if (error.message.includes('fetch failed') || error.isTransient) {
@@ -158,7 +158,7 @@ export default class CanvasClient {
             throw error;
           }
           const delay = Math.pow(2, attempt) * 2000; 
-          logger.warn(`[CANVAS-API] Intento ${attempt}/${maxRetries} fallido para ${method} ${url} (${error.statusCode || error.message}). Reintentando en ${delay/1000}s...`);
+          logger.warn(`[CANVAS-API] Attempt ${attempt}/${maxRetries} failed for ${method} ${url} (${error.statusCode || error.message}). Retrying in ${delay/1000}s...`);
           await new Promise(r => setTimeout(r, delay));
           continue;
         }

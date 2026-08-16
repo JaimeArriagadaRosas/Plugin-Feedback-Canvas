@@ -25,7 +25,7 @@ export async function validateLtiCallback(req) {
     } catch (e) { logger.warn('Failed to parse launch cookie', { error: e.message }); }
   }
 
-  logger.info(`[LTI-CALLBACK-VALIDATOR] Inicio validación | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
+  logger.info(`[LTI-CALLBACK-VALIDATOR] Validation start | idToken=${!!id_token} state=${!!state} stateCookie=${!!expectedState} nonceCookie=${!!expectedNonce} error=${!!oidcError} canDecode=${!!id_token ? !!jwtDecodeSafe(id_token) : false}`);
 
   if (oidcError) {
     logger.error('[LTI-CALLBACK] Canvas returned an OIDC error', { error: oidcError });
@@ -33,50 +33,50 @@ export async function validateLtiCallback(req) {
   }
 
   if (!id_token) {
-    logger.error('[LTI-CALLBACK] id_token ausente en el callback LTI', {
+    logger.error('[LTI-CALLBACK] id_token missing in LTI callback', {
       bodyKeys: Object.keys(bodyData),
       hasState: !!state,
       hasNonce: !!expectedNonce,
       hasError: !!oidcError,
       cookiesReceived: !!expectedState
     });
-    throw new AppError('id_token ausente en el callback LTI', 400);
+    throw new AppError('id_token missing in LTI callback', 400);
   }
 
   const headerPreview = jwtDecodeSafe(id_token)?.header;
-  logger.info('[LTI-CALLBACK-VALIDATOR] Header del id_token', {
+  logger.info('[LTI-CALLBACK-VALIDATOR] id_token header', {
     alg: headerPreview?.alg,
     kid: headerPreview?.kid,
     typ: headerPreview?.typ
   });
 
   if (!expectedState || state !== expectedState) {
-    logger.error('[LTI-CALLBACK] Validación de state OIDC fallida', {
+    logger.error('[LTI-CALLBACK] OIDC state validation failed', {
       received: state?.substring(0, 20),
       expected: expectedState?.substring(0, 20),
       hasCookie: !!expectedState
     });
-    throw new AppError('Validación de state OIDC fallida. Posible ataque CSRF.', 401);
+    throw new AppError('OIDC state validation failed. Possible CSRF attack.', 401);
   }
 
   let decoded;
   try {
-    logger.info('[LTI-CALLBACK-VALIDATOR] ANTES verifyToken (consulta JWKS de Canvas)');
+    logger.info('[LTI-CALLBACK-VALIDATOR] BEFORE verifyToken (queries Canvas JWKS)');
     decoded = await ltiService.verifyToken(id_token);
-    logger.info(`[LTI-CALLBACK-VALIDATOR] DESPUÉS verifyToken (OK) | iss="${decoded.iss}" sub="${decoded.sub}" aud="${decoded.aud}" azp="${decoded.azp}" deploymentId="${decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id']}"`);
+    logger.info(`[LTI-CALLBACK-VALIDATOR] AFTER verifyToken (OK) | iss="${decoded.iss}" sub="${decoded.sub}" aud="${decoded.aud}" azp="${decoded.azp}" deploymentId="${decoded['https://purl.imsglobal.org/spec/lti/claim/deployment_id']}"`);
   } catch (err) {
-    logger.error('[LTI-CALLBACK] Error verificando id_token', { error: err.message });
-    throw new AppError('Token LTI 1.3 inválido o expirado', 401);
+    logger.error('[LTI-CALLBACK] Error verifying id_token', { error: err.message });
+    throw new AppError('Invalid or expired LTI 1.3 token', 401);
   }
 
   if (!(await validateAndConsumeNonce(decoded.nonce))) {
-    logger.error('[LTI-CALLBACK] Validación de nonce fallida (store)');
-    throw new AppError('Validación de nonce OIDC fallida. Posible replay.', 401);
+    logger.error('[LTI-CALLBACK] Nonce validation failed (store)');
+    throw new AppError('OIDC nonce validation failed. Possible replay.', 401);
   }
 
   if (!validateLtiLaunch(decoded)) {
-    logger.warn('[LTI-CALLBACK] Launch bloqueado por validateLtiLaunch');
-    throw new AppError('Acceso denegado: Rol no autorizado para lanzamiento LTI.', 403);
+    logger.warn('[LTI-CALLBACK] Launch blocked by validateLtiLaunch');
+    throw new AppError('Access denied: Role not authorized for LTI launch.', 403);
   }
 
   const customClaims = decoded['https://purl.imsglobal.org/spec/lti/claim/custom'] || {};

@@ -3,49 +3,49 @@ import logger from '../utils/logger.js';
 
 const NEW_TEMPLATES = [
   {
-    nombre: 'Clase Estándar',
+    nombre: 'Standard Class',
     contenido: JSON.stringify({
-      alto: 'Actúa como un profesor muy motivador y redacta un mensaje de felicitación para el estudiante {{nombre_estudiante}}.\nFelicítalo por su excelente desempeño, haciendo mención explícita de que ha obtenido {{calificacion}}.\nAnímalo a mantener su nivel, indicando cómo su rendimiento aporta de forma positiva al {{promedio_curso}}.\nMantén un tono cálido, profesional y directamente dirigido al estudiante.',
-      medio: 'Actúa como un profesor constructivo y redacta un mensaje de retroalimentación para el estudiante {{nombre_estudiante}}.\nMenciona que ha logrado {{calificacion}}.\nDile que ha hecho un buen trabajo, pero que existen áreas clave que debe repasar para mejorar su comprensión del material.\nUsa el {{promedio_curso}} como una referencia para motivarlo a superarse.\nMantén un tono alentador, empático y profesional.',
-      bajo: 'Actúa como un profesor de apoyo y redacta un mensaje orientador para el estudiante {{nombre_estudiante}}, quien no ha logrado aprobar, obteniendo {{calificacion}}.\nEl mensaje no debe ser punitivo, sino enfocado en ofrecer apoyo académico. Invita al estudiante a revisar los materiales del curso, asistir a las horas de tutoría y no desanimarse.\nMenciona el {{promedio_curso}} solo si sirve para demostrar que es un tema difícil donde muchos necesitan ayuda.\nMantén un tono muy empático, comprensivo y motivador.'
+      alto: 'Act as a highly motivating teacher and write a congratulatory message for student {{nombre_estudiante}}.\nCongratulate them on their excellent performance, explicitly mentioning they obtained {{calificacion}}.\nEncourage them to maintain their level, indicating how their performance positively contributes to the {{promedio_curso}}.\nMaintain a warm, professional tone directly addressed to the student.',
+      medio: 'Act as a constructive teacher and write a feedback message for student {{nombre_estudiante}}.\nMention that they have achieved {{calificacion}}.\nTell them they have done a good job, but there are key areas they need to review to improve their understanding of the material.\nUse the {{promedio_curso}} as a reference to motivate them to improve.\nMaintain an encouraging, empathetic, and professional tone.',
+      bajo: 'Act as a supportive teacher and write a guiding message for student {{nombre_estudiante}}, who has failed to pass, obtaining {{calificacion}}.\nThe message should not be punitive, but focused on offering academic support. Invite the student to review the course materials, attend tutoring hours and not get discouraged.\nMention the {{promedio_curso}} only if it helps to demonstrate that it is a difficult topic where many need help.\nMaintain a very empathetic, understanding, and motivating tone.'
     })
   },
   {
-    nombre: 'Feedback Detallado',
+    nombre: 'Detailed Feedback',
     contenido: JSON.stringify({
-      alto: 'Actúa como un evaluador riguroso. Dirígete a {{nombre_estudiante}} y detalla los puntos fuertes que le llevaron a obtener {{calificacion}}.\nMenciona que su desempeño eleva el {{promedio_curso}}. Proporciona instrucciones claras de cómo puede seguir profundizando en la materia.',
-      medio: 'Actúa como un evaluador detallista. Dirígete a {{nombre_estudiante}} indicando que ha alcanzado {{calificacion}}.\nExplica que su rendimiento se encuentra acorde al {{promedio_curso}}, pero que requiere mayor precisión en sus próximas entregas para dominar el tema.',
-      bajo: 'Actúa como un evaluador meticuloso y de apoyo. Dirígete a {{nombre_estudiante}} sobre su evaluación con {{calificacion}}.\nDesglosa los conceptos fundamentales que debe repasar urgentemente. Usa el {{promedio_curso}} para contextualizar el nivel esperado en la clase.'
+      alto: 'Act as a rigorous evaluator. Address {{nombre_estudiante}} and detail the strong points that led them to obtain {{calificacion}}.\nMention that their performance raises the {{promedio_curso}}. Provide clear instructions on how they can further deepen their knowledge in the subject.',
+      medio: 'Act as a detailed evaluator. Address {{nombre_estudiante}} indicating they have reached {{calificacion}}.\nExplain that their performance is in line with the {{promedio_curso}}, but requires more precision in future submissions to master the topic.',
+      bajo: 'Act as a meticulous and supportive evaluator. Address {{nombre_estudiante}} regarding their evaluation with {{calificacion}}.\nBreak down the fundamental concepts they urgently need to review. Use the {{promedio_curso}} to contextualize the expected level in the class.'
     })
   },
   {
-    nombre: 'Evaluación Corta',
+    nombre: 'Short Evaluation',
     contenido: JSON.stringify({
-      alto: 'Felicita brevemente a {{nombre_estudiante}} por conseguir {{calificacion}}, superando el {{promedio_curso}}. ¡Sigue así!',
-      medio: 'Redacta un mensaje breve para {{nombre_estudiante}} sobre su desempeño ({{calificacion}}). Anímalo a subir su nivel respecto al {{promedio_curso}}.',
-      bajo: 'Escribe una nota corta de apoyo a {{nombre_estudiante}}, quien obtuvo {{calificacion}}. El {{promedio_curso}} indica que es un tema complejo, ofrécele ayuda.'
+      alto: 'Briefly congratulate {{nombre_estudiante}} for getting {{calificacion}}, exceeding the {{promedio_curso}}. Keep it up!',
+      medio: 'Write a brief message for {{nombre_estudiante}} about their performance ({{calificacion}}). Encourage them to raise their level compared to the {{promedio_curso}}.',
+      bajo: 'Write a short note of support to {{nombre_estudiante}}, who obtained {{calificacion}}. The {{promedio_curso}} indicates it is a complex topic, offer them help.'
     })
   }
 ];
 
 export async function runReseed() {
-  logger.info('[RESEED] Iniciando proceso de re-seed de plantillas (Hard-Delete)...');
+  logger.info('[RESEED] Starting template re-seed process (Hard-Delete)...');
 
   try {
-    // 1. Limpiar llaves foráneas en configuracion_asignacion
-    logger.info('[RESEED] Desvinculando plantillas de configuraciones de tareas...');
+    // 1. Clear foreign keys in configuracion_asignacion
+    logger.info('[RESEED] Unlinking templates from assignment configurations...');
     await db.query('UPDATE configuracion_asignacion SET plantilla_id = NULL');
 
-    // 2. Limpiar llaves foráneas en Historial_Feedback_Generado (opcional si es db de prueba)
-    logger.info('[RESEED] Desvinculando plantillas del historial de feedback...');
+    // 2. Clear foreign keys in Historial_Feedback_Generado (optional if test db)
+    logger.info('[RESEED] Unlinking templates from feedback history...');
     await db.query('UPDATE Historial_Feedback_Generado SET plantilla_id = NULL');
 
-    // 3. Eliminar todas las plantillas existentes
-    logger.info('[RESEED] Eliminando todas las plantillas antiguas...');
+    // 3. Delete all existing templates
+    logger.info('[RESEED] Deleting all old templates...');
     await db.query('DELETE FROM Plantilla_Feedback');
 
-    // 4. Insertar las nuevas plantillas base (profesor_id IS NULL)
-    logger.info('[RESEED] Insertando nuevas plantillas base...');
+    // 4. Insert new base templates (profesor_id IS NULL)
+    logger.info('[RESEED] Inserting new base templates...');
     for (const template of NEW_TEMPLATES) {
       await db.query(
         'INSERT INTO Plantilla_Feedback (nombre, contenido) VALUES ($1, $2)',
@@ -53,15 +53,15 @@ export async function runReseed() {
       );
     }
 
-    logger.info('[RESEED] ¡Proceso completado exitosamente! Las nuevas plantillas han sido instaladas.');
+    logger.info('[RESEED] Process completed successfully! New templates have been installed.');
   } catch (error) {
-    logger.error('[RESEED] ERROR durante el re-seed:', { error: error.message });
+    logger.error('[RESEED] ERROR during re-seed:', { error: error.message });
   } finally {
     process.exit(0);
   }
 }
 
-// Ejecutar si se llama directamente
+// Execute if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runReseed();
 }

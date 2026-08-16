@@ -2,8 +2,8 @@ import axios from 'axios';
 import 'dotenv/config';
 
 // -----------------------------------------------------------------------------
-// SCRIPT PARA CONFIGURAR WEBHOOKS EN CANVAS (RF41)
-// Debe ejecutarse con la URL base de Ngrok expuesta a internet, por ejemplo:
+// SCRIPT TO CONFIGURE CANVAS WEBHOOKS (RF41)
+// Must be executed with the Ngrok base URL exposed to the internet, for example:
 // node apps/server/bin/setupWebhooks.js https://abcd-123.ngrok.io
 // -----------------------------------------------------------------------------
 
@@ -11,8 +11,8 @@ const args = process.argv.slice(2);
 const ngrokUrl = args[0];
 
 if (!ngrokUrl) {
-  console.error('Por favor provea la URL base (ej: ngrok) como argumento.');
-  console.error('Uso: node apps/server/bin/setupWebhooks.js <WEBHOOK_BASE_URL>');
+  console.error('Please provide the base URL (e.g. ngrok) as an argument.');
+  console.error('Usage: node apps/server/bin/setupWebhooks.js <WEBHOOK_BASE_URL>');
   process.exit(1);
 }
 
@@ -22,27 +22,27 @@ const WEBHOOK_URL = `${ngrokUrl}/api/webhooks/canvas`;
 
 async function setupWebhooks() {
   try {
-    console.log(`Configurando Webhook hacia: ${WEBHOOK_URL}`);
-    console.log(`En el entorno Canvas: ${CANVAS_URL}`);
+    console.log(`Configuring Webhook to: ${WEBHOOK_URL}`);
+    console.log(`In the Canvas environment: ${CANVAS_URL}`);
 
-    // NOTA: Canvas usa Live Events (Amazon SQS/Kinesis) o Webhooks vía LTI Advantage
-    // Para simplificar la demo local y propósitos del requerimiento RF41,
-    // usamos una simulación vía API de suscripción genérica o lo documentamos.
+    // NOTE: Canvas uses Live Events (Amazon SQS/Kinesis) or Webhooks via LTI Advantage
+    // To simplify the local demo and RF41 requirements,
+    // we use a generic subscription API simulation or document it.
     
-    // Simulación de registro de webhook LTI Advantage o Live Events
-    // En Canvas real requeriría configurar un endpoint en Developer Keys (Placements: Assignment Selection)
-    // O vía Subscriptions API
+    // LTI Advantage webhook or Live Events registration simulation
+    // In real Canvas it would require configuring an endpoint in Developer Keys (Placements: Assignment Selection)
+    // Or via Subscriptions API
     
     console.log(`
-      Para que los eventos de cambio de nota (grade_change) lleguen a este endpoint, 
-      asegúrese de que Canvas Live Events esté configurado o usar extensiones LTI 1.3
-      con el servicio de Assignment and Grade Services (AGS).
+      For grade change events (grade_change) to reach this endpoint, 
+      ensure Canvas Live Events is configured or use LTI 1.3 extensions
+      with Assignment and Grade Services (AGS).
       
-      URL a registrar en Canvas (Developer Key -> LTI Advantage -> Webhook URL):
+      URL to register in Canvas (Developer Key -> LTI Advantage -> Webhook URL):
       ${WEBHOOK_URL}
     `);
 
-    // Ejemplo de llamada teórica (API real de suscripciones si estuviera habilitada):
+    // Theoretical call example (real subscriptions API if enabled):
     await axios.post(`${CANVAS_URL}/api/v1/subscriptions`, {
       subscription: {
         ContextId: "account_1",
@@ -58,9 +58,9 @@ async function setupWebhooks() {
       headers: { Authorization: `Bearer ${CANVAS_TOKEN}` }
     });
 
-    console.log('¡Script finalizado con éxito! El sistema está listo para recibir webhooks en RF41.');
+    console.log('Script finished successfully! System is ready to receive webhooks for RF41.');
   } catch (err) {
-    console.error('Error configurando webhook:', err.response ? err.response.data : err.message);
+    console.error('Error configuring webhook:', err.response ? err.response.data : err.message);
   }
 }
 

@@ -32,7 +32,7 @@ function createInstaller({ available = false, confirm = true } = {}) {
 }
 
 describe('LinuxCertificateToolInstaller', () => {
-  it('no solicita sudo si mkcert ya está disponible', async () => {
+  it('does not request sudo if mkcert is already available', async () => {
     const { installer, interactiveRunner } = createInstaller({ available: true });
 
     await expect(installer.ensureTool()).resolves.toBe(true);
@@ -40,7 +40,7 @@ describe('LinuxCertificateToolInstaller', () => {
     expect(interactiveRunner).not.toHaveBeenCalled();
   });
 
-  it('valida sudo y ejecuta APT con salida acotada', async () => {
+  it('validates sudo and runs APT with bounded output', async () => {
     const { installer, interactiveRunner, runner, spinner } = createInstaller();
 
     await expect(installer.ensureTool()).resolves.toBe(true);

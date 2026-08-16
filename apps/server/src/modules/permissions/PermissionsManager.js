@@ -6,24 +6,24 @@ export default class PermissionsManager {
   constructor(permissionsRepo) {
     this.permissionsRepo = permissionsRepo;
     
-    // Instanciamos las estrategias por rol
+    // Instantiate role strategies
     this.roleStrategies = {
       admin: new AdminRole(),
       teacher: new TeacherRole(),
       student: new StudentRole()
     };
     
-    // Caché en memoria para los overrides de permisos por rol
+    // In-memory cache for role permission overrides
     this.cache = new Map();
   }
 
   /**
-   * Obtiene la matriz completa de permisos (defaults + overrides) para enviar al frontend
+   * Gets the complete permission matrix (defaults + overrides) to send to frontend
    */
   async getPermissionsMatrix() {
-    // Obtenemos los overrides de la DB (lo que el admin modificó)
+    // Get overrides from DB (what the admin modified)
     const dbPermissions = await this.permissionsRepo.getPermissions();
-    // Convertimos la lista de objetos de BD a un mapa { rol: permisos }
+    // Convert DB object list to map { role: permissions }
     const overridesMap = dbPermissions.reduce((acc, row) => {
       acc[row.rol] = row.permisos || {};
       return acc;
@@ -39,7 +39,7 @@ export default class PermissionsManager {
 
       const computedPermissions = {};
       
-      // Construimos el estado actual del permiso basado en default y override
+      // Build current permission state based on default and override
       for (const [permKey, defaultValue] of Object.entries(defaults)) {
         // eslint-disable-next-line security/detect-object-injection
         computedPermissions[permKey] = {
@@ -58,7 +58,7 @@ export default class PermissionsManager {
   }
 
   /**
-   * Obtiene los overrides cacheados para un rol, o consulta la BD si no están en caché.
+   * Gets cached overrides for a role, or queries DB if not in cache.
    */
   async _getCachedOverrides(role) {
     if (this.cache.has(role)) {
@@ -70,7 +70,7 @@ export default class PermissionsManager {
   }
 
   /**
-   * Valida si un rol tiene cierto permiso. Útil para middlewares o chequeos específicos.
+   * Validates if a role has a certain permission. Useful for middlewares or specific checks.
    */
   async checkPermission(role, permissionKey, context = {}) {
     // eslint-disable-next-line security/detect-object-injection
@@ -82,20 +82,20 @@ export default class PermissionsManager {
   }
 
   /**
-   * Actualiza los overrides en la BD para un rol específico.
-   * Filtra las llaves para evitar guardar permisos inmutables.
+   * Updates DB overrides for a specific role.
+   * Filters keys to avoid saving immutable permissions.
    */
   async updateRoleOverrides(role, newPermissions) {
     // eslint-disable-next-line security/detect-object-injection
     const strategy = this.roleStrategies[role];
-    if (!strategy) throw new Error(`Rol desconocido: ${role}`);
+    if (!strategy) throw new Error(`Unknown role: ${role}`);
 
     const mutables = strategy.getMutableKeys();
     
-    // Obtenemos los overrides actuales
+    // Get current overrides
     const currentOverrides = await this._getCachedOverrides(role);
     
-    // Filtramos solo las llaves mutables para este rol
+    // Filter only mutable keys for this role
     const filteredUpdate = { ...currentOverrides };
     for (const [key, value] of Object.entries(newPermissions)) {
       if (mutables.includes(key)) {
@@ -106,7 +106,7 @@ export default class PermissionsManager {
 
     const result = await this.permissionsRepo.updatePermissions(role, filteredUpdate);
     
-    // Invalidamos la caché de este rol tras la actualización
+    // Invalidate cache for this role after update
     this.cache.delete(role);
     
     return result;

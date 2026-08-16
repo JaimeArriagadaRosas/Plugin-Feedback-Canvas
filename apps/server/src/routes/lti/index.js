@@ -13,7 +13,7 @@ const loginHandler = async (req, res) => {
   const bodyData = (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
   const { iss, login_hint, target_link_uri, lti_message_hint } = bodyData;
   
-  logger.debug(`[LTI-LOGIN] OIDC Init Request recibida -> Iniciando flujo login`);
+  logger.debug(`[LTI-LOGIN] OIDC Init Request received -> Starting login flow`);
 
   if (!iss || !login_hint || !target_link_uri) {
     logger.warn(`[LTI-LOGIN] Insufficient LTI parameters detected (Missing: ${[!iss&&'iss', !login_hint&&'login_hint', !target_link_uri&&'target_link_uri'].filter(Boolean).join(', ')})`);
@@ -21,12 +21,12 @@ const loginHandler = async (req, res) => {
     // No exponemos req.body / req.query completos en la respuesta: pueden
     // contener login_hint, lti_message_hint u otros datos sensibles del launch.
     return res.status(400).json({
-      error: 'Parámetros LTI insuficientes',
+      error: 'Insufficient LTI parameters',
       required: ['iss', 'login_hint', 'target_link_uri'],
       received_params: Object.keys(bodyData)
     });
   } else {
-    logger.debug(`[LTI-LOGIN] Validación inicial OK. Ensamblando redirección OIDC...`);
+    logger.debug(`[LTI-LOGIN] Initial validation OK. Assembling OIDC redirection...`);
   }
 
   const state = secureState();
@@ -70,7 +70,7 @@ const loginHandler = async (req, res) => {
   if (lti_message_hint) authParams.append('lti_message_hint', lti_message_hint);
 
   const redirectUrl = `${canvasAuthUrl}?${authParams.toString()}`;
-  logger.info(`[LTI-LOGIN] 302 -> Redirigiendo a Canvas Authorize (Client ID: ${clientId})`);
+  logger.info(`[LTI-LOGIN] 302 -> Redirecting to Canvas Authorize (Client ID: ${clientId})`);
   res.redirect(redirectUrl);
 };
 
@@ -96,7 +96,7 @@ const authorizeHandler = (req, res) => {
   // el canvas_domain embebido en el lti_message_hint apunta al plugin (p.ej.
   // localhost:3000). Es esperado en Canvas Local; lo registramos para trazar el
   // "launch_no_longer_valid" (el rebote NO debe consumir el launch dos veces).
-  logger.info(`[LTI-AUTHORIZE] [${reqId}] Reenviando authorize OIDC a Canvas`, {
+  logger.info(`[LTI-AUTHORIZE] [${reqId}] Forwarding OIDC authorize to Canvas`, {
     canvasBase,
     hasState: !!req.query.state,
     hasLoginHint: !!req.query.login_hint,
@@ -122,14 +122,14 @@ router.post('/callback', asyncSafe(async (req, res) => {
   
   
 
-  logger.debug(`[LTI-CALLBACK] Procesando callback con id_token...`);
+  logger.debug(`[LTI-CALLBACK] Processing callback with id_token...`);
 
   // Manejo robusto: Si Canvas envía la petición de inicio OIDC al target_link_uri (/callback)
   // en lugar del oidc_initiation_url (/login), lo detectamos por la presencia de login_hint y ausencia de id_token.
   const isOidcInitiation = (req.body?.login_hint && !req.body?.id_token && !req.body?.error) || 
                            (req.query?.login_hint && !req.query?.id_token && !req.query?.error);
   if (isOidcInitiation) {
-    logger.info(`[LTI-CALLBACK] OIDC Initiation Request recibida -> Redirigiendo a flujo de login...`);
+    logger.info(`[LTI-CALLBACK] OIDC Initiation Request received -> Redirecting to login flow...`);
     return loginHandler(req, res);
   }
 
@@ -145,8 +145,8 @@ router.post('/callback', asyncSafe(async (req, res) => {
   if (allowedOrigin) {
     const refOrigin = rawOrigin || (referer ? new URL(referer).origin : null);
     if (refOrigin && refOrigin !== allowedOrigin) {
-      logger.error(`[LTI-CALLBACK] [${reqId}] Origin/Referer no coincide con el LMS`, { origin: rawOrigin, referer, allowedOrigin });
-      return res.status(403).json({ error: 'Origen del callback LTI no permitido.' });
+      logger.error(`[LTI-CALLBACK] [${reqId}] Origin/Referer does not match the LMS`, { origin: rawOrigin, referer, allowedOrigin });
+      return res.status(403).json({ error: 'LTI callback origin not allowed.' });
     }
   }
 
@@ -162,12 +162,12 @@ router.post('/callback', asyncSafe(async (req, res) => {
   }
 
   try {
-    logger.debug(`[LTI-CALLBACK] Iniciando validateLtiCallback...`);
+    logger.debug(`[LTI-CALLBACK] Starting validateLtiCallback...`);
     claims = await validateLtiCallback(req);
     logger.debug(`[LTI-CALLBACK] validateLtiCallback OK | sub=${claims.sub?.substring(0,8)}...`);
   } catch (err) {
     const status = err.statusCode || err.status || 401;
-    logger.error(`[LTI-CALLBACK] [${reqId}] validateLtiCallback FALLÓ`, { status, message: err.message });
+    logger.error(`[LTI-CALLBACK] [${reqId}] validateLtiCallback FAILED`, { status, message: err.message });
     
     // Auto-reparación: Mostrar pantalla de recuperación en lugar de un JSON plano
     return handleLtiError(res, err, savedReferer);
@@ -177,9 +177,9 @@ router.post('/callback', asyncSafe(async (req, res) => {
   const cookie = buildLtiCookie(token);
   res.cookie(cookie.name, cookie.value, cookie.options);
 
-  logger.info(`[LTI-AUTH] LOGIN LTI 1.3 EXITOSO`);
+  logger.info(`[LTI-AUTH] LTI 1.3 LOGIN SUCCESSFUL`);
   const shortRoles = [...new Set((claims.roles || []).map(r => r.split('#').pop().split('/').pop()))];
-  logger.info(`[LTI-AUTH] Usuario: ${claims.sub?.substring(0,8)}... | Roles: ${shortRoles.join(', ')}`);
+  logger.info(`[LTI-AUTH] User: ${claims.sub?.substring(0,8)}... | Roles: ${shortRoles.join(', ')}`);
 
   const sessionToken = await signSessionToken({
     sub: claims.sub,
@@ -195,12 +195,12 @@ router.post('/callback', asyncSafe(async (req, res) => {
 
   const frontendUrl = process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || 'https://localhost:5173';
   const redirectUrl = `${frontendUrl}?lti_token=${encodeURIComponent(token)}&session_token=${encodeURIComponent(sessionToken)}`;
-  logger.info(`[SESSION] Claves generadas. 302 -> Redirigiendo al frontend`);
+  logger.info(`[SESSION] Keys generated. 302 -> Redirecting to frontend`);
   res.redirect(redirectUrl);
 }));
 
 router.get('/jwks', (req, res) => {
-  logger.debug('JWKS endpoint consultado');
+  logger.debug('JWKS endpoint queried');
   const ltiPublicJwk = process.env.LTI_PUBLIC_JWK ? JSON.parse(process.env.LTI_PUBLIC_JWK) : null;
   if (ltiPublicJwk) {
     res.json({ keys: [ltiPublicJwk] });
@@ -222,12 +222,12 @@ export default router;
 export function asyncSafe(handler) {
   return (req, res, next) => {
     Promise.resolve(handler(req, res, next)).catch((err) => {
-      logger.error('[LTI] Handler async terminó con excepción NO capturada', {
+      logger.error('[LTI] Async handler ended with UNCAUGHT exception', {
         error: err?.stack || err?.message || String(err),
         path: req.originalUrl
       });
       if (!res.headersSent) {
-        res.status(500).json({ error: 'Error interno en el flujo LTI (handler async).' });
+        res.status(500).json({ error: 'Internal error in LTI flow (async handler).' });
       }
       next(err);
     });

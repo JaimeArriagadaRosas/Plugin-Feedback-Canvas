@@ -102,15 +102,15 @@ export function getCanvasFrameAncestor() {
  */
 export function corsMiddleware() {
   const allowed = getCorsOrigins();
-  logger.info(`[CORS] Orígenes permitidos: ${JSON.stringify(allowed)}`);
+  logger.info(`[CORS] Allowed origins: ${JSON.stringify(allowed)}`);
 
   return cors({
     origin: (origin, cb) => {
       if (origin) {
         const permitido = allowed.includes(origin);
-        logger.info(`[CORS] Solicitud con Origin: ${origin} -> ${permitido ? 'PERMITIDO' : 'RECHAZADO'}`);
+        logger.info(`[CORS] Request with Origin: ${origin} -> ${permitido ? 'ALLOWED' : 'DENIED'}`);
         if (permitido) return cb(null, true);
-        return cb(new Error('Origen no permitido por CORS'));
+        return cb(new Error('Origin not allowed by CORS'));
       }
 
       // Healthchecks, webhooks y otros clientes server-to-server normalmente

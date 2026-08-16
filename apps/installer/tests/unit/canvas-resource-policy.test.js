@@ -7,20 +7,20 @@ import { LinuxContainerWorkspacePermissions } from '../../src/platform/linux/Lin
 const GIB = 1024 ** 3;
 
 describe('CanvasResourcePolicy', () => {
-  it('mantiene Canvas dentro de un host de 8GB', () => {
+  it('keeps Canvas within an 8GB host', () => {
     expect(getCanvasResourceLimits(7.76 * GIB)).toMatchObject({ web: '4G', jobs: '1G' });
   });
 
-  it('escala de forma conservadora cuando hay memoria suficiente', () => {
+  it('scales conservatively when there is enough memory', () => {
     expect(getCanvasResourceLimits(8 * GIB)).toMatchObject({ web: '5G', jobs: '2G' });
     expect(getCanvasResourceLimits(12 * GIB)).toMatchObject({ web: '8G', jobs: '2G' });
   });
 
-  it('usa límites seguros si Docker no reporta memoria', () => {
+  it('uses safe limits if Docker does not report memory', () => {
     expect(getCanvasResourceLimits(Number.NaN)).toMatchObject({ web: '3G', jobs: '1G' });
   });
 
-  it('consulta Docker antes de preparar el override de Canvas', async () => {
+  it('queries Docker before preparing the Canvas override', async () => {
     const runner = vi.fn().mockResolvedValue({ success: true, out: String(7.76 * GIB), err: '' });
     const boot = { info: vi.fn(), warn: vi.fn() };
     const builder = new AssetBuilder(boot, null, '/canvas', { runner });
@@ -29,7 +29,7 @@ describe('CanvasResourcePolicy', () => {
     expect(runner).toHaveBeenCalledWith('docker', ['info', '--format', '{{.MemTotal}}'], { captureAll: true });
   });
 
-  it('normaliza el cache de gems antes de instalar Ruby', () => {
+  it('normalizes the gems cache before installing Ruby', () => {
     const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
     const steps = builder._buildSteps();
     const permissionStep = steps.find(([command]) => command.includes('/home/docker/.gem'));
@@ -45,7 +45,7 @@ describe('CanvasResourcePolicy', () => {
     expect(steps.indexOf(permissionStep)).toBeLessThan(steps.indexOf(rubyStep));
   });
 
-  it('migra Canvas antes de Yarn y no inicia workers durante el armado de assets', () => {
+  it('migrates Canvas before Yarn and does not start workers during asset building', () => {
     const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
     const steps = builder._buildSteps();
     const migration = steps.find(([command]) => command.includes('db:create'));
@@ -57,7 +57,7 @@ describe('CanvasResourcePolicy', () => {
     expect(startup[0]).not.toContain('jobs');
   });
 
-  it('ejecuta assets con root interno para escribir el checkout rootless de Linux', async () => {
+  it('executes assets with internal root to write the Linux rootless checkout', async () => {
     const runner = vi.fn(async () => ({ success: true, out: '', err: '' }));
     const permissions = new LinuxContainerWorkspacePermissions({ runner });
     const boot = { warn: vi.fn(), error: vi.fn() };

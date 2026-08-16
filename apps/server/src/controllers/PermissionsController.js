@@ -8,11 +8,11 @@ export default class PermissionsController {
 
   async getAllPermissions(req, res, next) {
     try {
-      // Retorna la matriz calculada por el Manager (defaults + overrides)
+      // Returns the matrix calculated by the Manager (defaults + overrides)
       const data = await this.permissionsManager.getPermissionsMatrix();
       res.json({ exito: true, data });
     } catch (error) {
-      logger.error('Error obteniendo la matriz de permisos', { error: error.message });
+      logger.error('Error getting permissions matrix', { error: error.message });
       next(error);
     }
   }
@@ -23,18 +23,18 @@ export default class PermissionsController {
       const permissions = req.body;
       
       if (!role) {
-        throw new AppError('El rol es obligatorio', 400);
+        throw new AppError('Role is required', 400);
       }
 
       if (!permissions || typeof permissions !== 'object') {
-        throw new AppError('Formato de permisos inválido', 400);
+        throw new AppError('Invalid permissions format', 400);
       }
 
-      // Solo guardará las llaves que sean permitidas (mutables) según la estrategia del rol
+      // It will only save the keys that are allowed (mutable) according to the role's strategy
       const data = await this.permissionsManager.updateRoleOverrides(role, permissions);
-      res.json({ exito: true, data, mensaje: 'Permisos actualizados correctamente' });
+      res.json({ exito: true, data, mensaje: 'Permissions updated successfully' });
     } catch (error) {
-      logger.error('Error actualizando permisos', { role: req.params.role, error: error.message });
+      logger.error('Error updating permissions', { role: req.params.role, error: error.message });
       next(error);
     }
   }

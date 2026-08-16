@@ -5,15 +5,15 @@ export default class ClaudeErrorHandler {
     if (error.response) {
       const status = error.response.status;
       const data = error.response.data;
-      const message = data?.error?.message || 'Error desconocido de Claude (Anthropic)';
+      const message = data?.error?.message || 'Unknown Claude error (Anthropic)';
       const type = data?.error?.type;
 
       if (status === 401) {
-        throw new ApiError('API Key de Claude inválida o revocada.', 401);
+        throw new ApiError('Invalid or revoked Claude API Key.', 401);
       }
       
       if (status === 429) {
-        const customError = new ApiError('Límite de cuota o rate limit de Claude excedido.', 429);
+        const customError = new ApiError('Claude quota or rate limit exceeded.', 429);
         const retryAfter = error.response.headers['retry-after'];
         if (retryAfter) {
           customError.retryAfter = retryAfter;
@@ -21,9 +21,9 @@ export default class ClaudeErrorHandler {
         throw customError;
       }
 
-      // Anthropic específico: 529 Overloaded
+      // Anthropic specific: 529 Overloaded
       if (status === 529 || type === 'overloaded_error') {
-        const customError = new ApiError('El servidor de Claude está sobrecargado (529).', 529);
+        const customError = new ApiError('Claude server is overloaded (529).', 529);
         const retryAfter = error.response.headers['retry-after'];
         if (retryAfter) {
           customError.retryAfter = retryAfter;

@@ -14,11 +14,11 @@ export class MigrationProgressReporter {
 
   start(total) {
     this.total = total;
-    this._writeLine(`  · Aplicando ${total} migraciones locales...`);
+    this._writeLine(`  · Applying ${total} local migrations...`);
   }
 
   migrationStart(index, file) {
-    const text = `  · Migración ${index}/${this.total}: ${formatMigrationName(file)}`;
+    const text = `  · Migration ${index}/${this.total}: ${formatMigrationName(file)}`;
     if (!this.interactive) {
       this._writeLine(text);
       return;
@@ -28,16 +28,16 @@ export class MigrationProgressReporter {
   }
 
   migrationFailed(index, file) {
-    const text = `  × Falló la migración ${index}/${this.total}: ${formatMigrationName(file)}`;
+    const text = `  × Failed migration ${index}/${this.total}: ${formatMigrationName(file)}`;
     this._finishActiveLine(text);
   }
 
   complete() {
-    this._finishActiveLine(`  √ Migraciones locales aplicadas (${this.total}/${this.total}).`);
+    this._finishActiveLine(`  √ Local migrations applied (${this.total}/${this.total}).`);
   }
 
   noPending() {
-    this._writeLine('  √ Migraciones locales al día.');
+    this._writeLine('  √ Local migrations up to date.');
   }
 
   _finishActiveLine(text) {

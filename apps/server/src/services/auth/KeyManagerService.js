@@ -25,15 +25,15 @@ export default class KeyManagerService {
         if (data.privateKeyPem && data.publicKeyPem) {
           this._privateKeyPem = data.privateKeyPem;
           this._publicKeyPem = data.publicKeyPem;
-          logger.info('[KeyManager] Claves RSA de sesión cargadas exitosamente desde disco.');
+          logger.info('[KeyManager] Session RSA keys successfully loaded from disk.');
           return { privateKeyPem: this._privateKeyPem, publicKeyPem: this._publicKeyPem };
         }
       } catch (e) {
-        logger.warn(`[KeyManager] No se pudieron leer las claves RSA desde ${KEYS_FILE}: ${e.message}`);
+        logger.warn(`[KeyManager] Could not read RSA keys from ${KEYS_FILE}: ${e.message}`);
       }
     }
 
-    logger.info('[KeyManager] Generando nuevo par de claves RSA para session_token...');
+    logger.info('[KeyManager] Generating new RSA key pair for session_token...');
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicExponent: 0x10001,
@@ -51,9 +51,9 @@ export default class KeyManagerService {
         publicKeyPem: this._publicKeyPem,
         createdAt: new Date().toISOString()
       }, null, 2), { mode: 0o600 });
-      logger.info(`[KeyManager] Nuevas claves RSA generadas y guardadas en ${KEYS_FILE}`);
+      logger.info(`[KeyManager] New RSA keys generated and saved in ${KEYS_FILE}`);
     } catch (e) {
-      logger.error(`[KeyManager] Error guardando claves RSA en disco: ${e.message}`);
+      logger.error(`[KeyManager] Error saving RSA keys to disk: ${e.message}`);
     }
 
     return { privateKeyPem: this._privateKeyPem, publicKeyPem: this._publicKeyPem };

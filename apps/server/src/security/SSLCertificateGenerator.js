@@ -27,7 +27,7 @@ export class SSLCertificateGenerator {
     if (environment.isProduction) return false;
 
     if (this.hasUsableCertificates()) {
-      logger.info('[SSL] El certificado mkcert existente sigue siendo válido.');
+      logger.info('[SSL] The existing mkcert certificate is still valid.');
       return true;
     }
 
@@ -35,7 +35,7 @@ export class SSLCertificateGenerator {
     const temporaryPaths = this._getTemporaryCertificatePaths();
     try {
       this._prepareCertificatesDirectory();
-      logger.info('[SSL] Ejecutando mkcert para configurar HTTPS local...');
+      logger.info('[SSL] Running mkcert to configure local HTTPS...');
       execFileSync('mkcert', ['-install'], { stdio: 'ignore' });
       execFileSync('mkcert', [
         '-key-file', temporaryPaths.key,
@@ -43,10 +43,10 @@ export class SSLCertificateGenerator {
         'localhost', '127.0.0.1', 'host.docker.internal'
       ], { stdio: 'ignore' });
       this._replaceCertificates(temporaryPaths);
-      logger.info('[SSL] Nuevos certificados locales generados exitosamente.');
+      logger.info('[SSL] New local certificates generated successfully.');
       return true;
     } catch (error) {
-      logger.error('[SSL] mkcert no está disponible o falló.', { error: error.message });
+      logger.error('[SSL] mkcert is not available or failed.', { error: error.message });
       return false;
     } finally {
       this._removeTemporaryCertificates(temporaryPaths);
@@ -56,17 +56,17 @@ export class SSLCertificateGenerator {
   static _logCertificateRenewalState() {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(SSLConfig.CERT_PEM)) {
-      logger.info('[SSL] No se encontraron certificados locales. Se crearán ahora.');
+      logger.info('[SSL] Local certificates not found. They will be created now.');
       return;
     }
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       const certificate = new crypto.X509Certificate(fs.readFileSync(SSLConfig.CERT_PEM));
       const days = this._getDaysRemaining(certificate);
-      if (days <= 0) logger.info('[SSL] El certificado local expiró. Se regenerará.');
-      else logger.info(`[SSL] El certificado expirará en ${Math.floor(days)} días. Se regenerará.`);
+      if (days <= 0) logger.info('[SSL] Local certificate expired. It will be regenerated.');
+      else logger.info(`[SSL] Certificate will expire in ${Math.floor(days)} days. It will be regenerated.`);
     } catch (error) {
-      logger.warn('[SSL] El certificado local es ilegible. Se regenerará.', { error: error.message });
+      logger.warn('[SSL] Local certificate is unreadable. It will be regenerated.', { error: error.message });
     }
   }
 

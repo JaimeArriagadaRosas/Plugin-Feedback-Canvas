@@ -1,12 +1,12 @@
 import logger from '../utils/logger.js';
 
 /**
- * Registra y gestiona los errores de la base de datos de producción.
- * Ya no degrada a local automáticamente en caso de error para evitar
- * estados inconsistentes y particiones de cerebro (split-brain).
+ * Logs and manages production database errors.
+ * No longer automatically downgrades to local on error to prevent
+ * inconsistent states and split-brain.
  */
 export function handleDbError(err, context = '') {
-  const errorMessage = err?.message || err?.toString() || 'Error desconocido en DB';
+  const errorMessage = err?.message || err?.toString() || 'Unknown DB error';
   
   if (process.env.NODE_ENV === 'production') {
     logger.error(`[DB] Production operation failed (${context}): ${errorMessage}`, { stack: err?.stack });

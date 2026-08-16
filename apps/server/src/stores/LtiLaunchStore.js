@@ -12,9 +12,9 @@ export async function initLtiStore() {
       const { createClient } = await import('redis');
       redisClient = createClient({ url: process.env.REDIS_URL });
       await redisClient.connect();
-      logger.info('LTI Launch Store inicializado con Redis', { url: process.env.REDIS_URL });
+      logger.info('LTI Launch Store initialized with Redis', { url: process.env.REDIS_URL });
     } catch (err) {
-      logger.warn('Falló conexión Redis, usando store en memoria', { error: err.message });
+      logger.warn('Redis connection failed, using memory store', { error: err.message });
       memoryStore = new Map();
     }
   }
