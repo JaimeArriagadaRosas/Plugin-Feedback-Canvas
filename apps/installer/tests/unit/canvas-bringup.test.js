@@ -39,6 +39,9 @@ describe('CanvasBringup', () => {
       if (args.slice(0, 4).join(' ') === 'compose ps --format json') {
         return { success: true, out: '{"State":"running"}' };
       }
+      if (args.includes('id') && args.includes('-u')) return { success: true, out: '1000' };
+      if (args.includes('stat') && args.includes('-c')) return { success: true, out: '1000:1000 644' };
+      if (args.includes('bash') && args.some(a => a.includes('touch'))) return { success: true, out: '' };
       throw new Error(`Comando inesperado: ${args.join(' ')}`);
     });
     const healthCheck = vi.fn().mockResolvedValue(true);

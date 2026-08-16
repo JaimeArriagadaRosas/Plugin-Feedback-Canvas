@@ -7,7 +7,8 @@ import { generateLtiRubyScript } from './LtiRubyScriptTemplate.js';
 
 export class DockerLtiConfigurator {
   static async runDockerCommand(args, envs = {}, runnerOptions = {}) {
-    return runCommand('docker', withCanvasWorkspaceContext(args), {
+    const finalArgs = await withCanvasWorkspaceContext(args);
+    return runCommand('docker', finalArgs, {
       cwd: getCanvasDirectory(),
       env: { ...process.env, ...envs },
       ...runnerOptions

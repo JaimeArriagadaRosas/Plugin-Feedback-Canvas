@@ -84,9 +84,10 @@ export class LtiVerifier {
     `;
 
     try {
-      const { success, out, err } = await runCommand('docker', withCanvasWorkspaceContext([
+      const commandArgs = await withCanvasWorkspaceContext([
         'compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script
-      ]), { cwd: CANVAS_DIR });
+      ]);
+      const { success, out, err } = await runCommand('docker', commandArgs, { cwd: CANVAS_DIR });
 
       if (!success) {
         logger.error('[LtiVerifier] Fallo el script de verificación LTI.', { error: err });
