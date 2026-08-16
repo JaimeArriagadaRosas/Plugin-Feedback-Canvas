@@ -3,8 +3,12 @@ import { classifyDockerCliOrigin } from '../../src/platform/shared/DockerRuntime
 
 describe('DockerRuntimeProbe', () => {
   describe('classifyDockerCliOrigin', () => {
-    it('returns remote if DOCKER_HOST is set', () => {
-      expect(classifyDockerCliOrigin({ dockerHost: 'tcp://192.168.1.10:2375' })).toBe('remote');
+    it('returns remote if DOCKER_HOST is set to tcp', () => {
+      expect(classifyDockerCliOrigin({ host: { isWindows: false, isMac: false, isWsl: false }, dockerHost: 'tcp://192.168.1.10:2375' })).toBe('remote');
+    });
+
+    it('returns native if DOCKER_HOST is set to unix socket', () => {
+      expect(classifyDockerCliOrigin({ host: { isWindows: false, isMac: false, isWsl: false }, dockerHost: 'unix:///var/run/docker.sock' })).toBe('native');
     });
 
     it('returns remote if contextEndpoint starts with ssh://', () => {

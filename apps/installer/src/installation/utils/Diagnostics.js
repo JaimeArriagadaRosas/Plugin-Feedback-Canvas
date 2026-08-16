@@ -10,6 +10,12 @@ const ERROR_SIGNATURES = [
     solution: 'No repitas Yarn ni los assets. Conserva y restaura la ENCRYPTION_KEY usada por esa base de datos, o reinicia explícitamente los datos locales de Canvas si son descartables.'
   },
   {
+    pattern: /INSECURE_UNFIXABLE:(.+)/i,
+    type: 'CANVAS_GEM_CACHE_INSECURE_PERMISSIONS',
+    diagnosis: 'El caché de gemas tiene permisos world-writable inseguros y el contenedor no tiene permisos para corregirlo.',
+    solution: 'El volumen docker fue creado con permisos incompatibles. Purgalo con "docker compose down -v" o ajusta sus permisos manualmente en WSL.'
+  },
+  {
     pattern: /File not found with singular glob: (.+)/i,
     type: 'ARCHIVOS_PERDIDOS',
     diagnosis: 'El compilador de assets no pudo encontrar un archivo específico.',

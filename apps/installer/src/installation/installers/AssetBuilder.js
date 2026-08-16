@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
+import { getAssetsMarker } from '../utils/LocalWorkspacePaths.js';
 
 import { createSpinner } from 'nanospinner';
 
@@ -35,8 +35,7 @@ export class AssetBuilder {
       if (!(await this._runLogged(...step))) return false;
     }
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    fs.writeFileSync(path.join(this.canvasDir, '.assets_built'), 'true');
+    fs.writeFileSync(getAssetsMarker(this.canvasDir), 'true');
     return true;
   }
 
@@ -52,8 +51,9 @@ export class AssetBuilder {
       [['docker', 'info'], 'Verificando daemon Docker...', 'Docker no responde.', 'Docker en ejecucion'],
       [['docker', 'compose', 'build', 'web', 'jobs'], 'Construyendo imagenes Docker...', 'Fallo al construir imagenes.', 'Imagenes Docker construidas'],
       [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Iniciando contenedores...', 'Fallo el inicio.', 'Contenedores iniciados'],
-      [['docker', 'compose', 'exec', '-T', 'web', 'chmod', '-R', 'go-w', '/home/docker/.gem'],
-      'Asegurando permisos del cache de gems...', 'Fallo al asegurar permisos del cache de gems.', 'Permisos del cache de gems asegurados'],
+      [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
+        'uid=$(id -u); find /home/docker/.gem -type d -perm -0002 ! -perm -1000 2>/dev/null | { fail=0; while IFS= read -r dir; do [ -z "$dir" ] && continue; owner=$(stat -c "%u" "$dir"); if [ "$owner" = "$uid" ]; then chmod o-w "$dir"; else echo "INSECURE_UNFIXABLE:$dir"; fail=1; fi; done; exit $fail; }'],
+      'Normalizando permisos de gems...', 'Fallo al normalizar cache de gems.', 'Permisos de cache de gems normalizados'],
       [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
       'Instalando plugin de Bundler...', 'Error instalando plugin de Bundler.', 'Plugin de Bundler instalado', 5],
       [['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',

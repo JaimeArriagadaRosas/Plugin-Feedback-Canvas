@@ -13,7 +13,7 @@ function firstLine(value = '') {
 }
 
 export function classifyDockerCliOrigin({ host, cliPath, clientPlatform, dockerHost, contextEndpoint }) {
-  if (dockerHost) return 'remote';
+  if (dockerHost && !dockerHost.startsWith('unix://')) return 'remote';
   if (contextEndpoint && (contextEndpoint.startsWith('ssh://') || contextEndpoint.startsWith('tcp://'))) return 'remote';
   const mountedWindowsPath = /^\/mnt\/[a-z]\//i.test(cliPath || '');
   const windowsClient = /^windows(?:\/|$)/i.test(clientPlatform || '');

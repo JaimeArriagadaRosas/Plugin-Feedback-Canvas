@@ -11,7 +11,7 @@ import { spawnVite, spawnBackend, stopBackend, stopVite, waitForBackend, VITE_PO
 import { StaticChecker } from './boot/checks/StaticChecker.js';
 import { LtiBootstrap } from './boot/lti.js';
 import { setupGracefulShutdown } from './shutdown_utils.js';
-import { getCanvasDirectory, getPluginDirectory } from '../installation/utils/LocalWorkspacePaths.js';
+import { getCanvasDirectory, getPluginDirectory, getAssetsMarker } from '../installation/utils/LocalWorkspacePaths.js';
 
 dotenv.config({ quiet: true });
 
@@ -127,9 +127,9 @@ export async function main({ mode: requestedMode } = {}) {
 
   try {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
-    if (fs.existsSync(setupCompletePath)) {
+    if (fs.existsSync(setupCompletePath) && fs.existsSync(CANVAS_DIR) && fs.existsSync(getAssetsMarker(CANVAS_DIR))) {
       process.env.FAST_BOOT = 'true';
-      boot.plain('  · Modo Fast Boot detectado (.setup_complete presente).');
+      boot.plain('  · Modo Fast Boot detectado y validado (.setup_complete y assets presentes).');
     }
 
     const mode = requestedMode || await showMainMenu();
@@ -154,7 +154,7 @@ export async function main({ mode: requestedMode } = {}) {
       await localOrchestrator.waitForCanvasAndOpenBrowser();
     }
 
-    if (mode === '3' && !process.env.FAST_BOOT) {
+    if (mode === '3' && process.env.FAST_BOOT !== 'true') {
       fs.writeFileSync(setupCompletePath, '1');
       boot.plain('  √ Archivo .setup_complete generado (Fast Boot para el próximo arranque).');
     }
