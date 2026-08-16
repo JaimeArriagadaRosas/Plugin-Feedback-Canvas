@@ -14,25 +14,25 @@ export default class BaseRole {
   }
 
   /**
-   * Retorna los permisos base por defecto de este rol
+   * Returns the default base permissions for this role
    */
   getDefaults() {
     return this.defaultPermissions;
   }
 
   /**
-   * Retorna la lista de permisos que pueden ser modificados por un administrador
+   * Returns the list of permissions that can be modified by an administrator
    */
   getMutableKeys() {
     return this.mutablePermissions;
   }
 
   /**
-   * Evalúa si un permiso está concedido, tomando en cuenta las excepciones (overrides)
-   * guardadas en base de datos.
-   * @param {string} permissionKey Clave del permiso
-   * @param {object} overrides Opciones sobreescritas en DB
-   * @param {object} context Contexto de la petición (ej. courseId, userId)
+   * Evaluates if a permission is granted, taking into account overrides
+   * saved in the database.
+   * @param {string} permissionKey Permission key
+   * @param {object} overrides Overridden options in DB
+   * @param {object} context Request context (e.g. courseId, userId)
    */
   hasPermission(permissionKey, overrides = {}, context = {}) {
     // If the permission is not mutable for this role, it always returns the default value

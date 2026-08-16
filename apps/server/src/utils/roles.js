@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ÚNICA FUENTE DE VERDAD PARA ROLES LTI 1.3 (IMS Global)
+// SINGLE SOURCE OF TRUTH FOR LTI 1.3 ROLES (IMS Global)
 //
-// Centraliza la clasificación de roles, la resolución del rol efectivo para la
-// vista del frontend, y la validación de lanzamientos (launch). Todos los
-// componentes (AuthLTI13Handler, server.js, LtiAccessValidator, LTIController)
-// deben importar desde aquí para evitar divergencias.
+// Centralizes role classification, effective role resolution for the
+// frontend view, and launch validation. All components
+// (AuthLTI13Handler, server.js, LtiAccessValidator, LTIController)
+// must import from here to avoid divergences.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Mapa de roles IMS estándar (URNs de LTI 1.3)
+// Map of standard IMS roles (LTI 1.3 URNs)
 export const LTI_ROLE_URNS = {
   admin: [
     'http://purl.imsglobal.org/vocab/lis/v2/membership#Administrator',
@@ -31,7 +31,7 @@ const ROLE_CLAIM = 'https://purl.imsglobal.org/spec/lti/claim/roles';
 const CUSTOM_CLAIM = 'https://purl.imsglobal.org/spec/lti/claim/custom';
 
 /**
- * Extrae el arreglo de roles del claim estándar de LTI.
+ * Extracts the roles array from the standard LTI claim.
  */
 export function getRolesFromClaims(decoded = {}) {
   // eslint-disable-next-line security/detect-object-injection
@@ -39,8 +39,8 @@ export function getRolesFromClaims(decoded = {}) {
 }
 
 /**
- * Extrae el parámetro custom `unida_entry` inyectado por el placement de Canvas
- * (p.ej. "admin" para account_navigation, "course" para course_navigation).
+ * Extracts the custom `unida_entry` parameter injected by Canvas placement
+ * (e.g., "admin" for account_navigation, "course" for course_navigation).
  */
 export function getEntryFromClaims(decoded = {}) {
   // eslint-disable-next-line security/detect-object-injection
@@ -49,16 +49,16 @@ export function getEntryFromClaims(decoded = {}) {
 }
 
 /**
- * Clasifica un arreglo de roles IMS en banderas booleanas.
+ * Classifies an array of IMS roles into boolean flags.
  *
- * PRINCIPIO CLAVE: separa el rol de CUENTA (institution/person#Administrator)
- * del rol de CONTEXTO de curso (membership#Instructor, #Learner, etc.).
+ * KEY PRINCIPLE: separates the ACCOUNT role (institution/person#Administrator)
+ * from the course CONTEXT role (membership#Instructor, #Learner, etc.).
  *
- * SEGURIDAD: la coincidencia es EXACTA contra las URNs IMS estándar definidas
- * en LTI_ROLE_URNS. Antes se usaba `includes('Administrator')`, lo que permitía
- * falsos positivos: cualquier claim no estándar que contuviera la subcadena
- * "Administrator" (p.ej. "...#AdministratorAssistant") clasificaba al usuario
- * como accountAdmin y escalaba privilegios.
+ * SECURITY: the match is EXACT against the standard IMS URNs defined
+ * in LTI_ROLE_URNS. Previously `includes('Administrator')` was used, which allowed
+ * false positives: any non-standard claim containing the substring
+ * "Administrator" (e.g. "...#AdministratorAssistant") classified the user
+ * as accountAdmin and escalated privileges.
  */
 const ROLE_TO_FLAG = {
   isAccountAdmin: 'admin',
@@ -96,8 +96,8 @@ export function classifyRoles(roles = []) {
 }
 
 /**
- * Resuelve un rol efectivo ÚNICO para dirigir la vista del frontend.
- * Prioridad: administrador de cuenta > docente (instructor/TA/designer) > estudiante.
+ * Resolves a UNIQUE effective role to direct the frontend view.
+ * Priority: account admin > teacher (instructor/TA/designer) > student.
  */
 export function resolveEffectiveRole(classification) {
   if (classification.isAccountAdmin) return 'admin';
@@ -107,8 +107,8 @@ export function resolveEffectiveRole(classification) {
 }
 
 /**
- * Determina si la persona es UNICAMENTE estudiante (sin capacidad docente/admin).
- * Se usa para bloquear lanzamientos no autorizados (defensa en profundidad).
+ * Determines if the person is ONLY a student (no teacher/admin capacity).
+ * Used to block unauthorized launches (defense in depth).
  */
 export function isStudentOnly(classification) {
   return (
@@ -121,19 +121,19 @@ export function isStudentOnly(classification) {
 }
 
 export function isLaunchAllowed(decoded = {}) {
-  // Ahora todos los roles (incluidos estudiantes puros) pueden lanzar la herramienta.
-  // La autorización de acceso a recursos se maneja a nivel de middlewares de rutas.
+  // Now all roles (including pure students) can launch the tool.
+  // Resource access authorization is handled at the route middlewares level.
   return true;
 }
 
 /**
- * Resuelve el rol que debe reportar /api/config/me al frontend.
+ * Resolves the role that /api/config/me should report to the frontend.
  * @param {object} params
  * @param {boolean} isLocalSession
- * @param {string}  localRole        Rol explícito en modo local (dev_role)
- * @param {Array}   roles            Claims de roles IMS
- * @param {string}  entry            "admin" si el lanzamiento vino de account_navigation
- * @param {string}  courseId         Contexto de curso (si aplica)
+ * @param {string}  localRole        Explicit role in local mode (dev_role)
+ * @param {Array}   roles            IMS roles claims
+ * @param {string}  entry            "admin" if the launch came from account_navigation
+ * @param {string}  courseId         Course context (if applicable)
  */
 export function toRoleURN(role) {
   // eslint-disable-next-line security/detect-object-injection
@@ -149,22 +149,22 @@ export function resolveViewRole({ isLocalSession, localRole, roles, entry, cours
 
   const classification = classifyRoles(roles);
 
-  // Lanzamiento explícito desde account_navigation => panel de administración.
+  // Explicit launch from account_navigation => administration panel.
   if (entry === 'admin') {
     return 'admin';
   }
   
-  // Lanzamiento explícito desde global_navigation para docentes.
+  // Explicit launch from global_navigation for teachers.
   if (entry === 'teacher') {
     return 'teacher';
   }
 
-  // Si estamos en un curso, los admins y docentes deben ver la vista de profesor.
+  // If we are in a course, admins and teachers must see the teacher view.
   if (courseId && (classification.isInstructor || classification.isTA || classification.isDesigner || classification.isAccountAdmin)) {
     return 'teacher';
   }
 
-  // Si no hay curso y es admin, va al panel de administración.
+  // If there is no course and is admin, go to administration panel.
   if (classification.isAccountAdmin) {
     return 'admin';
   }

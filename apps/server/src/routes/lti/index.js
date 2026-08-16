@@ -18,8 +18,8 @@ const loginHandler = async (req, res) => {
   if (!iss || !login_hint || !target_link_uri) {
     logger.warn(`[LTI-LOGIN] Insufficient LTI parameters detected (Missing: ${[!iss&&'iss', !login_hint&&'login_hint', !target_link_uri&&'target_link_uri'].filter(Boolean).join(', ')})`);
     
-    // No exponemos req.body / req.query completos en la respuesta: pueden
-    // contener login_hint, lti_message_hint u otros datos sensibles del launch.
+    // Do not expose full req.body / req.query in the response: they might
+    // contain login_hint, lti_message_hint, or other sensitive launch data.
     return res.status(400).json({
       error: 'Insufficient LTI parameters',
       required: ['iss', 'login_hint', 'target_link_uri'],
@@ -75,37 +75,37 @@ const loginHandler = async (req, res) => {
 };
 
 /**
- * Canvas authorize_redirect puede enviar al dominio del tool (p. ej. localhost:3000)
- * cuando domain.yml de Canvas apunta al puerto del plugin en lugar del puerto real
- * de Canvas (8080). Reenviamos a Canvas /api/lti/authorize para completar el OIDC.
+ * Canvas authorize_redirect may send to the tool's domain (e.g., localhost:3000)
+ * when Canvas domain.yml points to the plugin's port instead of Canvas's real
+ * port (8080). We forward to Canvas /api/lti/authorize to complete the OIDC.
  */
 const authorizeHandler = (req, res) => {
   const reqId = Math.random().toString(36).substring(2, 8);
   const canvasBase = (process.env.CANVAS_BASE_URL || 'https://localhost:8443').replace(/\/$/, '');
   const canvasAuthorizeUrl = `${canvasBase}/api/lti/authorize`;
 
-  // Reconstruimos la query string de forma robusta preservando repetidos y el
-  // orden original. Object.fromEntries/URLSearchParams(req.query) puede perder
-  // parámetros duplicados; usamos el rawQuery cuando está disponible.
+  // Reconstruct the query string robustly, preserving duplicates and original
+  // order. Object.fromEntries/URLSearchParams(req.query) might lose
+  // duplicate parameters; we use rawQuery when available.
   const rawQuery = req.originalUrl.includes('?')
     ? req.originalUrl.slice(req.originalUrl.indexOf('?') + 1)
     : new URLSearchParams(req.query).toString();
   const redirectUrl = rawQuery ? `${canvasAuthorizeUrl}?${rawQuery}` : canvasAuthorizeUrl;
 
-  // Diagnóstico: si el authorize llegó al plugin en lugar de a Canvas es porque
-  // el canvas_domain embebido en el lti_message_hint apunta al plugin (p.ej.
-  // localhost:3000). Es esperado en Canvas Local; lo registramos para trazar el
-  // "launch_no_longer_valid" (el rebote NO debe consumir el launch dos veces).
+  // Diagnostic: if authorize reached the plugin instead of Canvas, it's because
+  // the canvas_domain embedded in the lti_message_hint points to the plugin (e.g.,
+  // localhost:3000). This is expected in Canvas Local; we log it to trace the
+  // "launch_no_longer_valid" (the bounce MUST NOT consume the launch twice).
   logger.info(`[LTI-AUTHORIZE] [${reqId}] Forwarding OIDC authorize to Canvas`, {
     canvasBase,
     hasState: !!req.query.state,
     hasLoginHint: !!req.query.login_hint,
     url: redirectUrl.substring(0, 120) + '...'
   });
-  // 307 preserva método y evita que algunos navegadores rehagan el POST/GET de
-  // forma que reinicie el flujo. authorize es GET, así que 302 es correcto, pero
-  // forzamos no-cache para impedir que un authorize cacheado reintente y consuma
-  // el launch por segunda vez.
+  // 307 preserves the method and prevents some browsers from redoing POST/GET in
+  // a way that restarts the flow. authorize is GET, so 302 is correct, but
+  // we force no-cache to prevent a cached authorize from retrying and consuming
+  // the launch a second time.
   res.set('Cache-Control', 'no-store');
   res.redirect(302, redirectUrl);
 };
@@ -124,8 +124,8 @@ router.post('/callback', asyncSafe(async (req, res) => {
 
   logger.debug(`[LTI-CALLBACK] Processing callback with id_token...`);
 
-  // Manejo robusto: Si Canvas envía la petición de inicio OIDC al target_link_uri (/callback)
-  // en lugar del oidc_initiation_url (/login), lo detectamos por la presencia de login_hint y ausencia de id_token.
+  // Robust handling: If Canvas sends the OIDC initiation request to target_link_uri (/callback)
+  // instead of oidc_initiation_url (/login), we detect it by the presence of login_hint and absence of id_token.
   const isOidcInitiation = (req.body?.login_hint && !req.body?.id_token && !req.body?.error) || 
                            (req.query?.login_hint && !req.query?.id_token && !req.query?.error);
   if (isOidcInitiation) {
@@ -133,9 +133,9 @@ router.post('/callback', asyncSafe(async (req, res) => {
     return loginHandler(req, res);
   }
 
-  // Defensa en profundidad CSRF (ref: Snyk/StackHawk CSRF SPA 2026):
-  // el callback LTI es un form-post cross-origin desde el LMS; validamos que
-  // el Origin/Referer corresponda al issuer/cliente conocido.
+  // CSRF defense-in-depth (ref: Snyk/StackHawk CSRF SPA 2026):
+  // the LTI callback is a cross-origin form-post from the LMS; we validate that
+  // the Origin/Referer matches the known issuer/client.
   const rawOrigin = req.headers.origin;
   const referer = req.headers.referer;
   const allowedOrigin = process.env.LTI_OIDC_URL
@@ -169,7 +169,7 @@ router.post('/callback', asyncSafe(async (req, res) => {
     const status = err.statusCode || err.status || 401;
     logger.error(`[LTI-CALLBACK] [${reqId}] validateLtiCallback FAILED`, { status, message: err.message });
     
-    // Auto-reparación: Mostrar pantalla de recuperación en lugar de un JSON plano
+    // Self-healing: Show recovery screen instead of a plain JSON
     return handleLtiError(res, err, savedReferer);
   }
 
@@ -212,12 +212,12 @@ router.get('/jwks', (req, res) => {
 export default router;
 
 /**
- * Wrapper async-safe: garantiza que un handler async siempre termine llamando
- * a res() o next(err). Si el handler se cuelga o lanza fuera de su propio
- * try/catch (p.ej. verifyToken/JWKS sin timeout), Express no captura la
- * promesa rechazada y la conexión queda abierta sin respuesta -> el navegador
- * recibe ERR_EMPTY_RESPONSE ("localhost no ha enviado ningún dato").
- * Este wrapper cierra ese agujero registrando el cuelgue y respondiendo 500.
+ * async-safe wrapper: ensures that an async handler always ends up calling
+ * res() or next(err). If the handler hangs or throws outside its own
+ * try/catch (e.g. verifyToken/JWKS without timeout), Express doesn't catch the
+ * rejected promise and the connection stays open without a response -> the browser
+ * receives ERR_EMPTY_RESPONSE ("localhost didn't send any data").
+ * This wrapper plugs that hole by logging the hang and responding with a 500.
  */
 export function asyncSafe(handler) {
   return (req, res, next) => {

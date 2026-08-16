@@ -1,14 +1,14 @@
 import logger from '../utils/logger.js';
 
 /**
- * Ejecuta una operación con Exponential Backoff y Jitter.
- * @param {Function} operation - Función asíncrona a reintentar.
- * @param {Object} options - Opciones de reintento.
- * @param {number} [options.maxAttempts=10] - Máximo número de intentos.
- * @param {number} [options.baseDelayMs=1500] - Retraso base inicial.
- * @param {number} [options.maxDelayMs=15000] - Retraso máximo.
+ * Executes an operation with Exponential Backoff and Jitter.
+ * @param {Function} operation - Asynchronous function to retry.
+ * @param {Object} options - Retry options.
+ * @param {number} [options.maxAttempts=10] - Maximum number of attempts.
+ * @param {number} [options.baseDelayMs=1500] - Initial base delay.
+ * @param {number} [options.maxDelayMs=15000] - Maximum delay.
  * @param {Function} [options.onAttemptFailed] - Callback for each failure.
- * @param {Function} [options.shouldRetry] - Función que determina si el error es transitorio.
+ * @param {Function} [options.shouldRetry] - Function that determines if the error is transient.
  * @returns {Promise<any>}
  */
 export async function withExponentialBackoff(operation, options = {}) {

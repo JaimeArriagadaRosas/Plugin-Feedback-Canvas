@@ -20,7 +20,7 @@ export async function validateLtiCallback(req) {
   if (launchCookieStr) {
     try {
       const launchCookie = JSON.parse(launchCookieStr);
-      expectedState = state; // Si la cookie lti_state (indexada) existe, el state matchea.
+      expectedState = state; // If the lti_state cookie (indexed) exists, the state matches.
       expectedNonce = launchCookie.nonce;
     } catch (e) { logger.warn('Failed to parse launch cookie', { error: e.message }); }
   }
@@ -113,8 +113,8 @@ export function buildLtiCookie(token) {
 }
 
 /**
- * Decodifica el header/payload de un JWT SIN verificar firma, de forma segura.
- * Se usa solo para inspección/diagnóstico (kid, iss) antes de verifyToken.
+ * Decodes the header/payload of a JWT WITHOUT verifying the signature, securely.
+ * Used only for inspection/diagnostics (kid, iss) before verifyToken.
  */
 function jwtDecodeSafe(token) {
   try {

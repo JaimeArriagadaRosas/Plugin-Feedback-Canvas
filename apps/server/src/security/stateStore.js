@@ -1,8 +1,8 @@
 import { isHttpsEnabled, isProduction } from './envGuard.js';
 
 /**
- * Almacena el state temporal de LTI 1.3 en una cookie (o BD a futuro).
- * Extraído por SRP (Single Responsibility Principle).
+ * Stores the temporary LTI 1.3 state in a cookie (or DB in the future).
+ * Extracted per SRP (Single Responsibility Principle).
  */
 export function storeLtiState(res, state, launchData) {
   const isProd = isProduction();
@@ -14,12 +14,12 @@ export function storeLtiState(res, state, launchData) {
     secure: cookieSecure, 
     sameSite: cookieSameSite, 
     partitioned: cookieSecure,
-    maxAge: 15 * 60 * 1000 // 15 minutos
+    maxAge: 15 * 60 * 1000 // 15 minutes
   });
 }
 
 /**
- * Consume (lee y elimina) el state temporal de LTI 1.3 desde las cookies.
+ * Consumes (reads and deletes) the temporary LTI 1.3 state from the cookies.
  */
 export function consumeLtiState(req, res, state) {
   if (!state) return null;

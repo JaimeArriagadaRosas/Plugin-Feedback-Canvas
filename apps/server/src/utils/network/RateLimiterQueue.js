@@ -2,21 +2,21 @@ import logger from '../logger.js';
 
 export default class RateLimiterQueue {
   /**
-   * Cola Global de Control de Frecuencia (Token Bucket / Rate Limiter)
-   * @param {number} requestsPerMinute Máximo número de peticiones permitidas por minuto
+   * Global Rate Limiter Queue (Token Bucket / Rate Limiter)
+   * @param {number} requestsPerMinute Maximum number of requests allowed per minute
    */
   constructor(requestsPerMinute = 12) {
     this.requestsPerMinute = requestsPerMinute;
-    this.intervalMs = Math.ceil((60 * 1000) / this.requestsPerMinute); // ej. 5000ms para 12 RPM
+    this.intervalMs = Math.ceil((60 * 1000) / this.requestsPerMinute); // e.g. 5000ms for 12 RPM
     this.queue = [];
     this.isProcessing = false;
     this.lastRequestTime = 0;
   }
 
   /**
-   * Encola una función asíncrona para ser ejecutada respetando el Rate Limit
-   * @param {Function} taskFn Función asíncrona a ejecutar
-   * @returns {Promise<any>} Promesa que se resuelve con el resultado de la función
+   * Enqueues an async task to be executed respecting the Rate Limit
+   * @param {Function} taskFn Async function to execute
+   * @returns {Promise<any>} Promise that resolves with the function's result
    */
   async enqueue(taskFn) {
     return new Promise((resolve, reject) => {
@@ -41,7 +41,7 @@ export default class RateLimiterQueue {
         await new Promise(res => setTimeout(res, timeToWait));
       }
 
-      // Tomar la siguiente tarea de la cola (FIFO)
+      // Take next task from the queue (FIFO)
       const { taskFn, resolve, reject } = this.queue.shift();
       
       this.lastRequestTime = Date.now();
@@ -58,5 +58,5 @@ export default class RateLimiterQueue {
   }
 }
 
-// Exportamos un Singleton para que toda la aplicación comparta la misma cuota
+// Export a Singleton so the entire application shares the same quota
 export const globalGeminiQueue = new RateLimiterQueue(12);

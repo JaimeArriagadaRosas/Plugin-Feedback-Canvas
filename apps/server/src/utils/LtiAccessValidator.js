@@ -3,16 +3,16 @@ import { isLaunchAllowed } from './roles.js';
 import logger from './logger.js';
 
 /**
- * Valida si un token LTI debe tener permiso para inicializar la aplicación frontend.
- * Acepta el objeto decoded (ya verificado) o, por compatibilidad, un JWT en bruto.
- * Bloquea a los estudiantes puros (sin capacidad docente/admin) como defensa en
- * profundidad. La visibilidad real la controla Canvas mediante los placements.
- * @param {object|string} tokenOrDecoded - El token JWT decodificado (o el JWT en bruto)
- * @returns {boolean} - true si el acceso es permitido, false si debe ser bloqueado
+ * Validates whether an LTI token should have permission to initialize the frontend application.
+ * Accepts the decoded object (already verified) or, for compatibility, a raw JWT.
+ * Blocks pure students (without teaching/admin capabilities) as defense in
+ * depth. Actual visibility is controlled by Canvas via placements.
+ * @param {object|string} tokenOrDecoded - The decoded JWT token (or the raw JWT)
+ * @returns {boolean} - true if access is allowed, false if it should be blocked
  */
 export const validateLtiLaunch = (tokenOrDecoded) => {
   try {
-    // Aceptar objeto decoded directamente para evitar doble decodificación JWT
+    // Accept decoded object directly to avoid double JWT decoding
     const decoded = (typeof tokenOrDecoded === 'string')
       ? jwt.decode(tokenOrDecoded)
       : tokenOrDecoded;
@@ -41,7 +41,7 @@ export const validateLtiLaunch = (tokenOrDecoded) => {
 }
 
 /**
- * Renderiza la vista HTML de acceso denegado directamente en la respuesta.
+ * Renders the access denied HTML view directly into the response.
  */
 export const renderAccessDenied = (res) => {
     const html = `

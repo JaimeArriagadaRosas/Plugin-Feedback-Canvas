@@ -1,12 +1,12 @@
 /**
  * db_health.js
- * Responsabilidad: Verifica la salud de la conexión a la base de datos de manera aislada.
+ * Responsibility: Verifies the database connection health in an isolated manner.
  */
 import logger from '../utils/logger.js';
 import { DatabaseConnectionError } from '../utils/errors.js';
 
 /**
- * Realiza un ping básico a la base de datos usando el pool.
+ * Performs a basic ping to the database using the pool.
  * @param {import('pg').Pool} pool 
  * @returns {Promise<boolean>}
  */

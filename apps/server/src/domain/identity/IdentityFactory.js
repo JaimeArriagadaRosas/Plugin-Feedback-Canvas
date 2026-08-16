@@ -3,8 +3,8 @@ import { getRolesFromClaims, getEntryFromClaims } from '../../utils/roles.js';
 
 export class IdentityFactory {
   /**
-   * Crea una instancia de AppIdentity desde los claims crudos de un LTI Launch (JWT decodificado).
-   * @param {Object} decoded - JWT decodificado del LTI Launch
+   * Creates an AppIdentity instance from the raw claims of an LTI Launch (decoded JWT).
+   * @param {Object} decoded - Decoded JWT of the LTI Launch
    * @returns {AppIdentity}
    */
   static fromLtiClaims(decoded) {
@@ -26,8 +26,8 @@ export class IdentityFactory {
   }
 
   /**
-   * Crea una instancia de AppIdentity desde un Session Token previamente validado.
-   * @param {Object} decoded - Session Token decodificado
+   * Creates an AppIdentity instance from a previously validated Session Token.
+   * @param {Object} decoded - Decoded Session Token
    * @returns {AppIdentity}
    */
   static fromSessionToken(decoded) {
@@ -36,10 +36,10 @@ export class IdentityFactory {
     
     return new AppIdentity({
       ltiUserId: decoded.sub,
-      // Si el SessionToken fue emitido con studentId, lo usamos como numericUserId (prioridad)
+      // If the SessionToken was issued with studentId, we use it as numericUserId (priority)
       numericUserId: decoded.studentId || customClaims.canvas_user_id || customClaims.user_id || null,
       name: decoded.name || 'User',
-      roles: getRolesFromClaims(decoded) || decoded.role, // Compatibilidad hacia atrás
+      roles: getRolesFromClaims(decoded) || decoded.role, // Backward compatibility
       courseId: contextClaim.id || decoded.courseId,
       numericCourseId: customClaims.canvas_course_id || null,
       source: 'session-token',
@@ -50,14 +50,14 @@ export class IdentityFactory {
   }
 
   /**
-   * Crea una instancia de AppIdentity de prueba (Local / ApiToken)
+   * Creates a test AppIdentity instance (Local / ApiToken)
    */
   static fromLocalUser(localId, role = 'teacher', courseId = null) {
     return new AppIdentity({
       ltiUserId: localId,
       numericUserId: localId,
       name: 'Local User',
-      roles: [role], // Simplificado
+      roles: [role], // Simplified
       courseId: courseId,
       numericCourseId: courseId,
       source: 'local-test',

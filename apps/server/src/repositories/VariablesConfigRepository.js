@@ -2,9 +2,9 @@ import db from '../data/db.js';
 
 export default class VariablesConfigRepository {
   /**
-   * Obtiene la configuración de variables para un curso.
-   * @param {number|string} courseId El ID del curso
-   * @returns {Promise<Object|null>} El JSON de configuración o null si no existe
+   * Retrieves variable configuration for a course.
+   * @param {number|string} courseId The course ID
+   * @returns {Promise<Object|null>} The config JSON or null if it does not exist
    */
   async getByCourseId(courseId) {
     const query = 'SELECT config_json FROM Configuracion_Curso_Tarea WHERE contexto_tipo = $1 AND contexto_id = $2';
@@ -18,10 +18,10 @@ export default class VariablesConfigRepository {
   }
 
   /**
-   * Guarda o actualiza la configuración de variables para un curso.
-   * @param {number|string} courseId El ID del curso
-   * @param {Object} variablesJson El objeto de variables validado
-   * @returns {Promise<Object>} El JSON guardado
+   * Saves or updates variable configuration for a course.
+   * @param {number|string} courseId The course ID
+   * @param {Object} variablesJson The validated variables object
+   * @returns {Promise<Object>} The saved JSON
    */
   async saveForCourse(courseId, variablesJson) {
     const query = `
