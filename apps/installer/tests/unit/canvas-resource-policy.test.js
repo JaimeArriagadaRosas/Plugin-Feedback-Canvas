@@ -28,20 +28,25 @@ describe('CanvasResourcePolicy', () => {
     expect(runner).toHaveBeenCalledWith('docker', ['info', '--format', '{{.MemTotal}}'], { captureAll: true });
   });
 
-  it('normaliza el cache de gems antes de instalar Ruby', () => {
+  it('aplica normalización capability-based a la caché de gems en lugar del antiguo chmod -R', () => {
     const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
     const steps = builder._buildSteps();
-    const permissionStep = steps.find(([command]) => command.includes('/home/docker/.gem'));
-    const rubyStep = steps.find(([command]) => command.includes('BUNDLE_FROZEN=false'));
+    
+    const oldChmod = steps.find(([command]) => command.includes('chmod') && command.includes('-R'));
+    expect(oldChmod).toBeUndefined();
 
-    expect(permissionStep[0]).toEqual([
-      'docker', 'compose', 'exec', '-T', 'web', 'chmod', '-R', 'go-w', '/home/docker/.gem'
-    ]);
-    expect(rubyStep[0]).toEqual([
-      'docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',
-      'bundle', 'install', '--jobs=2'
-    ]);
-    expect(steps.indexOf(permissionStep)).toBeLessThan(steps.indexOf(rubyStep));
+    const normalizationStep = steps.find(([command]) => {
+      const script = command[command.length - 1];
+      return script && script.includes('find /home/docker/.gem') && script.includes('chmod o-w');
+    });
+    expect(normalizationStep).toBeDefined();
+
+    const scriptBody = normalizationStep[0][normalizationStep[0].length - 1];
+    expect(scriptBody).toContain('-perm -0002 ! -perm -1000');
+    expect(scriptBody).toContain('INSECURE_UNFIXABLE:');
+
+    const rubyStep = steps.find(([command]) => command.includes('BUNDLE_FROZEN=false'));
+    expect(steps.indexOf(normalizationStep)).toBeLessThan(steps.indexOf(rubyStep));
   });
 
   it('migra Canvas antes de Yarn y no inicia workers durante el armado de assets', () => {

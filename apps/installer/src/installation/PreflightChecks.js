@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { runCommand } from './utils/Runner.js';
+import { getPluginDirectory, getAssetsMarker } from './utils/LocalWorkspacePaths.js';
 import { DockerRuntimeProbe, DockerRuntimeStatus } from '../platform/shared/DockerRuntimeProbe.js';
 
 export class PreflightChecks {
@@ -93,7 +94,7 @@ export class PreflightChecks {
     }
     
     // Si existe el clon, verificar que se haya completado el AssetBuilder exitosamente
-    const assetsMarker = path.join(this.canvasDir, '.assets_built');
+    const assetsMarker = getAssetsMarker(this.canvasDir);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(assetsMarker)) {
       return { ok: false, details: { missing_canvas_assets: true } };

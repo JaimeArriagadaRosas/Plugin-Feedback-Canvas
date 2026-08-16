@@ -46,4 +46,12 @@ describe('EnvironmentSetup', () => {
     expect(boot.error).toHaveBeenCalledOnce();
     expect(boot.action).toHaveBeenCalledWith('Install Compose V2.');
   });
+
+  it('aborting fast boot sets FAST_BOOT to false', () => {
+    const boot = createBootLog();
+    const setup = new EnvironmentSetup(boot, '/plugin', '/canvas');
+    process.env.FAST_BOOT = 'true';
+    setup._recoverInvalidFastBoot();
+    expect(process.env.FAST_BOOT).toBe('false');
+  });
 });
