@@ -37,7 +37,7 @@ describe('CanvasResourcePolicy', () => {
 
     const normalizationStep = steps.find(([command]) => {
       const script = command[command.length - 1];
-      return script && script.includes('find /home/docker/.gem') && script.includes('chmod o-w');
+      return script && script.includes('find "/home/docker/.gem"') && script.includes('chmod o-w');
     });
     expect(normalizationStep).toBeDefined();
 

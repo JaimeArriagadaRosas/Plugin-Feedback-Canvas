@@ -10,10 +10,10 @@ const ERROR_SIGNATURES = [
     solution: 'No repitas Yarn ni los assets. Conserva y restaura la ENCRYPTION_KEY usada por esa base de datos, o reinicia explícitamente los datos locales de Canvas si son descartables.'
   },
   {
-    pattern: /INSECURE_UNFIXABLE:(.+)/i,
+    pattern: /INSECURE_UNFIXABLE:(.+)|INSECURE_REMAINING:(.+)|INSECURE_CHMOD_FAILED:(.+)|INSECURE_SCAN_FAILED:(.+)|world-writable and does not have the sticky bit set|unsafe to remove/i,
     type: 'CANVAS_GEM_CACHE_INSECURE_PERMISSIONS',
-    diagnosis: 'El caché de gemas tiene permisos world-writable inseguros y el contenedor no tiene permisos para corregirlo.',
-    solution: 'El volumen docker fue creado con permisos incompatibles. Purgalo con "docker compose down -v" o ajusta sus permisos manualmente en WSL.'
+    diagnosis: 'El caché de gemas conserva uno o más directorios con permisos world-writable inseguros que el instalador no pudo normalizar.',
+    solution: 'Ajusta los permisos del volumen manualmente en WSL o verifica la propiedad del directorio .gem.'
   },
   {
     pattern: /File not found with singular glob: (.+)/i,

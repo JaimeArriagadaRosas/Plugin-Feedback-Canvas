@@ -51,11 +51,11 @@ export class AssetBuilder {
       [['docker', 'info'], 'Verificando daemon Docker...', 'Docker no responde.', 'Docker en ejecucion'],
       [['docker', 'compose', 'build', 'web', 'jobs'], 'Construyendo imagenes Docker...', 'Fallo al construir imagenes.', 'Imagenes Docker construidas'],
       [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Iniciando contenedores...', 'Fallo el inicio.', 'Contenedores iniciados'],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
-        'uid=$(id -u); find /home/docker/.gem -type d -perm -0002 ! -perm -1000 2>/dev/null | { fail=0; while IFS= read -r dir; do [ -z "$dir" ] && continue; owner=$(stat -c "%u" "$dir"); if [ "$owner" = "$uid" ]; then chmod o-w "$dir"; else echo "INSECURE_UNFIXABLE:$dir"; fail=1; fi; done; exit $fail; }'],
-      'Normalizando permisos de gems...', 'Fallo al normalizar cache de gems.', 'Permisos de cache de gems normalizados'],
       [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
       'Instalando plugin de Bundler...', 'Error instalando plugin de Bundler.', 'Plugin de Bundler instalado', 5],
+      [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
+        this._getGemCacheNormalizationScript()],
+      'Normalizando permisos de gems...', 'Fallo al normalizar cache de gems.', 'Permisos de cache de gems normalizados'],
       [['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',
         'bundle', 'install', '--jobs=2'],
       'Instalando dependencias de Ruby...', 'Error en Ruby.', 'Dependencias de Ruby instaladas', 5],
@@ -117,10 +117,29 @@ export class AssetBuilder {
       }
 
       spinner.error({ text: `${this._getFailureMessage(failMsg, result)} Código ${result.code}`, mark: '  ×' });
+      if (this._isNonRetryableError(result.out + '\n' + result.err)) {
+        break;
+      }
       if (attempt < maxRetries) await this._waitForRetry(attempt + 1);
     }
     this._printDiagnosis();
     return false;
+  }
+
+  _getGemCacheNormalizationScript(gemRoot = '/home/docker/.gem') {
+    return `uid=$(id -u); find "${gemRoot}" -type d -perm -0002 ! -perm -1000 2>/dev/null | { fail=0; while IFS= read -r dir; do [ -z "$dir" ] && continue; owner=$(stat -c "%u" "$dir"); if [ "$owner" = "$uid" ]; then chmod o-w "$dir" || { echo "INSECURE_CHMOD_FAILED:$dir"; fail=1; }; else echo "INSECURE_UNFIXABLE:$dir"; fail=1; fi; done; if [ $fail -eq 0 ]; then remaining=$(find "${gemRoot}" -type d -perm -0002 ! -perm -1000 -print -quit 2>/dev/null); if [ $? -ne 0 ]; then echo "INSECURE_SCAN_FAILED:${gemRoot}"; fail=1; elif [ -n "$remaining" ]; then echo "INSECURE_REMAINING:$remaining"; fail=1; fi; fi; exit $fail; }`;
+  }
+
+  _isNonRetryableError(output) {
+    const nonRetryablePatterns = [
+      /INSECURE_UNFIXABLE:/i,
+      /INSECURE_REMAINING:/i,
+      /INSECURE_CHMOD_FAILED:/i,
+      /INSECURE_SCAN_FAILED:/i,
+      /world-writable and does not have the sticky bit set/i,
+      /unsafe to remove/i
+    ];
+    return nonRetryablePatterns.some((pattern) => pattern.test(output));
   }
 
   _applyContainerUser(commandArgs) {
