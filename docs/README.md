@@ -31,6 +31,7 @@ Esta guía enseña el primer uso. Los temas especializados permanecen en documen
 |---|---|
 | Instalar en Windows, Linux, WSL2 o macOS | [Instalación multiplataforma](INSTALLATION.md) |
 | Entender los modos y el ciclo diario de Canvas | [Desarrollo local](LOCAL_DEVELOPMENT.md) |
+| Permisos de volumen y compatibilidad de Docker | [Compatibilidad Docker](DOCKER_COMPATIBILITY.md) |
 | Variables, versiones, secretos y recursos | [Entorno de ejecución](ENVIRONMENT.md) |
 | Ejecutar las pruebas | [Estrategia de pruebas](TESTING.md) |
 | Diagnosticar errores | [Troubleshooting](TROUBLESHOOTING.md) |

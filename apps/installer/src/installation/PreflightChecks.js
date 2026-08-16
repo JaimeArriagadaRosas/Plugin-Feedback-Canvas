@@ -4,13 +4,13 @@ import { runCommand } from './utils/Runner.js';
 import { DockerRuntimeProbe, DockerRuntimeStatus } from '../platform/shared/DockerRuntimeProbe.js';
 
 export class PreflightChecks {
-  constructor(boot, canvasDir, pluginDir, { dockerProbe = new DockerRuntimeProbe() } = {}) {
+  constructor(boot, canvasDir, pluginDir, { dockerProbe = new DockerRuntimeProbe(), dockerState = null } = {}) {
     this.boot = boot;
     this.canvasDir = canvasDir;
     this.pluginDir = pluginDir;
     this.MIN_RAM_GB = 8;
     this.dockerProbe = dockerProbe;
-    this.dockerState = null;
+    this.dockerState = dockerState;
   }
 
   async runChecks() {
@@ -52,7 +52,9 @@ export class PreflightChecks {
   }
 
   async checkDocker() {
-    this.dockerState = await this.dockerProbe.inspect();
+    if (!this.dockerState) {
+      this.dockerState = await this.dockerProbe.inspect();
+    }
     if (this.dockerState.status === DockerRuntimeStatus.ACTIVE) return { ok: true, details: {} };
     if (this.dockerState.cliOrigin === 'windows-interop') {
       return {

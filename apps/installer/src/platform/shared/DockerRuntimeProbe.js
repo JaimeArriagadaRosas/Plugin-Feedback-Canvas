@@ -12,11 +12,6 @@ function firstLine(value = '') {
   return value.split(/\r?\n/).map(line => line.trim()).find(Boolean) || '';
 }
 
-function parseMemoryBytes(value = '') {
-  const normalized = value.trim();
-  return /^\d+$/.test(normalized) ? Number.parseInt(normalized, 10) : null;
-}
-
 export function classifyDockerCliOrigin({ host, cliPath, clientPlatform, dockerHost }) {
   if (dockerHost) return 'remote';
   const mountedWindowsPath = /^\/mnt\/[a-z]\//i.test(cliPath || '');
@@ -69,11 +64,12 @@ export class DockerRuntimeProbe {
 
     const [cliPath, contextResult, clientResult, infoResult, composeResult] = await Promise.all([
       this._findCliPath(host),
-      this.runner('docker', ['context', 'show'], { captureAll: true, timeout: 5000 }),
+      this.runner('docker', ['context', 'inspect'], { captureAll: true, timeout: 5000 }),
       this.runner('docker', ['version', '--format', '{{.Client.Os}}/{{.Client.Arch}}'], { captureAll: true, timeout: 8000 }),
-      this.runner('docker', ['info', '--format', '{{.MemTotal}}'], { captureAll: true, timeout: 10000 }),
+      this.runner('docker', ['info', '--format', '{{json .}}'], { captureAll: true, timeout: 10000 }),
       this.runner('docker', ['compose', 'version'], { captureAll: true, timeout: 8000 })
     ]);
+
     const clientPlatform = firstLine(clientResult.out);
     const cliOrigin = classifyDockerCliOrigin({
       host,
@@ -81,14 +77,56 @@ export class DockerRuntimeProbe {
       clientPlatform,
       dockerHost: this.env.DOCKER_HOST
     });
-    const daemonError = `${infoResult.err || ''}\n${infoResult.out || ''}`.trim();
+
+    let daemonError = '';
+    let infoData = null;
+    let securityOptions = [];
+    let memoryBytes = null;
+    let daemonAvailable = infoResult.success;
+
+    if (infoResult.success) {
+      try {
+        infoData = JSON.parse(infoResult.out);
+        securityOptions = infoData.SecurityOptions || [];
+        memoryBytes = infoData.MemTotal || null;
+      } catch (e) {
+        daemonError = 'Invalid JSON output from docker info';
+        daemonAvailable = false;
+      }
+    } else {
+      daemonError = `${infoResult.err || ''}\n${infoResult.out || ''}`.trim();
+    }
+
+    let contextEndpoint = '';
+    let contextName = '';
+    if (contextResult.success) {
+      try {
+        const contexts = JSON.parse(contextResult.out);
+        if (contexts && contexts.length > 0) {
+          contextName = contexts[0].Name || '';
+          contextEndpoint = contexts[0].Endpoints?.docker?.Host || '';
+        }
+      } catch (e) {}
+    }
+
+    const isRootless = securityOptions.includes('name=rootless') || contextName === 'rootless';
+    const isUsernsRemap = securityOptions.includes('name=userns');
+
+    // Determinamos si el instalador se ejecuta con privilegios elevados (sudo)
+    const isRootUser = process.getuid ? process.getuid() === 0 : false;
+    let hostUid = null;
+    if (isRootUser && this.env.SUDO_UID) {
+      hostUid = Number.parseInt(this.env.SUDO_UID, 10);
+    } else if (process.getuid) {
+      hostUid = process.getuid();
+    }
+
     const permissionDenied = /permission denied|access denied|eacces/i.test(daemonError);
-    const status = infoResult.success
+    const status = daemonAvailable
       ? DockerRuntimeStatus.ACTIVE
       : permissionDenied
         ? DockerRuntimeStatus.PERMISSION_DENIED
         : DockerRuntimeStatus.DAEMON_DOWN;
-    const memoryBytes = infoResult.success ? parseMemoryBytes(infoResult.out) : null;
 
     return {
       status,
@@ -99,13 +137,22 @@ export class DockerRuntimeProbe {
       cliPath,
       cliVersion: firstLine(cli.out),
       clientPlatform,
-      context: contextResult.success ? firstLine(contextResult.out) : '',
+      context: contextName,
+      contextEndpoint,
       composeAvailable: composeResult.success,
-      daemonAvailable: infoResult.success,
+      daemonAvailable,
       permissionDenied,
       memoryBytes,
       memoryGb: memoryBytes === null ? null : memoryBytes / 1024 ** 3,
-      error: infoResult.success ? '' : daemonError
+      error: daemonAvailable ? '' : daemonError,
+      capabilities: {
+        rootless: isRootless,
+        usernsRemap: isUsernsRemap,
+        installerIsRoot: isRootUser,
+        hostUid,
+        dockerHostVar: this.env.DOCKER_HOST || null,
+        dockerContextVar: this.env.DOCKER_CONTEXT || null
+      }
     };
   }
 

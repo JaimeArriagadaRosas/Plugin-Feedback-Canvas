@@ -96,6 +96,16 @@ docker info
 
 Una ruta bajo `/mnt/c/Program Files/Docker/...` es el cliente de Windows. No demuestra que exista un daemon Linux nativo.
 
+## `EACCES: permission denied` en volúmenes de Docker
+
+El contenedor intentó acceder o modificar un archivo pero el sistema de archivos anfitrión le denegó el acceso. Esto ocurre típicamente cuando un archivo o directorio fue creado previamente usando privilegios elevados (ej. `sudo`), quedando bajo propiedad de `root` (UID 0), mientras que el contenedor se ejecuta con un usuario normal (por defecto, `docker` UID 9999).
+
+```bash
+ls -la /ruta/al/archivo_o_directorio
+```
+
+Si el propietario es `root`, puede corregirlo cambiando la propiedad al usuario correcto o borrando el archivo si es autogenerado (ej. `development.log` o carpetas temporales). Nunca use `sudo` rutinariamente para ejecutar `npm start` ni herramientas del proyecto.
+
 ## `Cannot connect to the Docker daemon`
 
 En rootless:

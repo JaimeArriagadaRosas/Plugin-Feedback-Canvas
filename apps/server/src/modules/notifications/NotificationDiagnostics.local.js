@@ -4,7 +4,7 @@ import path from 'path';
 
 export default class NotificationDiagnosticsLocal {
   constructor() {
-    this.logFilePath = path.join(process.cwd(), 'local-notifications-diagnostics.log');
+    this.logFilePath = path.join(process.cwd(), 'logs', 'local-notifications-diagnostics.log');
   }
 
   logBulkApproval(feedbacksToProcess, currentTeacherId) {

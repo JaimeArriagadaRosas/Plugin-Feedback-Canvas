@@ -1,6 +1,6 @@
 import { runCommand } from './utils/Runner.js';
+import { RubyDependencyInstaller } from './installers/RubyDependencyInstaller.js';
 import { createSpinner } from 'nanospinner';
-import { GemInstaller } from './installers/GemInstaller.js';
 
 /**
  * DatabaseHealth — Verificación resiliente de PostgreSQL.
@@ -23,8 +23,8 @@ export class DatabaseHealth {
     this.boot.info('Verificando estado de la base de datos PostgreSQL...');
     
     // Primero verificar/instalar plugins de Bundler
-    const gemInstaller = new GemInstaller(this.boot, this.canvasDir);
-    if (!(await gemInstaller.ensureBundlerPlugins())) {
+    const rubyDependencyInstaller = new RubyDependencyInstaller(this.boot, this.canvasDir);
+    if (!(await rubyDependencyInstaller.ensureBundlerPlugins())) {
       throw new Error('Fallo al instalar plugins de Bundler requeridos.');
     }
     
