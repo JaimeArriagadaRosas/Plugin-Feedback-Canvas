@@ -1,15 +1,15 @@
 import crypto from 'node:crypto';
 
 /**
- * Verificación de firma HMAC-SHA256 de webhooks de Canvas.
+ * HMAC-SHA256 signature verification of Canvas webhooks.
  *
- * CORRECCIÓN: Canvas firma el BODY CRUDO de la petición. La implementación
- * anterior hacía JSON.stringify(req.body), lo que puede alterar orden/espacios
- * y producir verificaciones incorrectas. Aquí se exige el raw body
- * (capturado con express.json({ verify }) en middleware.js).
+ * FIX: Canvas signs the RAW BODY of the request. The previous
+ * implementation did JSON.stringify(req.body), which can alter order/spaces
+ * and produce incorrect verifications. Here the raw body is required
+ * (captured with express.json({ verify }) in middleware.js).
  *
- * Usa timingSafeEqual comparando directamente la firma esperada (Base64) con
- * la firma recibida, evitando el doble hash intermedio y el length probing.
+ * Uses timingSafeEqual directly comparing the expected signature (Base64) with
+ * the received signature, avoiding the intermediate double hash and length probing.
  */
 export function verifyCanvasWebhook(rawBody, signature, secret) {
   if (!secret) return false;
@@ -22,14 +22,14 @@ export function verifyCanvasWebhook(rawBody, signature, secret) {
     crypto
       .createHmac('sha256', secret)
       .update(rawBody)
-      .digest('base64'), // Canvas envia la firma en Base64
+      .digest('base64'), // Canvas sends the signature in Base64
     'utf8'
   );
 
   const received = Buffer.from(signature || '', 'utf8');
 
-  // timingSafeEqual exige buffers de igual longitud; si difieren en longitud
-  // la firma es inválida por definición.
+  // timingSafeEqual requires buffers of equal length; if they differ in length
+  // the signature is invalid by definition.
   if (expected.length !== received.length) return false;
 
   return crypto.timingSafeEqual(expected, received);

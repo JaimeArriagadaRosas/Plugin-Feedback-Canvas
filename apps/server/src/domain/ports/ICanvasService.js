@@ -1,9 +1,9 @@
 /**
- * Puerto (interface) para el servicio de integración con Canvas LMS.
+ * Port (interface) for the Canvas LMS integration service.
  * 
- * Documenta el contrato que deben cumplir las implementaciones
- * (CanvasService, CanvasService.local) para que
- * los use cases permanezcan agnósticos del proveedor.
+ * Documents the contract that implementations must fulfill
+ * (CanvasService, CanvasService.local) so that
+ * the use cases remain agnostic to the provider.
  */
 export class ICanvasService {
   constructor(accessToken, canvasBaseUrl) {

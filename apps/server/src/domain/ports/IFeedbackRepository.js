@@ -1,9 +1,9 @@
 /**
- * Puerto (interface) para el repositorio de feedback.
+ * Port (interface) for the feedback repository.
  * 
- * Esta interfaz cumple con el Principio de Inversión de Dependencias (DIP):
- * los servicios de aplicación dependen de esta abstracción, no de la 
- * implementación concreta en `datos/FeedbackRepository.js`.
+ * This interface fulfills the Dependency Inversion Principle (DIP):
+ * application services depend on this abstraction, not on the 
+ * concrete implementation in `datos/FeedbackRepository.js`.
  */
 export class IFeedbackRepository {
   async save(feedbackData) {

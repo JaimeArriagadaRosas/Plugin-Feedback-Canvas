@@ -2,7 +2,7 @@ import db from './db.js';
 import EncryptionService from '../services/infrastructure/EncryptionService.js';
 
 /**
- * Repositorio de Tokens y Llaves de IA (PostgreSQL + Encryption)
+ * AI Tokens and Keys Repository (PostgreSQL + Encryption)
  */
 export default class TokenRepository {
   async getActiveKey(service, quiet = false) {
@@ -30,18 +30,18 @@ export default class TokenRepository {
   }
 
   async registerKey(service, plainKey, customEndpoint = null) {
-    // Validar servicio
+    // Validate service
     const validServices = ['openai', 'claude', 'gemini', 'custom', 'otros'];
     if (!validServices.includes(service.toLowerCase())) {
-      throw new Error(`Servicio no soportado: ${service}`);
+      throw new Error(`Unsupported service: ${service}`);
     }
 
     const normalizedService = service.toLowerCase();
     
-    // Encriptar antes de guardar en la DB
+    // Encrypt before saving to DB
     const encryptedKey = EncryptionService.encrypt(plainKey);
     
-    // Usar UPSERT: insertar o actualizar si ya existe
+    // Use UPSERT: insert or update if it already exists
     const res = await db.query(
       `INSERT INTO Llaves_API_IA (servicio, api_key_encriptada, endpoint_personalizado, activo) 
        VALUES ($1, $2, $3, TRUE) 

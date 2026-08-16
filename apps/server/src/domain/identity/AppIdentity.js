@@ -1,23 +1,23 @@
 export class AppIdentity {
   /**
-   * Representa la identidad unificada de un usuario dentro del sistema.
+   * Represents the unified identity of a user within the system.
    *
    * @param {Object} params
-   * @param {string} params.ltiUserId - El UUID proporcionado por Canvas LTI en el claim `sub`
-   * @param {string} [params.numericUserId] - El ID numérico de Canvas (usualmente proveído por custom_fields)
-   * @param {string} [params.name] - Nombre del usuario (si está disponible)
-   * @param {string[]} params.roles - Lista de roles LTI
-   * @param {string} [params.courseId] - El ID (o UUID/hash) del curso de Canvas proporcionado por el claim context
-   * @param {string} [params.numericCourseId] - El ID numérico del curso (usualmente proveído por custom_fields)
-   * @param {string} params.source - Origen de la autenticación (e.g. 'lti-launch', 'session-token', 'api-token')
-   * @param {string} [params.entry] - Entrypoint ('teacher', 'student', etc)
-   * @param {string} [params.deploymentId] - El LTI deployment ID
-   * @param {boolean} [params.isLocalSession=false] - Indica si es una sesión generada para pruebas locales
+   * @param {string} params.ltiUserId - The UUID provided by Canvas LTI in the `sub` claim
+   * @param {string} [params.numericUserId] - The Canvas numeric ID (usually provided by custom_fields)
+   * @param {string} [params.name] - User name (if available)
+   * @param {string[]} params.roles - List of LTI roles
+   * @param {string} [params.courseId] - The Canvas course ID (or UUID/hash) provided by the context claim
+   * @param {string} [params.numericCourseId] - The course numeric ID (usually provided by custom_fields)
+   * @param {string} params.source - Authentication origin (e.g., 'lti-launch', 'session-token', 'api-token')
+   * @param {string} [params.entry] - Entrypoint ('teacher', 'student', etc.)
+   * @param {string} [params.deploymentId] - The LTI deployment ID
+   * @param {boolean} [params.isLocalSession=false] - Indicates if it's a session generated for local testing
    */
   constructor({
     ltiUserId,
     numericUserId,
-    name = 'Usuario',
+    name = 'User',
     roles = [],
     courseId,
     numericCourseId,
@@ -39,19 +39,19 @@ export class AppIdentity {
   }
 
   /**
-   * Obtiene el identificador canónico del usuario.
-   * Prioriza el ID numérico si Canvas LTI lo proporcionó en custom_fields. 
-   * De lo contrario, retorna el UUID (sub).
-   * @returns {string} El identificador canónico
+   * Gets the canonical user identifier.
+   * Prioritizes the numeric ID if Canvas LTI provided it in custom_fields. 
+   * Otherwise, returns the UUID (sub).
+   * @returns {string} The canonical identifier
    */
   get canonicalUserId() {
     return this.numericUserId || this.ltiUserId;
   }
 
   /**
-   * Obtiene el identificador canónico del curso.
-   * Prioriza el ID numérico si Canvas LTI lo proporcionó en custom_fields.
-   * De lo contrario, retorna el LTI Context ID (UUID/hash).
+   * Gets the canonical course identifier.
+   * Prioritizes the numeric ID if Canvas LTI provided it in custom_fields.
+   * Otherwise, returns the LTI Context ID (UUID/hash).
    * @returns {string}
    */
   get canonicalCourseId() {
@@ -59,7 +59,7 @@ export class AppIdentity {
   }
 
   /**
-   * Evalúa si el usuario activo es un student.
+   * Evaluates if the active user is a student.
    * @returns {boolean}
    */
   isStudent() {
@@ -69,7 +69,7 @@ export class AppIdentity {
   }
 
   /**
-   * Evalúa si el usuario activo es un teacher.
+   * Evaluates if the active user is a teacher.
    * @returns {boolean}
    */
   isTeacher() {

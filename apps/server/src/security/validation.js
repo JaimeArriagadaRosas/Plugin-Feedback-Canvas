@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 /**
- * Validación de entrada con Zod (runtime).
+ * Input validation with Zod (runtime).
  *
- * Corrige la validación inconsistente detectada: muchos POST/PUT no validaban el
- * body y la defensa contra mass-assignment (validateKnownFields) nunca se usaba.
- * Aquí se validan body + se rechazan campos no permitidos en un solo middleware.
+ * Fixes the inconsistent validation detected: many POST/PUT did not validate the
+ * body and the mass-assignment defense (validateKnownFields) was never used.
+ * Here we validate body + reject non-allowed fields in a single middleware.
  *
  * OWASP A03 (Injection) / A04 (Insecure Design): never trust user input.
  */
@@ -84,8 +84,8 @@ export const schemas = {
 };
 
 /**
- * Middleware que valida el body contra un esquema Zod y opcionalmente bloquea
- * mass-assignment (campos fuera de allowedFields).
+ * Middleware that validates the body against a Zod schema and optionally blocks
+ * mass-assignment (fields outside allowedFields).
  */
 export function validateBody(schema, allowedFields) {
   return (req, res, next) => {

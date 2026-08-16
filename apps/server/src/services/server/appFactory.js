@@ -111,7 +111,7 @@ export async function startServer(app, PORT) {
       }
       logger.info('');
 
-      // Notificar vía IPC al orquestador que el servidor está listo.
+      // Notify the orchestrator via IPC that the server is ready.
       if (process.send) {
         process.send({ type: 'server-ready' });
       }
@@ -119,7 +119,7 @@ export async function startServer(app, PORT) {
       resolve(server);
     }).on('error', (err) => {
       logger.error(`[SERVER] ERROR listening on port ${PORT}: ${err.message}`);
-      // Notificar vía IPC al orquestador que ocurrió un error
+      // Notify the orchestrator via IPC that an error occurred
       if (process.send) {
         process.send({ type: 'server-error', message: err.message });
       }
