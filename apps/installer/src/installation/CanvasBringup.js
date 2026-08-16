@@ -1,4 +1,3 @@
-import { createContainerWorkspacePermissions } from '../platform/shared/ContainerWorkspacePermissionsFactory.js';
 import { runCommand } from './utils/Runner.js';
 import { execa } from 'execa';
 
@@ -10,6 +9,7 @@ function wait(milliseconds) {
 
 function createDefaultHealthCheck() {
   let consecutive500 = 0;
+  const start = Date.now();
   return async (url) => {
     try {
       const response = await fetch(url, {
@@ -18,15 +18,16 @@ function createDefaultHealthCheck() {
       });
       if (response.status >= 500 && response.status < 600) {
         consecutive500++;
-        if (consecutive500 >= 5) throw new Error(`HTTP ${response.status} persistente devuelto por Canvas.`);
+        if (consecutive500 >= 5) {
+          return { ok: false, status: response.status, error: `HTTP ${response.status} persistente devuelto por Canvas.`, duration: Date.now() - start };
+        }
       } else {
         consecutive500 = 0;
       }
-      return response.status >= 200 && response.status < 400;
+      return { ok: response.status >= 200 && response.status < 400, status: response.status, error: null, duration: Date.now() - start };
     } catch (e) {
-      if (e.message.includes('persistente')) throw e;
       consecutive500 = 0;
-      return false;
+      return { ok: false, status: 0, error: e.message, duration: Date.now() - start };
     }
   };
 }
@@ -160,10 +161,15 @@ export class CanvasBringup {
       }
 
       try {
-        if (isRunning && await this.healthCheck(this.healthUrl)) {
-          tailProcess.kill();
-          spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
-          return true;
+        if (isRunning) {
+          const healthResult = await this.healthCheck(this.healthUrl);
+          if (healthResult.ok) {
+            tailProcess.kill();
+            spinner.success({ text: 'Canvas LMS está listo para recibir solicitudes', mark: '  √' });
+            return true;
+          } else if (healthResult.error && healthResult.error.includes('persistente')) {
+            throw new Error(healthResult.error);
+          }
         }
       } catch (err) {
         tailProcess.kill();

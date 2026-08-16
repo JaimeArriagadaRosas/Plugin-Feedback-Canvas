@@ -132,10 +132,17 @@ export class CanvasLocalConfiguration {
   _applyUserIdArgs(service = {}) {
     if (!this.dockerProfile) return service;
     
-    const isLinuxEngine = this.dockerProfile.backend === 'docker-engine-linux';
-    const hostUid = this.dockerProfile.capabilities?.hostUid;
+    const { backend, capabilities } = this.dockerProfile;
+    const isLinuxEngine = backend === 'docker-engine-linux';
+    const { rootless, usernsRemap, hostUid, installerIsRoot } = capabilities || {};
     
-    if (isLinuxEngine && hostUid && hostUid > 0) {
+    // Never set USER_ID if it's not a local linux engine or if installer is running as root
+    // Also explicitly omit it for rootless and usernsRemap since Docker handles mapping
+    if (!isLinuxEngine || installerIsRoot || rootless || usernsRemap) {
+        return service;
+    }
+    
+    if (hostUid && hostUid > 0) {
       service.build = service.build || { context: '.' };
       service.build.args = service.build.args || {};
       service.build.args.USER_ID = hostUid.toString();

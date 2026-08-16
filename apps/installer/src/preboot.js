@@ -3,6 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+if (process.getuid && process.getuid() === 0) {
+  console.error('\n[X] ERROR FATAL: El instalador no debe ejecutarse como root/sudo.');
+  console.error('    Ejecuta npm start con tu usuario normal. Las operaciones del host');
+  console.error('    que requieran elevación solicitarán sudo de forma puntual.');
+  process.exit(1);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..', '..', '..');

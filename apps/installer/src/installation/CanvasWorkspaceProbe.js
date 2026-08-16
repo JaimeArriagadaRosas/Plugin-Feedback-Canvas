@@ -13,44 +13,38 @@ export class CanvasWorkspaceProbe {
     let ok = true;
     const errors = [];
 
-    // Verificamos el usuario actual del contenedor (para reportar si somos root)
     const idCmd = await this.runner('docker', ['compose', 'exec', '-T', 'web', 'id', '-u'], {
       cwd: this.canvasDir,
       captureAll: true
     });
-    
-    const isRootUser = idCmd.success && idCmd.out.trim() === '0';
+    const uid = idCmd.success ? idCmd.out.trim() : 'unknown';
 
-    // Verificamos propiedad de development.log
-    const logStatCmd = await this.runner('docker', [
-      'compose', 'exec', '-T', 'web', 'stat', '-c', '%U:%G %a', '/usr/src/app/log/development.log'
-    ], { cwd: this.canvasDir, captureAll: true });
+    const checkWrite = async (path, type) => {
+      const probeCmd = await this.runner('docker', [
+        'compose', 'exec', '-T', 'web', 'bash', '-c', `touch ${path}/.probe && rm ${path}/.probe`
+      ], { cwd: this.canvasDir, captureAll: true });
 
-    if (logStatCmd.success) {
-      const output = logStatCmd.out.trim();
-      if (output.includes('root:root') && !isRootUser) {
+      if (!probeCmd.success) {
         ok = false;
+        const statCmd = await this.runner('docker', [
+          'compose', 'exec', '-T', 'web', 'stat', '-c', '%u:%g %a', path
+        ], { cwd: this.canvasDir, captureAll: true });
+        
+        const statOutput = statCmd.success ? statCmd.out.trim() : 'unknown';
+        
         errors.push({
-          type: 'CANVAS_LOG_PERMISSION_DENIED',
-          message: 'development.log tiene como propietario a root, pero el contenedor ejecuta como usuario normal. Esto provocará un EACCES al iniciar la aplicación.',
-          details: output
+          type,
+          message: `No se tienen permisos de escritura en ${path} (ejecutando como UID ${uid}).`,
+          details: `Stat: ${statOutput}\nError: ${probeCmd.err || probeCmd.out}`
         });
       }
-    }
+    };
 
-    // Verificamos si podemos escribir en tmp
-    const tmpWriteCmd = await this.runner('docker', [
-      'compose', 'exec', '-T', 'web', 'bash', '-c', 'touch /usr/src/app/tmp/.probe && rm /usr/src/app/tmp/.probe'
-    ], { cwd: this.canvasDir, captureAll: true });
-
-    if (!tmpWriteCmd.success) {
-      ok = false;
-      errors.push({
-        type: 'CANVAS_TMP_PERMISSION_DENIED',
-        message: 'No se tienen permisos de escritura en el directorio tmp.',
-        details: tmpWriteCmd.err || tmpWriteCmd.out
-      });
-    }
+    await checkWrite('/usr/src/app', 'CANVAS_WORKSPACE_PERMISSION_DENIED');
+    await checkWrite('/usr/src/app/log', 'CANVAS_LOG_PERMISSION_DENIED');
+    await checkWrite('/usr/src/app/tmp', 'CANVAS_TMP_PERMISSION_DENIED');
+    await checkWrite('/home/docker/.gem', 'CANVAS_GEM_PERMISSION_DENIED');
+    await checkWrite('/home/docker/.bundle', 'CANVAS_BUNDLE_PERMISSION_DENIED');
 
     if (!ok) {
       this.boot.error('Se detectaron problemas de permisos en los volúmenes de Canvas.');

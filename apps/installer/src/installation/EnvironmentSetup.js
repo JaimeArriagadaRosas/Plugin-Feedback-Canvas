@@ -43,8 +43,11 @@ export class EnvironmentSetup {
   async _runFastBoot(dockerProfile) {
     this.boot.info('Modo Fast Boot detectado: verificando runtime y contenedores...');
     const installer = this._createDockerInstaller();
-    if (!dockerProfile.daemonAvailable && !(await installer.handleDockerDaemonDown(dockerProfile))) {
-      throw new Error('Docker no está disponible. Corrija la acción indicada y reanude npm start.');
+    if (!dockerProfile.daemonAvailable) {
+      if (!(await installer.handleDockerDaemonDown(dockerProfile))) {
+        throw new Error('Docker no está disponible. Corrija la acción indicada y reanude npm start.');
+      }
+      dockerProfile = await installer.getRuntimeState();
     }
 
     const bringup = new CanvasBringup(this.boot, this.canvasDir, { dockerProfile });
