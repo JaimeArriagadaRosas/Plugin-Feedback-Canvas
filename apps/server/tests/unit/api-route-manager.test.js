@@ -1,4 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+vi.mock('../../src/data/db.js', () => ({
+  query: vi.fn(),
+  pool: {}
+}));
+
 import ApiRouteManager from '../../src/routes/ApiRouteManager.js';
 
 describe('ApiRouteManager', () => {
