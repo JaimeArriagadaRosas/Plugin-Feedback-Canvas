@@ -13,20 +13,20 @@ export const authorizeRole = (requiredRoles) => {
 
     if (requiredRoles.includes('teacher') && (classification.isInstructor || classification.isTA || classification.isDesigner || classification.isAccountAdmin)) {
       authorized = true;
-      logger.debug(`[AUTHZ] Authorized as teacher (Instructor/TA/Designer/Admin)`);
+      logger.debug('[AUTHZ] Authorized as teacher (Instructor/TA/Designer/Admin)');
     }
-    // entry=teacher is just a launch hint; DOES NOT grant access by itself
+    // entry=teacher is only a hint from the launch; DO NOT grant access on its own
     // (prevents escalation). Real instructor classification is required.
     if (requiredRoles.includes('teacher') && isExplicitTeacherEntry && !authorized) {
-      logger.warn(`[AUTHZ] entry=teacher without instructor classification; denied`);
+      logger.warn('[AUTHZ] entry=teacher without instructor classification; denied');
     }
     if (requiredRoles.includes('admin')   && classification.isAccountAdmin) {
       authorized = true;
-      logger.debug(`[AUTHZ] Authorized as admin (AccountAdmin)`);
+      logger.debug('[AUTHZ] Authorized as admin (AccountAdmin)');
     }
     if (requiredRoles.includes('student') && classification.isLearner) {
       authorized = true;
-      logger.debug(`[AUTHZ] Authorized as student (Learner)`);
+      logger.debug('[AUTHZ] Authorized as student (Learner)');
     }
 
     if (classification.isLearner) {
@@ -44,7 +44,7 @@ export const authorizeRole = (requiredRoles) => {
     logger.debug(`[AUTHZ] Effective role: ${effective} | Required: [${requiredRoles.join(',')}] | Authorized: ${authorized}`);
 
     if (!authorized) {
-      return next(new AppError(`Access denied: Role required [${requiredRoles.join(' or ')}], but the user has role '${effective}'.`, 403));
+      return next(new AppError(`Access denied: Required role [${requiredRoles.join(',')}], but user has role '${effective}'.`, 403));
     }
     next();
   };

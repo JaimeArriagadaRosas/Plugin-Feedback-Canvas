@@ -10,15 +10,15 @@ const variablesDir = path.resolve(__dirname, '../../services/variables');
 
 /* eslint-disable security/detect-object-injection */
 export const DEFAULT_VARIABLES = {
-  trayectoria_academica: { activa: true, ponderacion: 20, nombre: 'Academic trajectory in the course' },
-  calificaciones_previas: { activa: true, ponderacion: 20, nombre: 'Previous grades' },
-  desempeno_otras_asignaturas: { activa: true, ponderacion: 20, nombre: 'Performance in other courses' },
-  perfil_ingreso: { activa: true, ponderacion: 20, nombre: 'Entry profile' },
-  situacion_academica_anterior: { activa: true, ponderacion: 20, nombre: 'Previous academic status' }
+  academic_trajectory: { activa: true, ponderacion: 20, nombre: 'Academic trajectory in the course' },
+  previous_grades: { activa: true, ponderacion: 20, nombre: 'Previous grades' },
+  other_course_performance: { activa: true, ponderacion: 20, nombre: 'Performance in other courses' },
+  entry_profile: { activa: true, ponderacion: 20, nombre: 'Entry profile' },
+  previous_academic_status: { activa: true, ponderacion: 20, nombre: 'Previous academic status' }
 };
 
 // System or template variables that MUST NOT appear in the weight configuration
-const EXCLUDED_VARIABLES = ['promedio_curso', 'calificacion', 'nombre_student'];
+const EXCLUDED_VARIABLES = ['course_average', 'grade', 'student_name'];
 
 // Dynamic loading of additional variables (RF06)
 export function loadDynamicVariables() {

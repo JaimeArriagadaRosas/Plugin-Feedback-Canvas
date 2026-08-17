@@ -1,6 +1,6 @@
 name: feedback-plugin-ecosystem
 
-# Base definition (shared)
+# Definición base (compartida)
 services:
   db:
     image: postgres:15-alpine
@@ -22,6 +22,12 @@ services:
     image: gotenberg/gotenberg:8
     command: gotenberg --api-timeout=120s
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   app:
     image: plugin-feedback-app:latest
@@ -40,7 +46,7 @@ services:
       db:
         condition: service_healthy
       gotenberg:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   plugin_db_data:

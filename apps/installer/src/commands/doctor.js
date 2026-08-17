@@ -23,7 +23,7 @@ export async function runDiagnosis() {
   checkEnvironment(state, readEnv());
   const backendRunning = await checkServices(state);
   await checkApi(state, backendRunning);
-  checkDocker(state);
+  await checkDocker(state);
   checkNodeAndLogs(state);
   printSummary(state);
   return state.failures === 0;
@@ -38,37 +38,47 @@ function printHeader() {
 }
 
 function checkStructure(state) {
-  section('File structure');
+  section('Estructura de archivos');
   const files = [
-    ['apps/client/src/main.jsx', 'React frontend entry point'],
-    ['apps/server/src/server.js', 'Express Server'],
-    ['apps/server/src/middlewares/AuthLTI13Handler.js', 'LTI Authentication'],
-    ['apps/server/src/routes/GestorRutasAPI.js', 'API Routes'],
-    ['apps/server/src/utils/logger.js', 'Structured logger'],
-    ['apps/client/vite.config.js', 'Vite Configuration'],
-    ['.env', 'Local environment variables']
+    ['apps/client/src/main.jsx', 'Entrada del frontend React'],
+    ['apps/server/src/server.js', 'Servidor Express'],
+    ['apps/server/src/middlewares/AuthLTI13Handler.js', 'Autenticación LTI'],
+    ['apps/server/src/routes/GestorRutasAPI.js', 'Rutas de API'],
+    ['apps/server/src/utils/logger.js', 'Logger estructurado'],
+    ['apps/client/vite.config.js', 'Vite configuration'],
+    ['.env', 'Variables del entorno local']
   ];
   for (const [relativePath, description] of files) {
     const fullPath = path.join(PLUGIN_DIR, relativePath);
     if (fs.existsSync(fullPath)) ok(state, relativePath, description);
-    else fail(state, `${relativePath} not found`, `Create the file: ${fullPath}`);
+    else fail(state, `${relativePath} no encontrado`, `Crea el archivo: ${fullPath}`);
   }
 }
 
 function checkEnvironment(state, env) {
-  section('Environment variables');
+  section('Entorno de ejecución y variables');
+  checkRootUser(state);
   const required = [
-    ['VITE_CANVAS_BASE_URL', 'Canvas LMS base URL'],
-    ['LTI_CLIENT_ID', 'LTI tool Client ID'],
-    ['LTI_REDIRECT_URI', 'LTI callback URI'],
-    ['GEMINI_API_KEY', 'Gemini AI API Key']
+    ['VITE_CANVAS_BASE_URL', 'URL base de Canvas LMS'],
+    ['LTI_CLIENT_ID', 'Client ID del tool LTI'],
+    ['LTI_REDIRECT_URI', 'URI de callback LTI'],
+    ['GEMINI_API_KEY', 'Clave de API de Gemini IA']
   ];
   for (const [key, description] of required) {
     const value = env[key] || process.env[key];
-    if (value?.trim()) ok(state, key, `${description} configured`);
-    else fail(state, `${key} not configured`, `Add ${key}=<value> in .env`);
+    if (value?.trim()) ok(state, key, `${description} configurada`);
+    else fail(state, `${key} no configured`, `Add ${key}=<valor> in .env`);
   }
   reportLocalMode(state, env);
+}
+
+function checkRootUser(state) {
+  const isRoot = process.getuid && process.getuid() === 0;
+  if (isRoot) {
+    warn(state, 'Running as root/sudo', 'It is recommended to run the diagnostic with your normal user. Using root can alter permissions and generate errors in Docker volumes.');
+  } else {
+    ok(state, 'User without root privileges', 'Normal execution recommended');
+  }
 }
 
 function reportLocalMode(state, env) {
@@ -78,7 +88,7 @@ function reportLocalMode(state, env) {
     warn(state, 'Local mode inactive', 'Configure VITE_USE_LOCAL_DATA=true only for testing without Canvas.');
     return;
   }
-  ok(state, 'Local mode active', `Configured role: ${role || '(none)'}`);
+  ok(state, 'Local mode active', `Role configured: ${role || '(ninguno)'}`);
   if (!role) warn(state, 'LOCAL_USER_ROLE not defined', 'Use admin, teacher, student or student-1..student-5.');
   else if (!['admin', 'teacher', 'student'].includes(role) && !role.startsWith('student-')) {
     warn(state, `Role '${role}' not recognized`, 'Use admin, teacher, student or student-1..student-5.');
@@ -88,10 +98,10 @@ function reportLocalMode(state, env) {
 async function checkServices(state) {
   section('Services and ports');
   const backendRunning = await checkPort(3000);
-  reportPort(state, backendRunning, 'Express Backend', ':3000', 'npm run server');
-  reportPort(state, await checkPort(5173), 'Vite Frontend', ':5173', 'npm run dev');
+  reportPort(state, backendRunning, 'Backend Express', ':3000', 'npm run server');
+  reportPort(state, await checkPort(5173), 'Frontend Vite', ':5173', 'npm run dev');
   if (await checkPort(8080)) ok(state, 'Canvas LMS (Docker)', 'Port 8080 in use');
-  else warn(state, 'Canvas LMS not detected on :8080', 'For local mode use npm start and choose option 3.');
+  else warn(state, 'Canvas LMS not detected on :8080', 'Para modo local usa npm start y elige opción 3.');
   return backendRunning;
 }
 
@@ -101,9 +111,9 @@ function reportPort(state, active, name, port, command) {
 }
 
 async function checkApi(state, backendRunning) {
-  section('Backend API');
+  section('API del backend');
   if (!backendRunning) {
-    warn(state, 'API not verified', 'The backend is not running.');
+    warn(state, 'API not verified', 'El backend no está corriendo.');
     return;
   }
   await reportHealth(state);
@@ -125,7 +135,7 @@ async function reportStartupMode(state) {
   }
   try {
     const config = JSON.parse(response.data);
-    ok(state, '/api/config/startup-mode', `Mode: ${config.mode} | DB: ${config.dbMode}`);
+    ok(state, '/api/config/startup-mode', `Modo: ${config.mode} | DB: ${config.dbMode}`);
   } catch {
     warn(state, '/api/config/startup-mode', 'Response is not valid JSON');
   }
@@ -149,20 +159,60 @@ async function reportCurrentUser(state) {
   }
 }
 
-function checkDocker(state) {
+async function checkDocker(state) {
   section('Docker');
   try {
-    ok(state, 'Docker installed', commandOutput('docker', ['--version'], PLUGIN_DIR, 3000));
-  } catch {
-    warn(state, 'Docker not detected', dockerInstallGuidance());
-    return;
-  }
-  try {
-    const status = commandOutput('docker', ['compose', 'ps'], CANVAS_DIR, 5000);
-    if (/running|up/i.test(status)) ok(state, 'Canvas Docker Compose', 'Active containers detected');
-    else warn(state, 'Canvas Docker Compose', 'No active containers detected.');
-  } catch {
-    warn(state, 'Canvas Docker Compose', 'Could not query container status.');
+    const { DockerInstaller } = await import('../installation/installers/DockerInstaller.js');
+    const silentLogger = {
+      info: () => {}, warn: () => {}, error: () => {}, success: () => {}, action: () => {}, plain: () => {}
+    };
+    const installer = new DockerInstaller(silentLogger, '/dev/null');
+    const profile = await installer.getRuntimeState();
+
+    if (profile.daemonAvailable) {
+      ok(state, 'Docker', `Active daemon (${profile.backend})`);
+      const { rootless, usernsRemap, hostUid } = profile.capabilities || {};
+      const contextInfo = profile.context ? `Context: ${profile.context}` : 'Context: default';
+      const endpointInfo = profile.contextEndpoint ? `Endpoint: ${profile.contextEndpoint}` : 'Endpoint: default';
+      const isRootless = rootless ? 'Yes' : 'No';
+      const isUsernsRemap = usernsRemap ? 'Yes' : 'No';
+      ok(state, 'Docker Runtime', `${contextInfo} | ${endpointInfo} | Rootless: ${isRootless} | Userns-remap: ${isUsernsRemap}`);
+
+      const isLinuxEngine = profile.backend === 'docker-engine-linux';
+      const userIdStrategy = (isLinuxEngine && !rootless && !usernsRemap && hostUid > 0) ? `Injection of USER_ID=${hostUid}` : 'Image default (9999)';
+      ok(state, 'USER_ID Strategy', userIdStrategy);
+    } else {
+      warn(state, 'Docker', 'Daemon not available or insufficient permissions.');
+    }
+
+    if (profile.composeAvailable) {
+      ok(state, 'Docker Compose', 'Available');
+    } else {
+      warn(state, 'Docker Compose', 'Not available or error querying.');
+    }
+
+    try {
+      const status = commandOutput('docker', ['compose', 'ps'], CANVAS_DIR, 5000);
+      if (/running|up/i.test(status)) {
+        ok(state, 'Canvas Docker Compose', 'Active containers detected');
+
+        const { CanvasWorkspaceProbe } = await import('../installation/CanvasWorkspaceProbe.js');
+        const probe = new CanvasWorkspaceProbe(silentLogger, CANVAS_DIR);
+        const probeResult = await probe.runChecks();
+        if (probeResult.ok) {
+           ok(state, 'Workspace de Canvas', 'Correct permissions');
+        } else {
+           for (const err of probeResult.errors) {
+             fail(state, 'Canvas permissions error', err.message);
+           }
+        }
+      }
+      else warn(state, 'Canvas Docker Compose', 'No active containers detected.');
+    } catch {
+      warn(state, 'Canvas Docker Compose', 'Could not query container status.');
+    }
+  } catch (error) {
+    warn(state, 'Error querying Docker', error.message);
   }
 }
 

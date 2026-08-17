@@ -1,14 +1,14 @@
 /**
- * Centralized redactor of secrets and PII for logs.
+ * Redactor centralizado de secretos y PII para los logs.
  *
- * Two mechanisms:
- *  1) redactByKey: uses key NAMES (paths) so Pino censors
- *     any structured meta containing a sensitive key, regardless
- *     of depth (**.key).
- *  2) redactSensitiveStrings: scans strings (messages, URLs) and replaces
- *     any real secret value that has accidentally leaked.
+ * Dos mecanismos:
+ *  1) redactByKey: usa los NOMBRES de clave (paths) para que Pino censure
+ *     cualquier meta estructurada que contenga una clave sensible, sin
+ *     importar la profundidad (**.clave).
+ *  2) redactSensitiveStrings: escanea strings (mensajes, URLs) y reemplaza
+ *     cualquier valor real de secreto que se haya filtrado accidentalmente.
  *
- * NOTE: does not import config/secrets.js to avoid an import cycle
+ * NOTA: no importa config/secrets.js para evitar un ciclo de imports
  * (config/secrets.js -> security/secrets.js -> logger.js -> redact.js).
  */
 
@@ -59,6 +59,15 @@ export function redactSensitiveStrings(input) {
       out = out.split(val).join(CENSORED);
     }
   }
+
+  // Redact sensitive query parameters in URLs or strings that look like query params
+  const sensitiveParams = ['code', 'state', 'access_token', 'refresh_token', 'id_token', 'token'];
+  for (const param of sensitiveParams) {
+    // eslint-disable-next-line security/detect-non-literal-regexp
+    const regex = new RegExp(`([?&]|^)(${param}=)([^&\\s]+)`, 'gi');
+    out = out.replace(regex, `$1$2${CENSORED}`);
+  }
+
   return out;
 }
 

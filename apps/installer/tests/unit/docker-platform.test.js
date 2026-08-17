@@ -46,7 +46,7 @@ function createBootLog() {
 }
 
 describe('PlatformProbe', () => {
-  it('distinguishes WSL from a native Linux', () => {
+  it('distingue WSL de un Linux nativo', () => {
     const wsl = new PlatformProbe({
       platform: () => 'linux',
       release: () => '6.6-microsoft',
@@ -65,18 +65,18 @@ describe('PlatformProbe', () => {
   });
 });
 
-describe('Docker policies by platform', () => {
-  it('native Linux recommends Engine and never Docker Desktop', () => {
+describe('Políticas Docker por plataforma', () => {
+  it('Linux nativo recomienda Engine y nunca Docker Desktop', () => {
     const guidance = createDockerPolicy(linuxHost).missing();
     expect(`${guidance.message} ${guidance.action} ${guidance.fix}`).toContain('Docker Engine');
     expect(`${guidance.message} ${guidance.action}`).not.toContain('Docker Desktop');
   });
 
-  it('Windows keeps Docker Desktop as a native solution', () => {
+  it('Windows mantiene Docker Desktop como solución nativa', () => {
     expect(createDockerPolicy(windowsHost).missing().action).toContain('Docker Desktop');
   });
 
-  it('WSL detects the inherited Windows client and avoids installing a second Engine', () => {
+  it('WSL detecta el cliente heredado de Windows y evita instalar un segundo Engine', () => {
     const guidance = createDockerPolicy(wslHost).daemon({ cliOrigin: 'windows-interop' });
     expect(guidance.action).toContain('enable integration');
     expect(guidance.action).toContain('do not install a second Engine automatically');
@@ -84,7 +84,7 @@ describe('Docker policies by platform', () => {
 });
 
 describe('DockerRuntimeProbe', () => {
-  it('classifies a mounted Windows path as WSL interop', () => {
+  it('clasifica una ruta montada de Windows como interop de WSL', () => {
     expect(classifyDockerCliOrigin({
       host: wslHost,
       cliPath: '/mnt/c/Program Files/Docker/Docker/resources/bin/docker',
@@ -93,16 +93,16 @@ describe('DockerRuntimeProbe', () => {
     })).toBe('windows-interop');
   });
 
-  it('reports downed daemon without confusing the Windows client with Linux Engine', async () => {
+  it('reporta daemon caído sin confundir el cliente Windows con Engine Linux', async () => {
     const runner = vi.fn(async (command, args) => {
       const key = `${command} ${args.join(' ')}`;
       if (key === 'docker --version') return { success: true, out: 'Docker version 29', err: '' };
       if (key === 'which docker') return { success: true, out: '/mnt/c/Program Files/Docker/docker', err: '' };
-      if (key === 'docker context show') return { success: true, out: 'desktop-linux', err: '' };
+      if (key === 'docker context inspect') return { success: true, out: '[{"Name":"desktop-linux","Endpoints":{"docker":{"Host":"unix:///var/run/docker.sock"}}}]', err: '' };
       if (key.startsWith('docker version')) return { success: false, out: 'windows/amd64', err: 'daemon unavailable' };
       if (key.startsWith('docker info')) return { success: false, out: '', err: 'daemon unavailable' };
       if (key === 'docker compose version') return { success: true, out: 'v2', err: '' };
-      throw new Error(`Unexpected command: ${key}`);
+      throw new Error(`Comando inesperado: ${key}`);
     });
     const probe = new DockerRuntimeProbe({
       runner,
@@ -119,8 +119,8 @@ describe('DockerRuntimeProbe', () => {
   });
 });
 
-describe('DockerCheck and preflight', () => {
-  it('shows Linux instructions when Docker is missing', async () => {
+describe('DockerCheck y preflight', () => {
+  it('muestra instrucciones Linux cuando falta Docker', async () => {
     const state = {
       status: DockerRuntimeStatus.MISSING,
       host: linuxHost,
@@ -135,10 +135,10 @@ describe('DockerCheck and preflight', () => {
 
     expect(result.ok).toBe(false);
     expect(result.fix).toContain('/engine/install/');
-    expect(output).not.toContain('Install Docker Desktop');
+    expect(output).not.toContain('Instale Docker Desktop');
   });
 
-  it('keeps the permission cause so that setup does not wait uselessly', async () => {
+  it('conserva la causa de permisos para que el setup no espere inútilmente', async () => {
     const state = {
       status: DockerRuntimeStatus.PERMISSION_DENIED,
       host: linuxHost,

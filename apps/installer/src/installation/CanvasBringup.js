@@ -1,6 +1,6 @@
-import { createContainerWorkspacePermissions } from '../platform/shared/ContainerWorkspacePermissionsFactory.js';
 import { runCommand } from './utils/Runner.js';
 import { execa } from 'execa';
+import { ExecutionContext } from '../platform/shared/ContainerExecutionPolicy.js';
 
 const DEFAULT_HEALTH_URL = 'http://localhost:8080';
 
@@ -9,15 +9,26 @@ function wait(milliseconds) {
 }
 
 function createDefaultHealthCheck() {
+  let consecutive500 = 0;
+  const start = Date.now();
   return async (url) => {
     try {
       const response = await fetch(url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(5000)
       });
-      return response.status >= 200 && response.status < 400;
-    } catch {
-      return false;
+      if (response.status >= 500 && response.status < 600) {
+        consecutive500++;
+        if (consecutive500 >= 5) {
+          return { ok: false, status: response.status, error: `HTTP ${response.status} persistente devuelto por Canvas.`, duration: Date.now() - start };
+        }
+      } else {
+        consecutive500 = 0;
+      }
+      return { ok: response.status >= 200 && response.status < 400, status: response.status, error: null, duration: Date.now() - start };
+    } catch (e) {
+      consecutive500 = 0;
+      return { ok: false, status: 0, error: e.message, duration: Date.now() - start };
     }
   };
 }
@@ -26,7 +37,7 @@ export class CanvasBringup {
   constructor(boot, canvasDir, {
     runner = runCommand,
     platform = process.platform,
-    containerWorkspacePermissions,
+    dockerProfile = null,
     healthCheck = createDefaultHealthCheck(),
     healthUrl = process.env.CANVAS_HEALTH_URL || DEFAULT_HEALTH_URL,
     sleep = wait
@@ -37,42 +48,46 @@ export class CanvasBringup {
     this.healthCheck = healthCheck;
     this.healthUrl = healthUrl;
     this.sleep = sleep;
-    this.containerWorkspacePermissions = containerWorkspacePermissions ||
-      createContainerWorkspacePermissions(platform, { runner });
-    this.containerExecArgs = [];
+    this.dockerProfile = dockerProfile;
   }
 
   async bringup() {
-    this.boot.info('Starting Canvas LMS stack...');
+    this.boot.info('Iniciando stack de Canvas LMS...');
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
+
+    const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
+    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { runner: this.runner, dockerProfile: this.dockerProfile });
+    const probeResult = await probe.runChecks();
+    if (!probeResult.ok) return false;
+
     if (!(await this.ensureRubyDependencies())) return false;
     return this.waitForReady();
   }
 
   async startStack() {
-    this.boot.info('Starting Canvas LMS containers...');
+    this.boot.info('Iniciando contenedores de Canvas LMS...');
     const result = await this.runner('docker', ['compose', 'up', '-d'], { cwd: this.canvasDir });
     if (!result.success) {
       this.boot.error(`Error starting Docker Compose: ${result.err}`);
       return false;
     }
-    this.boot.success('Canvas LMS containers started');
+    this.boot.success('Contenedores de Canvas LMS iniciados');
     return true;
   }
 
   async ensureRubyDependencies() {
-    this.boot.info('Checking Canvas Ruby dependencies...');
+    this.boot.info('Verifying Canvas Ruby dependencies...');
     const check = await this._runWebCommand(['bundle', 'check']);
     if (check.success) {
-      this.boot.success('Ruby dependencies ready');
+      this.boot.success('Dependencias Ruby listas');
       return true;
     }
 
     this.boot.info('Incomplete Ruby dependencies. Installing gems...');
     if (!(await this._installBundlerPlugin())) return false;
 
-    const install = await this._runWebCommand(['bundle', 'install', '--jobs=2'], {
+    const install = await this._runWebCommand(['bash', '-c', 'umask 0022; exec bundle install --jobs=2'], {
       extraExecArgs: ['-e', 'BUNDLE_FROZEN=false']
     });
     if (!install.success) {
@@ -85,18 +100,18 @@ export class CanvasBringup {
       cwd: this.canvasDir
     });
     if (!restarted.success) {
-      this.boot.error(`Could not restart Canvas services: ${restarted.err}`);
+      this.boot.error(`No se pudieron reiniciar los servicios de Canvas: ${restarted.err}`);
       return false;
     }
 
-    this.boot.success('Ruby dependencies installed and services restarted');
+    this.boot.success('Dependencias Ruby instaladas y servicios reiniciados');
     return true;
   }
 
-  async waitForReady(interval = 5) {
+  async waitForReady(timeoutSeconds = 300, interval = 5) {
     const { createSpinner } = await import('nanospinner');
-    const spinner = createSpinner('Starting Canvas logs reading...').start();
-    
+    const spinner = createSpinner('Iniciando lectura de logs de Canvas...').start();
+
     const tailProcess = execa('docker', ['compose', 'logs', '-f', '--tail=0', 'web', 'jobs', 'postgres', 'redis'], {
       cwd: this.canvasDir,
       reject: false
@@ -114,48 +129,97 @@ export class CanvasBringup {
       }
     });
 
-    while (true) {
-      const web = await this.runner('docker', ['compose', 'ps', '-q', 'web'], {
+    const maxAttempts = Math.ceil(timeoutSeconds / interval);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const psResult = await this.runner('docker', ['compose', 'ps', '--format', 'json', 'web'], {
         cwd: this.canvasDir,
         captureAll: true
       });
-      if (web.success && web.out.trim() && await this.healthCheck(this.healthUrl)) {
-        tailProcess.kill();
-        spinner.success({ text: 'Canvas LMS is ready to receive requests', mark: '  √' });
-        return true;
+
+      let isRunning = false;
+      let isExit = false;
+      if (psResult.success && psResult.out) {
+        try {
+          const containers = psResult.out.trim().split('\n').filter(Boolean).map(JSON.parse);
+          if (containers.length > 0) {
+            const state = containers[0].State;
+            if (state === 'running') isRunning = true;
+            if (state === 'exited') isExit = true;
+          }
+        } catch (e) {
+          isRunning = psResult.out.trim().length > 0;
+        }
       }
+
+      if (isExit) {
+        tailProcess.kill();
+        spinner.error({ text: 'El contenedor web de Canvas se detuvo inesperadamente.', mark: '  ×' });
+        await this._printEarlyDiagnosis();
+        return false;
+      }
+
+      try {
+        if (isRunning) {
+          const healthResult = await this.healthCheck(this.healthUrl);
+          if (healthResult.ok) {
+            tailProcess.kill();
+            spinner.success({ text: 'Canvas LMS is ready to receive requests', mark: '  √' });
+            return true;
+          } else if (healthResult.error && healthResult.error.includes('persistente')) {
+            throw new Error(healthResult.error);
+          }
+        }
+      } catch (err) {
+        tailProcess.kill();
+        spinner.error({ text: `Bringup failed: ${err.message}`, mark: '  ×' });
+        await this._printEarlyDiagnosis();
+        return false;
+      }
+
+      attempts++;
       await this.sleep(interval * 1000);
+    }
+
+    tailProcess.kill();
+    spinner.error({ text: 'Tiempo de espera agotado al iniciar Canvas LMS.', mark: '  ×' });
+    await this._printEarlyDiagnosis();
+    return false;
+  }
+
+  async _printEarlyDiagnosis() {
+    const logs = await this.runner('docker', ['compose', 'logs', '--tail=150', 'web'], { cwd: this.canvasDir, captureAll: true });
+    if (logs.success && logs.out) {
+      const { analyzeLogString, printDiagnosisBox } = await import('./utils/Diagnostics.js');
+      const diagnosis = analyzeLogString(logs.out);
+      if (diagnosis) printDiagnosisBox(this.boot, diagnosis);
     }
   }
 
   async _prepareContainerWorkspace() {
-    const args = await this.containerWorkspacePermissions.prepare({
-      canvasDir: this.canvasDir,
-      logFile: null,
-      boot: this.boot
-    });
-    if (args === null) return false;
-    this.containerExecArgs = args;
+    const { ContainerExecutionPolicy } = await import('../platform/shared/ContainerExecutionPolicy.js');
+    this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
     return true;
   }
 
   async _installBundlerPlugin() {
     const plugin = await this._runWebCommand(
       ['bundle', 'plugin', 'install', 'bundler-multilock'],
-      { useWorkspacePermissions: false }
+      { context: ExecutionContext.CONTAINER_CACHE_WRITE }
     );
     if (plugin.success) return true;
-    this.boot.error(`Could not install bundler-multilock: ${plugin.err}`);
+    this.boot.error(`No se pudo instalar bundler-multilock: ${plugin.err}`);
     return false;
   }
 
   _runWebCommand(commandArgs, {
-    useWorkspacePermissions = true,
+    context = ExecutionContext.WORKSPACE_WRITE,
     extraExecArgs = []
   } = {}) {
-    const workspaceArgs = useWorkspacePermissions ? this.containerExecArgs : [];
+    const userArgs = this.executionPolicy ? this.executionPolicy.getExecutionArgs(context) : [];
     return this.runner('docker', [
-      'compose', 'exec', '-T', ...workspaceArgs, ...extraExecArgs, 'web', ...commandArgs
+      'compose', 'exec', '-T', ...userArgs, ...extraExecArgs, 'web', ...commandArgs
     ], { cwd: this.canvasDir });
   }
 }

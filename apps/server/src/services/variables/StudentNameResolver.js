@@ -2,7 +2,7 @@ import BaseVariableResolver from './BaseVariableResolver.js';
 
 export default class StudentNameResolver extends BaseVariableResolver {
   constructor() {
-    super('{{nombre_student}}');
+    super('{{student_name}}');
   }
 
   async resolve(context) {

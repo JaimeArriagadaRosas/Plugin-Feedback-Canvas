@@ -52,7 +52,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
           exito: false,
           error: {
             codigo: 401,
-            mensaje: 'Missing authorization for the Canvas API',
+            mensaje: 'Missing authorization for Canvas API',
             requireOAuth: true,
             oauthUrl: '/api/oauth2/canvas/login'
           }
@@ -69,7 +69,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
           exito: false,
           error: {
             codigo: 401,
-            mensaje: err.message || 'Missing authorization for the Canvas API',
+            mensaje: err.message || 'Missing authorization for Canvas API',
             requireOAuth: true,
             oauthUrl: '/api/oauth2/canvas/login'
           }

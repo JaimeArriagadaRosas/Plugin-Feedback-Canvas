@@ -3,9 +3,9 @@ import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './VariableInserter.module.css';
 
 const VARIABLES = [
-  { key: 'nombre_estudiante', label: '{{nombre_estudiante}}' },
-  { key: 'calificacion', label: '{{calificacion}}' },
-  { key: 'promedio_curso', label: '{{promedio_curso}}' },
+  { key: 'student_name', label: '{{student_name}}' },
+  { key: 'grade', label: '{{grade}}' },
+  { key: 'course_average', label: '{{course_average}}' },
 ];
 
 export default function VariableInserter({ onInsert }) {

@@ -6,9 +6,6 @@ require_relative 'factories/submission_factory'
 
 puts "=== Starting modular test seed injection ==="
 
-# 0. Idempotent locale migration (for existing installations)
-UserFactory.migrate_existing_to_english
-
 # 1. Create users
 users = UserFactory.create_users
 system = users[:system]
@@ -38,7 +35,7 @@ end
 puts "=== CANVAS DATA ==="
 puts "SYSTEM_TOKEN:#{system_token}"
 puts "COURSE_ID:#{courses[0].id}"
-puts "TEACHER_EMAIL:teacher@canvas.local"
+puts "TEACHER_EMAIL:profesor@canvas.local"
 puts "CANVAS_API_TOKEN:#{teacher1_token}"
 students_with_tokens.each do |s|
   puts "STUDENT_EMAIL:#{s[:email]}"
@@ -46,15 +43,15 @@ students_with_tokens.each do |s|
 end
 puts "========================="
 
-profiles = {
-  "users" => [
-    { "id" => system.id, "uuid" => system.uuid, "name" => system.name, "email" => "system@canvas.local", "role" => "system", "token" => system_token },
-    { "id" => admin.id, "uuid" => admin.uuid, "name" => admin.name, "email" => "admin@canvas.local", "role" => "admin", "token" => admin_token },
-    { "id" => teachers[0].id, "uuid" => teachers[0].uuid, "name" => teachers[0].name, "email" => "teacher@canvas.local", "role" => "teacher", "token" => teacher1_token },
-    { "id" => teachers[1].id, "uuid" => teachers[1].uuid, "name" => teachers[1].name, "email" => "teacher2@canvas.local", "role" => "teacher", "token" => teacher2_token },
-    { "id" => teachers[2].id, "uuid" => teachers[2].uuid, "name" => teachers[2].name, "email" => "teacher3@canvas.local", "role" => "teacher", "token" => teacher3_token }
-  ] + students_with_tokens.map { |s| { "id" => s[:id], "uuid" => s[:uuid], "name" => s[:name], "email" => s[:email], "role" => "student", "token" => s[:token] } }
+perfiles = {
+  "usuarios" => [
+    { "id" => system.id, "uuid" => system.uuid, "nombre" => system.name, "email" => "system@canvas.local", "rol" => "system", "token" => system_token },
+    { "id" => admin.id, "uuid" => admin.uuid, "nombre" => admin.name, "email" => "admin@canvas.local", "rol" => "admin", "token" => admin_token },
+    { "id" => teachers[0].id, "uuid" => teachers[0].uuid, "nombre" => teachers[0].name, "email" => "profesor@canvas.local", "rol" => "teacher", "token" => teacher1_token },
+    { "id" => teachers[1].id, "uuid" => teachers[1].uuid, "nombre" => teachers[1].name, "email" => "profesor2@canvas.local", "rol" => "teacher", "token" => teacher2_token },
+    { "id" => teachers[2].id, "uuid" => teachers[2].uuid, "nombre" => teachers[2].name, "email" => "profesor3@canvas.local", "rol" => "teacher", "token" => teacher3_token }
+  ] + students_with_tokens.map { |s| { "id" => s[:id], "uuid" => s[:uuid], "nombre" => s[:name], "email" => s[:email], "rol" => "student", "token" => s[:token] } }
 }
-File.write("/usr/src/app/tmp/profiles_data.json", JSON.generate(profiles))
-puts "Profiles written to tmp/profiles_data.json"
+File.write("/usr/src/app/tmp/perfiles_data.json", JSON.generate(perfiles))
+puts "Profiles written to tmp/perfiles_data.json"
 puts "=== Seed injection complete ==="

@@ -53,27 +53,27 @@ const pinoLogger = pino(
 );
 
 function isNoisyEndpoint(message) {
-  return ['/system-notifications/pending', '/feedback/pending/summary', '/feedback/list']
+  return ['/system-notifications/pending', '/feedback/pending/summary', '/feedback/list', '/feedback/detail']
     .some((pathFragment) => message.includes(pathFragment));
 }
 
 function formatDevLog(level, rawMessage) {
   const redacted = redactSensitiveStrings(rawMessage);
-  
+
   if (redacted === '' ||
-      /^[=\s-]{20,}$/.test(redacted.trim()) || 
-      redacted.includes('BACKEND STARTED') || 
-      redacted.includes('Adaptive Feedback Plugin') || 
-      redacted.includes('Internal port') || 
-      redacted.includes('Startup mode') || 
-      redacted.includes('• Database') || 
-      redacted.includes('Local session') || 
-      redacted.includes('UI Interface') || 
-      redacted.includes('Backend API') || 
-      redacted.includes('Logs') || 
-      redacted.includes('💡 NOTE:') || 
-      redacted.includes('blocks the Iframe') || 
-      redacted.includes('in Canvas, click') || 
+      /^[=\s-]{20,}$/.test(redacted.trim()) ||
+      redacted.includes('BACKEND STARTED') ||
+      redacted.includes('Adaptive Feedback Plugin') ||
+      redacted.includes('Internal port') ||
+      redacted.includes('Startup mode') ||
+      redacted.includes('• Database') ||
+      redacted.includes('Local session') ||
+      redacted.includes('UI Interface') ||
+      redacted.includes('Backend API') ||
+      redacted.includes('Logs') ||
+      redacted.includes('💡 NOTE:') ||
+      redacted.includes('blocks the Iframe') ||
+      redacted.includes('in Canvas, click') ||
       redacted.includes('👉 https://localhost')) {
     return redacted;
   }
@@ -81,7 +81,7 @@ function formatDevLog(level, rawMessage) {
   // eslint-disable-next-line security/detect-unsafe-regex
   let cleanMsg = redacted.replace(/^(\s*·\s*|\s*!!\s*|\s*×\s*|\s*√\s*|\s*↳\s*)+/, '').trim();
   const match = cleanMsg.match(/^\[([^\]]+)\]\s*(.*)/);
-  
+
   let component = '';
   let finalMessage = cleanMsg;
   if (match) {
@@ -109,9 +109,9 @@ function formatDevLog(level, rawMessage) {
     }
   }
 
-  const isAuthSubLog = redacted.includes('[LTI-') || 
-                       redacted.includes('[SESSION-') || 
-                       redacted.includes('[LtiOidcRecoveryManager]') || 
+  const isAuthSubLog = redacted.includes('[LTI-') ||
+                       redacted.includes('[SESSION-') ||
+                       redacted.includes('[LtiOidcRecoveryManager]') ||
                        redacted.includes('[Auth]') ||
                        redacted.includes('verifyToken') ||
                        redacted.includes('VerifyToken') ||
@@ -125,26 +125,26 @@ function formatDevLog(level, rawMessage) {
                        redacted.includes('SESSION:') ||
                        redacted.includes('CanvasOAuth') ||
                        redacted.includes('OAuth');
-                       
-  const isSubLog = isAuthSubLog || 
+
+  const isSubLog = isAuthSubLog ||
                    ['CORS', 'AUTH', 'AUTHZ', 'CONTROLLER', 'AUDIT-DB', 'SUBMISSION', 'HTTP', 'LTI-AUTH', 'LTI-CALLBACK', 'LTI-TOKEN', 'SESSION', 'OAUTH2'].includes(component) ||
                    (component && component.startsWith('LTI'));
 
   let icon = pc.cyan('·');
   if (level === 'warn') icon = pc.yellow('!');
   if (level === 'error' || level === 'fatal') icon = pc.red('×');
-  
+
   const lowerMsg = finalMessage.toLowerCase();
   if (level === 'info' && (
-      lowerMsg.includes('successful') || 
-      lowerMsg.includes('successfully') || 
-      lowerMsg.includes('completed') || 
-      lowerMsg.includes('allowed') || 
-      lowerMsg.includes('active') || 
-      lowerMsg.includes('ready') || 
-      lowerMsg.includes('valid') || 
-      lowerMsg.includes('registered') || 
-      lowerMsg.includes('ok') || 
+      lowerMsg.includes('successful') ||
+      lowerMsg.includes('successfully') ||
+      lowerMsg.includes('completed') ||
+      lowerMsg.includes('allowed') ||
+      lowerMsg.includes('active') ||
+      lowerMsg.includes('ready') ||
+      lowerMsg.includes('valid') ||
+      lowerMsg.includes('registered') ||
+      lowerMsg.includes('ok') ||
       lowerMsg.includes('generated') ||
       lowerMsg.includes('success')
   )) {
@@ -152,7 +152,7 @@ function formatDevLog(level, rawMessage) {
   }
 
   let text = finalMessage;
-  
+
   if (component === 'CORS' && text.includes('Request with Origin:')) {
     text = text.replace('Request with Origin:', 'Origin validated:');
   }
@@ -193,25 +193,25 @@ class Logger {
     this._pino = internalLogger || pinoLogger.child(context);
   }
 
-  debug(message, meta = {}) { 
+  debug(message, meta = {}) {
     if (IS_DEV && LOG_LEVEL === 'debug') writeDevLog('debug', message);
-    this._pino.debug(meta, redactSensitiveStrings(message)); 
+    this._pino.debug(meta, redactSensitiveStrings(message));
   }
-  info(message, meta = {}) { 
+  info(message, meta = {}) {
     if (IS_DEV) writeDevLog('info', message);
-    this._pino.info(meta, redactSensitiveStrings(message)); 
+    this._pino.info(meta, redactSensitiveStrings(message));
   }
-  warn(message, meta = {}) { 
+  warn(message, meta = {}) {
     if (IS_DEV) writeDevLog('warn', meta.error ? `${message} ${meta.error}` : message);
-    this._pino.warn(meta, redactSensitiveStrings(message)); 
+    this._pino.warn(meta, redactSensitiveStrings(message));
   }
-  error(message, meta = {}) { 
+  error(message, meta = {}) {
     if (IS_DEV) writeDevLog('error', meta.error ? `${message} ${meta.error}` : message);
-    this._pino.error(meta, redactSensitiveStrings(message)); 
+    this._pino.error(meta, redactSensitiveStrings(message));
   }
-  fatal(message, meta = {}) { 
+  fatal(message, meta = {}) {
     if (IS_DEV) writeDevLog('fatal', meta.error ? `${message} ${meta.error}` : message);
-    this._pino.fatal(meta, redactSensitiveStrings(message)); 
+    this._pino.fatal(meta, redactSensitiveStrings(message));
   }
 
   child(extraContext = {}) {
@@ -235,7 +235,7 @@ class Logger {
     const reqId = Math.random().toString(36).substring(2, 8);
     req._logId = reqId;
     req._startTime = Date.now();
-    
+
     const isHealthCheck = req.originalUrl.includes('/config/startup-mode') || req.originalUrl.includes('/health');
     if (!isHealthCheck) {
       this.info(`-> ${req.method} ${req.originalUrl}`, {
@@ -250,7 +250,7 @@ class Logger {
   response(req, res, reqId) {
     const duration = req._startTime ? `${Date.now() - req._startTime}ms` : 'N/A';
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    
+
     const isHealthCheck = req.originalUrl.includes('/config/startup-mode') || req.originalUrl.includes('/health');
     // Only log if it's not a health check, OR if it was an error (status >= 400)
     if (!isHealthCheck || res.statusCode >= 400) {

@@ -80,7 +80,7 @@ export default function FeedbackTable({
       const colors = PROFILE_COLORS[value] || { bg: '#eee', text: '#333' };
       return <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', backgroundColor: colors.bg, color: colors.text }}>{PROFILE_TRANSLATIONS[value] || value}</span>;
     }},
-    { key: 'trend', label: 'Trend', width: '10%', render: (value) => `${value === 'Mejorando' ? '📈' : value === 'Bajando' ? '📉' : '➖'} ${value === 'Mejorando' ? 'Improving' : value === 'Bajando' ? 'Declining' : value}` },
+    { key: 'trend', label: 'Trend', width: '10%', render: (value) => `${value === 'Mejora' ? '📈' : value === 'Retroceso' ? '📉' : '➖'} ${value === 'Mejora' ? 'Improving' : value === 'Retroceso' ? 'Declining' : 'Stable'}` },
     { key: 'status', label: 'Status', width: '10%', render: (value) => {
       const colors = STATUS_COLORS[value] || { bg: '#eee', text: '#333' };
       return <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: '80px', justifyContent: 'center', backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.text}33` }}>{STATUS_TRANSLATIONS[value] || value}</span>;

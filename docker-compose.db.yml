@@ -24,6 +24,12 @@ services:
     ports:
       - "3001:3000"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   plugin_db_data:

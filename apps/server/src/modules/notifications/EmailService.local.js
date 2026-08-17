@@ -4,11 +4,11 @@ import path from 'path';
 
 export default class EmailServiceLocal {
   constructor() {
-    this.logFilePath = path.join(process.cwd(), 'local-emails.log');
+    this.logFilePath = path.join(process.cwd(), 'logs', 'local-emails.log');
   }
 
-  async sendNotification(studentId, courseId, asunto) {
-    const message = `[MOCK EMAIL] To: Student ${studentId} | Course: ${courseId} | Asunto: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
+  async sendNotification(estudianteId, courseId, asunto) {
+    const message = `[MOCK EMAIL] To: Estudiante ${estudianteId} | Course: ${courseId} | Subject: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
     
     // Loguear en consola
     logger.info(message.trim());

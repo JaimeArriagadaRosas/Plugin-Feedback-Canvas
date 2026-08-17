@@ -29,7 +29,7 @@ function calculateMetrics(data) {
 
 function updateMetrics(metrics, row) {
   const status = row.estado || 'PENDIENTE';
-  if (status === 'APROBADO') metrics.approved += 1;
+  if (status === 'APROBADO' || status === 'ENVIADO') metrics.approved += 1;
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;

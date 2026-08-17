@@ -1,10 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PostflightSetup } from '../../src/installation/PostflightSetup.js';
+import { VerifyData } from '../../src/installation/VerifyData.js';
+import { DataSeeder } from '../../src/installation/DataSeeder.js';
+import { DatabaseHealth } from '../../src/installation/DatabaseHealth.js';
+import { RubyDependencyInstaller } from '../../src/installation/installers/RubyDependencyInstaller.js';
+import * as tokenManager from '../../src/installation/utils/TokenManager.js';
 
+vi.mock('../../src/installation/VerifyData.js');
+vi.mock('../../src/installation/DataSeeder.js');
+vi.mock('../../src/installation/DatabaseHealth.js');
+vi.mock('../../src/installation/installers/RubyDependencyInstaller.js');
 vi.mock('../../src/installation/utils/TokenManager.js', () => ({
   pingCanvasAPI: vi.fn().mockResolvedValue({ ready: true })
 }));
-
-import { PostflightSetup } from '../../src/installation/PostflightSetup.js';
 
 function createBoot() {
   return {
@@ -15,7 +23,7 @@ function createBoot() {
 }
 
 describe('PostflightSetup', () => {
-  it('synchronizes the token through the public interface when the data already exists', async () => {
+  it('synchronizes the token via the public interface when the data already exists', async () => {
     const verifier = { isDataPopulated: vi.fn().mockResolvedValue(true) };
     const seeder = { synchronizeLocalToken: vi.fn().mockResolvedValue() };
     const setup = new PostflightSetup(createBoot(), '/plugin', '/canvas', {

@@ -26,9 +26,15 @@ function calculateMetrics(data) {
   return metrics;
 }
 
+function translateStatus(status) {
+  const map = { 'PENDIENTE': 'Pending', 'APROBADO': 'Approved', 'EDITADO': 'Edited', 'RECHAZADO': 'Rejected', 'ENVIADO': 'Sent' };
+  // eslint-disable-next-line security/detect-object-injection
+  return map[status] || status;
+}
+
 function updateMetrics(metrics, row) {
   const status = row.estado || 'PENDIENTE';
-  if (status === 'APROBADO') metrics.approved += 1;
+  if (status === 'APROBADO' || status === 'ENVIADO') metrics.approved += 1;
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;
@@ -110,7 +116,7 @@ function addDetailSheet(workbook, data) {
   const rows = data.map((row) => ({
     fecha_generacion: formatDate(row.fecha_generacion), curso: row.nombre_curso || `Course ${row.curso_id}`,
     asignacion: row.nombre_tarea || `Assignment ${row.tarea_id}`, student: row.nombre_student || `Student ${row.student_id}`,
-    teacher_id: row.teacher_id || 'N/A', estado: row.estado || 'PENDIENTE', nota_canvas: valueOrNa(row.nota_canvas),
+    teacher_id: row.teacher_id || 'N/A', estado: translateStatus(row.estado || 'PENDIENTE'), nota_canvas: valueOrNa(row.nota_canvas),
     nota_chile: valueOrNa(row.nota_chile), es_util: row.es_util == null ? 'N/A' : row.es_util ? 'Yes' : 'No',
     val_prof: withStars(row.calificacion_teacher), val_est: withStars(row.calificacion_student)
   }));

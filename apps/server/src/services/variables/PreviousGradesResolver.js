@@ -3,7 +3,7 @@ import logger from '../../utils/logger.js';
 
 export default class PreviousGradesResolver extends BaseVariableResolver {
   constructor() {
-    super('{{calificaciones_previas}}');
+    super('{{previous_grades}}');
   }
 
   async resolve(context) {

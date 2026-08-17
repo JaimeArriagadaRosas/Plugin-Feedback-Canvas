@@ -62,8 +62,8 @@ export default class SystemConfigController {
     res.clearCookie('dev-token');
     res.clearCookie('dev-role');
     res.clearCookie('lti_token');
-    logger.info('[Auth] CLOSING SESSION (Logout) / Local session cleared', { ip: req.ip });
-    res.json({ exito: true, mensaje: 'Local session deleted' });
+    logger.info('[Auth] LOGGING OUT (Logout) / Local session cleared', { ip: req.ip });
+    res.json({ exito: true, mensaje: 'Local session removed' });
   }
 
   async getMe(req, res) {
@@ -78,10 +78,10 @@ export default class SystemConfigController {
       });
 
       if (identity.isLocalSession) {
-        logger.info(`[AUTH] Active session (Local Mode) | User: ${identity.canonicalUserId?.substring(0,8)}... | Role: ${role}`);
+        logger.info(`[AUTH] Active session (Local Mode) | User: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       } else {
-        const sourceStr = identity.source === 'session-token' ? 'Session Token' : 'LTI Recuperada';
-        logger.info(`[AUTH] Active session (${sourceStr}) | User: ${identity.canonicalUserId?.substring(0,8)}... | Role: ${role}`);
+        const sourceStr = identity.source === 'session-token' ? 'Session Token' : 'LTI Recovered';
+        logger.info(`[AUTH] Active session (${sourceStr}) | User: ${identity.canonicalUserId?.substring(0,8)}... | Rol: ${role}`);
       }
 
       // Get permissions manager injected in app
@@ -100,7 +100,7 @@ export default class SystemConfigController {
       let isAiServiceAvailable = false;
       if (iaConfigManager) {
         try {
-          const aiConfig = await iaConfigManager.getGlobalActiveConfig(true);
+          const aiConfig = await iaConfigManager.getGlobalActiveConfig(true); // quiet = true
           if (aiConfig && aiConfig.service) {
             isAiServiceAvailable = true;
           }
@@ -111,14 +111,14 @@ export default class SystemConfigController {
 
       return res.json({
         exito: true,
-        user: identity.ltiUserId, // Keep LTI UUID as primary identifier for frontend (legacy)
+        user: identity.ltiUserId, // We keep the LTI UUID as the primary identifier for the frontend (legacy)
         userName: identity.name || identity.ltiUserId,
         role,
         roles: identity.roles,
-        permissions, // NEW: Permissions are sent to frontend
+        permissions, // NEW: Permissions are sent to the frontend
         courseId: identity.canonicalCourseId || identity.courseId,
         courseName: identity.courseName,
-        studentId: identity.canonicalUserId || identity.numericUserId || null, // Numeric ID for specific queries
+        studentId: identity.canonicalUserId || identity.numericUserId || null, // The numeric ID for specific queries
         isLocalSession: identity.isLocalSession ?? false,
         source: identity.source ?? null,
         canonicalUserId: identity.canonicalUserId,
@@ -126,7 +126,7 @@ export default class SystemConfigController {
       });
     }
 
-    logger.warn('/api/config/me called without valid ltiContext');
+    logger.warn('/api/config/me called without a valid ltiContext');
     res.status(401).json({
       exito: false,
       error: {

@@ -2,14 +2,14 @@ import { createSpinner } from 'nanospinner';
 import { VerifyData } from './VerifyData.js';
 import { DataSeeder } from './DataSeeder.js';
 import { DatabaseHealth } from './DatabaseHealth.js';
-import { GemInstaller } from './installers/GemInstaller.js';
+import { RubyDependencyInstaller } from './installers/RubyDependencyInstaller.js';
 import { pingCanvasAPI } from './utils/TokenManager.js';
 
 export class PostflightSetup {
   constructor(boot, pluginDir, canvasDir, {
     verifierFactory = (...args) => new VerifyData(...args),
     seederFactory = (...args) => new DataSeeder(...args),
-    gemInstallerFactory = (...args) => new GemInstaller(...args),
+    rubyDependencyInstallerFactory = (...args) => new RubyDependencyInstaller(...args),
     databaseHealthFactory = (...args) => new DatabaseHealth(...args)
   } = {}) {
     this.boot = boot;
@@ -17,12 +17,12 @@ export class PostflightSetup {
     this.canvasDir = canvasDir;
     this.verifierFactory = verifierFactory;
     this.seederFactory = seederFactory;
-    this.gemInstallerFactory = gemInstallerFactory;
+    this.rubyDependencyInstallerFactory = rubyDependencyInstallerFactory;
     this.databaseHealthFactory = databaseHealthFactory;
   }
 
   async runChecks() {
-    this.boot.info('Starting post-boot verification of the University and the LTI plugin');
+    this.boot.info('Starting post-startup verification of the University and the LTI plugin');
 
     const verifier = this.verifierFactory(this.boot, this.canvasDir);
     const seeder = this.seederFactory(this.boot, this.pluginDir, this.canvasDir);
@@ -30,12 +30,12 @@ export class PostflightSetup {
     const hasData = await verifier.isDataPopulated();
 
     if (!hasData) {
-      this.boot.warn('Missing base University data. Attempting to inject data...');
+      this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
       
-      const gemInstaller = this.gemInstallerFactory(this.boot, this.canvasDir);
-      const gemsOk = await gemInstaller.ensureBundlerPlugins();
+      const rubyDependencyInstaller = this.rubyDependencyInstallerFactory(this.boot, this.canvasDir);
+      const gemsOk = await rubyDependencyInstaller.ensureBundlerPlugins();
       if (!gemsOk) {
-        this.boot.error('Failed to install required Bundler plugins.');
+        this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
         return false;
       }
       
@@ -44,33 +44,33 @@ export class PostflightSetup {
       
       const seeded = await seeder.seedData();
       if (!seeded) {
-        this.boot.error('Failed to automatically inject base data.');
+        this.boot.error('Could not automatically inject base data.');
         return false;
       }
       
       const hasDataAfter = await verifier.isDataPopulated(3, 5);
       if (!hasDataAfter) {
-        this.boot.error('Final data verification failed even after injection.');
+        this.boot.error('Final data verification failed even after injecting.');
         return false;
       }
     } else {
-      this.boot.info('University base data validated. Synchronizing local tokens from Docker...');
+      this.boot.info('Datos base de la Universidad validados. Sincronizando tokens locales desde Docker...');
       await seeder.synchronizeLocalToken();
     }
 
     // Verify that Canvas is responding before continuing with the LTI phase.
-    // The healTokenViaFile is performed inside LtiBootstrap → TeacherTokenGenerator,
+    // El healTokenViaFile se realiza dentro de LtiBootstrap → TeacherTokenGenerator,
     // which is solely responsible for token management (DRY principle).
     const spinner = createSpinner('Verifying connectivity with Canvas...').start();
     const { ready, error: pingError } = await pingCanvasAPI();
     if (!ready) {
       spinner.warn({ text: `Canvas is not responding yet (${pingError || 'timeout'}). The token will be validated during LTI initialization.`, mark: '  !' });
     } else {
-      spinner.success({ text: 'Canvas is responding correctly.', mark: '  √' });
+      spinner.success({ text: 'Canvas responde correctamente.', mark: '  √' });
     }
 
     
-    this.boot.info('Post-boot verification successful.');
+    this.boot.info('Post-startup verification successful.');
     return true;
   }
 }
