@@ -81,12 +81,12 @@ describe('CanvasBringup', () => {
     expect(hasRoot).toBe(false);
   });
 
-  it('reinstala gems con el contexto correcto y reinicia web y jobs', async () => {
+  it('reinstala gems con el contexto correcto, usando umask 0022 en bash, y reinicia web y jobs', async () => {
     const boot = createBoot();
     const runner = vi.fn(async (_command, args) => {
       if (args.includes('bundle') && args.includes('check')) return { success: false, err: 'missing' };
       if (args.includes('plugin')) return { success: true, err: '' };
-      if (args.includes('install')) return { success: true, out: '', err: '' };
+      if (args.includes('bash') && args.some(a => a.includes('umask'))) return { success: true, out: '', err: '' };
       if (args.slice(0, 2).join(' ') === 'compose restart') return { success: true, err: '' };
       throw new Error(`Comando inesperado: ${args.join(' ')}`);
     });
@@ -97,11 +97,31 @@ describe('CanvasBringup', () => {
 
     expect(runner).toHaveBeenCalledWith('docker', [
       'compose', 'exec', '-T', ...workspaceArgs, '-e', 'BUNDLE_FROZEN=false', 'web',
-      'bundle', 'install', '--jobs=2'
+      'bash', '-c', 'umask 0022; exec bundle install --jobs=2'
     ], { cwd: '/canvas' });
     expect(runner).toHaveBeenCalledWith('docker', ['compose', 'restart', 'web', 'jobs'], {
       cwd: '/canvas'
     });
+  });
+
+  it('regression: NO ejecuta AssetBuilder.setupAssets() dos veces (no delega compilación en bringup)', async () => {
+    const { AssetBuilder } = await import('../../src/installation/installers/AssetBuilder.js');
+    const boot = createBoot();
+    const runner = vi.fn(async (_command, args) => {
+      if (args.slice(0, 3).join(' ') === 'compose up -d') return { success: true, err: '' };
+      if (args.includes('bundle') && args.includes('check')) return { success: true, err: '' };
+      if (args.slice(0, 4).join(' ') === 'compose ps --format json') {
+        return { success: true, out: '{"State":"running"}' };
+      }
+      return { success: true, out: '' };
+    });
+    const healthCheck = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    const bringup = new CanvasBringup(boot, '/canvas', { runner, healthCheck });
+
+    await expect(bringup.bringup()).resolves.toBe(true);
+
+    // Verify AssetBuilder wasn't even instantiated during bringup
+    expect(AssetBuilder).not.toHaveBeenCalled();
   });
 
   it('no considera listo a Canvas hasta obtener respuesta HTTP', async () => {

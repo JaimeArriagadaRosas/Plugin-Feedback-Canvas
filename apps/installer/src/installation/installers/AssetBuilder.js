@@ -49,6 +49,14 @@ export class AssetBuilder {
 
   _buildSteps() {
     return [
+      ...this._buildInfrastructureSteps(),
+      ...this._buildDependencySteps(),
+      ...this._buildCompilationSteps()
+    ];
+  }
+
+  _buildInfrastructureSteps() {
+    return [
       {
         command: ['docker', 'info'],
         context: ExecutionContext.NATIVE,
@@ -69,7 +77,12 @@ export class AssetBuilder {
         startMessage: 'Iniciando contenedores...',
         failureMessage: 'Fallo el inicio.',
         successMessage: 'Contenedores iniciados'
-      },
+      }
+    ];
+  }
+
+  _buildDependencySteps() {
+    return [
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
         context: ExecutionContext.CONTAINER_CACHE_WRITE,
@@ -107,7 +120,12 @@ export class AssetBuilder {
         failureMessage: 'Error Yarn.',
         successMessage: 'Dependencias de Yarn instaladas',
         maxRetries: 5
-      },
+      }
+    ];
+  }
+
+  _buildCompilationSteps() {
+    return [
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', "find bin script packages -type f \\( -name '*.sh' -o -path '*/scripts/*' \\) -print0 | xargs -0 -r sed -i 's/\\r$//'; find bin script -type f -print0 | xargs -0 -r sed -i 's/\\r$//'; true"],
         context: ExecutionContext.WORKSPACE_WRITE,

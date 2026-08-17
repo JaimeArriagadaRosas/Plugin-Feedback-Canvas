@@ -19,10 +19,15 @@ export class CanvasWorkspaceProbe {
       cwd: this.canvasDir,
       captureAll: true
     });
-    const uid = idCmd.success ? idCmd.out.trim() : 'unknown';
+    const defaultUid = idCmd.success ? idCmd.out.trim() : 'unknown';
 
     const checkWrite = async (path, type, context) => {
       const userArgs = this.executionPolicy.getExecutionArgs(context);
+      const effectiveIdCmd = await this.runner('docker', [
+        'compose', 'exec', '-T', ...userArgs, 'web', 'id', '-u'
+      ], { cwd: this.canvasDir, captureAll: true });
+      const effectiveUid = effectiveIdCmd.success ? effectiveIdCmd.out.trim() : 'unknown';
+
       const probeCmd = await this.runner('docker', [
         'compose', 'exec', '-T', ...userArgs, 'web', 'bash', '-c', `touch ${path}/.probe && rm ${path}/.probe`
       ], { cwd: this.canvasDir, captureAll: true });
@@ -34,10 +39,11 @@ export class CanvasWorkspaceProbe {
         ], { cwd: this.canvasDir, captureAll: true });
         
         const statOutput = statCmd.success ? statCmd.out.trim() : 'unknown';
+        const contextName = Object.keys(ExecutionContext).find(k => ExecutionContext[k] === context) || context;
         
         errors.push({
           type,
-          message: `No se tienen permisos de escritura en ${path} (ejecutando como UID ${uid}).`,
+          message: `No se tienen permisos de escritura en ${path} (Contexto: ${contextName}, UID efectivo del probe: ${effectiveUid}, UID servicio por defecto: ${defaultUid}).`,
           details: `Stat: ${statOutput}\nError: ${probeCmd.err || probeCmd.out}`
         });
       }
