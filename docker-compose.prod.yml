@@ -32,6 +32,12 @@ services:
     expose:
       - "3000"
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     deploy:
       resources:
         limits:
@@ -76,7 +82,7 @@ services:
       db:
         condition: service_healthy
       gotenberg:
-        condition: service_started
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     # Configuración de reinicio agresiva para producción

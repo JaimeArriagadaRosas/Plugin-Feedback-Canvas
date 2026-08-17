@@ -50,21 +50,18 @@ export class EnvironmentSetup {
       dockerProfile = await installer.getRuntimeState();
     }
 
-    const bringup = new CanvasBringup(this.boot, this.canvasDir, { dockerProfile });
-    if (!(await bringup.startStack())) {
-      throw new Error('No se pudieron iniciar los contenedores de Canvas LMS con Docker Compose.');
+    this._ensureLogsDirectory();
+    const preflight = new PreflightChecks(this.boot, this.canvasDir, this.pluginDir, { dockerState: dockerProfile });
+    const { allOk, missing } = await preflight.runChecks();
+
+    if (!allOk) {
+      this.boot.warn('Componentes estáticos faltantes o detenidos. Recuperando...');
+      dockerProfile = await this._provisionMissing(missing, dockerProfile);
+      await this._verifyPostInstall();
     }
 
-    const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
-    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { dockerProfile });
-    const probeResult = await probe.runChecks();
-    if (!probeResult.ok) {
-      throw new Error('Permisos de workspace inválidos. Revisa el log para más detalles.');
-    }
+    await this._bringupAndVerify(dockerProfile);
 
-    if (!(await bringup.waitForReady())) {
-      throw new Error('Canvas LMS no quedó operativo dentro del tiempo permitido.');
-    }
     this.boot.info('Contenedores activos. Fast Boot completado exitosamente.');
     return true;
   }
@@ -144,14 +141,16 @@ export class EnvironmentSetup {
   }
 
   async _ensurePluginDatabase(missing) {
-    if (!missing.missing_plugin_db) return;
-    this.boot.info('Levantando PostgreSQL local mediante Docker Compose...');
+    if (!missing.missing_plugin_db && !missing.missing_gotenberg) return;
+    this.boot.info('Levantando dependencias locales (DB/Gotenberg) mediante Docker Compose...');
     try {
       await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'], { cwd: this.pluginDir });
-      const { runMigrations } = await import('@plugin-feedback/plugin-database');
-      await runMigrations();
+      if (missing.missing_plugin_db) {
+        const { runMigrations } = await import('@plugin-feedback/plugin-database');
+        await runMigrations();
+      }
     } catch (error) {
-      throw new Error(`Fallo al inicializar la base de datos local: ${error.message}`);
+      throw new Error(`Fallo al inicializar las dependencias locales: ${error.message}`);
     }
   }
 

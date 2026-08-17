@@ -27,7 +27,7 @@ export class PreflightChecks {
       { name: 'Canvas LMS clone', fn: () => this.checkCanvasClone() },
       { name: 'Node.js', fn: () => this.checkNode() },
       { name: 'NPM', fn: () => this.checkNpm() },
-      { name: 'Plugin Feedback DB', fn: () => this.checkPluginDb() }
+      { name: 'Plugin Dependencies (DB/Gotenberg)', fn: () => this.checkPluginDb() }
     ];
 
     const missing = {};
@@ -131,7 +131,16 @@ export class PreflightChecks {
 
     const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir, captureAll: true });
     const isRunning = success && out && out.trim().length > 0;
-    return { ok: isRunning, details: isRunning ? {} : { missing_plugin_db: true } };
+
+    const { success: gSuccess, out: gOut } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'gotenberg'], { cwd: this.pluginDir, captureAll: true });
+    const isGotenbergRunning = gSuccess && gOut && gOut.trim().length > 0;
+
+    const ok = isRunning && isGotenbergRunning;
+    const details = {};
+    if (!isRunning) details.missing_plugin_db = true;
+    if (!isGotenbergRunning) details.missing_gotenberg = true;
+
+    return { ok, details };
   }
 
   async checkNode() {
