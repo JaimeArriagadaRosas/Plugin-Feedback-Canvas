@@ -29,7 +29,9 @@ function createCanvasProxy() {
         ...request.headers,
         host: request.headers.host,
         'x-forwarded-host': request.headers.host,
-        'x-forwarded-proto': 'https'
+        'x-forwarded-proto': 'https',
+        'x-forwarded-port': tlsListenPort.toString(),
+        'x-forwarded-ssl': 'on'
       }
     }, (proxyResponse) => {
       const headers = rewriteLocationHeader(proxyResponse.headers, request.url);
@@ -41,7 +43,7 @@ function createCanvasProxy() {
   });
 }
 
-function rewriteLocationHeader(headers, requestUrl) {
+export function rewriteLocationHeader(headers, requestUrl) {
   if (!headers.location) {
     return headers;
   }
@@ -52,12 +54,14 @@ function rewriteLocationHeader(headers, requestUrl) {
   let location = headers.location;
   const hasCanvasHttp = location.includes(`${canvasHttpHost}:${canvasHttpPort}`);
   const hasCanvasDocker = location.includes(canvasDockerDomain);
+  const hasLocalhostTlsPort = location.includes(`http://localhost:${tlsListenPort}`);
 
-  if (!hasCanvasHttp && !hasCanvasDocker) return headers;
+  if (!hasCanvasHttp && !hasCanvasDocker && !hasLocalhostTlsPort) return headers;
 
   location = location
     .replace(`http://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
-    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget);
+    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
+    .replace(`http://localhost:${tlsListenPort}`, tlsTarget);
 
   location = location
     // eslint-disable-next-line security/detect-non-literal-regexp

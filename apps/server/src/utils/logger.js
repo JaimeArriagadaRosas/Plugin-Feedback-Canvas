@@ -53,7 +53,7 @@ const pinoLogger = pino(
 );
 
 function isNoisyEndpoint(message) {
-  return ['/system-notifications/pending', '/feedback/pending/summary', '/feedback/list']
+  return ['/system-notifications/pending', '/feedback/pending/summary', '/feedback/list', '/feedback/detail']
     .some((pathFragment) => message.includes(pathFragment));
 }
 

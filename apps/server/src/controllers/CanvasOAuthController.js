@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import { AppError } from '../utils/errors.js';
 import CanvasClient from '../services/infrastructure/CanvasClient.js';
 import { signOAuthState, verifyOAuthState } from '../security/crypto.js';
+import { REQUIRED_CANVAS_SCOPES } from '../constants/canvasScopes.js';
 
 export default class CanvasOAuthController {
   constructor(canvasTokenRepo, canvasClient) {
@@ -36,25 +37,7 @@ export default class CanvasOAuthController {
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('state', state);
       
-      const defaultScopes = [
-        'url:GET|/api/v1/users/:id',
-        'url:GET|/api/v1/users/:user_id/profile',
-        'url:GET|/api/v1/users/:user_id/courses',
-        'url:GET|/api/v1/courses',
-        'url:GET|/api/v1/courses/:id',
-        'url:GET|/api/v1/courses/:course_id/users',
-        'url:GET|/api/v1/courses/:course_id/assignments',
-        'url:GET|/api/v1/courses/:course_id/assignments/:id',
-        'url:PUT|/api/v1/courses/:course_id/assignments/:id',
-        'url:POST|/api/v1/courses/:course_id/assignments',
-        'url:GET|/api/v1/courses/:course_id/quizzes',
-        'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
-        'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-        'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-        'url:GET|/api/v1/courses/:course_id/students/submissions',
-        'url:GET|/api/v1/courses/:course_id/enrollments',
-        'url:POST|/api/v1/conversations'
-      ].join(' ');
+      const defaultScopes = REQUIRED_CANVAS_SCOPES.join(' ');
 
       const scopes = getEnv('CANVAS_OAUTH_SCOPES', defaultScopes);
       if (scopes) {
