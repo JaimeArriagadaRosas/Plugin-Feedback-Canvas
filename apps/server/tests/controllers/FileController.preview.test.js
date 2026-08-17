@@ -59,7 +59,8 @@ describe('FileController Preview Contract', () => {
     mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.docx';
     mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
     mockFetchSuccess(Buffer.from('docx_data'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'); // file fetch
-    mockFetchSuccess(Buffer.from('pdf_converted'), 'application/pdf'); // gotenberg fetch
+    global.fetch.mockResolvedValueOnce({ ok: true, status: 200 }); // healthcheck
+    mockFetchSuccess(Buffer.from('pdf_data'), 'application/pdf'); // gotenberg
 
     await fileController.preview(mockReq, mockRes);
     expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
@@ -70,6 +71,7 @@ describe('FileController Preview Contract', () => {
     mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.xlsx';
     mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
     mockFetchSuccess(Buffer.from('xlsx_data'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    global.fetch.mockResolvedValueOnce({ ok: true, status: 200 }); // healthcheck
     mockFetchSuccess(Buffer.from('pdf_converted'), 'application/pdf');
 
     await fileController.preview(mockReq, mockRes);
@@ -80,6 +82,7 @@ describe('FileController Preview Contract', () => {
     mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.pptx';
     mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
     mockFetchSuccess(Buffer.from('pptx_data'), 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    global.fetch.mockResolvedValueOnce({ ok: true, status: 200 }); // healthcheck
     mockFetchSuccess(Buffer.from('pdf_converted'), 'application/pdf');
 
     await fileController.preview(mockReq, mockRes);
@@ -121,21 +124,33 @@ describe('FileController Preview Contract', () => {
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'CANVAS_FILE_DOWNLOAD' }));
   });
 
-  it('Gotenberg inaccesible', async () => {
+  it('Gotenberg inaccesible (Healthcheck falla por red)', async () => {
     mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.docx';
     mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
     mockFetchSuccess(Buffer.from('docx_data'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'); // file fetch
-    global.fetch.mockRejectedValueOnce(new Error('Network disconnected')); // gotenberg fetch
+    global.fetch.mockRejectedValueOnce(new Error('Network disconnected')); // healthcheck fails
 
     await fileController.preview(mockReq, mockRes);
     expect(mockRes.status).toHaveBeenCalledWith(503);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'GOTENBERG_UNAVAILABLE' }));
   });
 
-  it('Gotenberg devuelve 5xx', async () => {
+  it('Gotenberg devuelve != 200 en healthcheck', async () => {
     mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.docx';
     mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
     mockFetchSuccess(Buffer.from('docx_data'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'); // file fetch
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 503 }); // healthcheck fails
+
+    await fileController.preview(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(503);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'GOTENBERG_UNAVAILABLE' }));
+  });
+
+  it('Gotenberg devuelve 5xx durante la conversión (sano en healthcheck)', async () => {
+    mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.docx';
+    mockApiSuccess('http://canvas.docker/files/123/download?token=actual');
+    mockFetchSuccess(Buffer.from('docx_data'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'); // file fetch
+    global.fetch.mockResolvedValueOnce({ ok: true, status: 200 }); // healthcheck OK
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -169,8 +184,54 @@ describe('FileController Preview Contract', () => {
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'INVALID_FILE_URL' }));
   });
 
+  it('Elimina Authorization header si downloadUrl es cross-origin', async () => {
+    mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.pdf';
+    mockReq.canvasToken = 'CANVAS_BEARER';
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ url: 'https://s3.amazonaws.com/canvas/doc.pdf?Signature=XYZ' })
+    });
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'application/pdf' },
+      arrayBuffer: async () => Buffer.from('pdf_data')
+    });
+
+    await fileController.preview(mockReq, mockRes);
+
+    const fileFetchCall = global.fetch.mock.calls[1];
+    expect(fileFetchCall[0]).toBe('https://s3.amazonaws.com/canvas/doc.pdf?Signature=XYZ');
+    expect(fileFetchCall[1].headers).not.toHaveProperty('Authorization');
+    expect(fileFetchCall[1].headers).not.toHaveProperty('authorization');
+    expect(mockRes.status).not.toHaveBeenCalledWith(500);
+    expect(mockRes.send).toHaveBeenCalled();
+  });
+
+  it('Conserva Authorization header si downloadUrl es same-origin', async () => {
+    mockReq.query.url = 'http://canvas.docker/files/123/download?file=doc.pdf';
+    mockReq.canvasToken = 'CANVAS_BEARER';
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ url: 'http://canvas.docker/files/actual/doc.pdf' })
+    });
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'application/pdf' },
+      arrayBuffer: async () => Buffer.from('pdf_data')
+    });
+
+    await fileController.preview(mockReq, mockRes);
+
+    const fileFetchCall = global.fetch.mock.calls[1];
+    expect(fileFetchCall[0]).toBe('http://canvas.docker/files/actual/doc.pdf');
+    expect(fileFetchCall[1].headers).toHaveProperty('Authorization', 'Bearer CANVAS_BEARER');
+  });
+
   it('Secretos redactados ante errores', () => {
-    // We already test redactSensitiveStrings directly, but this ensures integration conceptually
     const dirtyUrl = 'http://canvas.docker/files/123/download?code=SUPER_SECRET&state=ABC';
     const cleanUrl = redact.redactSensitiveStrings(dirtyUrl);
     expect(cleanUrl).not.toContain('SUPER_SECRET');

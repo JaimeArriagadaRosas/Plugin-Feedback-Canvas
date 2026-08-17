@@ -136,7 +136,19 @@ export default class FileController {
   }
 
   async _downloadFile(downloadUrl, context) {
-    const response = await this._fetch(downloadUrl, context);
+    const destOrigin = new URL(downloadUrl).origin;
+    const canvasOrigin = new URL(context.url).origin;
+
+    const headers = { ...context.headers };
+    if (destOrigin !== canvasOrigin) {
+      delete headers.Authorization;
+      delete headers.authorization;
+      delete headers.Host;
+      delete headers.host;
+    }
+
+    const downloadContext = { ...context, headers };
+    const response = await this._fetch(downloadUrl, downloadContext);
     if (!response.ok) {
       const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_DOWNLOAD';
       const status = response.status === 401 ? 401 : 502;
@@ -177,13 +189,22 @@ export default class FileController {
 
   async _convertToPdf(buffer, contentType, filename) {
     const endpoint = this._gotenbergEndpoint();
+    const baseUrl = new URL(endpoint).origin;
+
+    try {
+      const healthRes = await fetch(`${baseUrl}/health`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+      if (!healthRes.ok) throw new Error(`Healthcheck retornó HTTP ${healthRes.status}`);
+    } catch (error) {
+      throw this._httpError(503, 'GOTENBERG_UNAVAILABLE', `Error de red al contactar a Gotenberg: ${error.message}`);
+    }
+
     const formData = new FormData();
     formData.append('files', new Blob([buffer], { type: contentType }), filename);
     let response;
     try {
       response = await fetch(endpoint, { method: 'POST', body: formData });
     } catch (error) {
-      throw this._httpError(503, 'GOTENBERG_UNAVAILABLE', `Error de red al contactar a Gotenberg: ${error.message}`);
+      throw this._httpError(502, 'GOTENBERG_CONVERSION', `Fallo de red durante la conversión: ${error.message}`);
     }
     if (!response.ok) {
       logger.error('Error en Gotenberg', { status: response.status });
