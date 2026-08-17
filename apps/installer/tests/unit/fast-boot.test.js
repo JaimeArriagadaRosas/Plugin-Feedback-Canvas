@@ -78,18 +78,18 @@ describe('Fast Boot Probing Model', () => {
     expect(envSetup._bringupAndVerify).toHaveBeenCalled();
   });
 
-  it('Entorno sano + Gotenberg detenido → recuperación acotada de Gotenberg', async () => {
+  it('Entorno sano + Gotenberg detenido/unhealthy → recuperación acotada de Gotenberg', async () => {
     PreflightChecks.mockImplementation(() => ({
       runChecks: vi.fn().mockResolvedValue({
         allOk: false,
-        missing: { missing_gotenberg: true, missing_plugin_db: false }
+        missing: { gotenberg_status: 'exited', plugin_db_status: 'healthy' }
       })
     }));
 
     await envSetup._runFastBoot({ daemonAvailable: true });
 
     expect(envSetup._provisionMissing).toHaveBeenCalledWith(
-      expect.objectContaining({ missing_gotenberg: true }),
+      expect.objectContaining({ gotenberg_status: 'exited' }),
       expect.anything()
     );
   });

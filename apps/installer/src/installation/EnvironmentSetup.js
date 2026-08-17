@@ -141,11 +141,29 @@ export class EnvironmentSetup {
   }
 
   async _ensurePluginDatabase(missing) {
-    if (!missing.missing_plugin_db && !missing.missing_gotenberg) return;
-    this.boot.info('Levantando dependencias locales (DB/Gotenberg) mediante Docker Compose...');
+    const dbStatus = missing.plugin_db_status;
+    const gStatus = missing.gotenberg_status;
+
+    if (!dbStatus && !gStatus) return; // both healthy
+
+    const needsRecovery = (dbStatus && dbStatus !== 'starting') || (gStatus && gStatus !== 'starting');
+
+    if (needsRecovery) {
+      this.boot.info('Dependencias missing/unhealthy. Intentando recuperación...');
+      const toRecover = [];
+      if (dbStatus && dbStatus !== 'starting') toRecover.push('db');
+      if (gStatus && gStatus !== 'starting') toRecover.push('gotenberg');
+
+      try {
+        await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'rm', '-s', '-f', ...toRecover], { cwd: this.pluginDir });
+      } catch { }
+    } else {
+      this.boot.info('Dependencias en estado starting. Esperando healthcheck...');
+    }
+
     try {
       await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'], { cwd: this.pluginDir });
-      if (missing.missing_plugin_db) {
+      if (dbStatus && dbStatus !== 'starting') {
         const { runMigrations } = await import('@plugin-feedback/plugin-database');
         await runMigrations();
       }

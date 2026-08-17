@@ -129,16 +129,26 @@ export class PreflightChecks {
       this.boot.action('Si necesita reiniciar datos, use un procedimiento explícito de backup/reset después de verificar el entorno.');
     }
 
-    const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir, captureAll: true });
-    const isRunning = success && out && out.trim().length > 0;
+    const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '--format', 'json', 'db', 'gotenberg'], { cwd: this.pluginDir, captureAll: true });
 
-    const { success: gSuccess, out: gOut } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'gotenberg'], { cwd: this.pluginDir, captureAll: true });
-    const isGotenbergRunning = gSuccess && gOut && gOut.trim().length > 0;
+    let dbStatus = 'missing';
+    let gotenbergStatus = 'missing';
 
-    const ok = isRunning && isGotenbergRunning;
+    if (success && out) {
+      const lines = out.trim().split('\n').filter(l => l.trim().length > 0);
+      for (const line of lines) {
+        try {
+          const c = JSON.parse(line);
+          if (c.Service === 'db') dbStatus = c.Health || c.State;
+          if (c.Service === 'gotenberg') gotenbergStatus = c.Health || c.State;
+        } catch { }
+      }
+    }
+
+    const ok = dbStatus === 'healthy' && gotenbergStatus === 'healthy';
     const details = {};
-    if (!isRunning) details.missing_plugin_db = true;
-    if (!isGotenbergRunning) details.missing_gotenberg = true;
+    if (dbStatus !== 'healthy') details.plugin_db_status = dbStatus;
+    if (gotenbergStatus !== 'healthy') details.gotenberg_status = gotenbergStatus;
 
     return { ok, details };
   }
