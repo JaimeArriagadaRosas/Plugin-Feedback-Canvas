@@ -43,7 +43,7 @@ export class AssetBuilder {
   _printHeader() {
     this.boot.plain('');
     this.boot.plain('=========================================================');
-    this.boot.plain('   CONFIGURANDO DEPENDENCIAS Y ASSETS DE CANVAS LMS');
+    this.boot.plain('   CONFIGURING CANVAS LMS DEPENDENCIES AND ASSETS');
     this.boot.plain('=========================================================');
   }
 
@@ -61,22 +61,22 @@ export class AssetBuilder {
         command: ['docker', 'info'],
         context: ExecutionContext.NATIVE,
         startMessage: 'Verifying Docker daemon...',
-        failureMessage: 'Docker no responde.',
-        successMessage: 'Docker en ejecucion'
+        failureMessage: 'Docker is not responding.',
+        successMessage: 'Docker is running'
       },
       {
         command: ['docker', 'compose', 'build', 'web', 'jobs'],
         context: ExecutionContext.NATIVE,
-        startMessage: 'Construyendo imagenes Docker...',
-        failureMessage: 'Fallo al construir imagenes.',
-        successMessage: 'Imagenes Docker construidas'
+        startMessage: 'Building Docker images...',
+        failureMessage: 'Could not build the images.',
+        successMessage: 'Images built successfully'
       },
       {
         command: ['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'],
         context: ExecutionContext.NATIVE,
-        startMessage: 'Iniciando contenedores...',
-        failureMessage: 'Fallo el inicio.',
-        successMessage: 'Contenedores iniciados'
+        startMessage: 'Starting services in background...',
+        failureMessage: 'Could not start background services.',
+        successMessage: 'Services started'
       }
     ];
   }
@@ -88,37 +88,37 @@ export class AssetBuilder {
         context: ExecutionContext.CONTAINER_CACHE_WRITE,
         startMessage: 'Installing Bundler plugin...',
         failureMessage: 'Error installing Bundler plugin.',
-        successMessage: 'Plugin de Bundler instalado',
+        successMessage: 'Bundler plugin installed',
         maxRetries: 5
       },
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', GemCacheSecurity.getNormalizationScript()],
         context: ExecutionContext.CONTAINER_CACHE_WRITE,
-        startMessage: 'Normalizando permisos de gems...',
-        failureMessage: 'Fallo al normalizar cache de gems.',
-        successMessage: 'Permisos de cache de gems normalizados'
+        startMessage: 'Normalizing gem permissions...',
+        failureMessage: 'Failed to normalize gem cache.',
+        successMessage: 'Gem cache permissions normalized'
       },
       {
         command: ['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web', 'bash', '-c', 'umask 0022; exec bundle install --jobs=2'],
         context: ExecutionContext.WORKSPACE_WRITE,
         startMessage: 'Installing Ruby dependencies...',
-        failureMessage: 'Error en Ruby.',
-        successMessage: 'Dependencias de Ruby instaladas',
+        failureMessage: 'Error in Ruby.',
+        successMessage: 'Ruby dependencies installed',
         maxRetries: 5
       },
       {
         command: ['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Inicializando base de datos...',
-        failureMessage: 'Fallo al inicializar la base de datos de Canvas.',
-        successMessage: 'Base de datos inicializada'
+        startMessage: 'Initializing database...',
+        failureMessage: 'Failed to initialize Canvas database.',
+        successMessage: 'Database initialized'
       },
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'install', '--frozen-lockfile', '--network-concurrency', '2', '--child-concurrency', '2'],
         context: ExecutionContext.WORKSPACE_WRITE,
         startMessage: 'Installing Yarn dependencies...',
         failureMessage: 'Error Yarn.',
-        successMessage: 'Dependencias de Yarn instaladas',
+        successMessage: 'Yarn dependencies installed',
         maxRetries: 5
       }
     ];
@@ -129,40 +129,40 @@ export class AssetBuilder {
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', "find bin script packages -type f \\( -name '*.sh' -o -path '*/scripts/*' \\) -print0 | xargs -0 -r sed -i 's/\\r$//'; find bin script -type f -print0 | xargs -0 -r sed -i 's/\\r$//'; true"],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Normalizando CRLF...',
-        failureMessage: 'Fallo al normalizar CRLF.',
-        successMessage: 'CRLF normalizado'
+        startMessage: 'Normalizing CRLF...',
+        failureMessage: 'Failed to normalize CRLF.',
+        successMessage: 'CRLF normalized'
       },
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'i18n:generate_js'],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Generando traducciones...',
-        failureMessage: 'Fallo en i18n:generate_js.',
-        successMessage: 'Traducciones generadas',
+        startMessage: 'Copying translations (Brandable CSS)...',
+        failureMessage: 'Failed to copy translations.',
+        successMessage: 'Translations ready',
         maxRetries: 5
       },
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'run', 'build:packages'],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Construyendo paquetes internos...',
-        failureMessage: 'Fallo en build:packages.',
-        successMessage: 'Paquetes construidos',
+        startMessage: 'Installing Node packages (Yarn)...',
+        failureMessage: 'Failed to install Node packages.',
+        successMessage: 'Node packages installed',
         maxRetries: 5
       },
       {
         command: ['docker', 'compose', 'exec', '-T', '-e', 'CANVAS_BUILD_CONCURRENCY=1', '-e', 'PARALLEL_PROCESSORS=1', '-e', 'DISABLE_HAPPYPACK=1', '-e', 'NODE_OPTIONS=--max-old-space-size=2048', '-e', 'COMPILE_ASSETS_API_DOCS=0', '-e', 'COMPILE_ASSETS_BRAND_CONFIGS=0', 'web', 'bundle', 'exec', 'rake', 'canvas:compile_assets'],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Compilando assets...',
-        failureMessage: 'Fallo la compilacion de assets.',
-        successMessage: 'Assets compilados exitosamente',
+        startMessage: 'Installing Gems with Bundler...',
+        failureMessage: 'Failed to install Gems.',
+        successMessage: 'Gems installed',
         maxRetries: 10
       },
       {
         command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'brand_configs:write'],
         context: ExecutionContext.WORKSPACE_WRITE,
-        startMessage: 'Generando brand configs...',
-        failureMessage: 'Fallo al generar brand configs.',
-        successMessage: 'Brand configs generados'
+        startMessage: 'Generating brand configs...',
+        failureMessage: 'Failed to generate brand configs.',
+        successMessage: 'Brand configs generated'
       }
     ];
   }
@@ -178,9 +178,9 @@ export class AssetBuilder {
     const memoryBytes = Number.parseInt(result.success ? result.out?.trim() : '', 10);
     const limits = getCanvasResourceLimits(memoryBytes);
     if (limits.memoryGb !== null) {
-      this.boot.info(`Recursos Canvas ajustados para ${limits.memoryGb.toFixed(1)}GB disponibles.`);
+      this.boot.info(`Canvas resources adjusted for ${limits.memoryGb.toFixed(1)}GB available.`);
     } else {
-      this.boot.warn('No se pudo leer la memoria de Docker; se aplicaran limites conservadores de Canvas.');
+      this.boot.warn('Could not read Docker memory; applying conservative Canvas limits.');
     }
     return limits;
   }
@@ -188,7 +188,7 @@ export class AssetBuilder {
   async _runLogged(step) {
     const { command, context = ExecutionContext.NATIVE, startMessage, failureMessage, successMessage, maxRetries = 0 } = step;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-      const spinner = createSpinner(attempt === 0 ? startMessage : `${startMessage} (Reintento ${attempt}/${maxRetries})`).start();
+      const spinner = createSpinner(attempt === 0 ? startMessage : `${startMessage} (Retry ${attempt}/${maxRetries})`).start();
       const args = this._applyContainerUser(command, context);
       const result = await this.runner(args[0], args.slice(1), {
         cwd: this.canvasDir,
@@ -248,7 +248,7 @@ export class AssetBuilder {
   _getFailureMessage(defaultMessage, result) {
     const output = `${result.out}\n${result.err}`;
     if (/encryption key is incorrect/i.test(output)) {
-      return 'Clave de cifrado de Canvas no coincide con la base de datos existente.';
+      return 'Canvas encryption key does not match the existing database.';
     }
     return defaultMessage;
   }
@@ -261,6 +261,6 @@ export class AssetBuilder {
   _printDiagnosis() {
     const diagnosis = analyzeLogAndDiagnose(this.logFile);
     if (diagnosis) printDiagnosisBox(this.boot, diagnosis);
-    else this.boot.error(`Fallo sin diagnostico. Revisar log: ${this.logFile}`);
+    else this.boot.error(`Failure without diagnosis. Check log: ${this.logFile}`);
   }
 }

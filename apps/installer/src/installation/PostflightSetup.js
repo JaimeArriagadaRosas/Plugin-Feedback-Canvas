@@ -31,23 +31,23 @@ export class PostflightSetup {
 
     if (!hasData) {
       this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
-      
+
       const rubyDependencyInstaller = this.rubyDependencyInstallerFactory(this.boot, this.canvasDir);
       const gemsOk = await rubyDependencyInstaller.ensureBundlerPlugins();
       if (!gemsOk) {
         this.boot.error('No se pudieron instalar los plugins de Bundler requeridos.');
         return false;
       }
-      
+
       const dbHealth = this.databaseHealthFactory(this.boot, this.canvasDir);
       await dbHealth.ensureDatabaseReady();
-      
+
       const seeded = await seeder.seedData();
       if (!seeded) {
         this.boot.error('Could not automatically inject base data.');
         return false;
       }
-      
+
       const hasDataAfter = await verifier.isDataPopulated(3, 5);
       if (!hasDataAfter) {
         this.boot.error('Final data verification failed even after injecting.');
@@ -66,10 +66,10 @@ export class PostflightSetup {
     if (!ready) {
       spinner.warn({ text: `Canvas is not responding yet (${pingError || 'timeout'}). The token will be validated during LTI initialization.`, mark: '  !' });
     } else {
-      spinner.success({ text: 'Canvas responde correctamente.', mark: '  √' });
+      spinner.success({ text: 'Canvas is responding correctly.', mark: '  √' });
     }
 
-    
+
     this.boot.info('Post-startup verification successful.');
     return true;
   }

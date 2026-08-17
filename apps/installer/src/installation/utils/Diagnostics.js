@@ -13,7 +13,7 @@ const ERROR_SIGNATURES = [
     pattern: /INSECURE_UNFIXABLE:(.+)|INSECURE_REMAINING:(.+)|INSECURE_CHMOD_FAILED:(.+)|INSECURE_SCAN_FAILED:(.+)|world-writable and does not have the sticky bit set|unsafe to remove/i,
     type: 'CANVAS_GEM_CACHE_INSECURE_PERMISSIONS',
     diagnosis: 'The gem cache retains one or more directories with insecure world-writable permissions that the installer could not normalize.',
-    solution: 'Ajusta los permisos del volumen manualmente en WSL o verifica la propiedad del directorio .gem.'
+    solution: 'Manually adjust volume permissions in WSL or verify ownership of the .gem directory.'
   },
   {
     pattern: /File not found with singular glob: (.+)/i,
@@ -26,6 +26,12 @@ const ERROR_SIGNATURES = [
     type: 'OUT_OF_MEMORY',
     diagnosis: 'Node.js or the compiler ran out of RAM.',
     solution: 'Reduce concurrency, keep Canvas limits and verify available memory for Docker.'
+  },
+  {
+    pattern: /429 Too Many Requests|HTTP 429|rate limit/i,
+    type: 'REMOTE_RATE_LIMIT',
+    diagnosis: 'A remote server (e.g. GitHub) rejected the download request due to rate limiting (HTTP 429).',
+    solution: 'Wait a few minutes for the rate limit to reset, then retry. Yarn will reuse its cache so the next attempt will be faster. Do not delete node_modules or the clone.'
   },
   {
     pattern: /ECONNRESET|ESOCKETTIMEDOUT|ETIMEDOUT|network timeout|Failed to fetch/i,
@@ -48,26 +54,26 @@ const ERROR_SIGNATURES = [
   {
     pattern: /Could not find gem '(.+)'|GemNotFound/i,
     type: 'MISSING_GEM',
-    diagnosis: 'Falta una gema de Ruby necesaria para Canvas.',
+    diagnosis: 'A Ruby gem required by Canvas is missing.',
     solution: 'Verify bundle install and the gem cache state.'
   },
   {
     pattern: /The bundle is locked, but (.*) is missing|Please make sure you have checked (.*) into version control/i,
     type: 'MISSING_LOCKFILE',
-    diagnosis: 'Bundler no encuentra un archivo lock requerido.',
+    diagnosis: 'Bundler cannot find a required lockfile.',
     solution: 'Verify clone and frozen Bundler configuration before running bundle install.'
   },
   {
     pattern: /Your bundle is locked to (.+), but that version could not be found/i,
     type: 'LOCKED_GEM_NOT_FOUND',
-    diagnosis: 'Gemfile.lock referencia una gema no disponible.',
+    diagnosis: 'Gemfile.lock references an unavailable gem.',
     solution: 'Check connectivity to rubygems.org and Canvas version before updating dependencies.'
   },
   {
     pattern: /SyntaxError:.*in JSON/i,
     type: 'MALFORMED_JSON_CONFIG',
     diagnosis: 'A Canvas configuration JSON is invalid.',
-    solution: 'Corrige el archivo indicado en el log antes de reintentar.'
+    solution: 'Fix the file indicated in the log before retrying.'
   },
   {
     pattern: /permission denied|eacces/i,
@@ -104,7 +110,7 @@ export function analyzeLogString(logString) {
   return {
     type: 'UNKNOWN',
     diagnosis: 'Could not automatically identify the exact cause.',
-    solution: `Revisa el resumen final del registro:\n\n  | ${lastLines}`
+    solution: `Review the final log summary:\n\n  | ${lastLines}`
   };
 }
 
@@ -122,7 +128,7 @@ export function analyzeLogAndDiagnose(logFilePath, numLines = 150) {
 
 export function printDiagnosisBox(boot, diagnosisInfo) {
   boot.error('AUTOMATIC ERROR DIAGNOSIS (CODE 1)');
-  boot.info(`CAUSA DETECTADA: ${diagnosisInfo.diagnosis}`);
+  boot.info(`DETECTED CAUSE: ${diagnosisInfo.diagnosis}`);
   if (diagnosisInfo.details) boot.debug(`TECHNICAL DETAIL: ${diagnosisInfo.details}`);
   boot.action(`RECOMMENDED SOLUTION: ${diagnosisInfo.solution}`);
 }

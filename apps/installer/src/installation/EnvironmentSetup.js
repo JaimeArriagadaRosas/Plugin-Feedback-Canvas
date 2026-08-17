@@ -35,7 +35,7 @@ export class EnvironmentSetup {
     if (fs.existsSync(marker)) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.unlinkSync(marker);
-      this.boot.info('Archivo .setup_complete eliminado (Fast Boot abortado).');
+      this.boot.info('.setup_complete file deleted (Fast Boot aborted).');
     }
     process.env.FAST_BOOT = 'false';
   }
@@ -62,7 +62,7 @@ export class EnvironmentSetup {
 
     await this._bringupAndVerify(dockerProfile);
 
-    this.boot.info('Contenedores activos. Fast Boot completado exitosamente.');
+    this.boot.info('Containers active. Fast Boot completed successfully.');
     return true;
   }
 
@@ -76,7 +76,7 @@ export class EnvironmentSetup {
     const physical = await installer.isDockerInstalled();
     if (physical) {
       const guidance = installer.policy.missing(state);
-      this.boot.error('Docker parece estar instalado, pero su CLI no es utilizable desde este entorno.');
+      this.boot.error('Docker appears to be installed, but its CLI is not usable from this environment.');
       this.boot.action(guidance.action);
       throw new Error(guidance.fix);
     }
@@ -120,7 +120,7 @@ export class EnvironmentSetup {
     missing.docker_state = state;
     if (state.composeAvailable) {
       missing.missing_compose = false;
-      this.boot.success('Docker Compose V2 disponible.');
+      this.boot.success('Docker Compose V2 available.');
       return;
     }
     this.boot.error('The CLI exists, but Docker Compose V2 is not available.');
@@ -158,7 +158,7 @@ export class EnvironmentSetup {
         await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'rm', '-s', '-f', ...toRecover], { cwd: this.pluginDir });
       } catch { }
     } else {
-      this.boot.info('Dependencias en estado starting. Esperando healthcheck...');
+      this.boot.info('Dependencies in starting state. Waiting for healthcheck...');
     }
 
     try {
@@ -212,7 +212,7 @@ export class EnvironmentSetup {
     const preflight = new PreflightChecks(this.boot, this.canvasDir, this.pluginDir, { dockerState: dockerProfile });
     const { allOk, missing } = await preflight.runChecks();
     if (!allOk) {
-      this.boot.warn('Componentes faltantes detectados. Iniciando setup reanudable...');
+      this.boot.warn('Missing components detected. Starting resumable setup...');
       dockerProfile = await this._provisionMissing(missing, dockerProfile);
       await this._verifyPostInstall();
     }

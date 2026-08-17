@@ -51,7 +51,7 @@ function checkStructure(state) {
   for (const [relativePath, description] of files) {
     const fullPath = path.join(PLUGIN_DIR, relativePath);
     if (fs.existsSync(fullPath)) ok(state, relativePath, description);
-    else fail(state, `${relativePath} no encontrado`, `Crea el archivo: ${fullPath}`);
+    else fail(state, `${relativePath} not found`, `Create the file: ${fullPath}`);
   }
 }
 

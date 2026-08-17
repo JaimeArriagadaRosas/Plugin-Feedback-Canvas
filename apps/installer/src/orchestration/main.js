@@ -21,7 +21,7 @@ const CANVAS_DIR = getCanvasDirectory();
 const CANVAS_ADMIN_EMAIL = process.env.CANVAS_ADMIN_EMAIL || 'admin@canvas.local';
 // semgrep-ignore
 // eslint-disable-next-line
-const CANVAS_ADMIN_PASS = 'password123'; 
+const CANVAS_ADMIN_PASS = 'password123';
 const CANVAS_TEACHER_EMAIL = process.env.CANVAS_TEACHER_EMAIL || 'teacher@canvas.local';
 // semgrep-ignore
 // eslint-disable-next-line
@@ -44,8 +44,8 @@ function printCanvasCredentials() {
 
 async function handleSpecialModes(mode) {
   if (mode === '4') {
-    const passed = await boot.withStage('Validaciones de caja negra', async () => runBlackBoxTests(PLUGIN_DIR));
-    await ask('\nPresione Enter para salir...');
+    const passed = await boot.withStage('Black-box validations', async () => runBlackBoxTests(PLUGIN_DIR));
+    await ask('\nPress Enter to exit...');
     process.exit(passed ? 0 : 1);
   }
 
@@ -71,11 +71,11 @@ async function configureMode(mode, localOrchestrator, checker) {
     await localOrchestrator.setupLocalCanvas(mode);
     printCanvasCredentials();
   } else {
-    boot.info('Esperando lanzamiento LTI 1.3 desde Canvas.');
+    boot.info('Waiting for LTI 1.3 launch from Canvas.');
     boot.info('OIDC: https://localhost:8080/api/lti/authorize_redirect · Callback: https://localhost:3000/api/lti/callback');
-    boot.info('El navegador no se abrirá automáticamente.');
+    boot.info('The browser will not open automatically.');
 
-    await checker.runCheck('Verificación LTI (no local)', async () => {
+    await checker.runCheck('LTI verification (non-local)', async () => {
       const lti = new LtiBootstrap({ mode, log: boot });
       return lti.run();
     });
@@ -84,27 +84,27 @@ async function configureMode(mode, localOrchestrator, checker) {
 
 async function startServices(mode, localOrchestrator) {
   let backend;
-  await boot.withStage('Arranque del backend y proxy', async () => {
+  await boot.withStage('Backend and proxy startup', async () => {
     const requiredPorts = mode === '1' ? [SERVER_PORT] : [VITE_PORT, SERVER_PORT];
     await assertPortsAvailable(...requiredPorts);
-    boot.success('Puertos requeridos disponibles.');
-    boot.info('Iniciando servicios de backend y base de datos...');
+    boot.success('Required ports available.');
+    boot.info('Starting backend and database services...');
     try {
       backend = spawnBackend();
       await waitForBackend(backend);
-      boot.success('Conexión a PostgreSQL y migraciones completadas.');
-      boot.info('Generando claves LTI y cargando certificados TLS (mkcert)...');
-      boot.success('Autoconfiguración HTTPS Completada.');
-      boot.success('Backend principal escuchando en el puerto 3000.');
-      
+      boot.success('PostgreSQL connection and migrations completed.');
+      boot.info('Generating LTI keys and loading TLS certificates (mkcert)...');
+      boot.success('HTTPS autoconfiguration completed.');
+      boot.success('Main backend listening on port 3000.');
+
       if (mode === '3' && localOrchestrator) {
         const proxyStarted = await localOrchestrator.startTlsProxy();
         if (!proxyStarted) throw new Error('Could not start the TLS proxy required for Local Canvas.');
-        boot.success('Proxy TLS interno activo (https://localhost:8443 -> HTTP 8080).');
+        boot.success('Internal TLS proxy active (https://localhost:8443 -> HTTP 8080).');
       }
     } catch (err) {
-      boot.error(`No se pudo iniciar el backend: ${err.message}`);
-      if (process.env.NON_INTERACTIVE !== 'true') await ask('Presione Enter para salir...');
+      boot.error(`Could not start the backend: ${err.message}`);
+      if (process.env.NON_INTERACTIVE !== 'true') await ask('Press Enter to exit...');
       throw err;
     }
 
@@ -112,9 +112,9 @@ async function startServices(mode, localOrchestrator) {
       const viteSpinner = (await import('nanospinner')).createSpinner('Starting frontend (Vite)...');
       viteSpinner.start();
       spawnVite();
-      viteSpinner.success({ text: `Proceso de desarrollo Vite iniciado (puerto ${VITE_PORT}).`, mark: '  √' });
+      viteSpinner.success({ text: `Vite development process started (port ${VITE_PORT}).`, mark: '  √' });
     } else {
-      boot.info('Modo de Producción: Sirviendo frontend desde /dist (Requiere ejecución previa de npm run build)');
+      boot.info('Production mode: Serving frontend from /dist (requires prior npm run build)');
     }
   });
   return backend;
@@ -129,7 +129,7 @@ export async function main({ mode: requestedMode } = {}) {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
     if (fs.existsSync(setupCompletePath) && fs.existsSync(CANVAS_DIR) && fs.existsSync(getAssetsMarker(CANVAS_DIR))) {
       process.env.FAST_BOOT = 'true';
-      boot.plain('  · Modo Fast Boot detectado y validado (.setup_complete y assets presentes).');
+      boot.plain('  · Fast Boot mode detected and validated (.setup_complete and assets present).');
     }
 
     const mode = requestedMode || await showMainMenu();
@@ -144,7 +144,7 @@ export async function main({ mode: requestedMode } = {}) {
       const { Orchestrator } = await import('../local/index.js');
       localOrchestrator = new Orchestrator(boot, PLUGIN_DIR, CANVAS_DIR);
     }
-    
+
     await configureMode(mode, localOrchestrator, checker);
 
     backend = await startServices(mode, localOrchestrator);
@@ -156,19 +156,19 @@ export async function main({ mode: requestedMode } = {}) {
 
     if (mode === '3' && process.env.FAST_BOOT !== 'true') {
       fs.writeFileSync(setupCompletePath, '1');
-      boot.plain('  √ Archivo .setup_complete generado (Fast Boot para el próximo arranque).');
+      boot.plain('  √ .setup_complete file generated (Fast Boot enabled for next startup).');
     }
 
     boot.plain('');
-    boot.plain('  ✨ Arranque completado. El plugin Feedback está operativo.');
-    boot.plain('  Mantenga esta consola abierta. Presione Ctrl+C para detener.');
+    boot.plain('  ✨ Startup completed. The Feedback plugin is operational.');
+    boot.plain('  Keep this console open. Press Ctrl+C to stop.');
     boot.plain('');
 
   } catch (e) {
-    boot.error(`Error crítico: ${e.message}`);
+    boot.error(`Critical error: ${e.message}`);
     if (e.stack) boot.debug(e.stack);
-    
-    boot.info('Ejecutando limpieza por error (Graceful Shutdown)...');
+
+    boot.info('Running error cleanup (Graceful Shutdown)...');
     if (shutdownHandler) {
       await shutdownHandler();
     } else {

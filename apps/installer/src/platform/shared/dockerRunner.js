@@ -67,7 +67,7 @@ export function runDockerCommand(args, options = {}) {
     const proc = spawnDocker(args, { cwd, env });
     const timer = setTimeout(() => {
       proc.kill();
-      reject(new Error(`Timeout tras ${timeoutMs}ms ejecutando: docker ${args.join(' ')}`));
+      reject(new Error(`Timeout after ${timeoutMs}ms running: docker ${args.join(' ')}`));
     }, timeoutMs);
 
     proc.stdout.on('data', (data) => { stdout += data.toString(); });
@@ -84,7 +84,7 @@ export function waitForDockerProcess(proc, timeoutMs = DEFAULT_DOCKER_TIMEOUT_MS
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       proc.kill();
-      reject(new Error(`Timeout tras ${timeoutMs}ms esperando proceso Docker`));
+      reject(new Error(`Timeout after ${timeoutMs}ms waiting for Docker process`));
     }, timeoutMs);
 
     proc.on('close', (code) => {

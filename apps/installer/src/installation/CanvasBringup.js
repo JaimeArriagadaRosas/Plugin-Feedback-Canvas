@@ -52,7 +52,7 @@ export class CanvasBringup {
   }
 
   async bringup() {
-    this.boot.info('Iniciando stack de Canvas LMS...');
+    this.boot.info('Starting Canvas LMS stack...');
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
 
@@ -66,13 +66,13 @@ export class CanvasBringup {
   }
 
   async startStack() {
-    this.boot.info('Iniciando contenedores de Canvas LMS...');
+    this.boot.info('Starting Canvas LMS containers...');
     const result = await this.runner('docker', ['compose', 'up', '-d'], { cwd: this.canvasDir });
     if (!result.success) {
       this.boot.error(`Error starting Docker Compose: ${result.err}`);
       return false;
     }
-    this.boot.success('Contenedores de Canvas LMS iniciados');
+    this.boot.success('Canvas LMS containers started');
     return true;
   }
 
@@ -80,7 +80,7 @@ export class CanvasBringup {
     this.boot.info('Verifying Canvas Ruby dependencies...');
     const check = await this._runWebCommand(['bundle', 'check']);
     if (check.success) {
-      this.boot.success('Dependencias Ruby listas');
+      this.boot.success('Ruby dependencies ready');
       return true;
     }
 
@@ -100,17 +100,17 @@ export class CanvasBringup {
       cwd: this.canvasDir
     });
     if (!restarted.success) {
-      this.boot.error(`No se pudieron reiniciar los servicios de Canvas: ${restarted.err}`);
+      this.boot.error(`Could not restart Canvas services: ${restarted.err}`);
       return false;
     }
 
-    this.boot.success('Dependencias Ruby instaladas y servicios reiniciados');
+    this.boot.success('Ruby dependencies installed and services restarted');
     return true;
   }
 
   async waitForReady(timeoutSeconds = 300, interval = 5) {
     const { createSpinner } = await import('nanospinner');
-    const spinner = createSpinner('Iniciando lectura de logs de Canvas...').start();
+    const spinner = createSpinner('Reading Canvas logs...').start();
 
     const tailProcess = execa('docker', ['compose', 'logs', '-f', '--tail=0', 'web', 'jobs', 'postgres', 'redis'], {
       cwd: this.canvasDir,

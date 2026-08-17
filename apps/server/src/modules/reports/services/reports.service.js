@@ -61,11 +61,11 @@ export class ReportsService {
           p.nombre,
           p.creado_en AS fecha_creacion,
           p.actualizado_en AS ultima_modificacion,
-          p.teacher_id AS autor,
+          p.profesor_id AS autor,
           COUNT(h.id) AS frecuencia_uso
         FROM Plantilla_Feedback p
         LEFT JOIN Historial_Feedback_Generado h ON p.id = h.plantilla_id
-        GROUP BY p.id, p.nombre, p.creado_en, p.actualizado_en, p.teacher_id
+        GROUP BY p.id, p.nombre, p.creado_en, p.actualizado_en, p.profesor_id
         ORDER BY p.creado_en DESC
       `;
       const res = await db.query(query);

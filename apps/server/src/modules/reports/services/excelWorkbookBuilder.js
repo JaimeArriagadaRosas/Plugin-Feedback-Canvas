@@ -116,7 +116,7 @@ function addDetailSheet(workbook, data) {
   const rows = data.map((row) => ({
     fecha_generacion: formatDate(row.fecha_generacion), curso: row.nombre_curso || `Course ${row.curso_id}`,
     asignacion: row.nombre_tarea || `Assignment ${row.tarea_id}`, student: row.nombre_student || `Student ${row.student_id}`,
-    teacher_id: row.teacher_id || 'N/A', estado: translateStatus(row.estado || 'PENDIENTE'), nota_canvas: valueOrNa(row.nota_canvas),
+    teacher_id: row.profesor_id || 'N/A', estado: translateStatus(row.estado || 'PENDIENTE'), nota_canvas: valueOrNa(row.nota_canvas),
     nota_chile: valueOrNa(row.nota_chile), es_util: row.es_util == null ? 'N/A' : row.es_util ? 'Yes' : 'No',
     val_prof: withStars(row.calificacion_teacher), val_est: withStars(row.calificacion_student)
   }));
@@ -154,7 +154,7 @@ function migrationSheetConfig() {
 function notificationSheetConfig() {
   return {
     columns: [column('Teacher ID', 'teacher_id', 20), column('Error Type', 'tipo_error', 30), column('Error Message', 'mensaje_error', 60), column('Detection Date', 'creado_en', 25), column('Resolved', 'resuelto', 15)],
-    map: (item) => ({ teacher_id: item.teacher_id || 'N/A', tipo_error: item.tipo_error || 'N/A', mensaje_error: item.mensaje_error || 'No message', creado_en: formatDate(item.creado_en), resuelto: item.resuelto ? 'Yes' : 'No' }),
+    map: (item) => ({ teacher_id: item.profesor_id || 'N/A', tipo_error: item.tipo_error || 'N/A', mensaje_error: item.mensaje_error || 'No message', creado_en: formatDate(item.creado_en), resuelto: item.resuelto ? 'Yes' : 'No' }),
     empty: { teacher_id: 'N/A', tipo_error: 'N/A', mensaje_error: 'No system notifications.', creado_en: 'N/A', resuelto: 'N/A' }
   };
 }

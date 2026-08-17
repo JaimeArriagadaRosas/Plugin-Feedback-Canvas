@@ -27,7 +27,7 @@ describe('EnvironmentSetup', () => {
     await expect(setup._ensureCompose(missing, dockerProfile)).resolves.toBeUndefined();
 
     expect(missing).toMatchObject({ missing_compose: false, docker_state: dockerProfile });
-    expect(boot.success).toHaveBeenCalledWith('Docker Compose V2 disponible.');
+    expect(boot.success).toHaveBeenCalledWith('Docker Compose V2 available.');
     expect(boot.error).not.toHaveBeenCalled();
   });
 

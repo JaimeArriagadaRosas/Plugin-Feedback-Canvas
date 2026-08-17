@@ -1,5 +1,5 @@
 import { AuthLTI13Handler, refreshLtiTokenCookie } from '../../middlewares/AuthLTI13Handler.js';
-import GestorRutasAPI from '../../routes/GestorRutasAPI.js';
+import ApiRouteManager from '../../routes/ApiRouteManager.js';
 import SystemConfigController from '../../controllers/SystemConfigController.js';
 import LocalAuthController from '../../controllers/AuthController.local.js';
 import authRouter from '../../routes/auth.js';
@@ -17,7 +17,7 @@ export function registerRoutes(app, services, ltiPublicJwk) {
   registerAuthRoutes(app);
   registerFeatureRoutes(app);
   app.use('/api', idempotencyManager.middleware());
-  app.use('/api', new GestorRutasAPI(buildDependencies(services, ltiPublicJwk)).getRouter());
+  app.use('/api', new ApiRouteManager(buildDependencies(services, ltiPublicJwk)).getRouter());
   registerSystemConfigRoutes(app);
 }
 
@@ -130,6 +130,8 @@ function buildDependencies(services, ltiPublicJwk) {
     statsService: services.statsService,
     permissionsService: services.permissionsService,
     canvasTokenRepo: services.canvasTokenRepo,
+    canvasTokenManager: services.canvasTokenManager,
+    canvasClient: services.canvasClient,
     courseService: services.courseService,
     privateNoteService: services.privateNoteService,
     systemNotificationService: services.systemNotificationService,

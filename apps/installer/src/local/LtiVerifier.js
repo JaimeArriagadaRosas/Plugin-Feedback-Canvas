@@ -19,12 +19,12 @@ export class LtiVerifier {
 
   static async checkLtiStatus() {
     const canvasDomain = process.env.CANVAS_DOMAIN || 'localhost:8443';
-    
+
     try {
       const domainYmlPath = path.join(CANVAS_DIR, 'config', 'domain.yml');
       const domainContent = `test:\n  domain: localhost\n\ndevelopment:\n  domain: "${canvasDomain}"\n  ssl: true\n\nproduction:\n  domain: "canvas.example.com"\n  ssl: true`;
       await fs.writeFile(domainYmlPath, domainContent, 'utf-8');
-      
+
       const redisYmlPath = path.join(CANVAS_DIR, 'config', 'redis.yml');
       const redisContent = `development:\n  url: redis://redis:6379\ntest:\n  url: redis://redis:6379/1\nproduction:\n  url: redis://redis:6379\n`;
       await fs.writeFile(redisYmlPath, redisContent, 'utf-8');
@@ -37,48 +37,48 @@ export class LtiVerifier {
     }
 
     const script = `
-      puts "[Rails-LtiVerifier] [$] Buscando DeveloperKey 'Plugin Feedback LTI'..."
+      puts "[Rails-LtiVerifier] [$] Searching for DeveloperKey 'Plugin Feedback LTI'..."
       dk = DeveloperKey.where(name: 'Plugin Feedback LTI').first
       if dk.nil?
-        puts "[Rails-LtiVerifier] [$] DeveloperKey NO ENCONTRADO."
+        puts "[Rails-LtiVerifier] [$] DeveloperKey NOT FOUND."
         puts 'LTI_MISSING'
         exit 0
       end
 
-      puts "[Rails-LtiVerifier] [$] DeveloperKey encontrado (ID: #{dk.id}). Verificando ToolConfiguration..."
+      puts "[Rails-LtiVerifier] [$] DeveloperKey found (ID: #{dk.id}). Verifying ToolConfiguration..."
       tc = dk.tool_configuration
 
       if tc && tc.persisted?
-        puts "[Rails-LtiVerifier] [$] ToolConfiguration encontrado (ID: #{tc.id})."
+        puts "[Rails-LtiVerifier] [$] ToolConfiguration found (ID: #{tc.id})."
         has_target = tc.target_link_uri.present? rescue false
         has_redirects = (dk.redirect_uris.to_s.include?('oauth2/canvas/callback') && dk.require_scopes == false) rescue false
         has_docker_host = tc.public_jwk_url.include?('host.docker.internal') rescue false
-        
+
         if has_target && has_redirects && has_docker_host
-          puts '[Rails-LtiVerifier] [$] LTI detectado OK, verificando autosanación de OIDC domain...'
+          puts '[Rails-LtiVerifier] [$] LTI detected OK, verifying OIDC domain auto-correction...'
           target_domain = '${canvasDomain}'
           account = Account.default
           current_domain = Setting.get('canvas_domain', 'localhost:8080')
           account_domain = account.settings[:canvas_domain] rescue nil
-          
+
           if current_domain != target_domain || account_domain != target_domain
-            puts "[Rails-LtiVerifier] [$] AUTO-CORRECCION: Ajustando dominio OIDC de #{current_domain} a #{target_domain}"
+            puts "[Rails-LtiVerifier] [$] AUTO-CORRECTION: Adjusting OIDC domain from #{current_domain} to #{target_domain}"
             Setting.set('canvas_domain', target_domain) if Setting.respond_to?(:set)
             if account.respond_to?(:settings)
               account.settings[:canvas_domain] = target_domain
               account.save! rescue nil
             end
           else
-             puts "[Rails-LtiVerifier] [$] Dominio OIDC sincronizado (#{target_domain})."
+             puts "[Rails-LtiVerifier] [$] OIDC domain synchronized (#{target_domain})."
           end
           puts "LTI_OK_ID:#{dk.id}"
           puts "LTI_CLIENT_SECRET:#{dk.api_key}"
         else
-          puts "[Rails-LtiVerifier] Faltan campos, o public_jwk_url no usa host.docker.internal."
+          puts "[Rails-LtiVerifier] Missing fields, or public_jwk_url does not use host.docker.internal."
           puts 'LTI_MISSING'
         end
       else
-        puts "[Rails-LtiVerifier] ToolConfiguration NO ENCONTRADO para el DeveloperKey #{dk.id}."
+        puts "[Rails-LtiVerifier] ToolConfiguration NOT FOUND for DeveloperKey #{dk.id}."
         puts 'LTI_MISSING'
       end
     `;
@@ -90,25 +90,25 @@ export class LtiVerifier {
       const { success, out, err } = await runCommand('docker', commandArgs, { cwd: CANVAS_DIR });
 
       if (!success) {
-        logger.error('[LtiVerifier] Fallo el script de verificación LTI.', { error: err });
+        logger.error('[LtiVerifier] LTI verification script failed.', { error: err });
         return 'ERROR';
       }
 
       const okMatchId = out.match(/LTI_OK_ID:(\d+)/);
       const matchSecret = out.match(/LTI_CLIENT_SECRET:([^\r\n]+)/);
-      
+
       if (okMatchId && okMatchId[1]) {
         const clientId = okMatchId[1];
-        
+
         let needsUpdate = false;
         const updates = {};
-        
+
         if (process.env.LTI_CLIENT_ID !== clientId) {
           updates.LTI_CLIENT_ID = clientId;
           process.env.LTI_CLIENT_ID = clientId;
           needsUpdate = true;
         }
-        
+
         if (matchSecret && matchSecret[1] && process.env.LTI_CLIENT_SECRET !== matchSecret[1].trim()) {
           updates.LTI_CLIENT_SECRET = matchSecret[1].trim();
           process.env.LTI_CLIENT_SECRET = updates.LTI_CLIENT_SECRET;
@@ -125,7 +125,7 @@ export class LtiVerifier {
 
       return 'MISSING';
     } catch (e) {
-      logger.error('[LtiVerifier] Error comprobando estado de Canvas:', { error: e.message });
+      logger.error('[LtiVerifier] Error checking Canvas state:', { error: e.message });
       return 'ERROR';
     }
   }

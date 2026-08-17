@@ -20,22 +20,29 @@ let proxyInstance = null;
 function createCanvasProxy() {
   return http.createServer((request, response) => {
     const target = new URL(request.url, `http://${canvasHttpHost}:${canvasHttpPort}`);
+    const headers = { ...request.headers };
+    delete headers['x-forwarded-for'];
+    delete headers['x-forwarded-host'];
+    delete headers['x-forwarded-proto'];
+    delete headers['x-forwarded-port'];
+    delete headers['x-forwarded-ssl'];
+
     const proxyRequest = http.request({
       host: target.hostname,
       port: target.port,
       path: target.pathname + target.search,
       method: request.method,
       headers: {
-        ...request.headers,
-        host: request.headers.host,
-        'x-forwarded-host': request.headers.host,
+        ...headers,
+        host: headers.host,
+        'x-forwarded-host': headers.host,
         'x-forwarded-proto': 'https',
         'x-forwarded-port': tlsListenPort.toString(),
         'x-forwarded-ssl': 'on'
       }
     }, (proxyResponse) => {
-      const headers = rewriteLocationHeader(proxyResponse.headers, request.url);
-      response.writeHead(proxyResponse.statusCode || 502, headers);
+      const respHeaders = rewriteLocationHeader(proxyResponse.headers, request.url);
+      response.writeHead(proxyResponse.statusCode || 502, respHeaders);
       proxyResponse.pipe(response);
     });
     proxyRequest.on('error', (error) => respondWithProxyError(response, error));
@@ -49,32 +56,36 @@ export function rewriteLocationHeader(headers, requestUrl) {
   }
 
   const canvasDockerDomain = process.env.CANVAS_DOCKER_DOMAIN || 'canvas.docker';
-  const tlsTarget = `https://localhost:${tlsListenPort}`;
 
-  let location = headers.location;
-  const hasCanvasHttp = location.includes(`${canvasHttpHost}:${canvasHttpPort}`);
-  const hasCanvasDocker = location.includes(canvasDockerDomain);
-  const hasLocalhostTlsPort = location.includes(`http://localhost:${tlsListenPort}`);
+  let loc;
+  try {
+    loc = new URL(headers.location, `http://${canvasHttpHost}:${canvasHttpPort}`);
+  } catch {
+    return headers;
+  }
 
-  if (!hasCanvasHttp && !hasCanvasDocker && !hasLocalhostTlsPort) return headers;
+  const matchesCanvasHttp = loc.hostname === canvasHttpHost && (loc.port === canvasHttpPort.toString() || (!loc.port && canvasHttpPort === 80));
+  const matchesCanvasDocker = loc.hostname === canvasDockerDomain;
+  const matchesLocalhostTls = loc.hostname === 'localhost' && loc.port === tlsListenPort.toString();
 
-  location = location
-    .replace(`http://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
-    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
-    .replace(`http://localhost:${tlsListenPort}`, tlsTarget);
+  if (!matchesCanvasHttp && !matchesCanvasDocker && !matchesLocalhostTls) {
+    return headers;
+  }
 
-  location = location
-    // eslint-disable-next-line security/detect-non-literal-regexp
-    .replace(new RegExp(`https?://${canvasDockerDomain}(:\\d+)?`), tlsTarget);
+  loc.protocol = 'https:';
+  loc.hostname = 'localhost';
+  loc.port = tlsListenPort.toString();
 
-  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirecting to ${location}`);
+  const location = loc.toString();
+
+  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirecting to ${loc.protocol}//${loc.hostname}:${loc.port}${loc.pathname}`);
   return { ...headers, location };
 }
 
 function respondWithProxyError(response, error) {
   console.error(`[TLS-PROXY] Error forwarding to Canvas: ${error.message}`);
   if (!response.headersSent) response.writeHead(502, { 'Content-Type': 'text/plain' });
-  response.end(`Bad Gateway: no se pudo contactar Canvas Local en ${canvasHttpHost}:${canvasHttpPort}`);
+  response.end(`Bad Gateway: could not contact Local Canvas at ${canvasHttpHost}:${canvasHttpPort}`);
 }
 
 function createHttpsProxy(proxy) {

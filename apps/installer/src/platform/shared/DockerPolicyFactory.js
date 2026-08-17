@@ -8,5 +8,5 @@ export function createDockerPolicy(host) {
   if (host.isLinux) return new LinuxDockerPolicy(host);
   if (host.isWindows) return new WindowsDockerPolicy(host);
   if (host.isMac) return new MacDockerPolicy(host);
-  throw new Error(`Sistema operativo no soportado: ${host.name}`);
+  throw new Error(`Unsupported operating system: ${host.name}`);
 }

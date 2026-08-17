@@ -59,14 +59,14 @@ export class DockerInstaller {
       intervalSeconds: interval,
       onAttempt: ({ attempt, attempts }) => {
         const remaining = Math.max(0, (attempts - attempt) * interval);
-        spinner.update({ text: `Esperando el runtime ${this.policy.id} (${remaining}s restantes)...` });
+        spinner.update({ text: `Waiting for runtime ${this.policy.id} (${remaining}s remaining)...` });
       }
     });
     if (!state) {
       spinner.error({ text: 'Timeout: Docker daemon did not start' });
       return false;
     }
-    spinner.success({ text: 'Docker daemon disponible', mark: '  √' });
+    spinner.success({ text: 'Docker daemon available', mark: '  √' });
     return true;
   }
 
@@ -80,16 +80,16 @@ export class DockerInstaller {
 
     if (denied && this.host.isLinux && this.strategy && this.strategy.rootlessInstaller) {
       const { askConfirm } = await import('../../orchestration/cli.js');
-      this.boot.info('El cliente Docker existe pero careces de permisos en el socket del sistema.');
+      this.boot.info('Docker client exists but you lack permissions on the system socket.');
       const useRootless = await askConfirm('Do you want to configure Docker Rootless for your local user account (recommended)?', true);
       if (useRootless) {
         const manager = await this.strategy._detectPackageManager() || 'apt';
         const rootless = await this.strategy.rootlessInstaller.install(manager, this.strategy.username());
         if (rootless.success) {
-          this.boot.success('Docker rootless configurado exitosamente.');
+          this.boot.success('Rootless Docker configured successfully.');
           return this.waitForDaemon();
         } else {
-          this.boot.error(`No se pudo configurar Rootless: ${rootless.err}`);
+          this.boot.error(`Could not configure Rootless Docker: ${rootless.err}`);
         }
       }
       return false;
