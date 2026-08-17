@@ -19,7 +19,7 @@ export default class CanvasTokenManager {
     const tokenData = await this.tokenRepo.getToken(teacherId);
     if (!tokenData) {
       throw new AppError(
-        `OAuth token not found for user ${teacherId}. Authorization required.`,
+        `OAuth token not found for user ${teacherId}`,
         401,
         { requireOAuth: true }
       );
@@ -31,7 +31,7 @@ export default class CanvasTokenManager {
       logger.info(`[AUTH] Token expired for ${teacherId}, attempting to refresh...`);
       return this.refreshToken(teacherId, tokenData.refreshToken);
     } else if (isExpired) {
-      throw new AppError(`Token expired and no refresh_token available for ${teacherId}`, 401, { requireOAuth: true });
+      throw new AppError(`Expired token with no refresh_token for ${teacherId}`, 401, { requireOAuth: true });
     }
 
     return tokenData.accessToken;
@@ -85,7 +85,7 @@ export default class CanvasTokenManager {
           if (response.status === 400 || response.status === 401) {
             logger.warn(`\n[AUTH] Invalid or revoked token for ${teacherId} (HTTP ${response.status}). Aborting retries.`);
             await this.invalidateToken(teacherId);
-            throw new AppError(`Invalid token or grant (HTTP ${response.status})`, 401, { requireOAuth: true });
+            throw new AppError(`Invalid grant or token (HTTP ${response.status})`, 401, { requireOAuth: true });
           }
           throw new Error(`HTTP Error ${response.status} refreshing token`);
         }

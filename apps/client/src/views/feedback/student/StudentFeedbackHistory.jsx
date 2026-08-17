@@ -20,8 +20,8 @@ export default function StudentFeedbackHistory({ assignments, onSelect, courseNa
       {assignments.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📚</div>
-          <h3 className={styles.emptyTitle}>Sin feedback disponible</h3>
-          <p className={styles.emptyText}>No tienes calificaciones ni feedback disponibles para este curso en este momento.</p>
+          <h3 className={styles.emptyTitle}>No feedback available</h3>
+          <p className={styles.emptyText}>You have no grades or feedback available for this course at this time.</p>
         </div>
       ) : (
         <div className={styles.tableContainer}>

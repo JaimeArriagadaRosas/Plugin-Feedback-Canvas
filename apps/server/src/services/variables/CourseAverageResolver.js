@@ -4,7 +4,7 @@ import logger from '../../utils/logger.js';
 
 export default class CourseAverageResolver extends BaseVariableResolver {
   constructor(canvasGateway, courseStatisticsService = null) {
-    super('{{promedio_curso}}');
+    super('{{course_average}}');
     this.canvasGateway = canvasGateway;
     this.courseStatisticsService = courseStatisticsService || new CourseStatisticsService(canvasGateway);
   }

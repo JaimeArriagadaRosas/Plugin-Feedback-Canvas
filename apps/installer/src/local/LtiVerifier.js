@@ -37,59 +37,60 @@ export class LtiVerifier {
     }
 
     const script = `
-      puts "[Rails-LtiVerifier] [$] Searching for DeveloperKey 'Plugin Feedback LTI'..."
+      puts "[Rails-LtiVerifier] [$] Buscando DeveloperKey 'Plugin Feedback LTI'..."
       dk = DeveloperKey.where(name: 'Plugin Feedback LTI').first
       if dk.nil?
-        puts "[Rails-LtiVerifier] [$] DeveloperKey NOT FOUND."
+        puts "[Rails-LtiVerifier] [$] DeveloperKey NO ENCONTRADO."
         puts 'LTI_MISSING'
         exit 0
       end
 
-      puts "[Rails-LtiVerifier] [$] DeveloperKey found (ID: #{dk.id}). Verifying ToolConfiguration..."
+      puts "[Rails-LtiVerifier] [$] DeveloperKey encontrado (ID: #{dk.id}). Verificando ToolConfiguration..."
       tc = dk.tool_configuration
 
       if tc && tc.persisted?
-        puts "[Rails-LtiVerifier] [$] ToolConfiguration found (ID: #{tc.id})."
+        puts "[Rails-LtiVerifier] [$] ToolConfiguration encontrado (ID: #{tc.id})."
         has_target = tc.target_link_uri.present? rescue false
         has_redirects = (dk.redirect_uris.to_s.include?('oauth2/canvas/callback') && dk.require_scopes == false) rescue false
         has_docker_host = tc.public_jwk_url.include?('host.docker.internal') rescue false
         
         if has_target && has_redirects && has_docker_host
-          puts '[Rails-LtiVerifier] [$] LTI detected OK, verifying auto-healing of OIDC domain...'
+          puts '[Rails-LtiVerifier] [$] LTI detectado OK, verificando autosanación de OIDC domain...'
           target_domain = '${canvasDomain}'
           account = Account.default
           current_domain = Setting.get('canvas_domain', 'localhost:8080')
           account_domain = account.settings[:canvas_domain] rescue nil
           
           if current_domain != target_domain || account_domain != target_domain
-            puts "[Rails-LtiVerifier] [$] AUTO-CORRECTION: Adjusting OIDC domain from #{current_domain} to #{target_domain}"
+            puts "[Rails-LtiVerifier] [$] AUTO-CORRECCION: Ajustando dominio OIDC de #{current_domain} a #{target_domain}"
             Setting.set('canvas_domain', target_domain) if Setting.respond_to?(:set)
             if account.respond_to?(:settings)
               account.settings[:canvas_domain] = target_domain
               account.save! rescue nil
             end
           else
-             puts "[Rails-LtiVerifier] [$] OIDC domain synchronized (#{target_domain})."
+             puts "[Rails-LtiVerifier] [$] Dominio OIDC sincronizado (#{target_domain})."
           end
-          puts "LTI_OK_ID:#{dk.id % 10_000_000_000_000}"
+          puts "LTI_OK_ID:#{dk.id}"
           puts "LTI_CLIENT_SECRET:#{dk.api_key}"
         else
-          puts "[Rails-LtiVerifier] Missing fields, or public_jwk_url does not use host.docker.internal."
+          puts "[Rails-LtiVerifier] Faltan campos, o public_jwk_url no usa host.docker.internal."
           puts 'LTI_MISSING'
         end
       else
-        puts "[Rails-LtiVerifier] ToolConfiguration NOT FOUND for DeveloperKey #{dk.id}."
+        puts "[Rails-LtiVerifier] ToolConfiguration NO ENCONTRADO para el DeveloperKey #{dk.id}."
         puts 'LTI_MISSING'
       end
     `;
 
     try {
-      const { success, out, err } = await runCommand('docker', withCanvasWorkspaceContext([
+      const commandArgs = await withCanvasWorkspaceContext([
         'compose', 'exec', '-T', '-e', 'DISABLE_SPRING=1', 'web', 'bundle', 'exec', 'rails', 'runner', script
-      ]), { cwd: CANVAS_DIR });
+      ]);
+      const { success, out, err } = await runCommand('docker', commandArgs, { cwd: CANVAS_DIR });
 
       if (!success) {
-        logger.error('[LtiVerifier] LTI verification script failed.', { error: err });
+        logger.error('[LtiVerifier] Fallo el script de verificación LTI.', { error: err });
         return 'ERROR';
       }
 
@@ -124,7 +125,7 @@ export class LtiVerifier {
 
       return 'MISSING';
     } catch (e) {
-      logger.error('[LtiVerifier] Error checking Canvas status:', { error: e.message });
+      logger.error('[LtiVerifier] Error comprobando estado de Canvas:', { error: e.message });
       return 'ERROR';
     }
   }

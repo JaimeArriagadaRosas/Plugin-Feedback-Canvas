@@ -1,23 +1,24 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { runCommand } from './utils/Runner.js';
+import { getPluginDirectory, getAssetsMarker } from './utils/LocalWorkspacePaths.js';
 import { DockerRuntimeProbe, DockerRuntimeStatus } from '../platform/shared/DockerRuntimeProbe.js';
 
 export class PreflightChecks {
-  constructor(boot, canvasDir, pluginDir, { dockerProbe = new DockerRuntimeProbe() } = {}) {
+  constructor(boot, canvasDir, pluginDir, { dockerProbe = new DockerRuntimeProbe(), dockerState = null } = {}) {
     this.boot = boot;
     this.canvasDir = canvasDir;
     this.pluginDir = pluginDir;
     this.MIN_RAM_GB = 8;
     this.dockerProbe = dockerProbe;
-    this.dockerState = null;
+    this.dockerState = dockerState;
   }
 
   async runChecks() {
-    this.boot.info('Starting static component verification');
+    this.boot.info('Starting verification of static components');
     this.boot.plain('');
     this.boot.plain('=========================================================');
-    this.boot.plain('   COMPONENT VERIFICATION - LOCAL CANVAS LMS');
+    this.boot.plain('   VERIFICACION DE COMPONENTES - CANVAS LMS LOCAL');
     this.boot.plain('=========================================================');
 
     const checks = [
@@ -26,7 +27,7 @@ export class PreflightChecks {
       { name: 'Canvas LMS clone', fn: () => this.checkCanvasClone() },
       { name: 'Node.js', fn: () => this.checkNode() },
       { name: 'NPM', fn: () => this.checkNpm() },
-      { name: 'Plugin Feedback DB', fn: () => this.checkPluginDb() }
+      { name: 'Plugin Dependencies (DB/Gotenberg)', fn: () => this.checkPluginDb() }
     ];
 
     const missing = {};
@@ -41,7 +42,7 @@ export class PreflightChecks {
       if (!ok) {
         allOk = false;
         Object.assign(missing, details);
-        this.boot.error(`${check.name}: not available`);
+        this.boot.error(`${check.name}: no disponible`);
       } else {
         this.boot.success(check.name);
       }
@@ -52,7 +53,9 @@ export class PreflightChecks {
   }
 
   async checkDocker() {
-    this.dockerState = await this.dockerProbe.inspect();
+    if (!this.dockerState) {
+      this.dockerState = await this.dockerProbe.inspect();
+    }
     if (this.dockerState.status === DockerRuntimeStatus.ACTIVE) return { ok: true, details: {} };
     if (this.dockerState.cliOrigin === 'windows-interop') {
       return {
@@ -90,17 +93,17 @@ export class PreflightChecks {
       return { ok: false, details: { missing_canvas_clone: true } };
     }
     
-    // If clone exists, verify that AssetBuilder completed successfully
-    const assetsMarker = path.join(this.canvasDir, '.assets_built');
+    // Si existe el clon, verificar que se haya completado el AssetBuilder exitosamente
+    const assetsMarker = getAssetsMarker(this.canvasDir);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(assetsMarker)) {
       return { ok: false, details: { missing_canvas_assets: true } };
     }
 
-    // Ping the database to ensure tables were not lost due to a "docker compose down"
+    // Ping a la base de datos para asegurar que las tablas no se hayan perdido por un "docker compose down"
     try {
       await runCommand('docker', ['compose', 'up', '-d', 'postgres'], { cwd: this.canvasDir });
-      // Wait 2 seconds to ensure PostgreSQL accepts connections if it just started
+      // Esperar 2 segundos para asegurar que PostgreSQL acepte conexiones si se acaba de levantar
       await new Promise((resolve) => setTimeout(resolve, 2000));
       
       const { success, out } = await runCommand('docker', [
@@ -109,11 +112,11 @@ export class PreflightChecks {
       ], { cwd: this.canvasDir, captureAll: true });
 
       if (!success || !out.includes('1')) {
-        this.boot.warn('Detected that the Canvas database is empty (possible destroyed volume).');
+        this.boot.warn('Canvas database is detected empty (possible destroyed volume).');
         return { ok: false, details: { missing_canvas_assets: true } };
       }
     } catch (err) {
-      this.boot.warn('Error verifying the Canvas database, assuming reconstruction is required.');
+      this.boot.warn('Error checking Canvas database, it will be assumed it requires rebuilding.');
       return { ok: false, details: { missing_canvas_assets: true } };
     }
     
@@ -126,9 +129,28 @@ export class PreflightChecks {
       this.boot.action('If you need to reset data, use an explicit backup/reset procedure after verifying the environment.');
     }
 
-    const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '-q', 'db'], { cwd: this.pluginDir, captureAll: true });
-    const isRunning = success && out && out.trim().length > 0;
-    return { ok: isRunning, details: isRunning ? {} : { missing_plugin_db: true } };
+    const { success, out } = await runCommand('docker', ['compose', '-f', 'docker-compose.db.yml', 'ps', '--format', 'json', 'db', 'gotenberg'], { cwd: this.pluginDir, captureAll: true });
+
+    let dbStatus = 'missing';
+    let gotenbergStatus = 'missing';
+
+    if (success && out) {
+      const lines = out.trim().split('\n').filter(l => l.trim().length > 0);
+      for (const line of lines) {
+        try {
+          const c = JSON.parse(line);
+          if (c.Service === 'db') dbStatus = c.Health || c.State;
+          if (c.Service === 'gotenberg') gotenbergStatus = c.Health || c.State;
+        } catch { }
+      }
+    }
+
+    const ok = dbStatus === 'healthy' && gotenbergStatus === 'healthy';
+    const details = {};
+    if (dbStatus !== 'healthy') details.plugin_db_status = dbStatus;
+    if (gotenbergStatus !== 'healthy') details.gotenberg_status = gotenbergStatus;
+
+    return { ok, details };
   }
 
   async checkNode() {

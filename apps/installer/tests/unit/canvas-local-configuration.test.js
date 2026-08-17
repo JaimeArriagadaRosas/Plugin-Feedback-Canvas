@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe('CanvasLocalConfiguration', () => {
-  it('only creates missing configuration and preserves existing local configuration', () => {
+  it('solo crea configuracion ausente y conserva la configuracion local existente', () => {
     const canvasDir = createCanvasDirectory();
     const configDir = path.join(canvasDir, 'config');
     fs.writeFileSync(path.join(configDir, 'database.yml'), 'development:\n  host: custom-db\n');
@@ -51,7 +51,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(override.volumes).toMatchObject({ 'canvas-log': null, 'canvas-tmp': null });
   });
 
-  it('does not replace an override it cannot interpret', () => {
+  it('no reemplaza un override que no puede interpretar', () => {
     const canvasDir = createCanvasDirectory();
     const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
     fs.writeFileSync(overrideFile, 'services: [invalid');
@@ -63,7 +63,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(boot.warn).toHaveBeenCalledOnce();
   });
 
-  it('preserves the existing encryption key and shares it with jobs', () => {
+  it('conserva la clave de cifrado existente y la comparte con jobs', () => {
     const canvasDir = createCanvasDirectory();
     const key = 'a'.repeat(64);
     fs.writeFileSync(path.join(canvasDir, 'docker-compose.override.yml'), yaml.dump({
@@ -77,7 +77,7 @@ describe('CanvasLocalConfiguration', () => {
     expect(override.services.jobs.environment.ENCRYPTION_KEY).toBe(key);
   });
 
-  it('prefers official Docker templates and only replaces an intact copy of the example', () => {
+  it('prefiere las plantillas Docker oficiales y reemplaza solo una copia intacta del ejemplo', () => {
     const canvasDir = createCanvasDirectory();
     const configDir = path.join(canvasDir, 'config');
     const dockerConfigDir = path.join(canvasDir, 'docker-compose', 'config');
@@ -90,5 +90,40 @@ describe('CanvasLocalConfiguration', () => {
     new CanvasLocalConfiguration(boot, canvasDir).configure({ web: '4G', jobs: '1G' });
 
     expect(fs.readFileSync(path.join(configDir, 'database.yml'), 'utf8')).toContain('postgres');
+  });
+
+  it('inyecta USER_ID si la politica de ejecucion lo requiere', () => {
+    const canvasDir = createCanvasDirectory();
+    const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
+
+    // Stub the ContainerExecutionPolicy via dependency injection
+    const executionPolicy = {
+      getBuildUserId: () => '1000'
+    };
+
+    new CanvasLocalConfiguration({ warn: vi.fn() }, canvasDir, { executionPolicy }).configure({ web: '1G', jobs: '1G' });
+
+    const override = yaml.load(fs.readFileSync(overrideFile, 'utf8'));
+    expect(override.services.web.user).toBeUndefined();
+    expect(override.services.web.build.args.USER_ID).toBe('1000');
+    expect(override.services.jobs.user).toBeUndefined();
+    expect(override.services.jobs.build.args.USER_ID).toBe('1000');
+  });
+
+  it('NO inyecta USER_ID si la politica de ejecucion devuelve null', () => {
+    const canvasDir = createCanvasDirectory();
+    const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
+
+    // Stub the ContainerExecutionPolicy
+    const executionPolicy = {
+      getBuildUserId: () => null
+    };
+
+    new CanvasLocalConfiguration({ warn: vi.fn() }, canvasDir, { executionPolicy }).configure({ web: '1G', jobs: '1G' });
+
+    const override = yaml.load(fs.readFileSync(overrideFile, 'utf8'));
+    expect(override.services.web.user).toBeUndefined();
+    expect(override.services.web.build).toBeUndefined();
+    expect(override.services.jobs.user).toBeUndefined();
   });
 });

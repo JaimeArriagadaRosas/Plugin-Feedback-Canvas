@@ -265,7 +265,7 @@ export default class FeedbackGenerationService {
     return {
       text: activeVariablesText,
       activeVars: activeVars,
-      isTrayectoriaActiva: !!courseVariables.trayectoria_academica?.activa
+      isTrayectoriaActiva: !!courseVariables.academic_trajectory?.activa
     };
   }
 }

@@ -3,7 +3,7 @@ import logger from '../../utils/logger.js';
 
 export default class PreviousAcademicStatusResolver extends BaseVariableResolver {
   constructor() {
-    super('{{situacion_academica_anterior}}');
+    super('{{previous_academic_status}}');
   }
 
   async resolve(context) {

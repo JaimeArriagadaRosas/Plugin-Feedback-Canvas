@@ -29,7 +29,9 @@ function createCanvasProxy() {
         ...request.headers,
         host: request.headers.host,
         'x-forwarded-host': request.headers.host,
-        'x-forwarded-proto': 'https'
+        'x-forwarded-proto': 'https',
+        'x-forwarded-port': tlsListenPort.toString(),
+        'x-forwarded-ssl': 'on'
       }
     }, (proxyResponse) => {
       const headers = rewriteLocationHeader(proxyResponse.headers, request.url);
@@ -41,7 +43,7 @@ function createCanvasProxy() {
   });
 }
 
-function rewriteLocationHeader(headers, requestUrl) {
+export function rewriteLocationHeader(headers, requestUrl) {
   if (!headers.location) {
     return headers;
   }
@@ -52,25 +54,27 @@ function rewriteLocationHeader(headers, requestUrl) {
   let location = headers.location;
   const hasCanvasHttp = location.includes(`${canvasHttpHost}:${canvasHttpPort}`);
   const hasCanvasDocker = location.includes(canvasDockerDomain);
+  const hasLocalhostTlsPort = location.includes(`http://localhost:${tlsListenPort}`);
 
-  if (!hasCanvasHttp && !hasCanvasDocker) return headers;
+  if (!hasCanvasHttp && !hasCanvasDocker && !hasLocalhostTlsPort) return headers;
 
   location = location
     .replace(`http://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
-    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget);
+    .replace(`https://${canvasHttpHost}:${canvasHttpPort}`, tlsTarget)
+    .replace(`http://localhost:${tlsListenPort}`, tlsTarget);
 
   location = location
     // eslint-disable-next-line security/detect-non-literal-regexp
     .replace(new RegExp(`https?://${canvasDockerDomain}(:\\d+)?`), tlsTarget);
 
-  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirects to ${location}`);
+  if (requestUrl.includes('/api/lti/')) console.log(`    · [TLS-PROXY] OIDC redirecting to ${location}`);
   return { ...headers, location };
 }
 
 function respondWithProxyError(response, error) {
   console.error(`[TLS-PROXY] Error forwarding to Canvas: ${error.message}`);
   if (!response.headersSent) response.writeHead(502, { 'Content-Type': 'text/plain' });
-  response.end(`Bad Gateway: could not contact Local Canvas at ${canvasHttpHost}:${canvasHttpPort}`);
+  response.end(`Bad Gateway: no se pudo contactar Canvas Local en ${canvasHttpHost}:${canvasHttpPort}`);
 }
 
 function createHttpsProxy(proxy) {
@@ -100,7 +104,7 @@ function createHttpsProxy(proxy) {
 function ensureCertificates() {
   if (fs.existsSync(certificatePath) && fs.existsSync(keyPath)) return;
   throw new Error(`[TLS-PROXY] mkcert certificates not found in ${certificatesDirectory}. ` +
-    'Install mkcert and generate certificates for localhost and 127.0.0.1.');
+    'Instala mkcert y genera certificados para localhost y 127.0.0.1.');
 }
 
 export function assertTlsProxyConfiguration() {

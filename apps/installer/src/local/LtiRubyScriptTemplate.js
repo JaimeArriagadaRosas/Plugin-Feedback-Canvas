@@ -1,3 +1,7 @@
+import { REQUIRED_CANVAS_SCOPES } from '../../../server/src/constants/canvasScopes.js';
+
+const SCOPES_RUBY_ARRAY = `[\n${REQUIRED_CANVAS_SCOPES.map(s => `      '${s}'`).join(',\n')}\n    ]`;
+
 const LTI_CONFIGURATION_SCRIPT = `
     account = Account.default
     begin
@@ -12,32 +16,14 @@ const LTI_CONFIGURATION_SCRIPT = `
     end
 
     key = DeveloperKey.where(name: 'Plugin Feedback LTI').first_or_initialize
-    key.email = 'support@pluginfeedback.local'
+    key.email = 'soporte@pluginfeedback.local'
     key.workflow_state = 'active'
     key.vendor_code = 'pluginfeedback'
     key.visible = true
     key.client_type = 'confidential'
     key.is_lti_key = true
     key.require_scopes = false
-    key.scopes = [
-      'url:GET|/api/v1/users/:id',
-      'url:GET|/api/v1/users/:user_id/profile',
-      'url:GET|/api/v1/users/:user_id/courses',
-      'url:GET|/api/v1/courses',
-      'url:GET|/api/v1/courses/:id',
-      'url:GET|/api/v1/courses/:course_id/users',
-      'url:GET|/api/v1/courses/:course_id/assignments',
-      'url:GET|/api/v1/courses/:course_id/assignments/:id',
-      'url:PUT|/api/v1/courses/:course_id/assignments/:id',
-      'url:POST|/api/v1/courses/:course_id/assignments',
-      'url:GET|/api/v1/courses/:course_id/quizzes',
-      'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
-      'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-      'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-      'url:GET|/api/v1/courses/:course_id/students/submissions',
-      'url:GET|/api/v1/courses/:course_id/enrollments',
-      'url:POST|/api/v1/conversations'
-    ]
+    key.scopes = ${SCOPES_RUBY_ARRAY}
 
     key.generate_rsa_keypair!(overwrite: true)
     key.save!
@@ -45,7 +31,7 @@ const LTI_CONFIGURATION_SCRIPT = `
     tool_config = key.tool_configuration || key.build_tool_configuration
     tool_config.settings = nil if tool_config.respond_to?(:settings=)
     tool_config.title = 'Feedback'
-    tool_config.description = 'Provides surveys and feedback on the course experience'
+    tool_config.description = 'Provee encuestas y feedback sobre la experiencia del curso'
     tool_config.target_link_uri = "#{plugin_url}/api/lti/callback"
     tool_config.public_jwk_url = "#{internal_plugin_url}/api/lti/jwks"
     tool_config.oidc_initiation_url = "#{plugin_url}/api/lti/login"
@@ -85,7 +71,7 @@ const LTI_CONFIGURATION_SCRIPT = `
 
     tool = ContextExternalTool.where(context_id: account.id, context_type: 'Account', developer_key_id: key.id).first_or_initialize
     tool.name = "Feedback"
-    tool.description = "Provides surveys and feedback on the course experience"
+    tool.description = "Provee encuestas y feedback sobre la experiencia del curso"
     tool.consumer_key = "Oauth2"
     tool.shared_secret = "secret"
     tool.workflow_state = 'public'
@@ -149,7 +135,7 @@ function buildScriptFooter(globalJsUrl) {
       end
     end
 
-    puts "LTI_CLIENT_ID:#{key.id % 10_000_000_000_000}"
+    puts "LTI_CLIENT_ID:#{key.global_id}"
     puts "LTI_CLIENT_SECRET:#{key.api_key}"
     puts "SUCCESS"
   `;

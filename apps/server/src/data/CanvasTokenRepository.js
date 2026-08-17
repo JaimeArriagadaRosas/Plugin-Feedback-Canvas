@@ -17,7 +17,7 @@ export default class CanvasTokenRepository {
 
     if (!accessToken) {
       if (process.env.STARTUP_MODE === '3') {
-        // In local environment we force deletion of the corrupted token to clear the session
+        // In local environment we force deletion of damaged token to clear session
         await this.deleteToken(canvasSub);
       }
       return null;

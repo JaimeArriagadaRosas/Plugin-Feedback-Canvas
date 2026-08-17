@@ -3,7 +3,7 @@ import logger from '../../utils/logger.js';
 
 export default class StudentEntryProfileResolver extends BaseVariableResolver {
   constructor() {
-    super('{{perfil_ingreso}}');
+    super('{{entry_profile}}');
   }
 
   async resolve(context) {

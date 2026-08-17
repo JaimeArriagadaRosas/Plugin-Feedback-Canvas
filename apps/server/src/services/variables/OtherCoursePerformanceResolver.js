@@ -3,7 +3,7 @@ import logger from '../../utils/logger.js';
 
 export default class OtherCoursePerformanceResolver extends BaseVariableResolver {
   constructor() {
-    super('{{desempeno_otras_asignaturas}}');
+    super('{{other_course_performance}}');
   }
 
   async resolve(context) {

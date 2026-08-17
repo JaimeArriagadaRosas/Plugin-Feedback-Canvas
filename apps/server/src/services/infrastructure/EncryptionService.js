@@ -6,8 +6,8 @@ import logger from '../../utils/logger.js';
 dotenv.config({ quiet: true });
 
 const ALGORITHM = 'aes-256-gcm';
-// B6 FIX: NIST SP 800-38D recommends 12-byte (96 bits) IV for AES-GCM.
-// Using 16 bytes works but is suboptimal (requires additional GHASH operations).
+// B6 FIX: NIST SP 800-38D recomienda IV de 12 bytes (96 bits) para AES-GCM.
+// Con 16 bytes funciona pero es subóptimo (requiere operaciones GHASH adicionales).
 const IV_LENGTH = 12;
 const EXPECTED_KEY_HEX_LENGTH = 64;
 
@@ -18,7 +18,7 @@ function getKey() {
   
   const KEY_HEX = getSecret('ENCRYPTION_KEY');
   if (!KEY_HEX || KEY_HEX.length !== EXPECTED_KEY_HEX_LENGTH) {
-    throw new Error(`ENCRYPTION_KEY is required and must be ${EXPECTED_KEY_HEX_LENGTH} characters (hex). The KeyManager should have generated it. Received: ${KEY_HEX ? KEY_HEX.length : 0}`);
+    throw new Error(`ENCRYPTION_KEY is required and must have ${EXPECTED_KEY_HEX_LENGTH} characters (hex). The KeyManager should have generated it. Received: ${KEY_HEX ? KEY_HEX.length : 0}`);
   }
 
   try {
@@ -33,7 +33,7 @@ function getKey() {
 
 /**
  * Encryption Service (AES-256-GCM)
- * Ensures API credentials are not stored in plain text.
+ * Ensures that API credentials are not stored in plain text.
  */
 export default class EncryptionService {
   /**
@@ -54,7 +54,7 @@ export default class EncryptionService {
   }
 
   /**
-   * Decrypts cipher text
+   * Decrypts encrypted text. Throws exception on failure.
    */
   static decrypt(encryptedData) {
     try {
@@ -72,12 +72,12 @@ export default class EncryptionService {
       
       return decrypted;
     } catch (error) {
-      throw new Error('Failed to decrypt data. The key may be incorrect or the data might be corrupted.');
+      throw new Error('Failed to decrypt the data. The key may be incorrect or the data may be corrupt.');
     }
   }
 
   /**
-   * Safely decrypts cipher text, catching exceptions and logging them.
+   * Securely decrypts text, catching and logging exceptions.
    * Returns null if decryption fails.
    */
   static safeDecrypt(encryptedData, context = 'Unknown data', quiet = false) {

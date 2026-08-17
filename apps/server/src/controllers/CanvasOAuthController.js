@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import { AppError } from '../utils/errors.js';
 import CanvasClient from '../services/infrastructure/CanvasClient.js';
 import { signOAuthState, verifyOAuthState } from '../security/crypto.js';
+import { REQUIRED_CANVAS_SCOPES } from '../constants/canvasScopes.js';
 
 export default class CanvasOAuthController {
   constructor(canvasTokenRepo, canvasClient) {
@@ -24,7 +25,7 @@ export default class CanvasOAuthController {
       const canvasSub = req.appIdentity?.ltiUserId;
       
       if (!canvasSub) {
-        throw new AppError('LTI user identification not provided for OAuth login', 400);
+        throw new AppError('No LTI user identification provided for OAuth login', 400);
       }
       
       const canonicalUserId = req.appIdentity?.canonicalUserId || canvasSub;
@@ -36,32 +37,14 @@ export default class CanvasOAuthController {
       authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('state', state);
       
-      const defaultScopes = [
-        'url:GET|/api/v1/users/:id',
-        'url:GET|/api/v1/users/:user_id/profile',
-        'url:GET|/api/v1/users/:user_id/courses',
-        'url:GET|/api/v1/courses',
-        'url:GET|/api/v1/courses/:id',
-        'url:GET|/api/v1/courses/:course_id/users',
-        'url:GET|/api/v1/courses/:course_id/assignments',
-        'url:GET|/api/v1/courses/:course_id/assignments/:id',
-        'url:PUT|/api/v1/courses/:course_id/assignments/:id',
-        'url:POST|/api/v1/courses/:course_id/assignments',
-        'url:GET|/api/v1/courses/:course_id/quizzes',
-        'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
-        'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-        'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-        'url:GET|/api/v1/courses/:course_id/students/submissions',
-        'url:GET|/api/v1/courses/:course_id/enrollments',
-        'url:POST|/api/v1/conversations'
-      ].join(' ');
+      const defaultScopes = REQUIRED_CANVAS_SCOPES.join(' ');
 
       const scopes = getEnv('CANVAS_OAUTH_SCOPES', defaultScopes);
       if (scopes) {
         authUrl.searchParams.append('scope', scopes);
       }
 
-      logger.info(`[CanvasOAuth] Starting OAuth flow for user ${canvasSub}, redirecting to Canvas.`);
+      logger.info(`[CanvasOAuth] Initiating OAuth flow for user ${canvasSub}, redirecting to Canvas.`);
       res.redirect(authUrl.toString());
     } catch (error) {
       next(error);
@@ -69,7 +52,7 @@ export default class CanvasOAuthController {
   }
 
   /**
-   * Receives the authorization code from Canvas and gets the token.
+   * Receives the authorization code from Canvas and retrieves the token.
    */
   async callback(req, res, next) {
     try {
@@ -120,7 +103,7 @@ export default class CanvasOAuthController {
       if (!response.ok) {
         const errText = await response.text();
         logger.error(`[CanvasOAuth] Failed to exchange token: ${response.status} ${errText}`);
-        throw new AppError('Failed to get token from Canvas', 502);
+        throw new AppError('Failed to retrieve token from Canvas', 502);
       }
 
       const data = await response.json();

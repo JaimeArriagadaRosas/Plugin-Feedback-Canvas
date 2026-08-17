@@ -15,7 +15,9 @@ function proxyFetch(url, headers) {
       const declaredSize = Number(response.headers['content-length'] || 0);
       if (declaredSize > MAX_PREVIEW_BYTES) {
         response.resume();
-        reject(new Error('File exceeds the 25 MB preview limit.'));
+        const err = new Error('File exceeds the 25 MB preview limit.');
+        err.status = 413; err.code = 'FILE_TOO_LARGE';
+        reject(err);
         return;
       }
       const chunks = [];
@@ -23,7 +25,10 @@ function proxyFetch(url, headers) {
       response.on('data', (chunk) => {
         size += chunk.length;
         if (size > MAX_PREVIEW_BYTES) {
-          request.destroy(new Error('File exceeds the 25 MB preview limit.'));
+          request.destroy();
+          const err = new Error('File exceeds the 25 MB preview limit.');
+          err.status = 413; err.code = 'FILE_TOO_LARGE';
+          reject(err);
           return;
         }
         chunks.push(chunk);
@@ -56,27 +61,37 @@ export default class FileController {
   async preview(req, res) {
     try {
       const originalUrl = this._validateUrl(req.query.url);
-      const headers = await this._getCanvasHeaders(req.appIdentity?.canonicalUserId);
+      const headers = {};
+      if (req.canvasToken) headers.Authorization = `Bearer ${req.canvasToken}`;
       const requestContext = this._prepareRequest(originalUrl, headers);
       const downloadUrl = await this._resolveDownloadUrl(requestContext);
       const file = await this._downloadFile(downloadUrl, requestContext);
-      return this._respondWithPreview(res, originalUrl, file);
+      return await this._respondWithPreview(res, originalUrl, file);
     } catch (error) {
-      logger.error('Error in FileController.preview:', { error: error.message, stack: error.stack });
-      return res.status(this._statusFor(error)).json({ error: error.message || 'Could not generate file preview' });
+      logger.error('Error in FileController.preview:', {
+        error: error.message,
+        code: error.code,
+        cause: error.cause?.message || error.cause?.code || error.cause,
+        stack: error.stack
+      });
+      return res.status(error.status || 500).json({
+        error: error.message || 'Could not generate file preview',
+        code: error.code || 'INTERNAL_ERROR',
+        details: error.cause?.message || error.cause?.code
+      });
     }
   }
 
   _validateUrl(rawUrl) {
-    if (!rawUrl) throw this._httpError(400, 'Missing file URL');
+    if (!rawUrl) throw this._httpError(400, 'INVALID_FILE_URL', 'Missing file URL');
     let url;
     try {
       url = new URL(rawUrl);
     } catch {
-      throw this._httpError(400, 'Invalid URL');
+      throw this._httpError(400, 'INVALID_FILE_URL', 'Invalid URL');
     }
     if (!['http:', 'https:'].includes(url.protocol) || !this._isTrustedHost(url.hostname)) {
-      throw this._httpError(403, 'Origin domain not allowed');
+      throw this._httpError(403, 'INVALID_FILE_URL', 'Origin domain not allowed.');
     }
     return url;
   }
@@ -97,17 +112,7 @@ export default class FileController {
     }
   }
 
-  async _getCanvasHeaders(teacherId) {
-    const headers = {};
-    if (!teacherId || !this.canvasService?.tokenManager) return headers;
-    try {
-      const token = await this.canvasService.tokenManager.getValidToken(teacherId);
-      if (token) headers.Authorization = `Bearer ${token}`;
-    } catch (error) {
-      logger.warn('Could not load Canvas token for preview', { error: error.message });
-    }
-    return headers;
-  }
+
 
   _prepareRequest(originalUrl, headers) {
     const proxyHost = process.env.FILE_PREVIEW_LOCAL_HOST ||
@@ -128,23 +133,72 @@ export default class FileController {
     const baseUrl = context.url.split('/files/')[0];
     const apiUrl = `${baseUrl}/api/v1/files/${fileMatch[1]}`;
     const response = await this._fetch(apiUrl, context);
-    if (!response.ok) throw new Error(`Failed to query file API (HTTP ${response.status}).`);
+    if (!response.ok) {
+      const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_API';
+      throw this._httpError(response.status, code, `Failed to query the file API (HTTP ${response.status}).`);
+    }
     const file = await response.json();
-    return file.url || context.url;
+    let finalUrl = file.url || context.url;
+
+    if (process.env.STARTUP_MODE === '3' && finalUrl.startsWith('http://localhost:8443')) {
+      finalUrl = finalUrl.replace(/^http:/, 'https:');
+      logger.info('[FileController] TLS fallback applied to file.url', { url: finalUrl });
+    }
+
+    return finalUrl;
   }
 
   async _downloadFile(downloadUrl, context) {
-    const response = await this._fetch(downloadUrl, context);
-    if (!response.ok) throw new Error(`Could not download source file: ${response.statusText}`);
+    const destOrigin = new URL(downloadUrl).origin;
+    const canvasOrigin = new URL(context.url).origin;
+
+    const headers = { ...context.headers };
+    if (destOrigin !== canvasOrigin) {
+      delete headers.Authorization;
+      delete headers.authorization;
+      delete headers.Host;
+      delete headers.host;
+    }
+
+    const downloadContext = { ...context, headers };
+    let response = await this._fetch(downloadUrl, downloadContext);
+
+    // Follow manual redirect
+    if (response.status === 302 || response.status === 301) {
+      let loc = response.headers.get('location');
+      if (loc) {
+        if (process.env.STARTUP_MODE === '3' && loc.startsWith('http://localhost:8443')) {
+          loc = loc.replace(/^http:/, 'https:');
+          logger.info('[FileController] TLS fallback applied to Location redirect', { loc });
+        }
+        response = await this._fetch(loc, downloadContext);
+      }
+    }
+    if (!response.ok) {
+      const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_DOWNLOAD';
+      const status = response.status === 401 ? 401 : 502;
+      throw this._httpError(status, code, `Could not download source file: ${response.statusText}`);
+    }
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length > MAX_PREVIEW_BYTES) throw new Error('File exceeds the 25 MB preview limit.');
+    if (buffer.length > MAX_PREVIEW_BYTES) throw this._httpError(413, 'FILE_TOO_LARGE', 'File exceeds the 25 MB preview limit.');
     return { buffer, contentType: response.headers.get('content-type') || '' };
   }
 
   _fetch(url, context) {
-    const usesRewrittenHost = context.useProxyFetch && new URL(url).hostname === new URL(context.url).hostname;
+    const urlObj = new URL(url);
+    const usesRewrittenHost = context.useProxyFetch &&
+      (urlObj.hostname === new URL(context.url).hostname ||
+       urlObj.hostname === 'localhost' ||
+       urlObj.hostname === '127.0.0.1');
+
+    if (usesRewrittenHost && context.useProxyFetch) {
+      const rewrittenUrl = new URL(url);
+      rewrittenUrl.hostname = new URL(context.url).hostname;
+      return proxyFetch(rewrittenUrl.toString(), { ...context.headers });
+    }
+
     const dispatcher = this.canvasService?.httpClient?.dispatcher;
-    return usesRewrittenHost ? proxyFetch(url, { ...context.headers }) : fetch(url, { headers: context.headers, dispatcher });
+    return fetch(url, { headers: context.headers, dispatcher, redirect: 'manual' });
   }
 
   async _respondWithPreview(res, originalUrl, file) {
@@ -171,17 +225,26 @@ export default class FileController {
 
   async _convertToPdf(buffer, contentType, filename) {
     const endpoint = this._gotenbergEndpoint();
+    const baseUrl = new URL(endpoint).origin;
+
+    try {
+      const healthRes = await fetch(`${baseUrl}/health`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+      if (!healthRes.ok) throw new Error(`Healthcheck returned HTTP ${healthRes.status}`);
+    } catch (error) {
+      throw this._httpError(503, 'GOTENBERG_UNAVAILABLE', `Network error contacting Gotenberg: ${error.message}`);
+    }
+
     const formData = new FormData();
     formData.append('files', new Blob([buffer], { type: contentType }), filename);
     let response;
     try {
       response = await fetch(endpoint, { method: 'POST', body: formData });
     } catch (error) {
-      throw new Error(`Network error contacting Gotenberg: ${error.message}`);
+      throw this._httpError(502, 'GOTENBERG_CONVERSION', `Network failure during conversion: ${error.message}`);
     }
     if (!response.ok) {
-      logger.error('Error in Gotenberg', { status: response.status, body: await response.text() });
-      throw new Error(`PDF conversion failed: ${response.statusText}`);
+      logger.error('Gotenberg Error', { status: response.status });
+      throw this._httpError(502, 'GOTENBERG_CONVERSION', `PDF conversion failed: ${response.statusText}`);
     }
     return Buffer.from(await response.arrayBuffer());
   }
@@ -198,11 +261,7 @@ export default class FileController {
     return res.send(buffer);
   }
 
-  _httpError(status, message) {
-    return Object.assign(new Error(message), { status });
-  }
-
-  _statusFor(error) {
-    return error.status || 500;
+  _httpError(status, code, message) {
+    return Object.assign(new Error(message), { status, code });
   }
 }

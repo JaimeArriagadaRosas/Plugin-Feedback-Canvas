@@ -10,11 +10,11 @@ const __dirname = path.dirname(__filename);
 const variablesDir = path.resolve(__dirname, '../../services/variables');
 
 const CORE_VARIABLES = [
-  'trayectoria_academica', 
-  'calificaciones_previas', 
-  'desempeno_otras_asignaturas', 
-  'perfil_ingreso', 
-  'situacion_academica_anterior'
+  'academic_trajectory', 
+  'previous_grades', 
+  'other_course_performance', 
+  'entry_profile', 
+  'previous_academic_status'
 ];
 
 export function createGlobalVariablesRoutes() {

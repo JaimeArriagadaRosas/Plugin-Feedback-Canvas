@@ -7,7 +7,7 @@ import { DomainError } from '../../utils/errors.js';
  */
 export default class GradeResolver extends BaseVariableResolver {
   constructor() {
-    super('{{calificacion}}');
+    super('{{grade}}');
   }
 
   async resolve(context) {

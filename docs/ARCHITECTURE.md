@@ -105,6 +105,10 @@ sequenceDiagram
     P-->>C: Authorization redirection
     C->>P: signed id_token + LTI context
     P->>P: Validates issuer, audience, nonce, signature, and deployment
+    P->>D: Registers/verifies state and nonce
+    P-->>C: Authorization redirection
+    C->>P: signed id_token + LTI context
+    P->>P: Validates issuer, audience, nonce, signature, and deployment
     P->>D: Resolves identity, role, course, and session
     P-->>U: Serves the authorized application
 ```

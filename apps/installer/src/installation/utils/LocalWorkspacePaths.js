@@ -11,3 +11,7 @@ export function getCanvasDirectory(environment = process.env) {
   if (environment.CANVAS_LMS_DIR) return path.resolve(environment.CANVAS_LMS_DIR);
   return path.resolve(getPluginDirectory(), '..', 'canvas-lms-master');
 }
+
+export function getAssetsMarker(canvasDir) {
+  return path.join(canvasDir, '.assets_built');
+}

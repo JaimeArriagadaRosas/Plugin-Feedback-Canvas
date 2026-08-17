@@ -1,14 +1,14 @@
 import { runCommand } from '../utils/Runner.js';
 import { createSpinner } from 'nanospinner';
 
-export class GemInstaller {
+export class RubyDependencyInstaller {
   constructor(boot, canvasDir) {
     this.boot = boot;
     this.canvasDir = canvasDir;
   }
 
   async ensureBundlerPlugins() {
-    this.boot.info('Verifying necessary Bundler plugins...');
+    this.boot.info('Verifying required Bundler plugins...');
     
     const { success, out, err } = await runCommand(
       'docker', 
@@ -33,7 +33,7 @@ export class GemInstaller {
         this.boot.error('Error installing bundler-multilock. Output: ' + installResult.err);
         return false;
       }
-      spinner.success({ text: 'bundler-multilock installed correctly.' });
+      spinner.success({ text: 'bundler-multilock instalado correctamente.' });
     } else {
       this.boot.info('bundler-multilock is already installed.');
     }

@@ -19,22 +19,16 @@ export class LtiInstaller {
       throw new Error('Canvas LMS is not running. Run docker compose up -d');
     }
 
-    try {
-      await this.ensureCanvasDependencies(spinner);
-    } catch (error) {
-      spinner.error({ text: `Could not prepare Canvas dependencies: ${error.message}` });
-      throw error;
-    }
 
     spinner.update({ text: 'Checking LTI tool installation...' });
     const installed = await LtiVerifier.checkLtiStatus() === 'OK';
     if (installed) {
-      spinner.update({ text: 'LTI tool is already installed correctly.' });
+      spinner.update({ text: 'The LTI tool is already installed correctly.' });
       await SystemTokenManager.generate(spinner);
       return;
     }
 
-    spinner.update({ text: 'LTI tool not found. Starting clean install...' });
+    spinner.update({ text: 'LTI tool not found. Starting clean installation...' });
     try {
       await DockerLtiConfigurator.cleanDatabase(spinner);
       const clientId = await DockerLtiConfigurator.injectLtiTool(getLtiJsonPath(), spinner);
@@ -46,25 +40,6 @@ export class LtiInstaller {
     }
   }
 
-  static async ensureCanvasDependencies(spinner) {
-    spinner.update({ text: 'Checking Canvas dependencies...' });
-    const check = await DockerLtiConfigurator.runDockerCommand([
-      'compose', 'exec', '-T', 'web', 'bundle', 'check'
-    ]);
-    if (check.success) return;
-
-    spinner.update({ text: 'Installing Bundler plugin for Canvas...' });
-    const plugin = await DockerLtiConfigurator.runDockerCommand([
-      'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'
-    ]);
-    if (!plugin.success) throw new Error(plugin.err || 'bundler-multilock failed.');
-
-    spinner.update({ text: 'Installing missing Ruby dependencies for Canvas...' });
-    const install = await DockerLtiConfigurator.runDockerCommand([
-      'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web', 'bundle', 'install', '--jobs=2'
-    ]);
-    if (!install.success) throw new Error(install.err || 'bundle install failed.');
-  }
 
   static async runDockerCommand(args, envs = {}) {
     return DockerLtiConfigurator.runDockerCommand(args, envs);

@@ -7,7 +7,8 @@ import { generateLtiRubyScript } from './LtiRubyScriptTemplate.js';
 
 export class DockerLtiConfigurator {
   static async runDockerCommand(args, envs = {}, runnerOptions = {}) {
-    return runCommand('docker', withCanvasWorkspaceContext(args), {
+    const finalArgs = await withCanvasWorkspaceContext(args);
+    return runCommand('docker', finalArgs, {
       cwd: getCanvasDirectory(),
       env: { ...process.env, ...envs },
       ...runnerOptions
@@ -15,7 +16,7 @@ export class DockerLtiConfigurator {
   }
 
   static async cleanDatabase(spinner) {
-    if (spinner) spinner.update({ text: 'Ejecutando limpiador de base de datos...' });
+    if (spinner) spinner.update({ text: 'Running database cleaner...' });
     const cleanerScript = `
       puts "[Canvas Cache Cleaner] Iniciando limpieza profunda de BD..."
       tools_to_delete = ContextExternalTool.where(name: ['Feedback', 'Test LTI', 'Prueba Local'])
@@ -40,7 +41,7 @@ export class DockerLtiConfigurator {
       { input: normalizedScript }
     );
     if (!cleanerProc.success) {
-      throw new Error(`DB cleanup failed.\nOut: ${cleanerProc.out}\nErr: ${cleanerProc.err}`);
+      throw new Error(`Database cleanup failed.\nOut: ${cleanerProc.out}\nErr: ${cleanerProc.err}`);
     }
   }
 
@@ -52,7 +53,7 @@ export class DockerLtiConfigurator {
     const globalJsUrl = `${pluginUrl}/api/canvas/canvas-logs.js`;
     const canvasDomain = process.env.CANVAS_DOMAIN || 'localhost:8443';
 
-    if (spinner) spinner.update({ text: 'Inyectando script LTI 1.3 en el contenedor de Canvas...' });
+    if (spinner) spinner.update({ text: 'Injecting LTI 1.3 script into Canvas container...' });
     
     const rubyScript = generateLtiRubyScript({ ltiJson, pluginUrl, internalPluginUrl, canvasDomain, globalJsUrl });
     const normalizedScript = rubyScript.replace(/\r\n/g, '\n');
@@ -70,7 +71,7 @@ export class DockerLtiConfigurator {
       }
       return clientId;
     } else {
-      throw new Error(`Rails runner failed. Stderr: ${installProc.err}\nStdout: ${installProc.out}`);
+      throw new Error(`Failed in rails runner. Stderr: ${installProc.err}\nStdout: ${installProc.out}`);
     }
   }
 
@@ -98,7 +99,7 @@ export class DockerLtiConfigurator {
   }
 
   static async _recompileBrandConfigs(spinner) {
-    if (spinner) spinner.update({ text: 'JavaScript Global actualizado. Compilando BrandConfigs (esto puede tomar 1 minuto)...' });
+    if (spinner) spinner.update({ text: 'Global JavaScript updated. Compiling BrandConfigs (this may take 1 minute)...' });
     await this.runDockerCommand(['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'brand_configs:generate_and_upload_all']);
   }
 }

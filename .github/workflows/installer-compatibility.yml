@@ -1,0 +1,40 @@
+name: Installer Docker Compatibility
+
+on:
+  push:
+    branches: [ "main", "english-version" ]
+    paths:
+      - 'apps/installer/**'
+      - '.github/workflows/installer-compatibility.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    branches: [ "main", "english-version" ]
+    paths:
+      - 'apps/installer/**'
+      - '.github/workflows/installer-compatibility.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npx --yes npm@11.8.0 ci
+
+      - name: Lint Code
+        run: npm run lint
+
+      - name: Run Installer Unit Tests
+        run: npx vitest run --project @plugin-feedback/installer

@@ -1,0 +1,21 @@
+export const REQUIRED_CANVAS_SCOPES = [
+  'url:GET|/api/v1/users/:id',
+  'url:GET|/api/v1/users/:user_id/profile',
+  'url:GET|/api/v1/users/:user_id/courses',
+  'url:GET|/api/v1/courses',
+  'url:GET|/api/v1/courses/:id',
+  'url:GET|/api/v1/courses/:course_id/users',
+  'url:GET|/api/v1/courses/:course_id/assignments',
+  'url:GET|/api/v1/courses/:course_id/assignments/:id',
+  'url:PUT|/api/v1/courses/:course_id/assignments/:id',
+  'url:POST|/api/v1/courses/:course_id/assignments',
+  'url:GET|/api/v1/courses/:course_id/quizzes',
+  'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
+  'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+  'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
+  'url:GET|/api/v1/courses/:course_id/students/submissions',
+  'url:GET|/api/v1/courses/:course_id/enrollments',
+  'url:POST|/api/v1/conversations',
+  'url:GET|/api/v1/files/:id',
+  'url:GET|/files/:file_id/download'
+];
