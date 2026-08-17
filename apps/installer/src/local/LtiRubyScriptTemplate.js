@@ -1,3 +1,7 @@
+import { REQUIRED_CANVAS_SCOPES } from '../../../server/src/constants/canvasScopes.js';
+
+const SCOPES_RUBY_ARRAY = `[\n${REQUIRED_CANVAS_SCOPES.map(s => `      '${s}'`).join(',\n')}\n    ]`;
+
 const LTI_CONFIGURATION_SCRIPT = `
     account = Account.default
     begin
@@ -19,25 +23,7 @@ const LTI_CONFIGURATION_SCRIPT = `
     key.client_type = 'confidential'
     key.is_lti_key = true
     key.require_scopes = false
-    key.scopes = [
-      'url:GET|/api/v1/users/:id',
-      'url:GET|/api/v1/users/:user_id/profile',
-      'url:GET|/api/v1/users/:user_id/courses',
-      'url:GET|/api/v1/courses',
-      'url:GET|/api/v1/courses/:id',
-      'url:GET|/api/v1/courses/:course_id/users',
-      'url:GET|/api/v1/courses/:course_id/assignments',
-      'url:GET|/api/v1/courses/:course_id/assignments/:id',
-      'url:PUT|/api/v1/courses/:course_id/assignments/:id',
-      'url:POST|/api/v1/courses/:course_id/assignments',
-      'url:GET|/api/v1/courses/:course_id/quizzes',
-      'url:GET|/api/v1/courses/:course_id/quizzes/:quiz_id/questions',
-      'url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-      'url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id',
-      'url:GET|/api/v1/courses/:course_id/students/submissions',
-      'url:GET|/api/v1/courses/:course_id/enrollments',
-      'url:POST|/api/v1/conversations'
-    ]
+    key.scopes = ${SCOPES_RUBY_ARRAY}
 
     key.generate_rsa_keypair!(overwrite: true)
     key.save!

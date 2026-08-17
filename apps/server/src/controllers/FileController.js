@@ -68,10 +68,16 @@ export default class FileController {
       const file = await this._downloadFile(downloadUrl, requestContext);
       return await this._respondWithPreview(res, originalUrl, file);
     } catch (error) {
-      logger.error('Error en FileController.preview:', { error: error.message, code: error.code });
+      logger.error('Error en FileController.preview:', { 
+        error: error.message, 
+        code: error.code,
+        cause: error.cause?.message || error.cause?.code || error.cause,
+        stack: error.stack
+      });
       return res.status(error.status || 500).json({
         error: error.message || 'No se pudo generar la vista previa del archivo',
-        code: error.code || 'INTERNAL_ERROR'
+        code: error.code || 'INTERNAL_ERROR',
+        details: error.cause?.message || error.cause?.code
       });
     }
   }
@@ -132,7 +138,14 @@ export default class FileController {
       throw this._httpError(response.status, code, `Fallo al consultar la API del archivo (HTTP ${response.status}).`);
     }
     const file = await response.json();
-    return file.url || context.url;
+    let finalUrl = file.url || context.url;
+
+    if (process.env.STARTUP_MODE === '3' && finalUrl.startsWith('http://localhost:8443')) {
+      finalUrl = finalUrl.replace(/^http:/, 'https:');
+      logger.info('[FileController] Fallback TLS aplicado a file.url', { url: finalUrl });
+    }
+
+    return finalUrl;
   }
 
   async _downloadFile(downloadUrl, context) {
@@ -148,7 +161,19 @@ export default class FileController {
     }
 
     const downloadContext = { ...context, headers };
-    const response = await this._fetch(downloadUrl, downloadContext);
+    let response = await this._fetch(downloadUrl, downloadContext);
+
+    // Follow manual redirect
+    if (response.status === 302 || response.status === 301) {
+      let loc = response.headers.get('location');
+      if (loc) {
+        if (process.env.STARTUP_MODE === '3' && loc.startsWith('http://localhost:8443')) {
+          loc = loc.replace(/^http:/, 'https:');
+          logger.info('[FileController] Fallback TLS aplicado a Location redirect', { loc });
+        }
+        response = await this._fetch(loc, downloadContext);
+      }
+    }
     if (!response.ok) {
       const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_DOWNLOAD';
       const status = response.status === 401 ? 401 : 502;
@@ -160,9 +185,20 @@ export default class FileController {
   }
 
   _fetch(url, context) {
-    const usesRewrittenHost = context.useProxyFetch && new URL(url).hostname === new URL(context.url).hostname;
+    const urlObj = new URL(url);
+    const usesRewrittenHost = context.useProxyFetch && 
+      (urlObj.hostname === new URL(context.url).hostname || 
+       urlObj.hostname === 'localhost' || 
+       urlObj.hostname === '127.0.0.1');
+
+    if (usesRewrittenHost && context.useProxyFetch) {
+      const rewrittenUrl = new URL(url);
+      rewrittenUrl.hostname = new URL(context.url).hostname;
+      return proxyFetch(rewrittenUrl.toString(), { ...context.headers });
+    }
+
     const dispatcher = this.canvasService?.httpClient?.dispatcher;
-    return usesRewrittenHost ? proxyFetch(url, { ...context.headers }) : fetch(url, { headers: context.headers, dispatcher });
+    return fetch(url, { headers: context.headers, dispatcher, redirect: 'manual' });
   }
 
   async _respondWithPreview(res, originalUrl, file) {
