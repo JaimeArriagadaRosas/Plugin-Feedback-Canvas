@@ -8,17 +8,17 @@ export default class EmailServiceLocal {
   }
 
   async sendNotification(estudianteId, courseId, asunto) {
-    const message = `[MOCK EMAIL] To: Estudiante ${estudianteId} | Course: ${courseId} | Subject: ${asunto} | Fecha: ${new Date().toISOString()}\n`;
+    const message = `[MOCK EMAIL] To: Student ${estudianteId} | Course: ${courseId} | Subject: ${asunto} | Date: ${new Date().toISOString()}\n`;
     
-    // Loguear en consola
+    // Log to console
     logger.info(message.trim());
     
-    // Guardar en archivo local
+    // Save to local file
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.appendFileSync(this.logFilePath, message);
     } catch (err) {
-      logger.error('Error escribiendo log de email local:', err);
+      logger.error('Error writing local email log:', err);
       throw err;
     }
   }

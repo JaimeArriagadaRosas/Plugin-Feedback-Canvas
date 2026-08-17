@@ -36,33 +36,33 @@ import { createPrivateNotesRoutes } from './api/private_notes.routes.js';
 import PrivateNoteController from '../controllers/PrivateNoteController.js';
 import { createGlobalVariablesRoutes } from './api/global_variables.routes.js';
 
-export default class GestorRutasAPI {
-  constructor(dependencias) {
+export default class ApiRouteManager {
+  constructor(dependencies) {
     this.router = express.Router();
-    this.deps = dependencias;
-    this.inicializarControladores();
-    this.configurarRutasPublicas();
-    this.configurarRutasProtegidas();
+    this.dependencies = dependencies;
+    this.initializeControllers();
+    this.configurePublicRoutes();
+    this.configureProtectedRoutes();
   }
 
-  inicializarControladores() {
-    this.courseCtrl    = new CourseController(this.deps.canvasService, this.deps.configRepo, this.deps.templateManager?.templateRepo, this.deps.courseService);
-    this.templateCtrl  = new TemplateController(this.deps.templateManager);
-    this.feedbackCtrl  = new FeedbackController(this.deps.feedbackService, this.deps.canvasService);
-    this.studentCtrl   = new StudentController(this.deps.feedbackService);
-    this.configCtrl    = new ConfigController(this.deps.iaConfigManager, this.deps.configRepo);
-    this.iaConfigCtrl  = new IAConfigController(this.deps.llmConfigService);
-    this.variableCtrl  = new VariableConfigController(this.deps.variableConfigManager);
-    this.advancedFbCtrl = new AdvancedFeedbackController(this.deps.feedbackWorkflowService);
-    this.manualFbCtrl   = new ManualFeedbackController(this.deps.feedbackService);
-    this.statsCtrl      = new StatsController(this.deps.statsService);
-    this.permissionsCtrl = new PermissionsController(this.deps.permissionsService);
+  initializeControllers() {
+    this.courseCtrl    = new CourseController(this.dependencies.canvasService, this.dependencies.configRepo, this.dependencies.templateManager?.templateRepo, this.dependencies.courseService);
+    this.templateCtrl  = new TemplateController(this.dependencies.templateManager);
+    this.feedbackCtrl  = new FeedbackController(this.dependencies.feedbackService, this.dependencies.canvasService);
+    this.studentCtrl   = new StudentController(this.dependencies.feedbackService);
+    this.configCtrl    = new ConfigController(this.dependencies.iaConfigManager, this.dependencies.configRepo);
+    this.iaConfigCtrl  = new IAConfigController(this.dependencies.llmConfigService);
+    this.variableCtrl  = new VariableConfigController(this.dependencies.variableConfigManager);
+    this.advancedFbCtrl = new AdvancedFeedbackController(this.dependencies.feedbackWorkflowService);
+    this.manualFbCtrl   = new ManualFeedbackController(this.dependencies.feedbackService);
+    this.statsCtrl      = new StatsController(this.dependencies.statsService);
+    this.permissionsCtrl = new PermissionsController(this.dependencies.permissionsService);
     
     // Instantiate preferences dependencies
     const prefService = new PreferencesService();
     this.preferencesCtrl = new PreferencesController(prefService);
 
-    this.privateNoteCtrl = new PrivateNoteController(this.deps.privateNoteService);
+    this.privateNoteCtrl = new PrivateNoteController(this.dependencies.privateNoteService);
     
     // Conditional injection of the audit controller based on environment
     if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'local') {
@@ -71,15 +71,15 @@ export default class GestorRutasAPI {
       this.auditLogCtrl = new AuditLogController();
     }
 
-    this.webhookCtrl    = this.deps.webhookController;
-    this.canvasOAuthCtrl = new CanvasOAuthController(this.deps.canvasTokenRepo, this.deps.canvasClient);
-    this.systemNotificationCtrl = new SystemNotificationController(this.deps.systemNotificationService);
-    this.fileCtrl        = new FileController(this.deps.canvasService);
-    this.reportsRouter   = initializeReportsModule(this.deps.statsService.feedbackRepo);
+    this.webhookCtrl    = this.dependencies.webhookController;
+    this.canvasOAuthCtrl = new CanvasOAuthController(this.dependencies.canvasTokenRepo, this.dependencies.canvasClient);
+    this.systemNotificationCtrl = new SystemNotificationController(this.dependencies.systemNotificationService);
+    this.fileCtrl        = new FileController(this.dependencies.canvasService);
+    this.reportsRouter   = initializeReportsModule(this.dependencies.statsService.feedbackRepo);
     logger.debug('API controllers initialized');
   }
 
-  configurarRutasPublicas() {
+  configurePublicRoutes() {
     this.router.get('/health', (req, res) => {
       logger.debug('Health check requested');
       res.json({
@@ -103,11 +103,11 @@ export default class GestorRutasAPI {
     this.router.use('/lti', authLimiter, ltiRouter);
   }
 
-  configurarRutasProtegidas() {
+  configureProtectedRoutes() {
     this.router.use(auditLogMiddleware);
     this.router.use(tenantMiddleware); // RLS Context Injection
 
-    const canvasOAuth = requireCanvasOAuth(this.deps.canvasTokenManager || this.deps.canvasTokenRepo);
+    const canvasOAuth = requireCanvasOAuth(this.dependencies.canvasTokenManager || this.dependencies.canvasTokenRepo);
 
     this.router.use('/courses', createCourseRoutes(this.courseCtrl, this.fileCtrl, canvasOAuth));
     this.router.use('/templates', createTemplateRoutes(this.templateCtrl));

@@ -1,14 +1,14 @@
 /**
- * Redactor centralizado de secretos y PII para los logs.
+ * Centralized redactor for secrets and PII in logs.
  *
- * Dos mecanismos:
- *  1) redactByKey: usa los NOMBRES de clave (paths) para que Pino censure
- *     cualquier meta estructurada que contenga una clave sensible, sin
- *     importar la profundidad (**.clave).
- *  2) redactSensitiveStrings: escanea strings (mensajes, URLs) y reemplaza
- *     cualquier valor real de secreto que se haya filtrado accidentalmente.
+ * Two mechanisms:
+ *  1) redactByKey: Uses key names (paths) so Pino censors
+ *     any structured metadata containing a sensitive key, regardless
+ *     of depth (**.key).
+ *  2) redactSensitiveStrings: Scans strings (messages, URLs) and replaces
+ *     any actual secret value that might have leaked accidentally.
  *
- * NOTA: no importa config/secrets.js para evitar un ciclo de imports
+ * NOTE: Does not import config/secrets.js to avoid a circular dependency
  * (config/secrets.js -> security/secrets.js -> logger.js -> redact.js).
  */
 
@@ -31,9 +31,9 @@ export const REDACT_KEYS = [
   'canvasAccessToken', 'CANVAS_ACCESS_TOKEN',
   'ENCRYPTION_KEY', 'GEMINI_API_KEY', 'DB_PASSWORD',
   'authorization', 'cookie', 'set-cookie',
-  'email', 'personEmail', 'person_email', 'name', 'nombre', 'given_name', 'family_name',
+  'email', 'personEmail', 'person_email', 'name', 'name', 'given_name', 'family_name',
   'devToken', 'dev-token', 'dev-role', 'dev_role',
-  'state', 'nonce', 'lti_message_hint',
+  'state', 'nonce', 'lti_message_hint', 'sf_verifier',
   ...SECRET_ENV_NAMES,
 ];
 
@@ -61,7 +61,7 @@ export function redactSensitiveStrings(input) {
   }
 
   // Redact sensitive query parameters in URLs or strings that look like query params
-  const sensitiveParams = ['code', 'state', 'access_token', 'refresh_token', 'id_token', 'token'];
+  const sensitiveParams = ['code', 'state', 'access_token', 'refresh_token', 'id_token', 'token', 'sf_verifier'];
   for (const param of sensitiveParams) {
     // eslint-disable-next-line security/detect-non-literal-regexp
     const regex = new RegExp(`([?&]|^)(${param}=)([^&\\s]+)`, 'gi');

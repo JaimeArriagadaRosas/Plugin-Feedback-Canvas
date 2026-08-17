@@ -18,24 +18,24 @@ export class DataSeeder {
 
   async seedData() {
     this.boot.plain('');
-    this.boot.plain('--- Inicializando datos de prueba en Canvas LMS ---');
+    this.boot.plain('--- Initializing test data in Canvas LMS ---');
     const runnerFile = path.join(this.pluginDir, 'tools', 'canvas-local', 'seeds', 'runner.rb');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!fs.existsSync(runnerFile)) {
-      this.boot.error(`No se encontro el script de semilla principal: ${runnerFile}`);
+      this.boot.error(`Could not find main seed script: ${runnerFile}`);
       return false;
     }
     if (!(await this._copySeedFiles())) return false;
 
-    const spinner = createSpinner('Inyectando datos de prueba (puede tardar varios minutos)...').start();
+    const spinner = createSpinner('Injecting test data (this may take several minutes)...').start();
     return new Promise((resolve) => {
       const child = this.spawnProcess('docker', [
         'compose', 'exec', '-i', 'web', 'bundle', 'exec', 'rails', 'runner', '/tmp/seeds/runner.rb'
       ], { cwd: this.canvasDir, stdio: ['pipe', 'pipe', 'pipe'] });
       const tailLines = new TailBuffer(50);
       const timeoutId = setTimeout(() => {
-        spinner.error({ text: 'Tiempo de espera agotado al inyectar datos (10 min).' });
-        this.boot.error('El subproceso se colgo o fallo silenciosamente. Abortando.');
+        spinner.error({ text: 'Timeout while injecting data (10 min).' });
+        this.boot.error('Subprocess hung or failed silently. Aborting.');
         child.kill('SIGKILL');
         resolve(false);
       }, 600000);
@@ -45,7 +45,7 @@ export class DataSeeder {
       child.on('close', (code) => this._finishSeed(code, spinner, tailLines, timeoutId, resolve));
       child.on('error', (error) => {
         clearTimeout(timeoutId);
-        spinner.error({ text: 'Fallo al iniciar inyeccion de datos.' });
+        spinner.error({ text: 'Failed to start data injection.' });
         this.boot.error(`Error starting Docker Compose: ${error.message}`);
         resolve(false);
       });
@@ -53,13 +53,13 @@ export class DataSeeder {
   }
 
   async _copySeedFiles() {
-    this.boot.info('Copiando directorio de semillas al contenedor Canvas...');
+    this.boot.info('Copying seed directory to Canvas container...');
     const seedsDir = path.join(this.pluginDir, 'tools', 'canvas-local', 'seeds');
     const result = await this.runner('docker', ['compose', 'cp', seedsDir, 'web:/tmp/seeds'], {
       cwd: this.canvasDir
     });
     if (result.success) return true;
-    this.boot.error(`No se pudo copiar el directorio de semillas al contenedor: ${result.err}`);
+    this.boot.error(`Could not copy seed directory to container: ${result.err}`);
     return false;
   }
 
@@ -71,12 +71,12 @@ export class DataSeeder {
       resolve(false);
       return;
     }
-    spinner.success({ text: 'Base de datos poblada exitosamente.', mark: '  √' });
+    spinner.success({ text: 'Database populated successfully.', mark: '  √' });
     this.synchronizeLocalToken().then(() => resolve(true)).catch(() => resolve(true));
   }
 
   async synchronizeLocalToken() {
-    this.boot.info('Extrayendo perfiles y tokens completos desde el contenedor de Canvas...');
+    this.boot.info('Extracting profiles and tokens from Canvas container...');
     const { success, out } = await this.runner('docker', [
       'compose', 'exec', '-T', 'web', 'cat', '/usr/src/app/tmp/perfiles_data.json'
     ], { cwd: this.canvasDir, captureAll: true });
@@ -93,10 +93,10 @@ export class DataSeeder {
 
       const systemUser = perfiles.usuarios?.find((user) => user.rol === 'system') || perfiles.users?.find((user) => user.role === 'system');
       if (systemUser?.token) this._writeTokenToEnv(systemUser.token);
-      else this.boot.warn('No se encontro token de sistema en perfiles_data.json');
+      else this.boot.warn('System token not found in perfiles_data.json');
       await this._migrateAndSyncUsers(localPath);
     } catch (error) {
-      this.boot.warn(`Error parseando perfiles_data.json: ${error.message}`);
+      this.boot.warn(`Error parsing perfiles_data.json: ${error.message}`);
     }
   }
 
@@ -104,9 +104,9 @@ export class DataSeeder {
     try {
       const { runMigrations } = await import('@plugin-feedback/plugin-database');
       await runMigrations();
-      this.boot.info('Migraciones incrementales aplicadas localmente antes del seed.');
+      this.boot.info('Incremental migrations applied locally before seeding.');
     } catch (error) {
-      this.boot.warn(`Error ejecutando migraciones pre-seed: ${error.message}`);
+      this.boot.warn(`Error running pre-seed migrations: ${error.message}`);
     }
 
     const seedPath = path.join(this.pluginDir, 'packages', 'plugin-database', 'seeds', 'seedLocalUsers.js');
@@ -133,6 +133,6 @@ export class DataSeeder {
 
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.writeFileSync(this.envFile, `${lines.join('\n').replace(/\n+$/, '')}\n`);
-    this.boot.info('CANVAS_ACCESS_TOKEN actualizado en .env correctamente.');
+    this.boot.info('CANVAS_ACCESS_TOKEN successfully updated in .env.');
   }
 }

@@ -30,7 +30,7 @@ export class StaticChecker {
     env.ensureStartupVars(mode);
 
     if (process.env.FAST_BOOT === 'true') {
-      const envRes = await this.runCheck('Variables de entorno', () => Promise.resolve(env.validate(boot, mode)));
+      const envRes = await this.runCheck('Environment variables', () => Promise.resolve(env.validate(boot, mode)));
       return { envRes, env };
     }
 
@@ -38,10 +38,10 @@ export class StaticChecker {
     const nodeChk = new NodeCheck();
     const deps = new DependenciesCheck(this.pluginDir);
 
-    const dockerRes = await this.runCheck('Entorno Docker', () => docker.run(boot));
+    const dockerRes = await this.runCheck('Docker environment', () => docker.run(boot));
     const nodeRes = await this.runCheck('Node.js / NPM', () => nodeChk.run(boot));
-    const depsRes = await this.runCheck('Dependencias del plugin', () => deps.run(boot));
-    const envRes = await this.runCheck('Variables de entorno', () => Promise.resolve(env.validate(boot, mode)));
+    const depsRes = await this.runCheck('Plugin dependencies', () => deps.run(boot));
+    const envRes = await this.runCheck('Environment variables', () => Promise.resolve(env.validate(boot, mode)));
 
     return { dockerRes, nodeRes, depsRes, envRes, env };
   }

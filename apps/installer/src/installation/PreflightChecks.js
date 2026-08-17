@@ -18,7 +18,7 @@ export class PreflightChecks {
     this.boot.info('Starting verification of static components');
     this.boot.plain('');
     this.boot.plain('=========================================================');
-    this.boot.plain('   VERIFICACION DE COMPONENTES - CANVAS LMS LOCAL');
+    this.boot.plain('   COMPONENT VERIFICATION - LOCAL CANVAS LMS');
     this.boot.plain('=========================================================');
 
     const checks = [
@@ -38,11 +38,11 @@ export class PreflightChecks {
       const check = checks[i];
       this.boot.info(`[${i + 1}/6] Verifying ${check.name}...`);
       const { ok, details } = await check.fn();
-      
+
       if (!ok) {
         allOk = false;
         Object.assign(missing, details);
-        this.boot.error(`${check.name}: no disponible`);
+        this.boot.error(`${check.name}: not available`);
       } else {
         this.boot.success(check.name);
       }
@@ -88,11 +88,11 @@ export class PreflightChecks {
     const composeFile = path.join(this.canvasDir, 'docker-compose.yml');
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     const cloneExists = fs.existsSync(composeFile);
-    
+
     if (!cloneExists) {
       return { ok: false, details: { missing_canvas_clone: true } };
     }
-    
+
     // Si existe el clon, verificar que se haya completado el AssetBuilder exitosamente
     const assetsMarker = getAssetsMarker(this.canvasDir);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -105,7 +105,7 @@ export class PreflightChecks {
       await runCommand('docker', ['compose', 'up', '-d', 'postgres'], { cwd: this.canvasDir });
       // Esperar 2 segundos para asegurar que PostgreSQL acepte conexiones si se acaba de levantar
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+
       const { success, out } = await runCommand('docker', [
         'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', 'canvas_development', '-c',
         "SELECT 1 FROM information_schema.tables WHERE table_name = 'accounts' LIMIT 1;"
@@ -119,7 +119,7 @@ export class PreflightChecks {
       this.boot.warn('Error checking Canvas database, it will be assumed it requires rebuilding.');
       return { ok: false, details: { missing_canvas_assets: true } };
     }
-    
+
     return { ok: true, details: {} };
   }
 

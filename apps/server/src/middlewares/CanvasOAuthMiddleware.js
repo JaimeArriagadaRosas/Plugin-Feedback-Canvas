@@ -36,7 +36,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
           }
           accessToken = await refreshLocks.get(canvasSub);
         } catch (e) {
-          if (!e.metadata?.requireOAuth) throw e;
+          if (!(e.data?.requireOAuth || e.metadata?.requireOAuth)) throw e;
           // Do not re-throw here: it will be handled in if (!accessToken) below
         }
       } else {
@@ -63,7 +63,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
       req.canvasToken = accessToken;
       next();
     } catch (err) {
-      if (err.name === 'AppError' && err.statusCode === 401 && err.metadata?.requireOAuth) {
+      if ((err.name === 'AppError' || err.statusCode) && err.statusCode === 401 && (err.data?.requireOAuth || err.metadata?.requireOAuth)) {
         logger.info(`[CanvasOAuthMiddleware] Invalid or expired token without refresh for sub ${req.appIdentity?.ltiUserId || req.user?.id}. Requiring OAuth.`);
         return res.status(401).json({
           exito: false,

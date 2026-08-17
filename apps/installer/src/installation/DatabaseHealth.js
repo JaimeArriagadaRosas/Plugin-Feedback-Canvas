@@ -21,13 +21,13 @@ export class DatabaseHealth {
 
   async ensureDatabaseReady() {
     this.boot.info('Verifying PostgreSQL database status...');
-    
+
     // Primero verificar/instalar plugins de Bundler
     const rubyDependencyInstaller = new RubyDependencyInstaller(this.boot, this.canvasDir);
     if (!(await rubyDependencyInstaller.ensureBundlerPlugins())) {
       throw new Error('Fallo al instalar plugins de Bundler requeridos.');
     }
-    
+
     const serviceName = await this._detectPgService();
     if (serviceName) {
       const dbHealthy = await this.waitForPostgres(serviceName);
@@ -63,7 +63,7 @@ export class DatabaseHealth {
    * Espera a que Postgres acepte conexiones usando `pg_isready`.
    * Usa exponential backoff (3s → 6s → 12s → ... hasta 30s) con un
    * maximum of 30 attempts (~15 min in the worst case).
-   * 
+   *
    * En cada ciclo revisa los logs del contenedor buscando indicios de
    * unrecoverable corruption. If found, demands explicit intervention.
    */
@@ -73,7 +73,7 @@ export class DatabaseHealth {
     const { success: psSuccess, out: psOut } = await runCommand(
       'docker', ['compose', 'ps', '-q', serviceName], { cwd: this.canvasDir, captureAll: true }
     );
-    
+
     if (!psSuccess || !psOut.trim()) {
       spinner.error({ text: `Container for service ${serviceName} not found` });
       return false;
@@ -153,7 +153,7 @@ export class DatabaseHealth {
     const spinner = createSpinner('Verifying database structure (starting Rails Runner)...').start();
     const script = "ActiveRecord::Base.connection.table_exists?('accounts') ? exit(0) : exit(1)";
     const { success } = await runCommand('docker', ['compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rails', 'runner', script], { cwd: this.canvasDir });
-    
+
     if (success) {
       spinner.success({ text: 'Estructura de la base de datos verificada correctamente.', mark: '  √' });
     } else {
@@ -166,7 +166,7 @@ export class DatabaseHealth {
     const { spawn } = await import('node:child_process');
     const { TailBuffer } = await import('./utils/Runner.js');
     const spinner = createSpinner('Ejecutando db:create db:migrate...').start();
-    
+
     return new Promise((resolve) => {
       const child = spawn('docker', ['compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'], {
         cwd: this.canvasDir,
@@ -179,7 +179,7 @@ export class DatabaseHealth {
 
       child.on('close', (code) => {
         if (code === 0) {
-          spinner.success({ text: 'Migraciones completadas exitosamente.', mark: '  √' });
+          spinner.success({ text: 'Migrations completed successfully.', mark: '  √' });
           resolve(true);
         } else {
           spinner.error({ text: `Failed to run migrations (code ${code})`, mark: '  X' });
@@ -187,9 +187,9 @@ export class DatabaseHealth {
           resolve(false);
         }
       });
-      
+
       child.on('error', (err) => {
-        spinner.error({ text: 'Fallo al invocar el proceso docker compose', mark: '  !' });
+        spinner.error({ text: 'Failed to invoke docker compose process', mark: '  !' });
         this.boot.error(err.message);
         resolve(false);
       });

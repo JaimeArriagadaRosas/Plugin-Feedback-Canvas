@@ -36,7 +36,7 @@ export async function runPythonVerify() {
         resolve(true);
       } else {
         const output = (stderr || stdout || '').trim();
-        const error = new Error(`Script de verificacion termino con codigo ${code}`);
+        const error = new Error(`Verification script exited with code ${code}`);
         error.exitCode = code;
         error.output = output;
         reject(error);
