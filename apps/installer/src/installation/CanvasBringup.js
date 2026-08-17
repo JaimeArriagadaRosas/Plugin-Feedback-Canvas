@@ -49,17 +49,12 @@ export class CanvasBringup {
     this.healthUrl = healthUrl;
     this.sleep = sleep;
     this.dockerProfile = dockerProfile;
-    this.containerExecArgs = [];
   }
 
   async bringup() {
     this.boot.info('Iniciando stack de Canvas LMS...');
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
-
-    const { AssetBuilder } = await import('./installers/AssetBuilder.js');
-    const builder = new AssetBuilder(this.boot, null, String(this.canvasDir), { dockerProfile: this.dockerProfile });
-    if (!(await builder.setupAssets())) return false;
 
     const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
     const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { runner: this.runner, dockerProfile: this.dockerProfile });
@@ -92,7 +87,7 @@ export class CanvasBringup {
     this.boot.info('Dependencias Ruby incompletas. Instalando gems...');
     if (!(await this._installBundlerPlugin())) return false;
 
-    const install = await this._runWebCommand(['bundle', 'install', '--jobs=2'], {
+    const install = await this._runWebCommand(['bash', '-c', 'umask 0022; exec bundle install --jobs=2'], {
       extraExecArgs: ['-e', 'BUNDLE_FROZEN=false']
     });
     if (!install.success) {
@@ -203,9 +198,8 @@ export class CanvasBringup {
   }
 
   async _prepareContainerWorkspace() {
-    const { ContainerExecutionPolicy, ExecutionContext } = await import('../platform/shared/ContainerExecutionPolicy.js');
+    const { ContainerExecutionPolicy } = await import('../platform/shared/ContainerExecutionPolicy.js');
     this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
-    this.ExecutionContext = ExecutionContext;
     return true;
   }
 
