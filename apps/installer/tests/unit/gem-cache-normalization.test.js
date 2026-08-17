@@ -15,7 +15,13 @@ describe('Gem Cache Normalization and Retries', () => {
       const script = command[command.length - 1];
       return script && script.includes('find "/home/docker/.gem"') && script.includes('INSECURE_REMAINING');
     });
+<<<<<<< HEAD
     const bundleInstallStepIndex = steps.findIndex(([command]) => command.includes('bundle') && command.includes('install') && !command.includes('plugin'));
+=======
+    const bundleInstallStepIndex = steps.findIndex(([command]) => {
+      return command.includes('bash') && command.includes('-c') && command.some(arg => typeof arg === 'string' && arg.includes('bundle install'));
+    });
+>>>>>>> 912eae8 (fix: execute bundle install wrapped in bash with umask 0022)
 
     expect(pluginStepIndex).toBeGreaterThan(-1);
     expect(normalizationStepIndex).toBeGreaterThan(-1);
@@ -53,6 +59,30 @@ describe('Gem Cache Normalization and Retries', () => {
     // Debe intentar el primer run + 2 retries = 3 veces
     expect(runner).toHaveBeenCalledTimes(3);
   });
+<<<<<<< HEAD
+=======
+
+  it('usa bash -c, umask 0022, BUNDLE_FROZEN=false y --jobs=2 para bundle install', () => {
+    const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
+    const steps = builder._buildSteps();
+    const bundleInstallStep = steps.find(([command]) => {
+      return command.includes('bash') && command.includes('-c') && command.some(arg => typeof arg === 'string' && arg.includes('bundle install'));
+    });
+    
+    expect(bundleInstallStep).toBeDefined();
+    const cmd = bundleInstallStep[0];
+    
+    // Check environment variable
+    expect(cmd.includes('-e')).toBe(true);
+    expect(cmd.includes('BUNDLE_FROZEN=false')).toBe(true);
+    
+    // Check bash wrapping and script content
+    const script = cmd[cmd.length - 1];
+    expect(script).toContain('umask 0022');
+    expect(script).toContain('exec bundle install');
+    expect(script).toContain('--jobs=2');
+  });
+>>>>>>> 912eae8 (fix: execute bundle install wrapped in bash with umask 0022)
 });
 
 describe('Diagnostics - Bundler and Gem Cache', () => {

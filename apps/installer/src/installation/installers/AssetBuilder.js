@@ -57,7 +57,7 @@ export class AssetBuilder {
         this._getGemCacheNormalizationScript()],
       'Normalizando permisos de gems...', 'Fallo al normalizar cache de gems.', 'Permisos de cache de gems normalizados'],
       [['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',
-        'bundle', 'install', '--jobs=2'],
+        'bash', '-c', 'umask 0022; exec bundle install --jobs=2'],
       'Instalando dependencias de Ruby...', 'Error en Ruby.', 'Dependencias de Ruby instaladas', 5],
       [['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec',
         'rake', 'db:create', 'db:migrate'],
