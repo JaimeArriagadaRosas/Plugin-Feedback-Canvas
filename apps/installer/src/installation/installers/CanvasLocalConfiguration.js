@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import * as yaml from 'js-yaml';
+import { ContainerExecutionPolicy } from '../../platform/shared/ContainerExecutionPolicy.js';
 
 const ESSENTIAL_CONFIG_FILES = [
   'database.yml', 'domain.yml', 'security.yml', 'dynamic_settings.yml',
@@ -18,12 +19,13 @@ const DEFAULT_VOLUMES = [
 ];
 
 export class CanvasLocalConfiguration {
-  constructor(boot, canvasDir, { fileSystem = fs, yamlParser = yaml, dockerProfile = null } = {}) {
+  constructor(boot, canvasDir, { fileSystem = fs, yamlParser = yaml, dockerProfile = null, executionPolicy = null } = {}) {
     this.boot = boot;
     this.canvasDir = canvasDir;
     this.fs = fileSystem;
     this.yaml = yamlParser;
     this.dockerProfile = dockerProfile;
+    this.executionPolicy = executionPolicy || new ContainerExecutionPolicy(dockerProfile);
   }
 
   configure(resourceLimits) {
@@ -130,22 +132,12 @@ export class CanvasLocalConfiguration {
   }
 
   _applyUserIdArgs(service = {}) {
-    if (!this.dockerProfile) return service;
+    const buildUserId = this.executionPolicy.getBuildUserId();
     
-    const { backend, capabilities } = this.dockerProfile;
-    const isLinuxEngine = backend === 'docker-engine-linux';
-    const { rootless, usernsRemap, hostUid, installerIsRoot } = capabilities || {};
-    
-    // Never set USER_ID if it's not a local linux engine or if installer is running as root
-    // Also explicitly omit it for rootless and usernsRemap since Docker handles mapping
-    if (!isLinuxEngine || installerIsRoot || rootless || usernsRemap) {
-        return service;
-    }
-    
-    if (hostUid && hostUid > 0) {
+    if (buildUserId) {
       service.build = service.build || { context: '.' };
       service.build.args = service.build.args || {};
-      service.build.args.USER_ID = hostUid.toString();
+      service.build.args.USER_ID = buildUserId;
     }
     return service;
   }

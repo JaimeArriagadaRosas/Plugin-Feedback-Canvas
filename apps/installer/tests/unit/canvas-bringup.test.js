@@ -10,7 +10,24 @@ vi.mock('execa', () => ({
   })
 }));
 
+vi.mock('../../src/installation/installers/AssetBuilder.js', () => ({
+  AssetBuilder: vi.fn().mockImplementation(() => ({
+    setupAssets: vi.fn().mockResolvedValue(true)
+  }))
+}));
+
+vi.mock('../../src/installation/CanvasWorkspaceProbe.js', () => ({
+  CanvasWorkspaceProbe: vi.fn().mockImplementation(() => ({
+    runChecks: vi.fn().mockResolvedValue({ ok: true })
+  }))
+}));
+
 vi.mock('../../src/platform/shared/ContainerExecutionPolicy.js', () => ({
+  ExecutionContext: {
+    NATIVE: 'native',
+    WORKSPACE_WRITE: 'workspace-write',
+    CONTAINER_CACHE_WRITE: 'container-cache-write'
+  },
   ContainerExecutionPolicy: vi.fn().mockImplementation(() => ({
     getExecutionArgs: vi.fn().mockReturnValue([])
   }))
@@ -22,7 +39,10 @@ function createBoot() {
     info: vi.fn(),
     success: vi.fn(),
     action: vi.fn(),
-    debug: vi.fn()
+    debug: vi.fn(),
+    plain: vi.fn(),
+    step: vi.fn(),
+    warn: vi.fn()
   };
 }
 

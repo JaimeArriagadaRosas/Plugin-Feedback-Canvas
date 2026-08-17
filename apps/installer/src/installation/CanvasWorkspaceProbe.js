@@ -1,10 +1,12 @@
 import { runCommand } from './utils/Runner.js';
+import { ContainerExecutionPolicy, ExecutionContext } from '../platform/shared/ContainerExecutionPolicy.js';
 
 export class CanvasWorkspaceProbe {
-  constructor(boot, canvasDir, { runner = runCommand } = {}) {
+  constructor(boot, canvasDir, { runner = runCommand, dockerProfile = null } = {}) {
     this.boot = boot;
     this.canvasDir = canvasDir;
     this.runner = runner;
+    this.executionPolicy = new ContainerExecutionPolicy(dockerProfile);
   }
 
   async runChecks() {
@@ -19,9 +21,10 @@ export class CanvasWorkspaceProbe {
     });
     const uid = idCmd.success ? idCmd.out.trim() : 'unknown';
 
-    const checkWrite = async (path, type) => {
+    const checkWrite = async (path, type, context) => {
+      const userArgs = this.executionPolicy.getExecutionArgs(context);
       const probeCmd = await this.runner('docker', [
-        'compose', 'exec', '-T', 'web', 'bash', '-c', `touch ${path}/.probe && rm ${path}/.probe`
+        'compose', 'exec', '-T', ...userArgs, 'web', 'bash', '-c', `touch ${path}/.probe && rm ${path}/.probe`
       ], { cwd: this.canvasDir, captureAll: true });
 
       if (!probeCmd.success) {
@@ -40,11 +43,13 @@ export class CanvasWorkspaceProbe {
       }
     };
 
-    await checkWrite('/usr/src/app', 'CANVAS_WORKSPACE_PERMISSION_DENIED');
-    await checkWrite('/usr/src/app/log', 'CANVAS_LOG_PERMISSION_DENIED');
-    await checkWrite('/usr/src/app/tmp', 'CANVAS_TMP_PERMISSION_DENIED');
-    await checkWrite('/home/docker/.gem', 'CANVAS_GEM_PERMISSION_DENIED');
-    await checkWrite('/home/docker/.bundle', 'CANVAS_BUNDLE_PERMISSION_DENIED');
+    // Bind-mount paths require WORKSPACE_WRITE context (uses --user 0:0 in Rootless)
+    await checkWrite('/usr/src/app', 'CANVAS_WORKSPACE_PERMISSION_DENIED', ExecutionContext.WORKSPACE_WRITE);
+    await checkWrite('/usr/src/app/log', 'CANVAS_LOG_PERMISSION_DENIED', ExecutionContext.WORKSPACE_WRITE);
+    await checkWrite('/usr/src/app/tmp', 'CANVAS_TMP_PERMISSION_DENIED', ExecutionContext.WORKSPACE_WRITE);
+    // Container-internal paths use CONTAINER_CACHE_WRITE context
+    await checkWrite('/home/docker/.gem', 'CANVAS_GEM_PERMISSION_DENIED', ExecutionContext.CONTAINER_CACHE_WRITE);
+    await checkWrite('/home/docker/.bundle', 'CANVAS_BUNDLE_PERMISSION_DENIED', ExecutionContext.CONTAINER_CACHE_WRITE);
 
     if (!ok) {
       this.boot.error('Se detectaron problemas de permisos en los volúmenes de Canvas.');

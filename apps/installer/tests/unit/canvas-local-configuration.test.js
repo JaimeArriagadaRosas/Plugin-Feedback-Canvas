@@ -91,4 +91,39 @@ describe('CanvasLocalConfiguration', () => {
 
     expect(fs.readFileSync(path.join(configDir, 'database.yml'), 'utf8')).toContain('postgres');
   });
+
+  it('inyecta USER_ID si la politica de ejecucion lo requiere', () => {
+    const canvasDir = createCanvasDirectory();
+    const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
+
+    // Stub the ContainerExecutionPolicy via dependency injection
+    const executionPolicy = {
+      getBuildUserId: () => '1000'
+    };
+
+    new CanvasLocalConfiguration({ warn: vi.fn() }, canvasDir, { executionPolicy }).configure({ web: '1G', jobs: '1G' });
+
+    const override = yaml.load(fs.readFileSync(overrideFile, 'utf8'));
+    expect(override.services.web.user).toBeUndefined();
+    expect(override.services.web.build.args.USER_ID).toBe('1000');
+    expect(override.services.jobs.user).toBeUndefined();
+    expect(override.services.jobs.build.args.USER_ID).toBe('1000');
+  });
+
+  it('NO inyecta USER_ID si la politica de ejecucion devuelve null', () => {
+    const canvasDir = createCanvasDirectory();
+    const overrideFile = path.join(canvasDir, 'docker-compose.override.yml');
+
+    // Stub the ContainerExecutionPolicy
+    const executionPolicy = {
+      getBuildUserId: () => null
+    };
+
+    new CanvasLocalConfiguration({ warn: vi.fn() }, canvasDir, { executionPolicy }).configure({ web: '1G', jobs: '1G' });
+
+    const override = yaml.load(fs.readFileSync(overrideFile, 'utf8'));
+    expect(override.services.web.user).toBeUndefined();
+    expect(override.services.web.build).toBeUndefined();
+    expect(override.services.jobs.user).toBeUndefined();
+  });
 });

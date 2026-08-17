@@ -56,7 +56,7 @@ export class EnvironmentSetup {
     }
 
     const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
-    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir);
+    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { dockerProfile });
     const probeResult = await probe.runChecks();
     if (!probeResult.ok) {
       throw new Error('Permisos de workspace inválidos. Revisa el log para más detalles.');
