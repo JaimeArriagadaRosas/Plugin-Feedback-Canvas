@@ -1,5 +1,6 @@
 import { runCommand } from './utils/Runner.js';
 import { execa } from 'execa';
+import { ExecutionContext } from '../platform/shared/ContainerExecutionPolicy.js';
 
 const DEFAULT_HEALTH_URL = 'http://localhost:8080';
 
@@ -56,8 +57,12 @@ export class CanvasBringup {
     if (!(await this.startStack())) return false;
     if (!(await this._prepareContainerWorkspace())) return false;
 
+    const { AssetBuilder } = await import('./installers/AssetBuilder.js');
+    const builder = new AssetBuilder(this.boot, null, String(this.canvasDir), { dockerProfile: this.dockerProfile });
+    if (!(await builder.setupAssets())) return false;
+
     const { CanvasWorkspaceProbe } = await import('./CanvasWorkspaceProbe.js');
-    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { runner: this.runner });
+    const probe = new CanvasWorkspaceProbe(this.boot, this.canvasDir, { runner: this.runner, dockerProfile: this.dockerProfile });
     const probeResult = await probe.runChecks();
     if (!probeResult.ok) return false;
 
@@ -198,16 +203,16 @@ export class CanvasBringup {
   }
 
   async _prepareContainerWorkspace() {
-    const { ContainerExecutionPolicy } = await import('../platform/shared/ContainerExecutionPolicy.js');
+    const { ContainerExecutionPolicy, ExecutionContext } = await import('../platform/shared/ContainerExecutionPolicy.js');
     this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
-    this.containerExecArgs = this.executionPolicy.getExecutionArgs();
+    this.ExecutionContext = ExecutionContext;
     return true;
   }
 
   async _installBundlerPlugin() {
     const plugin = await this._runWebCommand(
       ['bundle', 'plugin', 'install', 'bundler-multilock'],
-      { useWorkspacePermissions: false }
+      { context: ExecutionContext.CONTAINER_CACHE_WRITE }
     );
     if (plugin.success) return true;
     this.boot.error(`No se pudo instalar bundler-multilock: ${plugin.err}`);
@@ -215,12 +220,12 @@ export class CanvasBringup {
   }
 
   _runWebCommand(commandArgs, {
-    useWorkspacePermissions = true,
+    context = ExecutionContext.WORKSPACE_WRITE,
     extraExecArgs = []
   } = {}) {
-    const workspaceArgs = useWorkspacePermissions ? this.containerExecArgs : [];
+    const userArgs = this.executionPolicy ? this.executionPolicy.getExecutionArgs(context) : [];
     return this.runner('docker', [
-      'compose', 'exec', '-T', ...workspaceArgs, ...extraExecArgs, 'web', ...commandArgs
+      'compose', 'exec', '-T', ...userArgs, ...extraExecArgs, 'web', ...commandArgs
     ], { cwd: this.canvasDir });
   }
 }

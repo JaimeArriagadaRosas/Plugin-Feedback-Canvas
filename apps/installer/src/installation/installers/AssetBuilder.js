@@ -7,6 +7,8 @@ import { analyzeLogAndDiagnose, printDiagnosisBox } from '../utils/Diagnostics.j
 import { runCommand } from '../utils/Runner.js';
 import { CanvasLocalConfiguration } from './CanvasLocalConfiguration.js';
 import { getCanvasResourceLimits } from './CanvasResourcePolicy.js';
+import { GemCacheSecurity } from './GemCacheSecurity.js';
+import { ExecutionContext } from '../../platform/shared/ContainerExecutionPolicy.js';
 
 export class AssetBuilder {
   constructor(boot, logFile, canvasDir, {
@@ -21,7 +23,6 @@ export class AssetBuilder {
     this.runner = runner;
     this.dockerProfile = dockerProfile;
     this.configuration = configuration || new CanvasLocalConfiguration(boot, canvasDir, { dockerProfile: this.dockerProfile });
-    this.containerExecArgs = [];
   }
 
   async setupAssets() {
@@ -32,7 +33,7 @@ export class AssetBuilder {
     if (!(await this._prepareContainerWorkspace())) return false;
 
     for (const step of this._buildSteps()) {
-      if (!(await this._runLogged(...step))) return false;
+      if (!(await this._runLogged(step))) return false;
     }
 
     fs.writeFileSync(getAssetsMarker(this.canvasDir), 'true');
@@ -48,44 +49,109 @@ export class AssetBuilder {
 
   _buildSteps() {
     return [
-      [['docker', 'info'], 'Verificando daemon Docker...', 'Docker no responde.', 'Docker en ejecucion'],
-      [['docker', 'compose', 'build', 'web', 'jobs'], 'Construyendo imagenes Docker...', 'Fallo al construir imagenes.', 'Imagenes Docker construidas'],
-      [['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'], 'Iniciando contenedores...', 'Fallo el inicio.', 'Contenedores iniciados'],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
-      'Instalando plugin de Bundler...', 'Error instalando plugin de Bundler.', 'Plugin de Bundler instalado', 5],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
-        this._getGemCacheNormalizationScript()],
-      'Normalizando permisos de gems...', 'Fallo al normalizar cache de gems.', 'Permisos de cache de gems normalizados'],
-      [['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web',
-        'bash', '-c', 'umask 0022; exec bundle install --jobs=2'],
-      'Instalando dependencias de Ruby...', 'Error en Ruby.', 'Dependencias de Ruby instaladas', 5],
-      [['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec',
-        'rake', 'db:create', 'db:migrate'],
-      'Inicializando base de datos...', 'Fallo al inicializar la base de datos de Canvas.', 'Base de datos inicializada'],
-      [['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'install', '--frozen-lockfile',
-        '--network-concurrency', '2', '--child-concurrency', '2'],
-      'Instalando dependencias Yarn...', 'Error Yarn.', 'Dependencias de Yarn instaladas', 5],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c',
-        "find bin script packages -type f \\( -name '*.sh' -o -path '*/scripts/*' \\) -print0 | xargs -0 -r sed -i 's/\\r$//'; find bin script -type f -print0 | xargs -0 -r sed -i 's/\\r$//'; true"],
-      'Normalizando CRLF...', 'Fallo al normalizar CRLF.', 'CRLF normalizado'],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'i18n:generate_js'],
-      'Generando traducciones...', 'Fallo en i18n:generate_js.', 'Traducciones generadas', 5],
-      [['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'run', 'build:packages'],
-      'Construyendo paquetes internos...', 'Fallo en build:packages.', 'Paquetes construidos', 5],
-      [['docker', 'compose', 'exec', '-T', '-e', 'CANVAS_BUILD_CONCURRENCY=1', '-e',
-        'PARALLEL_PROCESSORS=1', '-e', 'DISABLE_HAPPYPACK=1', '-e', 'NODE_OPTIONS=--max-old-space-size=2048',
-        '-e', 'COMPILE_ASSETS_API_DOCS=0', '-e', 'COMPILE_ASSETS_BRAND_CONFIGS=0', 'web', 'bundle', 'exec',
-        'rake', 'canvas:compile_assets'],
-      'Compilando assets...', 'Fallo la compilacion de assets.', 'Assets compilados exitosamente', 10],
-      [['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'brand_configs:write'],
-      'Generando brand configs...', 'Fallo al generar brand configs.', 'Brand configs generados']
+      {
+        command: ['docker', 'info'],
+        context: ExecutionContext.NATIVE,
+        startMessage: 'Verificando daemon Docker...',
+        failureMessage: 'Docker no responde.',
+        successMessage: 'Docker en ejecucion'
+      },
+      {
+        command: ['docker', 'compose', 'build', 'web', 'jobs'],
+        context: ExecutionContext.NATIVE,
+        startMessage: 'Construyendo imagenes Docker...',
+        failureMessage: 'Fallo al construir imagenes.',
+        successMessage: 'Imagenes Docker construidas'
+      },
+      {
+        command: ['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web'],
+        context: ExecutionContext.NATIVE,
+        startMessage: 'Iniciando contenedores...',
+        failureMessage: 'Fallo el inicio.',
+        successMessage: 'Contenedores iniciados'
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'plugin', 'install', 'bundler-multilock'],
+        context: ExecutionContext.CONTAINER_CACHE_WRITE,
+        startMessage: 'Instalando plugin de Bundler...',
+        failureMessage: 'Error instalando plugin de Bundler.',
+        successMessage: 'Plugin de Bundler instalado',
+        maxRetries: 5
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', GemCacheSecurity.getNormalizationScript()],
+        context: ExecutionContext.CONTAINER_CACHE_WRITE,
+        startMessage: 'Normalizando permisos de gems...',
+        failureMessage: 'Fallo al normalizar cache de gems.',
+        successMessage: 'Permisos de cache de gems normalizados'
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', '-e', 'BUNDLE_FROZEN=false', 'web', 'bash', '-c', 'umask 0022; exec bundle install --jobs=2'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Instalando dependencias de Ruby...',
+        failureMessage: 'Error en Ruby.',
+        successMessage: 'Dependencias de Ruby instaladas',
+        maxRetries: 5
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', '-e', 'RAILS_ENV=development', 'web', 'bundle', 'exec', 'rake', 'db:create', 'db:migrate'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Inicializando base de datos...',
+        failureMessage: 'Fallo al inicializar la base de datos de Canvas.',
+        successMessage: 'Base de datos inicializada'
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'install', '--frozen-lockfile', '--network-concurrency', '2', '--child-concurrency', '2'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Instalando dependencias Yarn...',
+        failureMessage: 'Error Yarn.',
+        successMessage: 'Dependencias de Yarn instaladas',
+        maxRetries: 5
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'bash', '-c', "find bin script packages -type f \\( -name '*.sh' -o -path '*/scripts/*' \\) -print0 | xargs -0 -r sed -i 's/\\r$//'; find bin script -type f -print0 | xargs -0 -r sed -i 's/\\r$//'; true"],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Normalizando CRLF...',
+        failureMessage: 'Fallo al normalizar CRLF.',
+        successMessage: 'CRLF normalizado'
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'i18n:generate_js'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Generando traducciones...',
+        failureMessage: 'Fallo en i18n:generate_js.',
+        successMessage: 'Traducciones generadas',
+        maxRetries: 5
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'yarn', 'run', 'build:packages'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Construyendo paquetes internos...',
+        failureMessage: 'Fallo en build:packages.',
+        successMessage: 'Paquetes construidos',
+        maxRetries: 5
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', '-e', 'CANVAS_BUILD_CONCURRENCY=1', '-e', 'PARALLEL_PROCESSORS=1', '-e', 'DISABLE_HAPPYPACK=1', '-e', 'NODE_OPTIONS=--max-old-space-size=2048', '-e', 'COMPILE_ASSETS_API_DOCS=0', '-e', 'COMPILE_ASSETS_BRAND_CONFIGS=0', 'web', 'bundle', 'exec', 'rake', 'canvas:compile_assets'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Compilando assets...',
+        failureMessage: 'Fallo la compilacion de assets.',
+        successMessage: 'Assets compilados exitosamente',
+        maxRetries: 10
+      },
+      {
+        command: ['docker', 'compose', 'exec', '-T', 'web', 'bundle', 'exec', 'rake', 'brand_configs:write'],
+        context: ExecutionContext.WORKSPACE_WRITE,
+        startMessage: 'Generando brand configs...',
+        failureMessage: 'Fallo al generar brand configs.',
+        successMessage: 'Brand configs generados'
+      }
     ];
   }
 
   async _prepareContainerWorkspace() {
     const { ContainerExecutionPolicy } = await import('../../platform/shared/ContainerExecutionPolicy.js');
     this.executionPolicy = new ContainerExecutionPolicy(this.dockerProfile);
-    this.containerExecArgs = this.executionPolicy.getExecutionArgs();
     return true;
   }
 
@@ -101,22 +167,23 @@ export class AssetBuilder {
     return limits;
   }
 
-  async _runLogged(commandArgs, startMsg, failMsg, successMsg, maxRetries = 0) {
+  async _runLogged(step) {
+    const { command, context = ExecutionContext.NATIVE, startMessage, failureMessage, successMessage, maxRetries = 0 } = step;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-      const spinner = createSpinner(attempt === 0 ? startMsg : `${startMsg} (Reintento ${attempt}/${maxRetries})`).start();
-      const args = this._applyContainerUser(commandArgs);
+      const spinner = createSpinner(attempt === 0 ? startMessage : `${startMessage} (Reintento ${attempt}/${maxRetries})`).start();
+      const args = this._applyContainerUser(command, context);
       const result = await this.runner(args[0], args.slice(1), {
         cwd: this.canvasDir,
         logFile: this.logFile,
         logMode: 'on-failure',
-        onData: (output) => this._updateSpinner(spinner, startMsg, output)
+        onData: (output) => this._updateSpinner(spinner, startMessage, output)
       });
       if (result.success) {
-        spinner.success({ text: successMsg, mark: '  √' });
+        spinner.success({ text: successMessage, mark: '  √' });
         return true;
       }
 
-      spinner.error({ text: `${this._getFailureMessage(failMsg, result)} Código ${result.code}`, mark: '  ×' });
+      spinner.error({ text: `${this._getFailureMessage(failureMessage, result)} Código ${result.code}`, mark: '  ×' });
       if (this._isNonRetryableError(result.out + '\n' + result.err)) {
         break;
       }
@@ -124,10 +191,6 @@ export class AssetBuilder {
     }
     this._printDiagnosis();
     return false;
-  }
-
-  _getGemCacheNormalizationScript(gemRoot = '/home/docker/.gem') {
-    return `uid=$(id -u); find "${gemRoot}" -type d -perm -0002 ! -perm -1000 2>/dev/null | { fail=0; while IFS= read -r dir; do [ -z "$dir" ] && continue; owner=$(stat -c "%u" "$dir"); if [ "$owner" = "$uid" ]; then chmod o-w "$dir" || { echo "INSECURE_CHMOD_FAILED:$dir"; fail=1; }; else echo "INSECURE_UNFIXABLE:$dir"; fail=1; fi; done; if [ $fail -eq 0 ]; then remaining=$(find "${gemRoot}" -type d -perm -0002 ! -perm -1000 -print -quit 2>/dev/null); if [ $? -ne 0 ]; then echo "INSECURE_SCAN_FAILED:${gemRoot}"; fail=1; elif [ -n "$remaining" ]; then echo "INSECURE_REMAINING:$remaining"; fail=1; fi; fi; exit $fail; }`;
   }
 
   _isNonRetryableError(output) {
@@ -142,13 +205,17 @@ export class AssetBuilder {
     return nonRetryablePatterns.some((pattern) => pattern.test(output));
   }
 
-  _applyContainerUser(commandArgs) {
+  _applyContainerUser(commandArgs, context) {
     const execIndex = commandArgs.indexOf('exec');
-    if (execIndex < 0 || this.containerExecArgs.length === 0 || commandArgs.includes('--user') ||
-      commandArgs.includes('plugin')) return commandArgs;
+    if (execIndex < 0 || commandArgs.includes('--user')) {
+      return commandArgs;
+    }
+    const injectedArgs = this.executionPolicy.getExecutionArgs(context);
+    if (injectedArgs.length === 0) return commandArgs;
+
     return [
       ...commandArgs.slice(0, execIndex + 2),
-      ...this.containerExecArgs,
+      ...injectedArgs,
       ...commandArgs.slice(execIndex + 2)
     ];
   }

@@ -32,33 +32,33 @@ describe('CanvasResourcePolicy', () => {
     const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
     const steps = builder._buildSteps();
     
-    const oldChmod = steps.find(([command]) => command.includes('chmod') && command.includes('-R'));
+    const oldChmod = steps.find((step) => step.command.includes('chmod'));
     expect(oldChmod).toBeUndefined();
 
-    const normalizationStep = steps.find(([command]) => {
+    const normalizationStep = steps.find(({ command }) => {
       const script = command[command.length - 1];
       return script && script.includes('find "/home/docker/.gem"') && script.includes('chmod o-w');
     });
     expect(normalizationStep).toBeDefined();
 
-    const scriptBody = normalizationStep[0][normalizationStep[0].length - 1];
+    const scriptBody = normalizationStep.command[normalizationStep.command.length - 1];
     expect(scriptBody).toContain('-perm -0002 ! -perm -1000');
     expect(scriptBody).toContain('INSECURE_UNFIXABLE:');
 
-    const rubyStep = steps.find(([command]) => command.includes('BUNDLE_FROZEN=false'));
+    const rubyStep = steps.find((step) => step.command.includes('BUNDLE_FROZEN=false'));
     expect(steps.indexOf(normalizationStep)).toBeLessThan(steps.indexOf(rubyStep));
   });
 
   it('migra Canvas antes de Yarn y no inicia workers durante el armado de assets', () => {
     const builder = new AssetBuilder({ info: vi.fn(), warn: vi.fn() }, null, '/canvas');
     const steps = builder._buildSteps();
-    const migration = steps.find(([command]) => command.includes('db:create'));
-    const yarn = steps.find(([command]) => command.includes('yarn') && command.includes('install'));
-    const startup = steps.find(([command]) => command.slice(0, 4).join(' ') === 'docker compose up -d');
+    const migration = steps.find((step) => step.command.includes('db:create'));
+    const yarn = steps.find((step) => step.command.includes('yarn') && step.command.includes('install'));
+    const startup = steps.find((step) => step.command.slice(0, 4).join(' ') === 'docker compose up -d');
 
     expect(steps.indexOf(migration)).toBeLessThan(steps.indexOf(yarn));
-    expect(startup[0]).toEqual(['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web']);
-    expect(startup[0]).not.toContain('jobs');
+    expect(startup.command).toEqual(['docker', 'compose', 'up', '-d', 'postgres', 'redis', 'web']);
+    expect(startup.command).not.toContain('jobs');
   });
 
 });
