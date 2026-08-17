@@ -59,6 +59,15 @@ export function redactSensitiveStrings(input) {
       out = out.split(val).join(CENSORED);
     }
   }
+
+  // Redact sensitive query parameters in URLs or strings that look like query params
+  const sensitiveParams = ['code', 'state', 'access_token', 'refresh_token', 'id_token', 'token'];
+  for (const param of sensitiveParams) {
+    // eslint-disable-next-line security/detect-non-literal-regexp
+    const regex = new RegExp(`([?&]|^)(${param}=)([^&\\s]+)`, 'gi');
+    out = out.replace(regex, `$1$2${CENSORED}`);
+  }
+
   return out;
 }
 

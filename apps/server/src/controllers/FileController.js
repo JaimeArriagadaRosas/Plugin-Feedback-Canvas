@@ -15,7 +15,9 @@ function proxyFetch(url, headers) {
       const declaredSize = Number(response.headers['content-length'] || 0);
       if (declaredSize > MAX_PREVIEW_BYTES) {
         response.resume();
-        reject(new Error('El archivo supera el límite de vista previa de 25 MB.'));
+        const err = new Error('El archivo supera el límite de vista previa de 25 MB.');
+        err.status = 413; err.code = 'FILE_TOO_LARGE';
+        reject(err);
         return;
       }
       const chunks = [];
@@ -23,7 +25,10 @@ function proxyFetch(url, headers) {
       response.on('data', (chunk) => {
         size += chunk.length;
         if (size > MAX_PREVIEW_BYTES) {
-          request.destroy(new Error('El archivo supera el límite de vista previa de 25 MB.'));
+          request.destroy();
+          const err = new Error('El archivo supera el límite de vista previa de 25 MB.');
+          err.status = 413; err.code = 'FILE_TOO_LARGE';
+          reject(err);
           return;
         }
         chunks.push(chunk);
@@ -56,27 +61,31 @@ export default class FileController {
   async preview(req, res) {
     try {
       const originalUrl = this._validateUrl(req.query.url);
-      const headers = await this._getCanvasHeaders(req.appIdentity?.canonicalUserId);
+      const headers = {};
+      if (req.canvasToken) headers.Authorization = `Bearer ${req.canvasToken}`;
       const requestContext = this._prepareRequest(originalUrl, headers);
       const downloadUrl = await this._resolveDownloadUrl(requestContext);
       const file = await this._downloadFile(downloadUrl, requestContext);
-      return this._respondWithPreview(res, originalUrl, file);
+      return await this._respondWithPreview(res, originalUrl, file);
     } catch (error) {
-      logger.error('Error en FileController.preview:', { error: error.message, stack: error.stack });
-      return res.status(this._statusFor(error)).json({ error: error.message || 'No se pudo generar la vista previa del archivo' });
+      logger.error('Error en FileController.preview:', { error: error.message, code: error.code });
+      return res.status(error.status || 500).json({
+        error: error.message || 'No se pudo generar la vista previa del archivo',
+        code: error.code || 'INTERNAL_ERROR'
+      });
     }
   }
 
   _validateUrl(rawUrl) {
-    if (!rawUrl) throw this._httpError(400, 'Falta la URL del archivo');
+    if (!rawUrl) throw this._httpError(400, 'INVALID_FILE_URL', 'Falta la URL del archivo');
     let url;
     try {
       url = new URL(rawUrl);
     } catch {
-      throw this._httpError(400, 'URL inválida');
+      throw this._httpError(400, 'INVALID_FILE_URL', 'URL inválida');
     }
     if (!['http:', 'https:'].includes(url.protocol) || !this._isTrustedHost(url.hostname)) {
-      throw this._httpError(403, 'Dominio de origen no permitido.');
+      throw this._httpError(403, 'INVALID_FILE_URL', 'Dominio de origen no permitido.');
     }
     return url;
   }
@@ -97,17 +106,7 @@ export default class FileController {
     }
   }
 
-  async _getCanvasHeaders(teacherId) {
-    const headers = {};
-    if (!teacherId || !this.canvasService?.tokenManager) return headers;
-    try {
-      const token = await this.canvasService.tokenManager.getValidToken(teacherId);
-      if (token) headers.Authorization = `Bearer ${token}`;
-    } catch (error) {
-      logger.warn('No se pudo cargar token Canvas para preview', { error: error.message });
-    }
-    return headers;
-  }
+
 
   _prepareRequest(originalUrl, headers) {
     const proxyHost = process.env.FILE_PREVIEW_LOCAL_HOST ||
@@ -128,16 +127,23 @@ export default class FileController {
     const baseUrl = context.url.split('/files/')[0];
     const apiUrl = `${baseUrl}/api/v1/files/${fileMatch[1]}`;
     const response = await this._fetch(apiUrl, context);
-    if (!response.ok) throw new Error(`Fallo al consultar la API del archivo (HTTP ${response.status}).`);
+    if (!response.ok) {
+      const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_API';
+      throw this._httpError(response.status, code, `Fallo al consultar la API del archivo (HTTP ${response.status}).`);
+    }
     const file = await response.json();
     return file.url || context.url;
   }
 
   async _downloadFile(downloadUrl, context) {
     const response = await this._fetch(downloadUrl, context);
-    if (!response.ok) throw new Error(`No se pudo descargar el archivo de origen: ${response.statusText}`);
+    if (!response.ok) {
+      const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_DOWNLOAD';
+      const status = response.status === 401 ? 401 : 502;
+      throw this._httpError(status, code, `No se pudo descargar el archivo de origen: ${response.statusText}`);
+    }
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length > MAX_PREVIEW_BYTES) throw new Error('El archivo supera el límite de vista previa de 25 MB.');
+    if (buffer.length > MAX_PREVIEW_BYTES) throw this._httpError(413, 'FILE_TOO_LARGE', 'El archivo supera el límite de vista previa de 25 MB.');
     return { buffer, contentType: response.headers.get('content-type') || '' };
   }
 
@@ -177,11 +183,11 @@ export default class FileController {
     try {
       response = await fetch(endpoint, { method: 'POST', body: formData });
     } catch (error) {
-      throw new Error(`Error de red al contactar a Gotenberg: ${error.message}`);
+      throw this._httpError(503, 'GOTENBERG_UNAVAILABLE', `Error de red al contactar a Gotenberg: ${error.message}`);
     }
     if (!response.ok) {
-      logger.error('Error en Gotenberg', { status: response.status, body: await response.text() });
-      throw new Error(`Falló la conversión a PDF: ${response.statusText}`);
+      logger.error('Error en Gotenberg', { status: response.status });
+      throw this._httpError(502, 'GOTENBERG_CONVERSION', `Falló la conversión a PDF: ${response.statusText}`);
     }
     return Buffer.from(await response.arrayBuffer());
   }
@@ -198,11 +204,7 @@ export default class FileController {
     return res.send(buffer);
   }
 
-  _httpError(status, message) {
-    return Object.assign(new Error(message), { status });
-  }
-
-  _statusFor(error) {
-    return error.status || 500;
+  _httpError(status, code, message) {
+    return Object.assign(new Error(message), { status, code });
   }
 }
