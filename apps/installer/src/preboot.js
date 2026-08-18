@@ -21,6 +21,29 @@ function getPackageManagerSpec() {
   return packageJson.packageManager || 'npm@11.8.0';
 }
 
+export function getPackageManagerCommand(manager, platform = process.platform) {
+  const installArgs = [
+    '--yes',
+    manager,
+    'ci',
+    '--no-fund',
+    '--no-audit',
+    '--loglevel=error'
+  ];
+
+  if (platform === 'win32') {
+    return {
+      command: process.env.ComSpec || 'cmd.exe',
+      args: ['/d', '/c', 'npx.cmd', ...installArgs]
+    };
+  }
+
+  return {
+    command: 'npx',
+    args: installArgs
+  };
+}
+
 function installLockedDependencies() {
   if (process.env.PLUGIN_DEP_REPAIR_ATTEMPTED === 'true') {
     console.error('\n[X] Dependency repair already attempted once. Check package-lock.json and npm log.');
@@ -28,11 +51,10 @@ function installLockedDependencies() {
   }
 
   const manager = getPackageManagerSpec();
-  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const { command, args } = getPackageManagerCommand(manager);
+  
   console.warn(`\n[!] Installing locked dependencies with ${manager}. This may take a few minutes...`);
-  const result = spawnSync(npx, [
-    '--yes', manager, 'ci', '--no-fund', '--no-audit', '--loglevel=error'
-  ], { cwd: rootDir, stdio: 'inherit', shell: false });
+  const result = spawnSync(command, args, { cwd: rootDir, stdio: 'inherit', shell: false });
   if (result.error) {
     console.error('\n[X] Package manager execution failed:', result.error.message);
     process.exit(1);
