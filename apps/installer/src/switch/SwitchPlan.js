@@ -4,7 +4,7 @@ export function buildPlan({ git, workspace, docker }) {
     cleanup: {
       dist: workspace.dist,
       viteCache: workspace.viteCache,
-      dockerStop: docker.available && docker.projects.some(p => p.count > 0)
+      dockerStop: docker.available && docker.projects.some(p => p.name !== 'canvas' && p.count > 0)
     },
     dependencies: git.lockfileChanged || !workspace.dependencies,
     canvas: {
