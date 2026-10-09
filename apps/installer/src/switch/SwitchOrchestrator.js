@@ -46,8 +46,8 @@ export async function runSwitch() {
     await prepareDependencies(ctx);
     await state.stage('launch');
     boot.success('Cambio de rama preparado. Los datos persistentes de Canvas se han conservado.');
-    launch(ctx);
-    await state.stage('spawned', 'completed');
+    await state.stage('mode-3-running', 'running');
+    launch(ctx, state);
   } catch (error) {
     await state.stage('error', 'failed');
     throw error;
