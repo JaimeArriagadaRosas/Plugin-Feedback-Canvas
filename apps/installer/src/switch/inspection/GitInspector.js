@@ -11,12 +11,17 @@ export async function inspectGit(root) {
   }
   const allowed = new Set(['main', 'english-version', 'feat/opcion-5-cambio-idioma']);
   if (!allowed.has(current)) throw new Error(`Rama no admitida para cambio: ${current}`);
-  const destination = current === 'english-version' ? 'main' : 'english-version';
   if (status) throw new Error('Hay cambios locales sin confirmar. Se cancela sin modificar archivos:\n' + status.slice(0, 1200));
+  const destination = current === 'english-version' ? 'main' : 'english-version';
+  const fetched = await run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${destination}:refs/remotes/origin/${destination}`], { cwd: root, timeout: 120000 });
+  if (!fetched.ok) throw new Error(`No se pudo actualizar origin/${destination}; no se utilizará una referencia antigua: ${fetched.stderr}`);
   const local = await run('git', ['show-ref', '--verify', '--quiet', `refs/heads/${destination}`], { cwd: root });
-  const remoteBranch = await run('git', ['show-ref', '--verify', '--quiet', `refs/remotes/origin/${destination}`], { cwd: root });
-  if (!local.ok && !remoteBranch.ok) throw new Error(`No está disponible ${destination}. Primero actualice las referencias remotas.`);
   const sourceLock = requireSuccess(await run('git', ['rev-parse', 'HEAD:package-lock.json'], { cwd: root }), 'Lockfile origen').stdout;
-  const destinationLock = requireSuccess(await run('git', ['rev-parse', `${local.ok ? destination : 'origin/' + destination}:package-lock.json`], { cwd: root }), 'Lockfile destino').stdout;
+  const destinationLock = requireSuccess(await run('git', ['rev-parse', `origin/${destination}:package-lock.json`], { cwd: root }), 'Lockfile destino').stdout;
+  if (local.ok) {
+    const localSha = requireSuccess(await run('git', ['rev-parse', destination], { cwd: root }), 'Revisión local').stdout;
+    const remoteSha = requireSuccess(await run('git', ['rev-parse', `origin/${destination}`], { cwd: root }), 'Revisión remota').stdout;
+    if (localSha !== remoteSha) throw new Error(`La rama local ${destination} difiere del remoto; se requiere revisión manual antes de cambiar.`);
+  }
   return { current, destination, localBranch: local.ok, lockfileChanged: sourceLock !== destinationLock, root };
 }

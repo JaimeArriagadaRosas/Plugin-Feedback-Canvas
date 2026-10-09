@@ -3,15 +3,22 @@ import { confirmAction } from '../SwitchPrompt.js';
 import { boot } from '../../orchestration/boot/logger.js';
 export async function prepareDocker(ctx) {
   if (!ctx.docker.available) {
-    boot.warn('Docker no está disponible. No se limpiará ningún recurso; el modo 3 verificará su disponibilidad.');
+    boot.warn('Docker no está disponible; el modo 3 verificará su estado.');
     return;
   }
-  for (const project of ctx.docker.projects.filter(p => p.count > 0)) {
-    if (!await confirmAction({
-      title: `Detener contenedores del proyecto ${project.name}`,
-      detail: `Origen: ${project.dir}. Contenedores comprobados: ${project.count}. No se eliminan imágenes ni volúmenes.`
-    })) throw new Error('Detención no autorizada: transición cancelada.');
-    requireSuccess(await run('docker', ['compose', '-f', project.file, 'stop'], { cwd: project.dir, timeout: 120000 }), 'Detención Docker');
-    boot.success(`Servicios detenidos: ${project.name}`);
+  for (const project of ctx.docker.projects) {
+    if (project.error) throw new Error(`No se pudo verificar propiedad Docker de ${project.name}: ${project.error}`);
+    for (const id of project.ids || []) {
+      const label = requireSuccess(await run('docker', [
+        'inspect', '--format', '{{index .Config.Labels "com.docker.compose.project.working_dir"}}', id
+      ]), 'Identidad del contenedor').stdout;
+      if (label !== project.dir) throw new Error('La identidad del contenedor cambió; no se detendrá.');
+      if (!await confirmAction({
+        title: `Detener contenedor del proyecto ${project.name}`,
+        detail: `Contenedor: ${id.slice(0, 12)}. Workspace: ${project.dir}. No se eliminan imágenes, datos ni volúmenes.`
+      })) throw new Error('Detención no autorizada; transición cancelada.');
+      requireSuccess(await run('docker', ['stop', id], { timeout: 90000 }), 'Detención de contenedor propio');
+      boot.success(`Contenedor detenido: ${id.slice(0, 12)}`);
+    }
   }
 }

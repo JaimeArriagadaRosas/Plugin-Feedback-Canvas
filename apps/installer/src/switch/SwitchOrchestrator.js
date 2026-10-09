@@ -6,6 +6,7 @@ import { inspectWorkspace } from './inspection/WorkspaceInspector.js';
 import { inspectDocker } from './inspection/DockerInspector.js';
 import { buildPlan } from './SwitchPlan.js';
 import { confirmAction } from './SwitchPrompt.js';
+import { SwitchState } from './SwitchState.js';
 import { prepareDocker } from './steps/Docker.js';
 import { cleanArtifacts } from './steps/Artifacts.js';
 import { changeBranch } from './steps/Git.js';
@@ -21,21 +22,34 @@ export async function runSwitch() {
   const docker = await inspectDocker(root, workspace.canvas);
   const plan = buildPlan({ git, workspace, docker });
   const ctx = { root, git, workspace, docker, plan };
+  const state = new SwitchState(root, git.current, git.destination);
+  await state.stage('inspected');
   boot.info(`Rama actual: ${git.current} → destino: ${git.destination}`);
   boot.info(`Canvas LMS: ${workspace.canvasExists ? 'presente' : 'ausente'} (${workspace.canvas})`);
   boot.info(`Setup anterior: ${workspace.setupComplete ? 'detectado' : 'no detectado'}`);
   boot.info(`Docker: ${docker.available ? docker.context : 'no disponible'}`);
   boot.info(`Artefactos por limpiar: ${Object.entries(plan.cleanup).filter(([,v]) => v).map(([k]) => k).join(', ') || 'ninguno'}`);
-  boot.warn('Los volúmenes, bases de datos y clon de Canvas NO se eliminarán. La configuración de idioma guardada dentro de Canvas podría requerir migración separada.');
-  if (git.current === git.destination) { boot.info('Ya está en la rama solicitada.'); return; }
-  if (!await confirmAction({ title: `Preparar cambio a ${git.destination}`, detail: 'Cada operación de limpieza solicitará una segunda autorización individual.' })) {
+  boot.warn('Los volúmenes, bases de datos y clon de Canvas NO se eliminarán. El idioma almacenado en Canvas podría requerir una migración separada.');
+  if (!await confirmAction({ title: `Preparar cambio a ${git.destination}`, detail: 'Cada operación de limpieza solicitará su propia autorización.' })) {
+    await state.stage('cancelled', 'cancelled');
     boot.info('Cambio cancelado sin modificar el entorno.');
     return;
   }
-  await prepareDocker(ctx);
-  await cleanArtifacts(ctx);
-  await changeBranch(ctx);
-  await prepareDependencies(ctx);
-  boot.success('Cambio de rama preparado. Los datos persistentes de Canvas se han conservado.');
-  launch(ctx);
+  try {
+    await state.stage('docker');
+    await prepareDocker(ctx);
+    await state.stage('artifacts');
+    await cleanArtifacts(ctx);
+    await state.stage('git');
+    await changeBranch(ctx);
+    await state.stage('dependencies');
+    await prepareDependencies(ctx);
+    await state.stage('launch');
+    boot.success('Cambio de rama preparado. Los datos persistentes de Canvas se han conservado.');
+    launch(ctx);
+    await state.stage('spawned', 'completed');
+  } catch (error) {
+    await state.stage('error', 'failed');
+    throw error;
+  }
 }
