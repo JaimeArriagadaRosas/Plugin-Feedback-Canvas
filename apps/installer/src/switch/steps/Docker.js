@@ -7,6 +7,10 @@ export async function prepareDocker(ctx) {
     return;
   }
   for (const project of ctx.docker.projects) {
+    if (project.name === 'canvas') {
+      boot.info('Canvas LMS es un recurso compartido; no se detendrán sus contenedores.');
+      continue;
+    }
     if (project.error) throw new Error(`No se pudo verificar propiedad Docker de ${project.name}: ${project.error}`);
     for (const id of project.ids || []) {
       const label = requireSuccess(await run('docker', [
