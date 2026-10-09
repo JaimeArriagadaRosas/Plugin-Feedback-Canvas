@@ -30,6 +30,7 @@ export async function showMainMenu() {
     console.log('  ' + pc.magenta('[2]') + ' Setup de Despliegue LTI ' + pc.dim('(Instalación Automatizada en Canvas)'));
     console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Entorno Docker de desarrollo)'));
     console.log('  ' + pc.red('[4]') + ' Validaciones de Caja Negra ' + pc.dim('(Health Checks y Tests E2E)'));
+    console.log('  ' + pc.cyan('[5]') + ' Cambiar idioma / rama ' + pc.dim('(Español / English)'));
     console.log(pc.blue('========================================================='));
     console.log(`- Seleccion automatica: ${mode} (NON_INTERACTIVE mode)`);
     return mode;
@@ -42,8 +43,9 @@ export async function showMainMenu() {
   console.log('  ' + pc.magenta('[2]') + ' Setup de Despliegue LTI ' + pc.dim('(Instalación Automatizada en Canvas)'));
   console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Entorno Docker de desarrollo)'));
   console.log('  ' + pc.red('[4]') + ' Validaciones de Caja Negra ' + pc.dim('(Health Checks y Tests E2E)'));
+  console.log('  ' + pc.cyan('[5]') + ' Cambiar idioma / rama ' + pc.dim('(Español / English)'));
   console.log(pc.blue('========================================================='));
-  const mode = await ask('Seleccione una opcion (1-4)', '3');
+  const mode = await ask('Seleccione una opcion (1-5)', '3');
   return mode;
 }
 
