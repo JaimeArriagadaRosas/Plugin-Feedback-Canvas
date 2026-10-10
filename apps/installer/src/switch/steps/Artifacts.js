@@ -3,26 +3,21 @@ import path from 'node:path';
 import { confirmAction } from '../SwitchPrompt.js';
 import { boot } from '../../orchestration/boot/logger.js';
 export async function cleanArtifacts(ctx) {
-  for (const [key, subpath, description] of [
-    ['dist', 'dist', 'compilación anterior del frontend'],
-    ['viteCache', 'node_modules/.vite', 'caché de Vite']
+  for (const [key, root, relative, title] of [
+    ['dist', ctx.root, 'dist', 'compilación frontend anterior'],
+    ['viteCache', ctx.root, 'node_modules/.vite', 'caché Vite anterior'],
+    ['profiles', ctx.root, 'tmp/canvas_local_users.json', 'perfiles locales del plugin'],
+    ['canvasProfiles', ctx.workspace.canvas, 'tmp/perfiles_data.json', 'perfiles temporales Canvas'],
+    ['setupMarker', ctx.root, '.setup_complete', 'marcador de instalación completa'],
+    ['assetsMarker', ctx.workspace.canvas, '.assets_built', 'marcador de assets Canvas']
   ]) {
     if (!ctx.plan.cleanup[key]) continue;
-    const target = path.join(ctx.root, subpath);
-    let stat;
-    try { stat = await fs.lstat(target); }
-    catch (error) {
-      if (error.code === 'ENOENT') { boot.info(`Ya no existe ${description}; omitiendo.`); continue; }
-      throw error;
-    }
-    if (stat.isSymbolicLink()) throw new Error(`Se rechazó el enlace simbólico ${target}`);
-    const realRoot = await fs.realpath(ctx.root);
-    const realTarget = await fs.realpath(target);
-    if (!realTarget.startsWith(realRoot + path.sep)) throw new Error('Destino de limpieza fuera del repositorio');
-    if (!await confirmAction({ title: `Limpiar ${description}`, detail: `Se eliminará exclusivamente: ${target}` })) {
-      throw new Error(`No se autorizó la limpieza de ${description}; transición cancelada.`);
-    }
-    await fs.rm(target, { recursive: true, force: false });
-    boot.success(`Limpieza completada: ${description}`);
+    const target = path.resolve(root, relative);
+    if (!target.startsWith(path.resolve(root) + path.sep)) throw new Error('Ruta externa al workspace');
+    let stat; try { stat = await fs.lstat(target); } catch(e) { if(e.code === 'ENOENT') continue; throw e; }
+    if (stat.isSymbolicLink()) throw new Error('Enlace simbólico no permitido: ' + target);
+    if (!await confirmAction({ title: 'Eliminar ' + title, detail: target })) throw new Error('Limpieza necesaria rechazada: ' + title);
+    await fs.rm(target, { recursive: stat.isDirectory() });
+    boot.success('Eliminado: ' + title);
   }
 }

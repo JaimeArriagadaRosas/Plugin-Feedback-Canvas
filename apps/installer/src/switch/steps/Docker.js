@@ -3,26 +3,23 @@ import { confirmAction } from '../SwitchPrompt.js';
 import { boot } from '../../orchestration/boot/logger.js';
 export async function prepareDocker(ctx) {
   if (!ctx.docker.available) {
-    boot.warn('Docker no está disponible; el modo 3 verificará su estado.');
+    if (ctx.workspace.canvasExists) throw new Error('Docker no disponible: imposible certificar una limpieza profunda.');
     return;
   }
-  for (const project of ctx.docker.projects) {
-    if (project.name === 'canvas') {
-      boot.info('Canvas LMS es un recurso compartido; no se detendrán sus contenedores.');
-      continue;
+  for (const project of ctx.plan.projects) {
+    for (const container of project.containers) {
+      if (!await confirmAction({ title: 'Eliminar contenedor antiguo: ' + container.name,
+        detail: 'Proyecto: ' + project.projectName + '. Se detendrá primero si está activo; no se eliminará ningún volumen.' })) throw new Error('Contenedor conservado por decisión del usuario: cambio cancelado.');
+      requireSuccess(await run('docker', ['rm', '-f', container.id], { timeout: 90000 }), 'Eliminar contenedor propio');
+      boot.success('Contenedor eliminado: ' + container.name);
     }
-    if (project.error) throw new Error(`No se pudo verificar propiedad Docker de ${project.name}: ${project.error}`);
-    for (const id of project.ids || []) {
-      const label = requireSuccess(await run('docker', [
-        'inspect', '--format', '{{index .Config.Labels "com.docker.compose.project.working_dir"}}', id
-      ]), 'Identidad del contenedor').stdout;
-      if (label !== project.dir) throw new Error('La identidad del contenedor cambió; no se detendrá.');
-      if (!await confirmAction({
-        title: `Detener contenedor del proyecto ${project.name}`,
-        detail: `Contenedor: ${id.slice(0, 12)}. Workspace: ${project.dir}. No se eliminan imágenes, datos ni volúmenes.`
-      })) throw new Error('Detención no autorizada; transición cancelada.');
-      requireSuccess(await run('docker', ['stop', id], { timeout: 90000 }), 'Detención de contenedor propio');
-      boot.success(`Contenedor detenido: ${id.slice(0, 12)}`);
+    for (const volume of project.volumes) {
+      if (!volume.exclusive) throw new Error('Volumen usado por otro proyecto: ' + volume.name + '. No se eliminará.');
+      if (!await confirmAction({ title: 'ELIMINAR DATOS PERSISTENTES: ' + volume.name,
+        detail: 'Se perderán permanentemente cuentas y datos de esta base de datos/servicio. Proyecto ' + project.projectName + '.', risk: 'high' }))
+        throw new Error('El usuario decidió conservar los datos de ' + volume.name + '; cambio limpio cancelado.');
+      requireSuccess(await run('docker', ['volume', 'rm', volume.name]), 'Eliminar volumen autorizado');
+      boot.success('Volumen eliminado: ' + volume.name);
     }
   }
 }
