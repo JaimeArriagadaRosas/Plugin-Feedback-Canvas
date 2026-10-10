@@ -28,7 +28,6 @@ export async function runSwitch() {
   boot.info('Origen: ' + git.current + ' | destino: ' + git.destination);
   boot.info('Canvas presente: ' + workspace.canvasExists + ' | proyectos Docker: ' + plan.projects.length);
   boot.warn('Cada limpieza solicita autorización individual. Los datos de los volúmenes aprobados se perderán definitivamente.');
-  boot.warn('Canvas y la base del plugin se regenerarán solamente cuando el usuario elija iniciar el modo 3.');
   if (!await confirmAction({ title: 'Comenzar transición controlada', detail: 'La inspección terminó. Las operaciones siguientes solicitan Sí/No individual.' })) {
     await state.stage('cancelled', 'cancelled'); return;
   }
