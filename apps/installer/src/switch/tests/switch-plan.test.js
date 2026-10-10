@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { buildPlan } from '../SwitchPlan.js';
 test('separa recursos y preserva el clon Canvas', () => {
