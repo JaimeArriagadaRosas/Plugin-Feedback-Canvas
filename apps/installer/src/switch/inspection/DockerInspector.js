@@ -18,7 +18,14 @@ async function verifiedSibling(c, root, remote) {
   if (!configs.some(p=>path.basename(p)==='docker-compose.db.yml' && path.dirname(p)===dir)) return null;
   if (!fs.existsSync(path.join(dir,'docker-compose.db.yml'))) return null;
   const git=await run('git',['remote','get-url','origin'],{cwd:dir});
-  return git.ok && git.stdout===remote ? dir : null;
+  if(!git.ok)return null;
+  if(git.stdout===remote)return dir;
+  // Algunos clones de vídeo usan un remoto local que apunta al repositorio original.
+  const localUrl=git.stdout.replace(/^file:\/\//,'');
+  if(!path.isAbsolute(localUrl))return null;
+  const upstream=await run('git',['remote','get-url','origin'],{cwd:localUrl});
+  const head=await run('git',['rev-parse','--show-toplevel'],{cwd:localUrl});
+  return upstream.ok && upstream.stdout===remote && head.ok && path.resolve(head.stdout)===path.resolve(localUrl) ? dir : null;
 }
 export async function inspectDocker(root, canvas) {
   const info=await run('docker',['info','--format','{{json .}}'],{timeout:12000});
