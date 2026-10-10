@@ -43,6 +43,11 @@ function printCanvasCredentials() {
 }
 
 async function handleSpecialModes(mode) {
+  if (mode === '5') {
+    const { runSwitch } = await import('../switch/index.js');
+    await runSwitch();
+    return true;
+  }
   if (mode === '4') {
     const passed = await boot.withStage('Black-box validations', async () => runBlackBoxTests(PLUGIN_DIR));
     await ask('\nPress Enter to exit...');
@@ -133,7 +138,7 @@ export async function main({ mode: requestedMode } = {}) {
     }
 
     const mode = requestedMode || await showMainMenu();
-    await handleSpecialModes(mode);
+    if (await handleSpecialModes(mode)) return;
 
     const checker = new StaticChecker(PLUGIN_DIR);
     await prepareEnvironment(mode, checker);
