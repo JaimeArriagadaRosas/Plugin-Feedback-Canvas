@@ -45,7 +45,15 @@ export async function inspectDocker(root, canvas) {
       if(labels['com.docker.compose.project.working_dir']!==dir)continue;
       containers.push({id:c.Id,name:c.Name,dir,service:labels['com.docker.compose.service'],running:c.State.Running,volumes:await mounts(c)});
     }
-    projects.push({name,dir,file,projectName,containers});
+    const volumeNames=requireSuccess(await run('docker',['volume','ls','-q','--filter','label=com.docker.compose.project='+projectName]),'Volúmenes del proyecto').stdout.split(/\\s+/).filter(Boolean);
+    const volumes=[];
+    for(const name of volumeNames){
+      const meta=JSON.parse(requireSuccess(await run('docker',['volume','inspect',name]),'Inspección de volumen').stdout)[0];
+      if(meta.Labels?.['com.docker.compose.project']!==projectName)continue;
+      if(containers.some(c=>c.volumes.some(v=>v.name===name)))continue;
+      volumes.push({name,service:'sin contenedor',destination:'volumen residual'});
+    }
+    projects.push({name,dir,file,projectName,containers,volumes});
   }
   for(const name of FIXED){
     const r=await run('docker',['inspect','--type','container',name]);
