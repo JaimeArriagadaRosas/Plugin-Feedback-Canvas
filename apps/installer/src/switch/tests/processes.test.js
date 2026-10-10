@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { inspectProcesses, stillOwned } from '../inspection/ProcessInspector.js';
 test('el escáner jamás selecciona el proceso del instalador', () => {
