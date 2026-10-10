@@ -6,7 +6,7 @@ import { sameDockerPath } from '../inspection/DockerInspector.js';
 import { removeContainerAndWait } from './DockerRemoval.js';
 
 async function verifyContainer(item){
-  const r=requireSuccess(await run('docker',['inspect',item.id]),'Reinspección de contenedor');
+  const r=requireSuccess(await run('docker',['inspect',item.id]),'Container reinspection');
   const c=JSON.parse(r.stdout)[0];
   if(c.Name!==item.name || !sameDockerPath(c.Config?.Labels?.['com.docker.compose.project.working_dir'],item.dir))
     throw new Error('Container identity changed: '+item.name);
@@ -44,7 +44,7 @@ async function removeOne(item){
 async function removeVolume(v,source){
   const present=await run('docker',['volume','inspect',v.name]);
   if(!present.ok)return;
-  const attached=requireSuccess(await run('docker',['ps','-aq','--filter','volume='+v.name]),'Referencias al volumen').stdout;
+  const attached=requireSuccess(await run('docker',['ps','-aq','--filter','volume='+v.name]),'Volume references').stdout;
   if(attached)throw new Error('Volume still used by containers: '+v.name);
   if(!await confirmAction({title:'Delete persistent volume '+v.name,
     detail:'Source '+source+'; service '+v.service+', destination '+v.destination+'. Data will be PERMANENTLY LOST (including users and courses if this is the Canvas database).',risk:'high'}))
