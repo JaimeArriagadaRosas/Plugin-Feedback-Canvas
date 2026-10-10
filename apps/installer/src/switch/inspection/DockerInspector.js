@@ -7,6 +7,17 @@ export async function inspectDocker(root, canvas) {
   if (!runtime.ok) return { available: false, error: runtime.stderr, projects: [] };
   const info = parseJSON(runtime.stdout, 'docker info');
   const context = requireSuccess(await run('docker', ['context', 'show']), 'Contexto Docker').stdout;
+  // Los nombres fijos del plugin pueden pertenecer a otra copia del monorepo.
+  // En tal caso no se deben limpiar ni reutilizar silenciosamente.
+  for (const fixed of ['feedback_plugin_db_local', 'feedback_plugin_gotenberg_local']) {
+    const found = await run('docker', ['inspect', '--type', 'container', fixed]);
+    if (!found.ok) continue;
+    const container = parseJSON(found.stdout, 'Docker container')[0];
+    const owner = container.Config?.Labels?.['com.docker.compose.project.working_dir'];
+    if (!owner || path.resolve(owner) !== path.resolve(root)) {
+      throw new Error('Contenedor con nombre compartido ' + fixed + ' pertenece a otro workspace o su propietario no está verificado. No se limpiará automáticamente.');
+    }
+  }
   const projects = [];
   for (const [name, dir, file] of [['plugin', root, 'docker-compose.db.yml'], ['canvas', canvas, 'docker-compose.yml']]) {
     if (!fs.existsSync(path.join(dir, file))) continue;
