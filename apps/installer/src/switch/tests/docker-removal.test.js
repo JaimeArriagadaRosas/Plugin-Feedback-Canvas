@@ -41,7 +41,7 @@ test('no confunde la caída del daemon con un borrado completado', async () => {
   const docker = fake([ok('abc'), fail('Cannot connect to the Docker daemon')]);
   await assert.rejects(
     removeContainerAndWait({ id: 'abc', execute: docker.execute }),
-    /No se pudo verificar.*Cannot connect/
+    /Could not verify container state.*Cannot connect/
   );
 });
 
@@ -58,7 +58,7 @@ test('tras la espera máxima informa estado y no repite el borrado', async () =>
   const docker = fake([ok('abc'), ok('removing'), ok('removing'), ok('dead')]);
   await assert.rejects(
     removeContainerAndWait({ id: 'abc', execute: docker.execute, sleep: async () => {}, pollMs: 1000, maxWaitMs: 2000 }),
-    /sigue pendiente.*estado: dead/
+    /Removal is still pending.*status: dead/
   );
   assert.equal(docker.calls.filter(args => args[0] === 'rm').length, 1);
 });
