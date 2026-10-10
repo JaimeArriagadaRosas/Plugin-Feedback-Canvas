@@ -18,10 +18,17 @@ export async function inspectGit(root) {
   const local = await run('git', ['show-ref', '--verify', '--quiet', `refs/heads/${destination}`], { cwd: root });
   const sourceLock = requireSuccess(await run('git', ['rev-parse', 'HEAD:package-lock.json'], { cwd: root }), 'Lockfile origen').stdout;
   const destinationLock = requireSuccess(await run('git', ['rev-parse', `origin/${destination}:package-lock.json`], { cwd: root }), 'Lockfile destino').stdout;
+  let localSha = null;
+  let remoteSha = null;
+  let needsFastForward = false;
   if (local.ok) {
-    const localSha = requireSuccess(await run('git', ['rev-parse', destination], { cwd: root }), 'Local revision').stdout;
-    const remoteSha = requireSuccess(await run('git', ['rev-parse', `origin/${destination}`], { cwd: root }), 'Remote revision').stdout;
-    if (localSha !== remoteSha) throw new Error(`The local branch ${destination} differs from its remote; manual review is required before switching.`);
+    localSha = requireSuccess(await run('git', ['rev-parse', destination], { cwd: root }), 'Local revision').stdout;
+    remoteSha = requireSuccess(await run('git', ['rev-parse', `origin/${destination}`], { cwd: root }), 'Remote revision').stdout;
+    if (localSha !== remoteSha) {
+      const ancestor = await run('git', ['merge-base', '--is-ancestor', localSha, remoteSha], { cwd: root });
+      if (!ancestor.ok) throw new Error(`Local branch ${destination} has its own commits or diverges from origin/${destination}; manual review is required; history will not be overwritten.`);
+      needsFastForward = true;
+    }
   }
-  return { current, destination, localBranch: local.ok, lockfileChanged: sourceLock !== destinationLock, root };
+  return { current, destination, localBranch: local.ok, lockfileChanged: sourceLock !== destinationLock, root, localSha, remoteSha, needsFastForward };
 }
