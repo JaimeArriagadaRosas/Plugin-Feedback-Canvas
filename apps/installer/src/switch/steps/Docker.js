@@ -34,6 +34,7 @@ export async function prepareDocker(ctx){
   ];
   const volumes=new Map();
   for(const item of containers)for(const v of item.volumes||[])volumes.set(v.name,{v,origin:item.dir});
+  for(const project of ctx.docker.projects)for(const v of project.volumes||[])volumes.set(v.name,{v,origin:project.dir});
   for(const item of containers)await removeOne(item);
   for(const {v,origin} of volumes.values())await removeVolume(v,origin);
 }
