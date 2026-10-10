@@ -1,52 +1,53 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { run, requireSuccess } from '../runner.js';
-function parseJSON(value, label) { try { return JSON.parse(value); } catch { throw new Error('Respuesta JSON inválida de ' + label); } }
+const FIXED = ['feedback_plugin_db_local', 'feedback_plugin_gotenberg_local'];
+const parse = r => JSON.parse(r.stdout)[0];
+async function inspect(id) { return parse(requireSuccess(await run('docker',['inspect',id]),'Docker inspect')); }
+async function mounts(c) {
+  const volumes=[];
+  for(const m of c.Mounts||[]) if(m.Type==='volume' && m.Name && !volumes.some(v=>v.name===m.Name))
+    volumes.push({name:m.Name,destination:m.Destination,service:c.Config.Labels?.['com.docker.compose.service']||''});
+  return volumes;
+}
+async function verifiedSibling(c, root, remote) {
+  const labels=c.Config?.Labels||{};
+  const dir=labels['com.docker.compose.project.working_dir'];
+  const configs=(labels['com.docker.compose.project.config_files']||'').split(',');
+  if (!dir || !['db','gotenberg'].includes(labels['com.docker.compose.service'])) return null;
+  if (!configs.some(p=>path.basename(p)==='docker-compose.db.yml' && path.dirname(p)===dir)) return null;
+  if (!fs.existsSync(path.join(dir,'docker-compose.db.yml'))) return null;
+  const git=await run('git',['remote','get-url','origin'],{cwd:dir});
+  return git.ok && git.stdout===remote ? dir : null;
+}
 export async function inspectDocker(root, canvas) {
-  const runtime = await run('docker', ['info', '--format', '{{json .}}'], { timeout: 12000 });
-  if (!runtime.ok) return { available: false, error: runtime.stderr, projects: [] };
-  const info = parseJSON(runtime.stdout, 'docker info');
-  const context = requireSuccess(await run('docker', ['context', 'show']), 'Contexto Docker').stdout;
-  // Los nombres fijos del plugin pueden pertenecer a otra copia del monorepo.
-  // En tal caso no se deben limpiar ni reutilizar silenciosamente.
-  for (const fixed of ['feedback_plugin_db_local', 'feedback_plugin_gotenberg_local']) {
-    const found = await run('docker', ['inspect', '--type', 'container', fixed]);
-    if (!found.ok) continue;
-    const container = parseJSON(found.stdout, 'Docker container')[0];
-    const owner = container.Config?.Labels?.['com.docker.compose.project.working_dir'];
-    if (!owner || path.resolve(owner) !== path.resolve(root)) {
-      throw new Error('Contenedor con nombre compartido ' + fixed + ' pertenece a otro workspace o su propietario no está verificado. No se limpiará automáticamente.');
+  const info=await run('docker',['info','--format','{{json .}}'],{timeout:12000});
+  if(!info.ok)return {available:false,error:info.stderr,projects:[],foreign:[]};
+  const context=requireSuccess(await run('docker',['context','show']),'Docker context').stdout;
+  const remote=requireSuccess(await run('git',['remote','get-url','origin'],{cwd:root}),'Origin Git').stdout;
+  const projects=[],foreign=[];
+  for(const [name,dir,file] of [['plugin',root,'docker-compose.db.yml'],['canvas',canvas,'docker-compose.yml']]){
+    if(!fs.existsSync(path.join(dir,file)))continue;
+    const cfg=requireSuccess(await run('docker',['compose','-f',file,'config','--format','json'],{cwd:dir}),'Compose '+name);
+    const projectName=JSON.parse(cfg.stdout).name;
+    if(!projectName)throw new Error('No se obtuvo nombre de proyecto Compose');
+    const ids=requireSuccess(await run('docker',['ps','-aq','--filter','label=com.docker.compose.project='+projectName]),'Docker ps').stdout.split(/\s+/).filter(Boolean);
+    const containers=[];
+    for(const id of ids){
+      const c=await inspect(id),labels=c.Config?.Labels||{};
+      if(labels['com.docker.compose.project.working_dir']!==dir)continue;
+      containers.push({id:c.Id,name:c.Name,dir,service:labels['com.docker.compose.service'],running:c.State.Running,volumes:await mounts(c)});
     }
+    projects.push({name,dir,file,projectName,containers});
   }
-  const projects = [];
-  for (const [name, dir, file] of [['plugin', root, 'docker-compose.db.yml'], ['canvas', canvas, 'docker-compose.yml']]) {
-    if (!fs.existsSync(path.join(dir, file))) continue;
-    const cfg = await run('docker', ['compose', '-f', file, 'config', '--format', 'json'], { cwd: dir, timeout: 15000 });
-    if (!cfg.ok) throw new Error('Compose de ' + name + ': ' + cfg.stderr);
-    const config = parseJSON(cfg.stdout, 'Compose');
-    const projectName = config.name;
-    if (!projectName || !/^[a-zA-Z0-9_-]+$/.test(projectName)) throw new Error('Nombre Compose inválido');
-    const list = requireSuccess(await run('docker', ['ps', '-aq', '--filter', 'label=com.docker.compose.project=' + projectName]), 'Contenedores Compose');
-    const containers = [];
-    for (const id of list.stdout.split(/\s+/).filter(Boolean)) {
-      const raw = requireSuccess(await run('docker', ['inspect', id]), 'Contenedor Docker').stdout;
-      const c = parseJSON(raw, 'docker inspect')[0];
-      const labels = c.Config?.Labels || {};
-      const workingDir = labels['com.docker.compose.project.working_dir'];
-      const configFiles = labels['com.docker.compose.project.config_files'] || '';
-      if (workingDir !== dir || !configFiles.split(',').some(f => path.resolve(f) === path.join(dir, file))) continue;
-      containers.push({ id, name: c.Name, running: c.State?.Running === true });
-    }
-    const volumes = [];
-    const volumeIds = requireSuccess(await run('docker', ['volume', 'ls', '-q', '--filter', 'label=com.docker.compose.project=' + projectName]), 'Volúmenes Compose');
-    for (const volume of volumeIds.stdout.split(/\s+/).filter(Boolean)) {
-      const meta = parseJSON(requireSuccess(await run('docker', ['volume', 'inspect', volume]), 'Volumen').stdout, 'volumen')[0];
-      if (meta.Labels?.['com.docker.compose.project'] !== projectName) continue;
-      const attached = requireSuccess(await run('docker', ['ps', '-aq', '--filter', 'volume=' + volume]), 'Referencias de volumen').stdout.split(/\s+/).filter(Boolean);
-      const exclusive = attached.every(id => containers.some(c => c.id === id));
-      volumes.push({ name: volume, exclusive, attached: attached.length });
-    }
-    projects.push({ name, dir, file, projectName, containers, volumes });
+  for(const name of FIXED){
+    const r=await run('docker',['inspect','--type','container',name]);
+    if(!r.ok)continue;
+    const c=parse(r),dir=c.Config?.Labels?.['com.docker.compose.project.working_dir'];
+    if(dir===root)continue;
+    const sibling=await verifiedSibling(c,root,remote);
+    if(!sibling)throw new Error('Nombre ocupado por contenedor sin pertenencia verificada: '+name+'. No se permite borrado automático.');
+    foreign.push({id:c.Id,name:c.Name,dir:sibling,service:c.Config.Labels['com.docker.compose.service'],running:c.State.Running,volumes:await mounts(c)});
   }
-  return { available: true, rootless: (info.SecurityOptions || []).some(s => String(s).includes('rootless')), context, projects };
+  return {available:true,context,projects,foreign};
 }
