@@ -1,12 +1,12 @@
-import test from 'node:test';
+import { test, onTestFinished } from 'vitest';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { inspectWorkspace } from '../inspection/WorkspaceInspector.js';
-test('reconoce marcadores y artefactos del propio workspace', t => {
+test('reconoce marcadores y artefactos del propio workspace', () => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'switch-test-'));
-  t.after(() => fs.rmSync(base, { recursive: true, force: true }));
+  onTestFinished(() => fs.rmSync(base, { recursive: true, force: true }));
   const root = path.join(base, 'repo');
   const canvas = path.join(base, 'canvas-lms-master');
   fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
@@ -15,7 +15,7 @@ test('reconoce marcadores y artefactos del propio workspace', t => {
   fs.writeFileSync(path.join(canvas, '.assets_built'), '1');
   const old = process.env.CANVAS_LMS_DIR;
   delete process.env.CANVAS_LMS_DIR;
-  t.after(() => { if (old === undefined) delete process.env.CANVAS_LMS_DIR; else process.env.CANVAS_LMS_DIR = old; });
+  onTestFinished(() => { if (old === undefined) delete process.env.CANVAS_LMS_DIR; else process.env.CANVAS_LMS_DIR = old; });
   const state = inspectWorkspace(root);
   assert.equal(state.dist, true);
   assert.equal(state.setupComplete, true);
