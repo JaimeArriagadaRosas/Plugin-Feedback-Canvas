@@ -11,6 +11,7 @@ import { prepareDocker } from './steps/Docker.js';
 import { cleanProcesses } from './steps/Processes.js';
 import { cleanArtifacts } from './steps/Artifacts.js';
 import { changeBranch } from './steps/Git.js';
+import { fastForwardDestination } from './steps/BranchFastForward.js';
 import { prepareDependencies } from './steps/Dependencies.js';
 import { prepareLocale } from './steps/Locale.js';
 import { restartMenu } from './steps/RestartMenu.js';
@@ -32,6 +33,8 @@ export async function runSwitch() {
     await state.stage('cancelled', 'cancelled'); return;
   }
   try {
+    await state.stage('git-destination');
+    await fastForwardDestination(ctx);
     await state.stage('processes');
     await cleanProcesses(ctx);
     await state.stage('docker');
