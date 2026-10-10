@@ -2,12 +2,13 @@ import { run,requireSuccess } from '../runner.js';
 import { confirmAction } from '../SwitchPrompt.js';
 import { boot } from '../../orchestration/boot/logger.js';
 import { createSpinner } from 'nanospinner';
+import { sameDockerPath } from '../inspection/DockerInspector.js';
 import { removeContainerAndWait } from './DockerRemoval.js';
 
 async function verifyContainer(item){
   const r=requireSuccess(await run('docker',['inspect',item.id]),'Reinspección de contenedor');
   const c=JSON.parse(r.stdout)[0];
-  if(c.Name!==item.name || c.Config?.Labels?.['com.docker.compose.project.working_dir']!==item.dir)
+  if(c.Name!==item.name || !sameDockerPath(c.Config?.Labels?.['com.docker.compose.project.working_dir'],item.dir))
     throw new Error('Cambió la identidad del contenedor: '+item.name);
   return c.State?.Status || 'desconocido';
 }
