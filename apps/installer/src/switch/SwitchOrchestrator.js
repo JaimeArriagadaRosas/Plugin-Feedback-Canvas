@@ -11,12 +11,14 @@ import { prepareDocker } from './steps/Docker.js';
 import { cleanArtifacts } from './steps/Artifacts.js';
 import { changeBranch } from './steps/Git.js';
 import { prepareDependencies } from './steps/Dependencies.js';
+import { prepareLocale } from './steps/Locale.js';
 import { restartMenu } from './steps/RestartMenu.js';
 export async function runSwitch() {
   const root = path.resolve(getPluginDirectory());
   const git = await inspectGit(root);
   const workspace = inspectWorkspace(root);
   const docker = await inspectDocker(root, workspace.canvas);
+  if (!docker.available) throw new Error('Docker no está disponible. No puede verificarse si quedan contenedores y bases de datos anteriores. La transición no comenzará.');
   const plan = buildPlan({ git, workspace, docker });
   const ctx = { root, git, workspace, docker, plan };
   const state = new SwitchState(root, git.current, git.destination);
@@ -34,6 +36,8 @@ export async function runSwitch() {
     await prepareDocker(ctx);
     await state.stage('artifacts');
     await cleanArtifacts(ctx);
+    await state.stage('locale');
+    await prepareLocale(ctx);
     if (plan.dependencies && !await confirmAction({ title: 'Reconstruir dependencias npm', detail: 'El nuevo lockfile requiere reinstalación de node_modules (npm ci).' })) throw new Error('Preparación npm rechazada.');
     await state.stage('git');
     await changeBranch(ctx);
