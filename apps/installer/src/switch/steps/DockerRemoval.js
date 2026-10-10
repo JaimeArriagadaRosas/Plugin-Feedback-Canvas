@@ -2,12 +2,12 @@ import { run } from '../runner.js';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const notFound = text => /no such (?:object|container)/i.test(text);
-const detail = result => result.stderr || result.stdout || String(result.code || 'error desconocido');
+const detail = result => result.stderr || result.stdout || String(result.code || 'unknown error');
 
 /**
- * Ejecuta como máximo una orden de borrado. Docker puede completar la
- * eliminación después de que rm devuelva un error o venza su tiempo límite.
- * Nunca interpreta un fallo de conexión al daemon como una eliminación exitosa.
+ * Run at most one removal command. Docker may finish removing the container
+ * after rm reports an error or times out.
+ * Never mistake a daemon connection failure for successful removal.
  */
 export async function removeContainerAndWait({
   id, alreadyRemoving = false, execute = run, sleep = wait,
@@ -30,8 +30,8 @@ export async function removeContainerAndWait({
     }
 
     lastState = probe.stdout.trim() || 'desconocido';
-    // Si rm falló por una causa distinta de una eliminación pendiente,
-    // no hay razón para esperar ni lanzar otro rm.
+    // If rm failed for a reason other than pending removal,
+    // do not wait indefinitely or issue another rm.
     if (!result.ok && !['dead', 'removing'].includes(lastState)) {
       throw new Error(`Docker could not remove the container (status: ${lastState}). ` +
         `Reported cause: ${detail(result)}`);

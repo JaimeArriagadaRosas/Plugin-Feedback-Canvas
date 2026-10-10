@@ -34,7 +34,7 @@ async function verifiedSibling(c, root, remote) {
   const git=await run('git',['remote','get-url','origin'],{cwd:dir});
   if(!git.ok)return null;
   if(git.stdout===remote)return dir;
-  // Algunos clones de vídeo usan un remoto local que apunta al repositorio original.
+  // Some video test clones use a local Git remote pointing to the original repository.
   const localUrl=git.stdout.replace(/^file:\/\//,'');
   if(!path.isAbsolute(localUrl))return null;
   const upstream=await run('git',['remote','get-url','origin'],{cwd:localUrl});
@@ -59,10 +59,10 @@ export async function inspectDocker(root, canvas) {
       if(!sameDockerPath(labels['com.docker.compose.project.working_dir'],dir))continue;
       containers.push({id:c.Id,name:c.Name,dir,service:labels['com.docker.compose.service'],running:c.State.Running,volumes:await mounts(c)});
     }
-    const volumeNames=requireSuccess(await run('docker',['volume','ls','-q','--filter','label=com.docker.compose.project='+projectName]),'Volúmenes del proyecto').stdout.split(/\s+/).filter(Boolean);
+    const volumeNames=requireSuccess(await run('docker',['volume','ls','-q','--filter','label=com.docker.compose.project='+projectName]),'Project volumes').stdout.split(/\s+/).filter(Boolean);
     const volumes=[];
     for(const name of volumeNames){
-      const meta=JSON.parse(requireSuccess(await run('docker',['volume','inspect',name]),'Inspección de volumen').stdout)[0];
+      const meta=JSON.parse(requireSuccess(await run('docker',['volume','inspect',name]),'Volume inspection').stdout)[0];
       if(meta.Labels?.['com.docker.compose.project']!==projectName)continue;
       if(containers.some(c=>c.volumes.some(v=>v.name===name)))continue;
       volumes.push({name,service:'sin contenedor',destination:'volumen residual'});

@@ -19,8 +19,8 @@ export async function inspectGit(root) {
   const sourceLock = requireSuccess(await run('git', ['rev-parse', 'HEAD:package-lock.json'], { cwd: root }), 'Lockfile origen').stdout;
   const destinationLock = requireSuccess(await run('git', ['rev-parse', `origin/${destination}:package-lock.json`], { cwd: root }), 'Lockfile destino').stdout;
   if (local.ok) {
-    const localSha = requireSuccess(await run('git', ['rev-parse', destination], { cwd: root }), 'Revisión local').stdout;
-    const remoteSha = requireSuccess(await run('git', ['rev-parse', `origin/${destination}`], { cwd: root }), 'Revisión remota').stdout;
+    const localSha = requireSuccess(await run('git', ['rev-parse', destination], { cwd: root }), 'Local revision').stdout;
+    const remoteSha = requireSuccess(await run('git', ['rev-parse', `origin/${destination}`], { cwd: root }), 'Remote revision').stdout;
     if (localSha !== remoteSha) throw new Error(`The local branch ${destination} differs from its remote; manual review is required before switching.`);
   }
   return { current, destination, localBranch: local.ok, lockfileChanged: sourceLock !== destinationLock, root };
