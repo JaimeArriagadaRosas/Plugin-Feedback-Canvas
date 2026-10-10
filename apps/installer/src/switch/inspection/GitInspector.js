@@ -9,7 +9,7 @@ export async function inspectGit(root) {
   if (!/^https:\/\/github\.com\/JaimeArriagadaRosas\/Plugin-Feedback-Canvas(?:\.git)?\/?$|^git@github\.com:JaimeArriagadaRosas\/Plugin-Feedback-Canvas(?:\.git)?$/.test(remote)) {
     throw new Error('El remoto origin no corresponde al repositorio autorizado.');
   }
-  const allowed = new Set(['main', 'english-version', 'feat/opcion-5-cambio-idioma']);
+  const allowed = new Set(['main', 'english-version']);
   if (!allowed.has(current)) throw new Error(`Rama no admitida para cambio: ${current}`);
   if (status) throw new Error('Hay cambios locales sin confirmar. Se cancela sin modificar archivos:\n' + status.slice(0, 1200));
   const destination = current === 'english-version' ? 'main' : 'english-version';
