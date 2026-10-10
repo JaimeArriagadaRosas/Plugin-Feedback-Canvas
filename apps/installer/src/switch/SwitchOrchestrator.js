@@ -11,12 +11,9 @@ import { prepareDocker } from './steps/Docker.js';
 import { cleanArtifacts } from './steps/Artifacts.js';
 import { changeBranch } from './steps/Git.js';
 import { prepareDependencies } from './steps/Dependencies.js';
-import { launch } from './steps/Launch.js';
+import { restartMenu } from './steps/RestartMenu.js';
 export async function runSwitch() {
   const root = path.resolve(getPluginDirectory());
-  boot.plain('=========================================================');
-  boot.plain('  OPCIÓN 5 — CAMBIAR IDIOMA / RAMA');
-  boot.plain('=========================================================');
   const git = await inspectGit(root);
   const workspace = inspectWorkspace(root);
   const docker = await inspectDocker(root, workspace.canvas);
@@ -24,32 +21,26 @@ export async function runSwitch() {
   const ctx = { root, git, workspace, docker, plan };
   const state = new SwitchState(root, git.current, git.destination);
   await state.stage('inspected');
-  boot.info(`Rama actual: ${git.current} → destino: ${git.destination}`);
-  boot.info(`Canvas LMS: ${workspace.canvasExists ? 'presente' : 'ausente'} (${workspace.canvas})`);
-  boot.info(`Setup anterior: ${workspace.setupComplete ? 'detectado' : 'no detectado'}`);
-  boot.info(`Docker: ${docker.available ? docker.context : 'no disponible'}`);
-  boot.info(`Artefactos por limpiar: ${Object.entries(plan.cleanup).filter(([,v]) => v).map(([k]) => k).join(', ') || 'ninguno'}`);
-  boot.warn('Los volúmenes, bases de datos y clon de Canvas NO se eliminarán. El idioma almacenado en Canvas podría requerir una migración separada.');
-  if (!await confirmAction({ title: `Preparar cambio a ${git.destination}`, detail: 'Cada operación de limpieza solicitará su propia autorización.' })) {
-    await state.stage('cancelled', 'cancelled');
-    boot.info('Cambio cancelado sin modificar el entorno.');
-    return;
+  boot.plain('================= OPCIÓN 5: CAMBIO A INGLÉS =================');
+  boot.info('Origen: ' + git.current + ' | destino: ' + git.destination);
+  boot.info('Canvas presente: ' + workspace.canvasExists + ' | proyectos Docker: ' + plan.projects.length);
+  boot.warn('Cada limpieza solicita autorización individual. Los datos de los volúmenes aprobados se perderán definitivamente.');
+  boot.warn('Canvas y la base del plugin se regenerarán solamente cuando el usuario elija iniciar el modo 3.');
+  if (!await confirmAction({ title: 'Comenzar transición controlada', detail: 'La inspección terminó. Las operaciones siguientes solicitan Sí/No individual.' })) {
+    await state.stage('cancelled', 'cancelled'); return;
   }
   try {
     await state.stage('docker');
     await prepareDocker(ctx);
     await state.stage('artifacts');
     await cleanArtifacts(ctx);
+    if (plan.dependencies && !await confirmAction({ title: 'Reconstruir dependencias npm', detail: 'El nuevo lockfile requiere reinstalación de node_modules (npm ci).' })) throw new Error('Preparación npm rechazada.');
     await state.stage('git');
     await changeBranch(ctx);
     await state.stage('dependencies');
     await prepareDependencies(ctx);
-    await state.stage('launch');
-    boot.success('Cambio de rama preparado. Los datos persistentes de Canvas se han conservado.');
-    await state.stage('mode-3-running', 'running');
-    launch(ctx, state);
-  } catch (error) {
-    await state.stage('error', 'failed');
-    throw error;
-  }
+    await state.stage('menu-ready', 'completed');
+    boot.success('Cambio completado. El siguiente menú será de la rama inglesa; no se iniciará Canvas.');
+    restartMenu(ctx, state);
+  } catch(error) { await state.stage('error', 'failed'); throw error; }
 }
