@@ -38,6 +38,11 @@ Esta guía enseña el primer uso. Los temas especializados permanecen en documen
 | Contribuir al monorepo | [Contribución](CONTRIBUTING.md) |
 | Despliegue LTI institucional | [Despliegue](DEPLOYMENT.md) |
 
+### Planes de desarrollo registrados (pendientes)
+
+- [Motor de feedback cualitativo sin calificación: arquitectura, conversión a Markdown, rúbrica, pruebas e integración](FEEDBACK_CUALITATIVO_SIN_NOTA.md).
+- [Paridad posterior con la versión inglesa: tareas y condiciones de cierre](PARIDAD_VERSION_INGLES.md).
+
 ## Abrir una consola o terminal
 
 La consola es una ventana de texto desde la que se ejecutan comandos. Todos los comandos de este documento se escriben después del prompt y se confirman con `Enter`.
