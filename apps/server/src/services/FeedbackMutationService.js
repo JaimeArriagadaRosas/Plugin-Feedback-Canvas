@@ -111,7 +111,7 @@ export default class FeedbackMutationService {
     context.assignmentId = existing.tarea_id;
     context.studentId = existing.estudiante_id;
     context.content = context.content ?? existing.contenido_generado;
-    context.grade = context.grade ?? existing.nota_canvas ?? existing.nota_chile;
+    context.grade = existing.nota_canvas == null && existing.nota_chile == null ? null : (context.grade ?? existing.nota_canvas ?? existing.nota_chile);
   }
 
   async _publishToCanvas(context) {

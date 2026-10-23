@@ -4,9 +4,9 @@ export function useTemplateEditor(template) {
   const [name, setName] = useState(template?.name || template?.nombre || "Nueva Plantilla de Feedback");
   
   let initialContent = {
-    alto: "Estimado {{nombre_estudiante}},\n\n¡Excelente trabajo! Tu calificación ha sido {{calificacion}}.\n\nSigue así.",
-    medio: "Estimado {{nombre_estudiante}},\n\nTu calificación en la actividad ha sido {{calificacion}}.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas...",
-    bajo: "Estimado {{nombre_estudiante}},\n\nTu calificación ha sido {{calificacion}}.\n\nNecesitas mejorar. Te sugerimos tutorías."
+    alto: "Estimado {{nombre_estudiante}},\n\n¡Excelente trabajo en la actividad!\n\nSigue así.",
+    medio: "Estimado {{nombre_estudiante}},\n\nHas completado la actividad.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas...",
+    bajo: "Estimado {{nombre_estudiante}},\n\nRevisa los aspectos pendientes de la actividad.\n\nNecesitas mejorar. Te sugerimos tutorías."
   };
 
   if (template?.contenido || template?.content) {

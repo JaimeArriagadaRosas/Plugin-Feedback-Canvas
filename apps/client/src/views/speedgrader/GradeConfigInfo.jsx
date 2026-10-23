@@ -26,7 +26,7 @@ export default function GradeConfigInfo({
         </div>
         <div className={styles.gradeDisplay}>
           <span className={styles.gradeValue}>
-            {isFetchingSubmission ? '...' : (typeof grade === 'number' ? grade.toFixed(1) : grade)} pts
+            {isFetchingSubmission ? '...' : (grade == null ? 'Sin calificar' : (typeof grade === 'number' ? grade.toFixed(1) : grade) + ' pts')}
           </span>
           {maxPoints != null && (
             <>

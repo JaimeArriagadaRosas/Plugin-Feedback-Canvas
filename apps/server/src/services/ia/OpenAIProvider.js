@@ -39,7 +39,7 @@ export default class OpenAIProvider extends IAProvider {
           },
           body: JSON.stringify({
             model: modelName,
-            messages: [{ role: 'user', content: promptConGuardrails }],
+            messages: [...(config.systemInstruction ? [{ role: 'system', content: config.systemInstruction }] : []), { role: 'user', content: promptConGuardrails }],
             temperature: config.temperature || 0.7,
             max_tokens: config.maxOutputTokens || 2048
           })

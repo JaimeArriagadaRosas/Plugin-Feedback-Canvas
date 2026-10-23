@@ -105,7 +105,7 @@ export function useSpeedGraderActions({
   const handleApprove = useCallback(async (rating) => {
     if (!generatedFeedbackId) return;
     setLoading(true);
-    setStatusMsg("Guardando y enviando feedback y nota...");
+    setStatusMsg(grade == null ? "Enviando feedback sin nota..." : "Guardando y enviando feedback y nota...");
     try {
       const result = await api.post('/feedback/approve', {
         feedbackId: generatedFeedbackId,
@@ -113,7 +113,7 @@ export function useSpeedGraderActions({
         assignmentId: currentAssignmentId,
         studentId: currentStudent.id,
         content: feedback,
-        grade: grade,
+        grade: grade ?? null,
         rating: rating,
       });
       if (!result.exito) throw new Error("Error al aprobar feedback");

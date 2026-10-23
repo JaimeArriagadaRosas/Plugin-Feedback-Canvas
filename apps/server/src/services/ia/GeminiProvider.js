@@ -9,7 +9,7 @@ const OUTPUT_GUARDRAILS = `
 REGLAS DE SALIDA (OBLIGATORIAS):
 1. Entrega SOLO el texto de retroalimentación. No expliques lo que harás, no describas la plantilla, no resumas las preguntas.
 2. Si vas a mencionar números, usa los datos provistos arriba —no inventes calificaciones.
-3. Finaliza con un saludo cordial y tu nombre como profesor.
+3. Finaliza cordialmente, sin inventar la identidad del profesor.
 4. La respuesta debe estar completamente en el idioma solicitado y lista para enviar al estudiante sin modificaciones.`;
 
 export default class GeminiProvider extends IAProvider {
@@ -25,6 +25,7 @@ export default class GeminiProvider extends IAProvider {
     const apiKey = config.apiKey || this.apiKey;
     if (!apiKey) {
       logger.warn('[IA] API Key de Gemini ausente. Usando respuesta local de respaldo.');
+      if (config.qualitative) throw new Error('Sin clave o respuesta verificable de Gemini');
       return this._generateLocalResponse();
     }
 
@@ -68,7 +69,8 @@ export default class GeminiProvider extends IAProvider {
 
         if (!text || text.length < 20) {
           logger.warn('[IA] Respuesta vacía o muy corta. Usando fallback local.');
-          return this._generateLocalResponse();
+          if (config.qualitative) throw new Error('Sin clave o respuesta verificable de Gemini');
+      return this._generateLocalResponse();
         }
 
         return text;

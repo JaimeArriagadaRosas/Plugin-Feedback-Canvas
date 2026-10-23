@@ -4,6 +4,7 @@ import { ExponentialBackoff } from '../utils/ExponentialBackoff.js';
 
 import CourseFacade from './canvas/CourseFacade.js';
 import SubmissionFacade from './canvas/SubmissionFacade.js';
+import SubmissionAttachmentDownloader from './canvas/SubmissionAttachmentDownloader.js';
 import MessageFacade from './canvas/MessageFacade.js';
 import AssignmentFacade from './canvas/AssignmentFacade.js';
 
@@ -20,6 +21,7 @@ export default class CanvasLmsAdapter {
     // Sub-fachadas inyectadas
     this.courseApi = new CourseFacade(this);
     this.submissionApi = new SubmissionFacade(this);
+    this.attachmentDownloader = new SubmissionAttachmentDownloader(this);
     this.messageApi = new MessageFacade(this);
     this.assignmentApi = new AssignmentFacade(this);
   }
@@ -137,6 +139,8 @@ export default class CanvasLmsAdapter {
   async getStudentSubmissions(courseId, studentId, teacherId) {
     return this.submissionApi.getStudentSubmissions(courseId, studentId, teacherId);
   }
+
+  async downloadSubmissionAttachment(file, teacherId) { return this.attachmentDownloader.download(file, teacherId); }
 
   async getStudentGrades(courseId, studentId, teacherId) {
     return this.submissionApi.getStudentGrades(courseId, studentId, teacherId);

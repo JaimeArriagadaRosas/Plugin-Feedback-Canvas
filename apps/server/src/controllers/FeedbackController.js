@@ -58,8 +58,8 @@ export default class FeedbackController {
 
     if (grade !== undefined && grade !== null) {
       const numGrade = Number(grade);
-      if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
-        throw new ApiError('La calificación debe ser un número entre 0 y 100', 400);
+      if (Number.isNaN(numGrade) || numGrade < 1 || numGrade > 7) {
+        throw new ApiError('La nota manual debe estar entre 1.0 y 7.0', 400);
       }
     }
     const teacherId = req.appIdentity?.ltiUserId || req.appIdentity?.canonicalUserId || 'system';

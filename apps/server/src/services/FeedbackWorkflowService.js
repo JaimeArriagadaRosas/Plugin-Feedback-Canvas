@@ -32,7 +32,9 @@ export default class FeedbackWorkflowService {
         fb.tarea_id,
         fb.estudiante_id,
         newVariables?.plantilla_id || fb.plantilla_id,
-        fb.nota_canvas
+        fb.nota_canvas,
+        fb.profesor_id,
+        { isRegenerate: true }
       );
       return regenerated;
     } catch (error) {
