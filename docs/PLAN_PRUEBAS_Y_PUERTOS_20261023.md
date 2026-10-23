@@ -41,3 +41,9 @@ No publicar notas, comentarios ni feedback automáticamente en Canvas; conservar
 - Se investigó `/api/v1/courses/1/quizzes/1/submissions`: Canvas local devolvió HTTP 500 al intentar consultar respuestas, mientras que los cuatro enunciados sí están accesibles y la entrega ya tiene nota. Por tanto, **no está validada** la extracción de respuestas ni el caso de cuestionario sin nota. No alterar calificaciones existentes para simularlo.
 - El test integral se conecta a servicios ya existentes; no inicia puertos por su cuenta. No terminar servicios compartidos al finalizar. El análisis de gestión inteligente de puertos de preboot sigue documentado como propuesta, sin implementación.
 - Pendiente: implementar consulta de respuestas fiable para Classic/New Quizzes según evidencia del LMS, caso de cuestionario sin nota reproducible, segunda evaluación del PDF con proveedor disponible, y prueba E2E de un ciclo de servidor iniciado y cerrado exclusivamente por el test.
+
+## Investigación adicional cuestionarios
+- Rails runner sobre Canvas local, solo lectura: `Quizzes::QuizSubmission.where(quiz_id: 1)` recuperó cuatro intentos (estudiantes 6, 7, 8 y 9); cada uno tiene cuatro elementos en `submission_data`.
+- La API `GET /api/v1/courses/1/quizzes/1/submissions?include[]=submission` responde HTTP 500. El bloqueo es del acceso REST; no faltan respuestas en Canvas.
+- No conectar el motor del plugin directamente al PostgreSQL interno de Canvas como solución general: se requiere un adaptador REST compatible con Canvas remoto. Evaluar las rutas de quiz submission y de preguntas/respuestas del intento, reparar el 500 local si corresponde y construir un test de contrato con evidencia real.
+- No se modificaron notas ni intentos del control.
