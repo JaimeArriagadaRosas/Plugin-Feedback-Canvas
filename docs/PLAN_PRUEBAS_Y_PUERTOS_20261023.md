@@ -34,3 +34,10 @@ No publicar notas, comentarios ni feedback automáticamente en Canvas; conservar
 - Normalizar salida esperada ZIP/XLSX: reportar resultado de prueba negativa sin stack trace de excepción no controlada.
 - Optimizar doble lectura en el script generate; test de shutdown aislado que inicie y termine sus propios servicios.
 - Fase posterior: proveedores de interfaz openai, anthropic, gemini y otros; discrepancia identificadores anthropic/claude.
+
+## Ajustes y verificación posteriores (2026-10-23)
+- Se agregó `preparedContent` opcional a `UngradedFeedbackService.generate()` para reutilizar la conversión que ya hizo el ejecutable, evitando descargar el mismo archivo dos veces en ese flujo. Los demás consumidores conservan el comportamiento anterior.
+- El ejecutable `feedback-e2e.mjs` devuelve `EXPECTED_REJECTION` para adjuntos ilegibles, contenido vacío o falta de entrega; formato ZIP y XLSX comprobados con HTTP 422 y cero consultas al proveedor.
+- Se investigó `/api/v1/courses/1/quizzes/1/submissions`: Canvas local devolvió HTTP 500 al intentar consultar respuestas, mientras que los cuatro enunciados sí están accesibles y la entrega ya tiene nota. Por tanto, **no está validada** la extracción de respuestas ni el caso de cuestionario sin nota. No alterar calificaciones existentes para simularlo.
+- El test integral se conecta a servicios ya existentes; no inicia puertos por su cuenta. No terminar servicios compartidos al finalizar. El análisis de gestión inteligente de puertos de preboot sigue documentado como propuesta, sin implementación.
+- Pendiente: implementar consulta de respuestas fiable para Classic/New Quizzes según evidencia del LMS, caso de cuestionario sin nota reproducible, segunda evaluación del PDF con proveedor disponible, y prueba E2E de un ciclo de servidor iniciado y cerrado exclusivamente por el test.

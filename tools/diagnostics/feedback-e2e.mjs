@@ -60,7 +60,16 @@ gateway.downloadSubmissionAttachment=async(file,id)=>{
  return result;
 };
 const info={submission,assignment:task,rubric,student:{name:args.name||'Estudiante'}};
-const processed=await service.processor.process(submission,teacherId);
+let processed;
+try {
+ processed=await service.processor.process(submission,teacherId);
+} catch(error) {
+ if(error.errorCode==='ATTACHMENT_UNREADABLE'||error.errorCode==='NO_READABLE_CONTENT'||error.errorCode==='NO_SUBMISSION') {
+   record('EXPECTED_REJECTION',{errorCode:error.errorCode,status:error.statusCode||422,reason:error.message,providerRequests:0});
+   process.exit(0);
+ }
+ throw error;
+}
 record('CONTENT',{characters:processed.markdown.length,images:processed.parts.length,warnings:processed.warnings,
  sample:processed.markdown.slice(0,500)});
 if(action==='preflight'){record('DONE',{geminiCalls:0,databaseWrites:0,elapsedMs:Date.now()-started});process.exit(0);}
@@ -69,6 +78,6 @@ if(String(config.service).toLowerCase()!=='gemini')throw Error('Active AI provid
 record('GEMINI_START',{model:config.model,attempts:1});
 const result=await service.generate({courseId:course,assignmentId:assignment,studentId:student,teacherId,pending,
  canvasData:info,metadata:{studentName:args.name||'Estudiante',assignmentName:task.name},
- singleAttempt:true});
+ singleAttempt:true,preparedContent:processed});
 record('GEMINI_DONE',{feedbackId:result.data.id,characters:result.data.content.length,
  feedback:result.data.content,elapsedMs:Date.now()-started,postedToCanvas:false,gradeChanged:false});

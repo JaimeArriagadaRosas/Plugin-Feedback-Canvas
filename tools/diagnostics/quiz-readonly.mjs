@@ -12,4 +12,19 @@ const gateway=new CanvasLmsAdapter(new CanvasClient(process.env.CANVAS_BASE_URL|
 const quiz=await gateway.getAssignment(1,1,teacher.email);
 const questions=await gateway.getQuizQuestions(1,1,teacher.email);
 const sub=await gateway.getSubmission(1,1,6,teacher.email);
+const quizzes=await gateway._fetchAllWithToken('/courses/1/quizzes',teacher.email);
+const target=quizzes.find(q=>String(q.assignment_id)==='1');
+if(target){
+ for(const endpoint of [
+  '/courses/1/quizzes/'+target.id+'/submissions?include[]=submission',
+  '/courses/1/quizzes/'+target.id+'/submissions?include[]=submission_history'
+ ]){
+  try {
+   const rows=await gateway._fetchWithToken(endpoint,teacher.email);
+   const arr=rows.quiz_submissions||rows;
+   console.log('QUIZ_ENDPOINT',endpoint,'COUNT',Array.isArray(arr)?arr.length:0,
+    'MATCHES',(Array.isArray(arr)?arr:[]).filter(x=>String(x.user_id)==='6').map(x=>({id:x.id,attempt:x.attempt,keys:Object.keys(x),answerCount:x.submission_data?.length||0})));
+  }catch(e){console.log('QUIZ_ENDPOINT_ERROR',e.message)}
+ }
+}
 console.log(JSON.stringify({assignment:quiz.name,questionCount:questions.length,submissionType:sub.submission_type,score:sub.score,workflow:sub.workflow_state,submitted:!!sub.submitted_at,hasAnswers:Array.isArray(sub.submission_data)&&sub.submission_data.length>0,keys:Object.keys(sub).filter(k=>k.includes('answer')||k.includes('submission_data'))}));
