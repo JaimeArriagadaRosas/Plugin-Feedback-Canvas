@@ -1,44 +1,72 @@
 import { DomainError } from '../../utils/errors.js';
 
 const MAX_BYTES = 12 * 1024 * 1024;
-function allowed(url, base) {
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', 'canvas.docker']);
+
+function normalizedDownloadUrl(value, base, localTlsPort = 8443) {
+  const url = new URL(value, base);
+  // Canvas Local redirects to HTTP on the TLS-only port; correct the scheme, not the host.
+  if (LOCAL_HOSTS.has(url.hostname.toLowerCase()) && url.protocol === 'http:' && Number(url.port) === localTlsPort) {
+    url.protocol = 'https:';
+  }
+  return url;
+}
+
+function trusted(url, base) {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return false;
-  const hostname = url.hostname.toLowerCase();
-  const local = ['localhost', '127.0.0.1', 'canvas.docker'].includes(hostname);
-  if (local) return ['localhost', '127.0.0.1', 'canvas.docker'].includes(base.hostname.toLowerCase());
-  return url.protocol === 'https:' && (
-    hostname === base.hostname.toLowerCase() ||
-    hostname.endsWith('.instructure.com') ||
-    hostname.endsWith('.amazonaws.com') ||
-    hostname.endsWith('.cloudfront.net')
-  );
+  if (LOCAL_HOSTS.has(url.hostname.toLowerCase())) return LOCAL_HOSTS.has(base.hostname.toLowerCase());
+  if (url.protocol !== 'https:') return false;
+  return url.hostname.toLowerCase() === base.hostname.toLowerCase()
+    || ['.instructure.com', '.amazonaws.com', '.cloudfront.net'].some(suffix => url.hostname.toLowerCase().endsWith(suffix));
+}
+
+function canAuthenticate(url, base) {
+  return url.origin === base.origin
+    || (LOCAL_HOSTS.has(url.hostname.toLowerCase()) && LOCAL_HOSTS.has(base.hostname.toLowerCase()));
 }
 
 export default class SubmissionAttachmentDownloader {
   constructor(adapter) { this.adapter = adapter; }
+
   async download(file, teacherId) {
     if (!file?.id) throw new DomainError('Adjunto sin identificador de Canvas', 422, 'ATTACHMENT_ID_MISSING');
     const metadata = await this.adapter._fetchWithToken('/files/' + encodeURIComponent(String(file.id)), teacherId);
     if (!metadata?.url) throw new DomainError('Canvas no devuelve URL para el adjunto', 422, 'ATTACHMENT_URL_MISSING');
+
     const base = new URL(this.adapter.httpClient.canvasBaseUrl);
-    let url = new URL(metadata.url, base);
+    const tlsPort = Number(process.env.TLS_LISTEN_PORT || 8443);
     const token = await this.adapter.resolveToken(teacherId);
-    for (let redirect = 0; redirect <= 4; redirect++) {
-      if (!allowed(url, base)) throw new DomainError('URL de descarga fuera de orígenes permitidos', 422, 'ATTACHMENT_ORIGIN');
-      const headers = url.origin === base.origin ? { Authorization: 'Bearer ' + token } : {};
-      const res = await fetch(url, {headers,redirect:'manual',signal:AbortSignal.timeout(15000)});
-      if ([301,302,303,307,308].includes(res.status)) {
-        if (redirect === 4) throw new DomainError('Demasiadas redirecciones de adjunto', 502);
-        const location = res.headers.get('location');
-        if (!location) throw new DomainError('Redirección sin destino', 502);
-        url = new URL(location,url);
+    let url = normalizedDownloadUrl(metadata.url, base, tlsPort);
+
+    for (let redirects = 0; redirects <= 4; redirects++) {
+      if (!trusted(url, base)) throw new DomainError('URL de descarga fuera de orígenes permitidos', 422, 'ATTACHMENT_ORIGIN');
+      const headers = canAuthenticate(url, base) ? { Authorization: 'Bearer ' + token } : {};
+      let response;
+      try {
+        response = await fetch(url, {
+          headers,
+          dispatcher: this.adapter.httpClient.dispatcher,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(15000)
+        });
+      } catch (error) {
+        throw new DomainError('Fallo de conexión al descargar adjunto: ' + (error.cause?.message || error.message), 502, 'ATTACHMENT_CONNECTION_FAILED');
+      }
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        if (redirects === 4) throw new DomainError('Demasiadas redirecciones de adjunto', 502, 'ATTACHMENT_REDIRECT_LIMIT');
+        const location = response.headers.get('location');
+        if (!location) throw new DomainError('Redirección sin destino', 502, 'ATTACHMENT_REDIRECT_INVALID');
+        url = normalizedDownloadUrl(new URL(location, url), base, tlsPort);
         continue;
       }
-      if (!res.ok) throw new DomainError('No se pudo descargar adjunto desde Canvas (HTTP ' + res.status + ')', 502, 'ATTACHMENT_DOWNLOAD_FAILED');
-      if (Number(res.headers.get('content-length')) > MAX_BYTES) throw new DomainError('Archivo demasiado grande', 413);
-      const buffer = Buffer.from(await res.arrayBuffer());
-      if (buffer.length > MAX_BYTES) throw new DomainError('Archivo demasiado grande', 413);
-      return {buffer, mime: String(metadata.content_type || file.content_type || res.headers.get('content-type') || '').split(';')[0].toLowerCase()};
+      if (!response.ok) throw new DomainError('Canvas rechazó la descarga (HTTP ' + response.status + ')', 502, 'ATTACHMENT_DOWNLOAD_FAILED');
+      if (Number(response.headers.get('content-length')) > MAX_BYTES) throw new DomainError('Archivo excede 12 MiB', 413);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length > MAX_BYTES) throw new DomainError('Archivo excede 12 MiB', 413);
+      return {
+        buffer,
+        mime: String(metadata.content_type || file.content_type || response.headers.get('content-type') || '').split(';')[0].toLowerCase()
+      };
     }
   }
 }
