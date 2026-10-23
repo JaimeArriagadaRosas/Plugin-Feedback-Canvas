@@ -45,6 +45,7 @@ if(submission.workflow_state!=='pending_review' && (submission.score??submission
 if(submission.submission_type==='online_quiz'&&!(submission.answers?.length||submission.submission_data?.length)) {
  try {
    submission.answers=await gateway.getQuizAnswers(course,assignment,student,teacherId);
+   submission.body=null;
    record('QUIZ_ANSWERS',{count:submission.answers.length,source:'canvas-rest'});
  } catch(error) {
    record('QUIZ_BLOCKED',{code:error.errorCode||'QUIZ_FETCH_FAILED',message:error.message,providerRequests:0});

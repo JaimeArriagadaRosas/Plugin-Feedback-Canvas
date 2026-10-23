@@ -17,6 +17,6 @@ describe('QuizAnswerFacade', () => {
   });
   it('blocks when Canvas only exposes the questions', async () => {
     await expect(fixture([{id:21,question_text:'Explica API Gateway'}])
-      .getQuizAnswers(1,16,7,'teacher')).rejects.toMatchObject({errorCode:'QUIZ_ANSWERS_UNAVAILABLE'});
+      .getQuizAnswers(1,16,7,'teacher')).rejects.toMatchObject({errorCode:'QUIZ_REPORT_PENDING'});
   });
 });

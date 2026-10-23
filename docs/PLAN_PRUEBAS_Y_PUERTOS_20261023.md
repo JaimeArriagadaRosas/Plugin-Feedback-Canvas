@@ -59,3 +59,10 @@ No publicar notas, comentarios ni feedback automáticamente en Canvas; conservar
 - **Pruebas:** 16/16 aprobadas en suites cualitativas y el nuevo contrato del adaptador. Prueba real aislada llegó al bloqueo `QUIZ_ANSWERS_UNAVAILABLE` con cero solicitudes a Gemini.
 - **Pendiente crítico:** recuperar respuestas de Classic Quizzes finalizados usando una superficie oficial autorizada (si existe), o diseñar una captura de evidencias durante el intento con consentimiento/integración institucional; estudiar también New Quizzes. Sin respuesta real, no generar feedback ni atribuir un resultado válido al modelo.
 - **Datos sintéticos:** los intentos manuales del cuestionario aislado no son evidencia suficiente de compatibilidad con producción y no deben mezclarse con los controles originales.
+
+## Solución Classic Quizzes cerrados — informe oficial Student Analysis
+- La API permite consultar `GET /courses/:course/quizzes/:quiz/reports` y generar `POST /courses/:course/quizzes/:quiz/reports` con `report_type=student_analysis`. Canvas local completó el informe 1 (progreso 100%, archivo CSV id 22, 838 bytes).
+- Se descargó el CSV usando el downloader autenticado existente y se verificó que incluye las respuestas completas de estudiantes 7 y 8 a la pregunta 21 **después de finalizar**.
+- `QuizAnswerFacade` utiliza primero la lectura directa; si el endpoint omite `answer`, consulta el Student Analysis y selecciona fila `id` de estudiante, columnas de pregunta `<id>: <enunciado>`. Si el informe no está generado, devuelve `QUIZ_REPORT_PENDING` en lugar de inventar respuestas.
+- E2E curso 1, tarea 16, estudiante 7: preflight correcto, una respuesta real, 360 caracteres de evidencia. Generación Gemini `gemini-3.5-flash` una petición devolvió HTTP 503 Service Unavailable por alta demanda; **no se guardó un borrador**. No se modificó calificación ni se publicó feedback en Canvas.
+- El informe CSV se puede quedar obsoleto al recibir intentos posteriores: antes de usarlo en producción se debe validar frescura y regenerarlo cuando corresponda; para las pruebas verificadas contenía la entrega objetivo. No ampliar indiscriminadamente a New Quizzes.

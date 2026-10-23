@@ -69,7 +69,7 @@ export default class FeedbackGenerationService {
         (canvasData.submission?.submission_type === 'online_quiz' && canvasData.submission?.workflow_state === 'pending_review'))) {
         if (canvasData.submission?.submission_type === 'online_quiz') {
           const answers = await this.canvasGateway.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
-          canvasData.submission = { ...canvasData.submission, answers };
+          canvasData.submission = { ...canvasData.submission, body: null, answers };
         }
         return this.ungraded.generate({ courseId, assignmentId, studentId, teacherId, pending, canvasData, metadata });
       }
