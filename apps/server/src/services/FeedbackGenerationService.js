@@ -65,7 +65,12 @@ export default class FeedbackGenerationService {
 
       const rawGrade = canvasData.submission?.score ?? canvasData.submission?.entered_score ?? canvasData.submission?.unposted_score;
       const explicitGrade = currentGrade !== undefined && currentGrade !== null && currentGrade !== '';
-      if (!explicitGrade && (rawGrade === null || rawGrade === undefined || rawGrade === '')) {
+      if (!explicitGrade && (rawGrade === null || rawGrade === undefined || rawGrade === '' ||
+        (canvasData.submission?.submission_type === 'online_quiz' && canvasData.submission?.workflow_state === 'pending_review'))) {
+        if (canvasData.submission?.submission_type === 'online_quiz') {
+          const answers = await this.canvasGateway.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
+          canvasData.submission = { ...canvasData.submission, answers };
+        }
         return this.ungraded.generate({ courseId, assignmentId, studentId, teacherId, pending, canvasData, metadata });
       }
 

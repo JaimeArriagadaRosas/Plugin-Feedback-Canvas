@@ -7,6 +7,7 @@ import SubmissionFacade from './canvas/SubmissionFacade.js';
 import SubmissionAttachmentDownloader from './canvas/SubmissionAttachmentDownloader.js';
 import MessageFacade from './canvas/MessageFacade.js';
 import AssignmentFacade from './canvas/AssignmentFacade.js';
+import QuizAnswerFacade from './canvas/QuizAnswerFacade.js';
 
 /**
  * Patrón Facade para centralizar y orquestar las llamadas a la API de Canvas.
@@ -24,6 +25,7 @@ export default class CanvasLmsAdapter {
     this.attachmentDownloader = new SubmissionAttachmentDownloader(this);
     this.messageApi = new MessageFacade(this);
     this.assignmentApi = new AssignmentFacade(this);
+    this.quizAnswerApi = new QuizAnswerFacade(this);
   }
 
   /**
@@ -124,6 +126,10 @@ export default class CanvasLmsAdapter {
     return this.assignmentApi.getRubric(courseId, assignmentId, teacherId);
   }
   
+  async getQuizAnswers(courseId, assignmentId, studentId, teacherId) {
+    return this.quizAnswerApi.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
+  }
+
   async getQuizQuestions(courseId, assignmentId, teacherId) {
     return this.assignmentApi.getQuizQuestions(courseId, assignmentId, teacherId);
   }

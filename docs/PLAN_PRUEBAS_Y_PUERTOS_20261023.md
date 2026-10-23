@@ -47,3 +47,15 @@ No publicar notas, comentarios ni feedback automáticamente en Canvas; conservar
 - La API `GET /api/v1/courses/1/quizzes/1/submissions?include[]=submission` responde HTTP 500. El bloqueo es del acceso REST; no faltan respuestas en Canvas.
 - No conectar el motor del plugin directamente al PostgreSQL interno de Canvas como solución general: se requiere un adaptador REST compatible con Canvas remoto. Evaluar las rutas de quiz submission y de preguntas/respuestas del intento, reparar el 500 local si corresponde y construir un test de contrato con evidencia real.
 - No se modificaron notas ni intentos del control.
+
+## Diagnóstico final de Classic Quizzes — 23-10-2026
+
+- **Causa del HTTP 500 confirmada:** los intentos creados por `submission_factory.rb` tenían `finished_at` pero no `started_at`. El método Rails `Quizzes::QuizSubmission#time_spent` intentaba restarlos. Se rellenó `started_at` para cuatro intentos sintéticos del cuestionario 1 (sin modificar respuestas ni calificaciones). La API volvió a responder.
+- **Caso aislado real:** cuestionario 6, actividad 16, curso 1, pregunta de ensayo ID 21. Se generaron intentos de prueba sin cambiar los controles anteriores.
+- **Comprobación API oficial:** el estudiante ID 8 abrió un intento, respondió una pregunta y se registró la respuesta completa mediante POST `/quiz_submissions/:id/questions`. Mientras el intento estaba abierto, GET sobre el mismo endpoint devolvió el texto exacto de la respuesta. Se completó mediante la API oficial.
+- **Limitación verificada:** una vez finalizado el intento, GET `/quiz_submissions/:id/questions` devuelve enunciado y metadatos, pero omite la respuesta escrita. El modelo de datos interno sí la almacena, pero el plugin no debe conectarse directamente a la base de datos de Canvas. Por ello, no se puede declarar aprobado el E2E de feedback de cuestionario histórico.
+- **Nota provisional:** Canvas asigna `score:0` y `workflow_state:pending_review` en preguntas de ensayo todavía no evaluadas manualmente. Se preparó una excepción de enrutamiento únicamente para `online_quiz` pendiente de revisión; las notas cero definitivas siguen siendo calificaciones reales.
+- **Implementación:** `QuizAnswerFacade` consulta intentos y preguntas mediante Canvas REST; exige campo `answer` no vacío. Si Canvas no lo expone, produce `QUIZ_ANSWERS_UNAVAILABLE` y no invoca IA. `FeedbackGenerationService` enruta ese caso al resolver.
+- **Pruebas:** 16/16 aprobadas en suites cualitativas y el nuevo contrato del adaptador. Prueba real aislada llegó al bloqueo `QUIZ_ANSWERS_UNAVAILABLE` con cero solicitudes a Gemini.
+- **Pendiente crítico:** recuperar respuestas de Classic Quizzes finalizados usando una superficie oficial autorizada (si existe), o diseñar una captura de evidencias durante el intento con consentimiento/integración institucional; estudiar también New Quizzes. Sin respuesta real, no generar feedback ni atribuir un resultado válido al modelo.
+- **Datos sintéticos:** los intentos manuales del cuestionario aislado no son evidencia suficiente de compatibilidad con producción y no deben mezclarse con los controles originales.

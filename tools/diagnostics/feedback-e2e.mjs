@@ -39,11 +39,18 @@ record('CANVAS_FETCH',{elapsedMs:Date.now()-fetchStart,course,assignment,student
  score:submission.score,attachments:(submission.attachments||[]).map(f=>({id:f.id,name:f.filename}))});
 if(!submission.submitted_at||submission.missing||submission.workflow_state==='unsubmitted')
  throw Error('SKIP: no submitted work');
-if((submission.score??submission.entered_score??submission.unposted_score)!==null &&
+if(submission.workflow_state!=='pending_review' && (submission.score??submission.entered_score??submission.unposted_score)!==null &&
  (submission.score??submission.entered_score??submission.unposted_score)!==undefined)
  throw Error('SKIP: already graded');
-if(submission.submission_type==='online_quiz'&&!(submission.answers?.length||submission.submission_data?.length))
- throw Error('SKIP: quiz answers not available');
+if(submission.submission_type==='online_quiz'&&!(submission.answers?.length||submission.submission_data?.length)) {
+ try {
+   submission.answers=await gateway.getQuizAnswers(course,assignment,student,teacherId);
+   record('QUIZ_ANSWERS',{count:submission.answers.length,source:'canvas-rest'});
+ } catch(error) {
+   record('QUIZ_BLOCKED',{code:error.errorCode||'QUIZ_FETCH_FAILED',message:error.message,providerRequests:0});
+   process.exit(2);
+ }
+}
 const repository=new FeedbackRepository();
 const previous=await repository.findByStudent(String(student),String(course));
 const existing=previous.filter(f=>String(f.tarea_id)===String(assignment));
