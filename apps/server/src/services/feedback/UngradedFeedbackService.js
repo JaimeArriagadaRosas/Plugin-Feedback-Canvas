@@ -11,10 +11,10 @@ export default class UngradedFeedbackService {
     this.evaluator = new QualitativeFeedbackEvaluator(configManager);
     this.persistence = new FeedbackPersistenceHandler(repository);
   }
-  async generate({courseId,assignmentId,studentId,teacherId,pending,canvasData,metadata={}}) {
+  async generate({courseId,assignmentId,studentId,teacherId,pending,canvasData,metadata={},singleAttempt=false}) {
     const content = await this.processor.process(canvasData.submission, teacherId);
     const rubric = this.rubricBuilder.build(canvasData.assignment,canvasData.rubric);
-    const result = await this.evaluator.evaluate({content,rubric,assignment:canvasData.assignment});
+    const result = await this.evaluator.evaluate({content,rubric,assignment:canvasData.assignment,singleAttempt});
     const studentName = metadata.studentName || canvasData.student?.name || 'Estudiante';
     const assignmentName = metadata.assignmentName || canvasData.assignment?.name || 'Actividad';
     const saved = await this.persistence.saveGeneratedFeedback({

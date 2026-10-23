@@ -47,7 +47,7 @@ export default class GeminiProvider extends IAProvider {
       finalSystemInstruction = OUTPUT_GUARDRAILS;
     }
 
-    return await ExponentialBackoff.execute(async () => {
+    const executeOnce = async () => {
       try {
         const modelOptions = {
           model: modelName,
@@ -77,7 +77,11 @@ export default class GeminiProvider extends IAProvider {
       } catch (error) {
         GeminiErrorHandler.handleError(error);
       }
-    }, { maxRetries: 3, baseDelay: 1000 });
+    };
+
+    return config.singleAttempt === true
+      ? executeOnce()
+      : ExponentialBackoff.execute(executeOnce, { maxRetries: 3, baseDelay: 1000 });
   }
 
   async fetchAvailableModels(apiKey) {
