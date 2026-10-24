@@ -36,7 +36,7 @@ export default class IAConfigManager {
       service: serviceName,
       apiKey: keyData.apiKey,
       customEndpoint: keyData.customEndpoint,
-      model: config?.modelo_preferido || 'gemini-3.5-flash',
+      model: config?.modelo_preferido || 'gemini-3.6-flash',
       maxTokens: config?.longitud_maxima ? parseInt(config.longitud_maxima, 10) : 2048,
       temperature: config?.temperatura !== undefined && config?.temperatura !== null ? parseFloat(config.temperatura) : 0.7
     };
