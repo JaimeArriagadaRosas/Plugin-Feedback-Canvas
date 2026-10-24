@@ -28,6 +28,14 @@ const {default:IAConfigManager}=await import('../../apps/server/src/services/IAC
 const canvas=new CanvasClient(process.env.CANVAS_BASE_URL||'https://localhost:8443');
 const gateway=new CanvasLmsAdapter(canvas,{getValidToken:async()=>token});
 const teacherId=args.teacher||'profesor@canvas.local';
+const enrolled=await gateway.getStudents(course,teacherId);
+const actualStudent=enrolled.find(s=>String(s.id)===String(student));
+if(!actualStudent?.name) throw Error('SKIP: no se pudo verificar identidad de estudiante en Canvas');
+if(args.name && args.name.toLocaleLowerCase('es').trim()!==actualStudent.name.toLocaleLowerCase('es').trim()) {
+  record('STUDENT_NAME_MISMATCH',{provided:args.name,actual:actualStudent.name,studentId:student,providerRequests:0});
+  if(action==='generate') throw Error('La identidad indicada no corresponde a Canvas; no se genera feedback');
+}
+record('STUDENT_IDENTITY',{studentId:student,canvasName:actualStudent.name});
 const fetchStart=Date.now();
 const [submission,task,rubric]=await Promise.all([
  gateway.getSubmission(course,assignment,student,teacherId),
@@ -67,7 +75,7 @@ gateway.downloadSubmissionAttachment=async(file,id)=>{
  record('DOWNLOAD',{file:file.filename,bytes:result.buffer.length,mime:result.mime,elapsedMs:Date.now()-st});
  return result;
 };
-const info={submission,assignment:task,rubric,student:{name:args.name||'Estudiante'}};
+const info={submission,assignment:task,rubric,student:{name:actualStudent.name}};
 let processed;
 try {
  processed=await service.processor.process(submission,teacherId);
@@ -85,7 +93,7 @@ const config=await configuration.getGlobalActiveConfig(true);
 if(String(config.service).toLowerCase()!=='gemini')throw Error('Active AI provider is not Gemini');
 record('GEMINI_START',{model:config.model,attempts:1});
 const result=await service.generate({courseId:course,assignmentId:assignment,studentId:student,teacherId,pending,
- canvasData:info,metadata:{studentName:args.name||'Estudiante',assignmentName:task.name},
+ canvasData:info,metadata:{studentName:actualStudent.name,assignmentName:task.name},
  singleAttempt:true,preparedContent:processed});
 record('GEMINI_DONE',{feedbackId:result.data.id,characters:result.data.content.length,
  feedback:result.data.content,elapsedMs:Date.now()-started,postedToCanvas:false,gradeChanged:false});
