@@ -1,4 +1,5 @@
 require 'fileutils'
+require_relative 'unique_submission_file'
 
 module SubmissionFactory
   def self.create_assignments_and_submissions(courses, admin, students)
@@ -157,12 +158,7 @@ module SubmissionFactory
         
         file_path = File.join(generated_dir, filename)
         
-        if File.exist?(master_path)
-          FileUtils.cp(master_path, file_path)
-        else
-          # Fallback if master is missing inside container for some reason
-          File.write(file_path, "Fallback file content for #{filename}")
-        end
+        UniqueSubmissionFile.create(master_path, file_path, filename: filename, student: student_user, assignment: assignment)
         
         mime_types = {
           '.pdf' => 'application/pdf',

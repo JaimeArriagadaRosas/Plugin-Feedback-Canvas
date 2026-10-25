@@ -4,6 +4,12 @@ import DocumentToMarkdownConverter from '../../src/services/feedback/DocumentToM
 import SubmissionAttachmentDownloader from '../../src/adapters/canvas/SubmissionAttachmentDownloader.js';
 
 describe('Regresión: archivo entregado pero inaccesible', () => {
+  it('prefiere display_name aunque Canvas deduplique y herede filename de otro estudiante', async () => {
+    const gateway={downloadSubmissionAttachment:vi.fn().mockResolvedValue({buffer:Buffer.from('Entrega individual'),mime:'text/plain'})};
+    const content=await new SubmissionContentProcessor(gateway,new DocumentToMarkdownConverter()).process({workflow_state:'submitted',attachments:[{id:6,filename:'maria_garcia_entrega.txt',display_name:'ana_torres_entrega.txt'}]},'teacher');
+    expect(content.markdown).toContain('## Adjunto: ana_torres_entrega.txt');
+    expect(content.markdown).not.toContain('maria_garcia_entrega.txt');
+  });
   it('no evalúa el texto de acompañamiento si el PPTX no se puede descargar', async () => {
     const gateway = {downloadSubmissionAttachment:vi.fn().mockRejectedValue(new Error('HTTP 403'))};
     const processor = new SubmissionContentProcessor(gateway,new DocumentToMarkdownConverter());

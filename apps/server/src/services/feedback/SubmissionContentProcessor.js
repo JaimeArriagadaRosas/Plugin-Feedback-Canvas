@@ -9,7 +9,7 @@ export default class SubmissionContentProcessor {
     if (attachments.length > 8) throw new DomainError('Demasiados adjuntos', 413);
     const parts = [], warnings = [], evidence = [], errors = [];
     for (const file of attachments) {
-      const name = file.filename || file.display_name || 'adjunto';
+      const name = file.display_name || file.filename || 'adjunto';
       try {
         const { buffer, mime } = await this.canvasGateway.downloadSubmissionAttachment(file, teacherId);
         if (buffer.length > 12 * 1024 * 1024) throw new DomainError('Archivo demasiado grande', 413);

@@ -11,9 +11,13 @@ describe('Contrato del generador de entregables sintéticos',()=>{
     expect(source).toContain('find_or_create_by!(user_id: student_user.id)');
     expect(source).toContain('student_user.name.gsub');
   });
-  it('usa un maestro compartido por formato y no contenido individual por alumno',()=>{
+  it('genera contenido único por alumno y tarea desde un maestro de formato',()=>{
+    const generator=fs.readFileSync(path.join(root,'tools/canvas-local/seeds/factories/unique_submission_file.rb'),'utf8');
+    expect(source).toContain('UniqueSubmissionFile.create(master_path, file_path, filename: filename, student: student_user, assignment: assignment)');
+    expect(generator).toContain('student.id');
+    expect(generator).toContain('assignment.id');
+    expect(generator).toContain('Prawn::Document.generate');
     expect(source).toContain('"dummy#{chosen_ext}"');
-    expect(source).toContain('FileUtils.cp(master_path, file_path)');
     expect(fs.existsSync(path.join(masters,'dummy.pdf'))).toBe(true);
     expect(fs.existsSync(path.join(masters,'dummy.pptx'))).toBe(true);
     expect(fs.existsSync(path.join(masters,'dummy.xlsx'))).toBe(true);
