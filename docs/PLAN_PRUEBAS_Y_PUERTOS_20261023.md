@@ -94,3 +94,11 @@ No publicar notas, comentarios ni feedback automáticamente en Canvas; conservar
 - Preflight con `--name=Ana` demostró la diferencia contra `Ana Torres` con cero llamadas a IA. Nota: el proxy 8443 no estaba levantado para este preflight y la conversión del archivo falló por conectividad, no por el motor de documentos.
 - Validaciones sintácticas y suites de regresión: **16/16 correctas**.
 - No se considera resuelto el riesgo de texto con el nombre incorrecto dentro de un documento o de la respuesta del modelo: es necesaria una revisión humana del contenido generado y tests adicionales del flujo UI. Tampoco se comprobó el ciclo completo interactivo de Ctrl+C/preboot ni New Quizzes.
+
+## Diagnóstico reproducible de la semilla Ana/María — 25-10-2026
+- Archivo: `tools/diagnostics/check-seeded-attachment-identity.mjs`.
+- Ejecución: `node tools/diagnostics/check-seeded-attachment-identity.mjs` (requiere Canvas local 8080, credenciales locales de prueba; no requiere proxy 8443 porque solo consulta metadatos).
+- Se consulta de forma autenticada la lista de estudiantes del curso 2 y la entrega de la tarea 5 del estudiante ID 9; se compara la identidad de Canvas con el nombre del adjunto. Es una **heurística específica de los fixtures**, no una regla para entregas reales cuyos nombres de archivo pueden ser arbitrarios.
+- Resultado reproducido: `canvasStudent: Ana Torres`, `attachments: [maria_garcia_entrega.pdf]`, `status: FIXTURE_MISMATCH_DETECTED`; llamadas IA = 0, escrituras en BD = 0. La prueba falla explícitamente si la discrepancia esperada deja de reproducirse, para pedir revisión del fixture.
+- Hipótesis principal: vinculación incorrecta de un adjunto en los datos sintéticos generados automáticamente. **Aún no está identificada la función creadora exacta ni demostrado si la asignación se hizo al crear la base o posteriormente**; el diagnóstico solo confirma el estado actual de Canvas.
+- Tratamiento: conservar como anomalía de datos de pruebas, sin editar notas, entregas ni feedback. En producción el nombre del archivo no demuestra identidad: usar el usuario de Canvas y exigir revisión de la retroalimentación antes de publicarla.
