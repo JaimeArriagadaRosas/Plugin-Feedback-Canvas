@@ -11,7 +11,7 @@ export function useSpeedGraderData() {
   const queryClient = useQueryClient();
   const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [grade, setGrade] = useState(0);
+  const [grade, setGrade] = useState(null);
   const [feedback, setFeedback] = useState("");
   const [generatedFeedbackId, setGeneratedFeedbackId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +107,7 @@ export function useSpeedGraderData() {
 
   // Clear state when the assignment or student changes
   useEffect(() => {
-    setGrade(0);
+    setGrade(null);
     setStatusMsg("Loading data from Canvas...");
     setFeedback("");
     setGeneratedFeedbackId(null);
@@ -137,7 +137,7 @@ export function useSpeedGraderData() {
 
   useEffect(() => {
     if (!isAiServiceAvailable) {
-      setGrade(0);
+      setGrade(null);
       setStatusMsg("Read-only mode. AI API inactive.");
       return;
     }
@@ -148,7 +148,7 @@ export function useSpeedGraderData() {
         ...old,
         [currentStudent.id]: sanitizeHtml(body, { allowedTags: [], allowedAttributes: {} })
       }));
-      setGrade(submission.score || 0);
+      setGrade(submission.score ?? submission.entered_score ?? submission.unposted_score ?? null);
       setStatusMsg("Ready to generate feedback.");
     }
   }, [submission, courseId, currentAssignmentId, currentStudent.id, queryClient, isAiServiceAvailable]);

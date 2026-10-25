@@ -25,6 +25,7 @@ export default class GeminiProvider extends IAProvider {
     const apiKey = config.apiKey || this.apiKey;
     if (!apiKey) {
       logger.warn('[IA] Gemini API Key absent. Using local fallback response.');
+      if (config.qualitative) throw new Error('Gemini API key is required for qualitative feedback');
       return this._generateLocalResponse();
     }
 
@@ -36,7 +37,7 @@ export default class GeminiProvider extends IAProvider {
       // genAI.baseURL = this.customEndpoint; // Depende de la versión del SDK
     }
 
-    const modelName = config.model || "gemini-3.5-flash";
+    const modelName = config.model || "gemini-3.6-flash";
     
     // If there is systemInstruction, we attach the mandatory guardrails
     let finalSystemInstruction = config.systemInstruction || '';
@@ -46,7 +47,7 @@ export default class GeminiProvider extends IAProvider {
       finalSystemInstruction = OUTPUT_GUARDRAILS;
     }
 
-    return await ExponentialBackoff.execute(async () => {
+    const executeOnce = async () => {
       try {
         const modelOptions = {
           model: modelName,
@@ -68,6 +69,7 @@ export default class GeminiProvider extends IAProvider {
 
         if (!text || text.length < 20) {
           logger.warn('[IA] Empty or very short response. Using local fallback.');
+          if (config.qualitative) throw new Error('Gemini returned no verifiable response for qualitative feedback');
           return this._generateLocalResponse();
         }
 
@@ -75,7 +77,8 @@ export default class GeminiProvider extends IAProvider {
       } catch (error) {
         GeminiErrorHandler.handleError(error);
       }
-    }, { maxRetries: 3, baseDelay: 1000 });
+    };
+    return config.singleAttempt === true ? executeOnce() : ExponentialBackoff.execute(executeOnce, { maxRetries: 3, baseDelay: 1000 });
   }
 
   async fetchAvailableModels(apiKey) {

@@ -109,7 +109,7 @@ export default function SpeedGraderPanel({ onExit }) {
   }, []);
 
   const maxPoints = activeAssignment?.points;
-  const percent = maxPoints > 0 ? grade / maxPoints : 0;
+  const percent = grade != null && maxPoints > 0 ? grade / maxPoints : 0;
   const scaledGrade = percent < 0.6 
     ? 3 * (percent / 0.6) + 1 
     : 3 * ((percent - 0.6) / 0.4) + 4;
@@ -119,6 +119,8 @@ export default function SpeedGraderPanel({ onExit }) {
   let gradeRange = 'Low Range';
   if (!hasSubmitted) {
     gradeRange = '-';
+  } else if (grade == null) {
+    gradeRange = 'Not graded';
   } else if (scaledGrade >= 6.0) {
     gradeRange = 'High Range';
   } else if (scaledGrade >= 4.0) {
@@ -128,6 +130,8 @@ export default function SpeedGraderPanel({ onExit }) {
   let templateName = 'No template active';
   if (!hasSubmitted) {
     templateName = 'No template';
+  } else if (grade == null) {
+    templateName = 'Not required (qualitative feedback)';
   } else if (activeAssignment?.templateName) {
     templateName = activeAssignment.templateName;
   }

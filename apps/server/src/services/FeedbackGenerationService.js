@@ -1,5 +1,6 @@
 import PromptManager from './PromptManager.js';
 import GradeConverter from './calificaciones/GradeConverter.js';
+import UngradedFeedbackService from './feedback/UngradedFeedbackService.js';
 import { DomainError } from '../utils/errors.js';
 import CourseStatisticsService from './CourseStatisticsService.js';
 import StudentNameResolver from './variables/StudentNameResolver.js';
@@ -30,6 +31,7 @@ export default class FeedbackGenerationService {
     this.iaConfigManager = iaConfigManager;
     this.courseStatisticsService = new CourseStatisticsService(canvasGateway);
     this.persistenceHandler = new FeedbackPersistenceHandler(feedbackRepo);
+    this.ungraded = new UngradedFeedbackService(canvasGateway, feedbackRepo, iaConfigManager);
     
     // Instanciar Resolvers
     this.resolvers = [
@@ -60,6 +62,15 @@ export default class FeedbackGenerationService {
 
       const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
       const { assignment, assignmentName, student, questions, rubric } = canvasData;
+      const rawGrade = canvasData.submission?.score ?? canvasData.submission?.entered_score ?? canvasData.submission?.unposted_score;
+      const explicitGrade = currentGrade !== undefined && currentGrade !== null && currentGrade !== '';
+      if (!explicitGrade && (rawGrade === null || rawGrade === undefined || rawGrade === '' || (canvasData.submission?.submission_type === 'online_quiz' && canvasData.submission?.workflow_state === 'pending_review'))) {
+        if (canvasData.submission?.submission_type === 'online_quiz') {
+          const answers = await this.canvasGateway.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
+          canvasData.submission = {...canvasData.submission, body:null, answers};
+        }
+        return this.ungraded.generate({courseId, assignmentId, studentId, teacherId, pending, canvasData, metadata});
+      }
 
       const finalCourseName = metadata.courseName || `Course ${courseId}`;
       const finalAssignmentName = metadata.assignmentName || assignmentName || assignment?.name || `Assignment ${assignmentId}`;

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import dotenv from 'dotenv';
 
 import { boot } from './boot/logger.js';
-import { assertPortsAvailable } from './portManager.js';
+import { assertPortsAvailable, resolveStartupPorts } from './portManager.js';
 import { ask, showMainMenu } from './cli.js';
 import { runBlackBoxTests } from './testRunner.js';
 import { writeEnvOverrides } from './envWriter.js';
@@ -150,6 +150,12 @@ export async function main({ mode: requestedMode } = {}) {
       localOrchestrator = new Orchestrator(boot, PLUGIN_DIR, CANVAS_DIR);
     }
 
+    const ports = mode === '1' ? [SERVER_PORT] : mode === '3' ? [SERVER_PORT,VITE_PORT,8443] : [SERVER_PORT,VITE_PORT];
+    const portState = await resolveStartupPorts(ports, {projectDir:PLUGIN_DIR, mode, ask});
+    if (portState.reuse) {
+      boot.success('An existing local instance (PID '+portState.pid+') is already running. Its services will be reused; no ports will be closed.');
+      return;
+    }
     await configureMode(mode, localOrchestrator, checker);
 
     backend = await startServices(mode, localOrchestrator);

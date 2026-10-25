@@ -4,6 +4,8 @@ import { ExponentialBackoff } from '../utils/ExponentialBackoff.js';
 
 import CourseFacade from './canvas/CourseFacade.js';
 import SubmissionFacade from './canvas/SubmissionFacade.js';
+import SubmissionAttachmentDownloader from './canvas/SubmissionAttachmentDownloader.js';
+import QuizAnswerFacade from './canvas/QuizAnswerFacade.js';
 import MessageFacade from './canvas/MessageFacade.js';
 import AssignmentFacade from './canvas/AssignmentFacade.js';
 
@@ -20,6 +22,8 @@ export default class CanvasLmsAdapter {
     // Injected sub-facades
     this.courseApi = new CourseFacade(this);
     this.submissionApi = new SubmissionFacade(this);
+    this.attachmentDownloader = new SubmissionAttachmentDownloader(this);
+    this.quizAnswerApi = new QuizAnswerFacade(this);
     this.messageApi = new MessageFacade(this);
     this.assignmentApi = new AssignmentFacade(this);
   }
@@ -122,6 +126,8 @@ export default class CanvasLmsAdapter {
     return this.assignmentApi.getRubric(courseId, assignmentId, teacherId);
   }
   
+  async getQuizAnswers(courseId, assignmentId, studentId, teacherId) { return this.quizAnswerApi.getQuizAnswers(courseId, assignmentId, studentId, teacherId); }
+  async downloadSubmissionAttachment(file, teacherId) { return this.attachmentDownloader.download(file, teacherId); }
   async getQuizQuestions(courseId, assignmentId, teacherId) {
     return this.assignmentApi.getQuizQuestions(courseId, assignmentId, teacherId);
   }
