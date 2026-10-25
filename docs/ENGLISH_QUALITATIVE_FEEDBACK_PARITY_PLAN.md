@@ -40,5 +40,5 @@
 
 ## Operational status
 - The Spanish merge into local `main` succeeded at `0290c3c`, but remote push must be confirmed separately.
-- Option 5 was launched on Spanish `main` and container removal began. At documentation time, Docker reports Canvas web container stuck in `removing`; English environment cleanup/switch has not yet been confirmed complete.
+- Option 5 completed successfully: approved cleanup of Spanish local containers, their associated volumes and temporary artifacts; switched the primary worktree to `english-version` and prepared npm dependencies using npm 11.8.0. No Canvas services were started. This English parity feature branch remains checked out only in its separate worktree.
 - This file is a proposal only. No Spanish functionality has yet been ported into this branch.
