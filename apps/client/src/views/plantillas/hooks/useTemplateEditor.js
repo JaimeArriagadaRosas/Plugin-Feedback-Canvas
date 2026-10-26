@@ -33,7 +33,7 @@ export function useTemplateEditor(template) {
     const currentText = content[currentTab] || "";
     const text = currentText
       .split('\n')
-      .filter(line => !line.includes('{{promedio_curso}}'))
+      .map(line => line.replaceAll('{{promedio_curso}}', '[Promedio del curso no disponible en vista previa]'))
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .replace(/{{nombre_estudiante}}/g, 'Juan Pérez')

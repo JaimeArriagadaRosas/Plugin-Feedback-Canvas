@@ -1,3 +1,4 @@
+import { normalizeSeedTemplateContent } from '../services/templates/normalizeSeedTemplateContent.js';
 import db from './db.js';
 
 /**
@@ -94,6 +95,16 @@ export default class TemplateRepository {
           WHERE existing.nombre=seed.nombre AND existing.profesor_id IS NULL AND existing.deleted_at IS NULL
         );
       `);
+      const defaults = await connection.query(
+        'SELECT id, contenido FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL AND nombre=ANY($1::text[])',
+        [names]
+      );
+      for (const seed of defaults.rows) {
+        const normalized = normalizeSeedTemplateContent(seed.contenido);
+        if (normalized !== seed.contenido) {
+          await connection.query('UPDATE Plantilla_Feedback SET contenido = $1 WHERE id = $2 AND profesor_id IS NULL', [normalized, seed.id]);
+        }
+      }
       await connection.query(`
         INSERT INTO Plantilla_Feedback(nombre,contenido,profesor_id)
         SELECT original.nombre,original.contenido,$1
