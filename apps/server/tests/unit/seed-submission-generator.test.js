@@ -17,10 +17,17 @@ describe('Synthetic submission generator contract',()=>{
     expect(generator).toContain('student.id');
     expect(generator).toContain('assignment.id');
     expect(generator).toContain('Prawn::Document.generate');
+    expect(generator).toContain('Microservices Architecture');
+    expect(generator).toContain('Replace all localized source text with English');
     expect(source).toContain('"dummy#{chosen_ext}"');
     expect(fs.existsSync(path.join(masters,'dummy.pdf'))).toBe(true);
     expect(fs.existsSync(path.join(masters,'dummy.pptx'))).toBe(true);
     expect(fs.existsSync(path.join(masters,'dummy.xlsx'))).toBe(true);
+  });
+  it('seeds valid quiz start and finish timestamps to avoid Canvas HTTP 500',()=>{
+    expect(source).toContain('started_at: commenced_at');
+    expect(source).toContain('finished_at: completed_at');
+    expect(source).toContain('commenced_at = completed_at - rand(5..25).minutes');
   });
   it('links the created attachment ID to the submission',()=>{
     expect(source).toContain('att = Attachment.create!(');

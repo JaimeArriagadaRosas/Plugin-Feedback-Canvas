@@ -26,3 +26,9 @@ Date: 2026-10-25. Working branch: `feat/english-qualitative-feedback-parity`, ba
 - Gemini HTTP 503 is a known external temporary service overload/unavailability, not proof of exceeding API quota. References: https://ai.google.dev/gemini-api/docs/troubleshooting and https://ai.google.dev/gemini-api/docs/api-errors. Do not assume retries resolve every 503.
 - Required manual acceptance: start local Canvas, verify native English language, seed isolated assignments, generate a single real draft for PDF/PPTX/text/Classic Quiz, verify accurate student name, no Canvas grade mutation, no comment published without teacher approval, and confirm controlled startup/cleanup.
 - The English production branch `english-version` must only be updated by a later approved merge of this English feature branch once these checks are accepted; never merge Spanish `main`.
+
+## Real API validation follow-up (2026-10-25)
+
+See `docs/ENGLISH_E2E_RESULTS_20261025.md` for detailed evidence. Three real Gemini 3.6 feedback drafts were generated from PPTX, submitted text and PDF with English-only responses and correct Canvas recipients. Two real unsupported attachments (XLSX and ZIP) were rejected with 422 and zero Gemini calls. All three resulting database drafts were verified as pending with null scores; Canvas grades remained unchanged. In addition to 231 passed server/installer tests (1 skipped), the isolated Ruby PPTX generation proved the fixture slides are now English and unique per student.
+
+A Classic Quiz fixture defect (20 synthetic attempts with missing `started_at`) caused Canvas to return HTTP 500; the generator was fixed and the local fixture metadata repaired without changing grades. The endpoint now responds, but the Student Analysis report job failed inside Canvas, so full Classic Quiz feedback E2E remains BLOCKED. Do not represent that route as approved or merge the English feature branch automatically.

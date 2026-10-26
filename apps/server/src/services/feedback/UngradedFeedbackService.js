@@ -15,11 +15,11 @@ export default class UngradedFeedbackService {
     const content = preparedContent || await this.processor.process(canvasData.submission, teacherId);
     const rubric = this.rubricBuilder.build(canvasData.assignment,canvasData.rubric);
     const result = await this.evaluator.evaluate({content,rubric,assignment:canvasData.assignment,recipientName:canvasData.student?.name,singleAttempt});
-    const studentName = metadata.studentName || canvasData.student?.name || 'Estudiante';
-    const assignmentName = metadata.assignmentName || canvasData.assignment?.name || 'Actividad';
+    const studentName = metadata.studentName || canvasData.student?.name || 'Student';
+    const assignmentName = metadata.assignmentName || canvasData.assignment?.name || 'Assignment';
     const saved = await this.persistence.saveGeneratedFeedback({
       pending,courseId,assignmentId,studentId,teacherId,
-      finalCourseName:metadata.courseName || 'Curso ' + courseId,
+      finalCourseName:metadata.courseName || 'Course ' + courseId,
       finalAssignmentName:assignmentName,finalStudentName:studentName,
       templateId:null,feedbackText:result.feedback,prompt:result.prompt,
       canvasScore:null,chileGrade:null,approved:null

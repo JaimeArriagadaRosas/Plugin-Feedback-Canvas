@@ -21,6 +21,23 @@ module UniqueSubmissionFile
       entries = {}
       Zip::File.open(master_path) { |zip| zip.each { |entry| entries[entry.name] = entry.get_input_stream.read unless entry.directory? } }
       if ext == '.pptx'
+        # Replace all localized source text with English before adding unique metadata.
+        english_content = [
+          ['Microservices Architecture', 'Evolution and architectural tradeoffs'],
+          ['Monolithic systems', 'Simple deployment but tightly coupled modules and difficult independent scaling'],
+          ['Service-oriented architecture', 'Shared services encourage reuse but introduce coordination and governance requirements'],
+          ['Microservices and resilience', 'API gateways route requests; circuit breakers isolate failures; asynchronous events reduce coupling'],
+          ['Summary and recommendations', 'Choose bounded contexts, test distributed failure modes, and monitor latency and consistency']
+        ]
+        entries.keys.select { |name| name.start_with?('ppt/slides/slide') && name.end_with?('.xml') }.sort.each_with_index do |slide_path,index|
+          fragments = english_content[index] || english_content.last
+          text_index = 0
+          entries[slide_path] = entries[slide_path].force_encoding('UTF-8').gsub(%r{<a:t>.*?</a:t>}m) do
+            value = fragments[text_index] || ''
+            text_index += 1
+            '<a:t>' + value + '</a:t>'
+          end
+        end
         slide = entries.keys.grep(%r{\Appt/slides/slide[0-9]+\.xml\z}).min
         raise 'PPTX has no slides' unless slide
         safe = marker.gsub('&','&amp;').gsub('<','&lt;').gsub('>','&gt;')
