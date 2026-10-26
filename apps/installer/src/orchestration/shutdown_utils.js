@@ -18,9 +18,8 @@ export function setupGracefulShutdown(backend, localOrchestrator, { isStarted = 
   }
 
   async function performShutdown() {
-    // Unregister before cleanup to prevent duplicate signal handlers.
-    process.off('SIGINT', onSignal);
-    process.off('SIGTERM', onSignal);
+    // Keep signal handlers active during cleanup: repeated Ctrl+C must join
+    // the same shutdown, not terminate a half-closed process by default.
     process.stdin.off('data', onInput);
     if (rawOwned) process.stdin.setRawMode(false);
     if (process.stdin.isTTY) process.stdin.pause();
@@ -45,6 +44,8 @@ export function setupGracefulShutdown(backend, localOrchestrator, { isStarted = 
     await step('Vite', async () => stopVite());
     boot.success(errors ? 'Shutdown finished with warnings.' : 'Shutdown completed.');
     boot.endStage();
+    process.off('SIGINT', onSignal);
+    process.off('SIGTERM', onSignal);
     process.exit(errors || failed ? 1 : isStarted() ? 0 : 130);
   }
 

@@ -27,3 +27,7 @@ The Spanish main branch requires:
 - Neutral English template policy ported to Spanish's own variable names; do not override existing teacher templates.
 - New isolated early-shutdown tests, existing PTY and real start-stop tests, plus advanced OAuth multi-instance and resurrection *diagnostic* tests. Do **not** confuse reproduction tests that pass on unsafe behavior with regression tests asserting its repair.
 - A separate migration plan for token generation and locking. Do not make breaking database schema changes directly in Spanish main.
+
+## Supplemental real SIGINT validation — final signal handler adjustment
+A live Linux WSL test interrupted the real local Canvas setup when the installer printed `Starting Canvas LMS containers`. An initial attempt exited by signal -2 after the cleanup began. Root cause: `shutdown_utils.js` unregistered SIGINT/SIGTERM handlers immediately on beginning cleanup, so further signals from the terminal/process group could terminate before teardown. The correction retains signal handlers until teardown completes, and repeated signals join the same idempotent shutdown.
+Re-run with `tools/diagnostics/verify-early-sigint.py`: exit **130**, `Shutdown completed.`, ports 3000/5173/8443 all free. No shared Canvas or plugin containers were intentionally stopped by the test. Full installer/server suite again passed: **301 passed, 1 skipped, 0 failed**. The Spanish parity copy must include this signal-handler ordering improvement.
