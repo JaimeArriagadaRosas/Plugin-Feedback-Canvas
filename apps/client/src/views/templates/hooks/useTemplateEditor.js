@@ -4,9 +4,9 @@ export function useTemplateEditor(template) {
   const [name, setName] = useState(template?.name || template?.nombre || "New Feedback Template");
   
   let initialContent = {
-    alto: "Dear {{student_name}},\n\nExcellent work! Your grade has been {{grade}}.\n\nKeep it up.",
-    medio: "Dear {{student_name}},\n\nYour grade on the activity has been {{grade}}.\n\nThe current course average is {{course_average}}.\n\nWe suggest reviewing the following topics...",
-    bajo: "Dear {{student_name}},\n\nYour grade has been {{grade}}.\n\nYou need to improve. We suggest tutoring."
+    alto: "Dear {{student_name}},\n\nExcellent work on this assignment!\n\nKeep it up.",
+    medio: "Dear {{student_name}},\n\nWe suggest reviewing the following topics...",
+    bajo: "Dear {{student_name}},\n\nReview the aspects of the activity that need improvement.\n\nYou need to improve. We suggest tutoring."
   };
 
   if (template?.contenido || template?.content) {
@@ -31,10 +31,13 @@ export function useTemplateEditor(template) {
 
   useEffect(() => {
     const currentText = content[currentTab] || "";
-    let text = currentText
+    const text = currentText
+      .split('\n')
+      .filter(line => !line.includes('{{course_average}}'))
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
       .replace(/{{student_name}}/g, "John Doe")
-      .replace(/{{grade}}/g, "3.5")
-      .replace(/{{course_average}}/g, "5.2");
+      .replace(/{{grade}}/g, "42 out of 50 points");
     setPreview(text);
   }, [content, currentTab]);
 

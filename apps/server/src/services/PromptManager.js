@@ -1,32 +1,24 @@
-/**
- * AI Prompt Engine (Improved Version)
- * Builds complex prompts combining context, ranges, and profiles.
- */
+import { omitMissingVariableParagraphs } from './variables/OptionalTemplateVariable.js';
+
+/** Builds prompts from teacher-authored templates and optional Canvas variables. */
 export default class PromptManager {
-  /**
-   * Generates advanced prompt delegating variable injection to Resolvers
-   */
   static async buildPrompt(template, context, resolvers = []) {
     let prompt = template;
-
     for (const resolver of resolvers) {
-      if (resolver.matches(prompt)) {
-        const value = await resolver.resolve(context);
+      if (!resolver.matches(prompt)) continue;
+      const value = await resolver.resolve(context);
+      if (value === null || value === undefined || String(value).trim() === '') {
+        prompt = omitMissingVariableParagraphs(prompt, resolver.variableName);
+      } else {
         prompt = prompt.split(resolver.variableName).join(value);
       }
     }
-
     return prompt;
   }
 
-  /**
-   * Formats rubric criteria to be readable by AI
-   */
   static _formatRubric(rubric) {
     if (!rubric || !Array.isArray(rubric)) return 'No rubric provided.';
-
-    return rubric.map(crit => {
-      return `- Criterion: ${crit.description}\n  Points: ${crit.points}\n  Previous comment: ${crit.comments || 'None'}`;
-    }).join('\n');
+    return rubric.map(crit => '- Criterion: ' + crit.description +
+      '\n  Points: ' + crit.points + '\n  Previous comment: ' + (crit.comments || 'None')).join('\n');
   }
 }

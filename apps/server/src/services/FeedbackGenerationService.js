@@ -1,5 +1,6 @@
 import PromptManager from './PromptManager.js';
-import GradeConverter from './calificaciones/GradeConverter.js';
+import CanvasScorePolicy from './calificaciones/CanvasScorePolicy.js';
+import TemplateManager from './TemplateManager.js';
 import UngradedFeedbackService from './feedback/UngradedFeedbackService.js';
 import { DomainError } from '../utils/errors.js';
 import CourseStatisticsService from './CourseStatisticsService.js';
@@ -72,16 +73,18 @@ export default class FeedbackGenerationService {
       const finalAssignmentName = metadata.assignmentName || assignmentName || assignment?.name || `Assignment ${assignmentId}`;
       const finalStudentName = metadata.studentName || student?.name || 'Student';
 
-      let chileGrade, approved, canvasScore;
+      let chileGrade = null;
+      let approved = null;
+      let canvasScore;
+      let scorePolicy;
       try {
-        const gradeResult = GradeConverter.processGrade(currentGrade, canvasData.submission);
-        chileGrade = gradeResult.chileGrade;
-        approved = gradeResult.approved;
-        canvasScore = gradeResult.canvasScore;
+        const rawScore = canvasData.submission?.score ?? canvasData.submission?.entered_score ?? canvasData.submission?.unposted_score;
+        const possible = canvasData.submission?.points_possible ?? assignment?.points_possible;
+        scorePolicy = CanvasScorePolicy.classify(rawScore, possible);
+        canvasScore = scorePolicy.earned;
       } catch (err) {
         if (err.statusCode === 422) {
-          logger.debug(`This student has not submitted (Student: ${studentId})`);
-          return { exito: false, omitido: true, data: null, mensaje: 'This student has not submitted', razon: err.errorCode || 'INSUFFICIENT_DATA' };
+          return { exito: false, omitido: true, data: null, mensaje: 'Canvas score is missing or invalid', razon: err.errorCode || 'INSUFFICIENT_DATA' };
         }
         throw new DomainError(err.message, err.statusCode || 400, err.errorCode);
       }
@@ -108,10 +111,13 @@ export default class FeedbackGenerationService {
         isTrayectoriaActiva
       );
 
-      const template = await this.templateRepo.getById(templateId);
+      const template = await new TemplateManager(this.templateRepo)
+        .getTemplateForScore(templateId, scorePolicy.earned, scorePolicy.possible);
       if (!template || !template.contenido) throw new DomainError('Template not found or without content', 404);
+      context.submission.pointsPossible = scorePolicy.possible;
+      context.submission.score = scorePolicy.earned;
 
-      context.instructionIA = context.instructionIA + activeVariablesInfo.text;
+      context.instructionIA = context.instructionIA + '\n' + template.instructionIA + activeVariablesInfo.text;
       await this._appendActiveVariableData(context, activeVariablesInfo.activeVars);
 
       // Modular variable injection using Strategy Pattern
