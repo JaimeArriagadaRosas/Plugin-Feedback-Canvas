@@ -27,7 +27,7 @@ export default class QuizAnswerFacade {
       .map(q => ({question_id:q.id, question_text:String(q.question_text || q.question_name || ''), answer:String(q.answer)}));
     if (direct.length) return direct;
 
-    const report = await this.adapter._fetchWithToken('/courses/' + courseId + '/quizzes/' + quiz.id + '/reports?includes_all_versions=true', teacherId);
+    const report = await this.adapter._fetchWithToken('/courses/' + courseId + '/quizzes/' + quiz.id + '/reports', teacherId);
     const analysis = (Array.isArray(report) ? report : []).filter(r => r.report_type === 'student_analysis' && r.file?.id).sort((a,b)=>Number(b.id||0)-Number(a.id||0))[0];
     if (!analysis?.file?.id) throw new DomainError('Student Analysis report is not generated. Create it in Canvas and retry.', 422, 'QUIZ_REPORT_PENDING');
 

@@ -5,7 +5,7 @@ const token=accounts.find(u=>u.rol==='teacher')?.token;
 if(!token)throw Error('No local teacher token');
 const base='http://127.0.0.1:8080';
 async function api(url){const response=await fetch(base+url,{headers:{Authorization:'Bearer '+token}});if(!response.ok)throw Error('Canvas API HTTP '+response.status);return response.json();}
-const reports=await api('/api/v1/courses/1/quizzes/6/reports?includes_all_versions=true');
+const reports=await api('/api/v1/courses/1/quizzes/6/reports');
 const r=reports.filter(r=>r.report_type==='student_analysis'&&r.file?.id).sort((a,b)=>b.id-a.id)[0];
 if(!r?.file?.id)throw Error('No completed Student Analysis file');
 process.env.STARTUP_MODE='3';

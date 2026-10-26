@@ -6,7 +6,7 @@ function facade(){
     _fetchAllWithToken:async()=>[{id:6,assignment_id:16}],
     _fetchWithToken:async(endpoint)=>{
       if(endpoint.endsWith('/questions'))return {quiz_submission_questions:[{id:1,question_text:'Explain API Gateway'}]};
-      if(endpoint.includes('/reports?'))return [{report_type:'student_analysis',file:{id:45,filename:'student_analysis.csv'}}];
+      if(endpoint.endsWith('/reports'))return [{report_type:'student_analysis',file:{id:45,filename:'student_analysis.csv'}}];
       return {quiz_submissions:[{id:25,user_id:7,workflow_state:'complete',attempt:1,finished_at:'2026-10-25T15:00:00Z'}]};
     },
     downloadSubmissionAttachment:async()=>({buffer:Buffer.from(csv)})
