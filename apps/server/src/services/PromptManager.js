@@ -2,6 +2,8 @@
  * Motor de Prompts IA (Versión Mejorada)
  * Construye prompts complejos combinando contexto, rangos y perfiles.
  */
+import { omitMissingVariableParagraphs } from './variables/OptionalTemplateVariable.js';
+
 export default class PromptManager {
   /**
    * Genera un prompt avanzado delegando la inyección de variables a los Resolvers
@@ -12,7 +14,11 @@ export default class PromptManager {
     for (const resolver of resolvers) {
       if (resolver.matches(prompt)) {
         const value = await resolver.resolve(context);
-        prompt = prompt.split(resolver.variableName).join(value);
+        if (value === null || value === undefined || String(value).trim() === '') {
+          prompt = omitMissingVariableParagraphs(prompt, resolver.variableName);
+        } else {
+          prompt = prompt.split(resolver.variableName).join(value);
+        }
       }
     }
 

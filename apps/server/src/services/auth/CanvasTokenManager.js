@@ -107,7 +107,7 @@ export default class CanvasTokenManager {
         attempt++;
         if (attempt >= maxRetries) {
           logger.error(`[AUTH] Failed to refresh token for ${teacherId} after ${maxRetries} attempts`, { error: error.message });
-          throw new AppError(`Error al refrescar credenciales con Canvas: ${error.message}`, 401, { requireOAuth: true });
+          throw new AppError(`Canvas temporalmente no disponible para renovar token: ${error.message}`, 503, { retryable: true });
         }
         const jitter = Math.floor(Math.random() * 1000);
         const delay = Math.pow(2, attempt) * 1000 + jitter;

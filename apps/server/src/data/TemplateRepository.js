@@ -64,22 +64,53 @@ export default class TemplateRepository {
     return true;
   }
 
-  async cloneDefaultTemplates(profesorId) {
-    const res = await db.query('SELECT count(*) as count FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL');
-    if (parseInt(res.rows[0].count) === 0) {
-      await db.query(`
-        INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id) VALUES 
-        ('Clase Estándar', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nLo has hecho muy bien, excelente trabajo.\\n\\nSaludos cordiales,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nHas hecho un trabajo más o menos adecuado, pero hay aspectos que puedes mejorar.\\n\\nSaludos cordiales,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nPor favor, es necesario que le pongas mayor esfuerzo. Consulta el material para mejorar.\\n\\nSaludos cordiales,\\nProfesor"}', NULL),
-        ('Feedback Detallado', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\nHas demostrado un dominio sobresaliente de los conceptos, con una base muy sólida que demuestra un gran nivel de comprensión y dedicación.\\n\\n¡Sigue así, excelente desempeño!\\n\\nSaludos,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\nTienes una buena base, pero existen áreas específicas que debemos reforzar para alcanzar un dominio completo de los temas tratados en esta evaluación.\\n\\nTe animo a revisar el material de estudio.\\n\\nSaludos,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\nEs fundamental que repasemos el contenido visto en clase, ya que se evidencian conceptos clave que aún no están afianzados.\\n\\nPor favor, contáctame para aclarar dudas o asiste a las horas de tutoría.\\n\\nSaludos,\\nProfesor"}', NULL),
-        ('Evaluación Cruzada', '{"alto":"Hola {{nombre_estudiante}},\\n\\nTus compañeros y yo coincidimos en que tu trabajo es destacado y aporta gran valor a la revisión entre pares.\\n\\n¡Felicidades!\\n\\nSaludos,\\nProfesor","medio":"Hola {{nombre_estudiante}},\\n\\nSegún la evaluación cruzada, tu desempeño es promedio, presentando un trabajo adecuado pero con oportunidades de mejora identificadas por tus pares.\\n\\n¡Sigue trabajando!\\n\\nSaludos,\\nProfesor","bajo":"Hola {{nombre_estudiante}},\\n\\nLa revisión cruzada indica que hay debilidades importantes en tu entrega que deben ser atendidas, según el consenso de la coevaluación.\\n\\nRevisa los comentarios de tus compañeros.\\n\\nSaludos,\\nProfesor"}', NULL);
-      `);
-    }
-
-    await db.query(
-      `INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id)
-       SELECT nombre, contenido, $1 FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL`,
-      [profesorId]
+  async hasLocaleTemplateRecord(profesorId) {
+    const names = ['Clase Estándar', 'Feedback Detallado', 'Evaluación Cruzada'];
+    // Include soft-deleted rows: never recreate a template a teacher intentionally removed.
+    const res = await db.query(
+      'SELECT 1 FROM Plantilla_Feedback WHERE profesor_id=$1 AND nombre=ANY($2::text[]) LIMIT 1',
+      [profesorId, names]
     );
+    return res.rowCount > 0;
+  }
+
+  async cloneDefaultTemplates(profesorId) {
+    const names = ['Clase Estándar', 'Feedback Detallado', 'Evaluación Cruzada'];
+    // The DB may also contain English global seeds. They must not suppress Spanish bootstrap.
+    const connection = await db.pool.connect();
+    try {
+      await connection.query('BEGIN');
+      await connection.query("SELECT pg_advisory_xact_lock(hashtext('feedback-spanish-default-templates'))");
+      await connection.query(`
+        WITH seed(nombre,contenido,profesor_id) AS (VALUES
+('Clase Estándar', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nLo has hecho muy bien, excelente trabajo.\\n\\nSaludos cordiales,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nHas hecho un trabajo más o menos adecuado, pero hay aspectos que puedes mejorar.\\n\\nSaludos cordiales,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\n\\n\\nPor favor, es necesario que le pongas mayor esfuerzo. Consulta el material para mejorar.\\n\\nSaludos cordiales,\\nProfesor"}', NULL),
+        ('Feedback Detallado', '{"alto":"Estimado/a {{nombre_estudiante}},\\n\\nHas demostrado un dominio sobresaliente de los conceptos, con una base muy sólida que demuestra un gran nivel de comprensión y dedicación.\\n\\n¡Sigue así, excelente desempeño!\\n\\nSaludos,\\nProfesor","medio":"Estimado/a {{nombre_estudiante}},\\n\\nTienes una buena base, pero existen áreas específicas que debemos reforzar para alcanzar un dominio completo de los temas tratados en esta evaluación.\\n\\nTe animo a revisar el material de estudio.\\n\\nSaludos,\\nProfesor","bajo":"Estimado/a {{nombre_estudiante}},\\n\\nEs fundamental que repasemos el contenido visto en clase, ya que se evidencian conceptos clave que aún no están afianzados.\\n\\nPor favor, contáctame para aclarar dudas o asiste a las horas de tutoría.\\n\\nSaludos,\\nProfesor"}', NULL),
+        ('Evaluación Cruzada', '{"alto":"Hola {{nombre_estudiante}},\\n\\nTus compañeros y yo coincidimos en que tu trabajo es destacado y aporta gran valor a la revisión entre pares.\\n\\n¡Felicidades!\\n\\nSaludos,\\nProfesor","medio":"Hola {{nombre_estudiante}},\\n\\nSegún la evaluación cruzada, tu desempeño es promedio, presentando un trabajo adecuado pero con oportunidades de mejora identificadas por tus pares.\\n\\n¡Sigue trabajando!\\n\\nSaludos,\\nProfesor","bajo":"Hola {{nombre_estudiante}},\\n\\nLa revisión cruzada indica que hay debilidades importantes en tu entrega que deben ser atendidas, según el consenso de la coevaluación.\\n\\nRevisa los comentarios de tus compañeros.\\n\\nSaludos,\\nProfesor"}', NULL)
+        )
+        INSERT INTO Plantilla_Feedback(nombre,contenido,profesor_id)
+        SELECT seed.nombre,seed.contenido,NULL FROM seed
+        WHERE NOT EXISTS (
+          SELECT 1 FROM Plantilla_Feedback existing
+          WHERE existing.nombre=seed.nombre AND existing.profesor_id IS NULL AND existing.deleted_at IS NULL
+        );
+      `);
+      await connection.query(`
+        INSERT INTO Plantilla_Feedback(nombre,contenido,profesor_id)
+        SELECT original.nombre,original.contenido,$1
+        FROM Plantilla_Feedback original
+        WHERE original.profesor_id IS NULL AND original.deleted_at IS NULL
+          AND original.nombre=ANY($2::text[])
+          AND NOT EXISTS (
+            SELECT 1 FROM Plantilla_Feedback own
+            WHERE own.profesor_id=$1 AND own.nombre=original.nombre
+          )
+        ON CONFLICT (nombre,profesor_id) DO NOTHING
+      `,[profesorId,names]);
+      await connection.query('COMMIT');
+    } catch(error) {
+      await connection.query('ROLLBACK');
+      throw error;
+    } finally { connection.release(); }
   }
 
   async hasSeededTemplates(profesorId) {

@@ -39,11 +39,12 @@ export default class QuizAnswerFacade {
     const attemptAt = Date.parse(selected.finished_at || '');
     if (!Number.isFinite(reportedAt) || !Number.isFinite(attemptAt) || Math.abs(reportedAt - attemptAt) > 60000)
       throw new DomainError('Student Analysis no corresponde al último intento; regenerar el informe', 422, 'QUIZ_REPORT_STALE');
-    const questionColumns = Object.keys(match).filter(key => /^\d+:\s/.test(key));
-    const answers = questionColumns.filter(key => String(match[key] || '').trim()).map(key => ({
+    const questionEntries = Object.entries(match).filter(([key, value]) =>
+      /^\d+:\s/.test(key) && String(value || '').trim());
+    const answers = questionEntries.map(([key, value]) => ({
       question_id:Number(key.split(':')[0]),
       question_text:key.replace(/^\d+:\s*/,''),
-      answer:String(match[key]).trim()
+      answer:String(value).trim()
     }));
     if (!answers.length) throw new DomainError('Canvas no expone respuestas verificables de este intento', 422, 'QUIZ_ANSWERS_UNAVAILABLE');
     return answers;

@@ -8,6 +8,7 @@ import { AssetBuilder } from './installers/AssetBuilder.js';
 import { CanvasBringup } from './CanvasBringup.js';
 import { PostflightSetup } from './PostflightSetup.js';
 import { askConfirm } from '../orchestration/cli.js';
+import { SharedDependencyRecovery } from '../recovery/SharedDependencyRecovery.js';
 
 export class EnvironmentSetup {
   constructor(boot, pluginDir, canvasDir, {
@@ -149,6 +150,17 @@ export class EnvironmentSetup {
     const needsRecovery = (dbStatus && dbStatus !== 'starting') || (gStatus && gStatus !== 'starting');
 
     if (needsRecovery) {
+      const decision = await new SharedDependencyRecovery().plan(this.pluginDir);
+      if (decision.kind === 'reuse') {
+        this.boot.info('Servicios Docker compartidos saludables; reutilizando sin recrearlos.');
+        const { runMigrations } = await import('@plugin-feedback/plugin-database');
+        await runMigrations();
+        return;
+      }
+      if (decision.kind === 'block') {
+        throw new Error('Recuperación segura bloqueada: ' + decision.reason +
+          '. No se modificaron contenedores ni volúmenes existentes.');
+      }
       this.boot.info('Dependencias missing/unhealthy. Intentando recuperación...');
       const toRecover = [];
       if (dbStatus && dbStatus !== 'starting') toRecover.push('db');
@@ -188,7 +200,19 @@ export class EnvironmentSetup {
   async _verifyPostInstall() {
     this.boot.info('Ejecutando verificación post-instalación...');
     const result = await new PreflightChecks(this.boot, this.canvasDir, this.pluginDir).runChecks();
-    if (!result.allOk) throw new Error('Verificación post-instalación fallida; aún faltan componentes.');
+    if (result.allOk) return;
+    const remaining = { ...result.missing };
+    const sharedMissing = !!(remaining.plugin_db_status || remaining.gotenberg_status);
+    delete remaining.plugin_db_status;
+    delete remaining.gotenberg_status;
+    if (sharedMissing && Object.keys(remaining).length === 0) {
+      const decision = await new SharedDependencyRecovery().plan(this.pluginDir);
+      if (decision.kind === 'reuse') {
+        this.boot.info('Postflight: dependencias compartidas saludables y verificadas.');
+        return;
+      }
+    }
+    throw new Error('Verificación post-instalación fallida; aún faltan componentes.');
   }
 
   async _bringupAndVerify(dockerProfile) {

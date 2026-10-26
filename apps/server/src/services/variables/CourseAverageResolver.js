@@ -1,43 +1,13 @@
 import BaseVariableResolver from './BaseVariableResolver.js';
-import CourseStatisticsService from '../CourseStatisticsService.js';
-import logger from '../../utils/logger.js';
 
+// Una media de actividad no equivale al promedio general del curso.
 export default class CourseAverageResolver extends BaseVariableResolver {
-  constructor(canvasGateway, courseStatisticsService = null) {
-    super('{{promedio_curso}}');
-    this.canvasGateway = canvasGateway;
-    this.courseStatisticsService = courseStatisticsService || new CourseStatisticsService(canvasGateway);
-  }
-
+  constructor() { super('{{promedio_curso}}'); }
   async resolve(context) {
-    const { courseId, assignmentId, teacherToken } = context;
-    if (!courseId || !assignmentId) {
-      return 'un promedio no calculado';
-    }
-
-    try {
-      const stats = await this.courseStatisticsService.getAssignmentStats(courseId, assignmentId, teacherToken);
-      
-      if (!stats) return 'un promedio no calculado';
-
-      if (stats.score) {
-        const parsedScore = parseFloat(stats.score);
-        if (!isNaN(parsedScore)) {
-          const formattedScore = Number(parsedScore.toFixed(1));
-          return this.sanitize(`un puntaje promedio de ${formattedScore}`);
-        }
-      }
-      if (stats.grade) {
-        const parsedGrade = parseFloat(stats.grade);
-        if (!isNaN(parsedGrade)) {
-          const formattedGrade = Number(parsedGrade.toFixed(1));
-          return this.sanitize(`una nota promedio de ${formattedGrade}`);
-        }
-      }
-      return 'un promedio no calculado';
-    } catch (error) {
-      logger.warn(`[CourseAverageResolver] Error resolviendo promedio: ${error.message}`);
-      return 'un promedio no calculado';
-    }
+    const value = context.canvasCourseAverage;
+    if (typeof value === 'string' && value.trim()) return this.sanitize(value.trim());
+    if (Number.isFinite(value?.mean) && Number.isFinite(value?.pointsPossible) && value.pointsPossible > 0)
+      return this.sanitize(value.mean + ' de ' + value.pointsPossible + ' puntos');
+    return null;
   }
 }

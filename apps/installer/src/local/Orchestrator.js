@@ -129,7 +129,7 @@ export class Orchestrator {
   async stopTlsProxy() {
     try {
       const { stopTlsProxy } = await import('../orchestration/tlsProxy.js');
-      stopTlsProxy();
+      await stopTlsProxy();
     } catch { /* ignore */ }
   }
 }

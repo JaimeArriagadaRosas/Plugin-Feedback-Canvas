@@ -1,7 +1,9 @@
 import db from './db.js';
 import EncryptionService from '../services/infrastructure/EncryptionService.js';
+import logger from '../utils/logger.js';
 
 export default class CanvasTokenRepository {
+  constructor() { this.unreadableRefreshTokens = new Set(); }
   async getToken(canvasSub) {
 
     const res = await db.query(
@@ -17,7 +19,7 @@ export default class CanvasTokenRepository {
 
     if (!accessToken) {
       if (process.env.STARTUP_MODE === '3') {
-        // En entorno local forzamos la eliminación del token dañado para limpiar la sesión
+        // In local environment we force deletion of damaged token to clear session
         await this.deleteToken(canvasSub);
       }
       return null;
@@ -35,6 +37,7 @@ export default class CanvasTokenRepository {
     const encAccess = EncryptionService.encrypt(accessToken);
     const encRefresh = refreshToken ? EncryptionService.encrypt(refreshToken) : null;
 
+    this.unreadableRefreshTokens.delete(canvasSub);
     await db.query(
       `INSERT INTO canvas_user_tokens (canvas_sub, access_token, refresh_token, expires_at)
        VALUES ($1, $2, $3, $4)
@@ -55,7 +58,12 @@ export default class CanvasTokenRepository {
     );
 
     return res.rows.map(row => {
-      const refreshToken = row.refresh_token ? EncryptionService.safeDecrypt(row.refresh_token, `Canvas RefreshToken sub ${row.canvas_sub} (Rotación)`) : null;
+      const refreshToken = row.refresh_token ? EncryptionService.safeDecrypt(row.refresh_token, `Canvas RefreshToken sub ${row.canvas_sub} (Rotation)`, true) : null;
+      if (row.refresh_token && !refreshToken && !this.unreadableRefreshTokens.has(row.canvas_sub)) {
+        this.unreadableRefreshTokens.add(row.canvas_sub);
+        logger.warn('[AUTH] Stored Canvas refresh token is unreadable for ' + row.canvas_sub + '; OAuth reauthorization is required.');
+      }
+      if (refreshToken) this.unreadableRefreshTokens.delete(row.canvas_sub);
       return {
         canvas_sub: row.canvas_sub,
         refresh_token: refreshToken,
@@ -65,7 +73,7 @@ export default class CanvasTokenRepository {
   }
 
   async deleteToken(canvasSub) {
-
+    this.unreadableRefreshTokens.delete(canvasSub);
     await db.query('DELETE FROM canvas_user_tokens WHERE canvas_sub = $1', [canvasSub]);
   }
 }

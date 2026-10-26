@@ -11,20 +11,21 @@ let viteProcess = null;
 export function spawnVite() {
   viteProcess = spawn('npm', ['run', 'dev'], {
     cwd: PLUGIN_DIR,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    detached: process.platform !== 'win32'
   });
   viteProcess.once('exit', () => { viteProcess = null; });
   return viteProcess;
 }
 
 export function stopVite() {
-  return stopChild(viteProcess);
+  return stopChild(viteProcess, { group: true });
 }
 
 export function spawnBackend() {
   const child = spawn('node', ['apps/server/src/server.js'], {
     cwd: PLUGIN_DIR,
-    // Abrimos canal IPC explícitamente para comunicación estricta
+    // Open IPC channel explicitly for strict communication
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   });
 
@@ -48,29 +49,32 @@ export function stopBackend(backend) {
   return stopChild(backend);
 }
 
-function stopChild(child) {
+function stopChild(child, { group = false } = {}) {
   return new Promise((resolve) => {
-    if (!child || child.killed) {
+    if (!child || child.exitCode != null || child.signalCode != null) {
       return resolve();
     }
-    const onExit = () => {
-      child.removeListener('error', onError);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.off('exit', finish); child.off('error', finish);
       resolve();
     };
-    const onError = () => {
-      child.removeListener('exit', onExit);
-      resolve();
+    const signal = sig => {
+      try { if (group && process.platform !== 'win32' && child.pid) process.kill(-child.pid,sig); else child.kill(sig); } catch { /* already exited */ }
     };
-    child.once('exit', onExit);
-    child.once('error', onError);
-    child.kill('SIGINT');
+    child.once('exit', finish); child.once('error', finish);
+    const timer = setTimeout(() => { signal('SIGTERM'); setTimeout(() => { signal('SIGKILL'); finish(); }, 1200).unref(); }, 3500);
+    signal('SIGINT');
   });
 }
 
 export function waitForBackend(backend) {
   return new Promise((resolve, reject) => {
     let settled = false;
-    let backendStarted = false; // Flag crucial para saber si llegó al evento ready
+    let backendStarted = false; // Crucial flag to know if it reached the ready event
 
     const finish = (fn) => {
       if (settled) return;
@@ -86,9 +90,9 @@ export function waitForBackend(backend) {
     
     const onExit = (code) => finish(() => {
       if (!backendStarted) {
-        reject(new Error(`El backend se cerró prematuramente antes de iniciar (código de salida: ${code})`));
+        reject(new Error(`The backend closed prematurely before starting (exit code: ${code})`));
       } else if (code !== 0 && code !== null) {
-        reject(new Error(`Backend cerrado inesperadamente con código ${code}`));
+        reject(new Error(`Backend closed unexpectedly with code ${code}`));
       } else {
         resolve();
       }
@@ -99,7 +103,7 @@ export function waitForBackend(backend) {
         backendStarted = true;
         finish(resolve);
       } else if (msg && msg.type === 'server-error') {
-        finish(() => reject(new Error(`Error reportado por el backend vía IPC: ${msg.message}`)));
+        finish(() => reject(new Error(`Error reported by the backend via IPC: ${msg.message}`)));
       }
     };
     
@@ -107,10 +111,10 @@ export function waitForBackend(backend) {
     backend.on('exit', onExit);
     backend.on('message', onMessage);
     
-    // 120s: Dar tiempo suficiente para el prompt de Admin de mkcert en Windows
+    // 120s: Give enough time for the mkcert Admin prompt on Windows
     const timer = setTimeout(() => {
       if (!backendStarted) {
-        finish(() => reject(new Error('Timeout de 120s esperando a que el backend reporte estado "server-ready" vía IPC.')));
+        finish(() => reject(new Error('120s timeout waiting for the backend to report "server-ready" state via IPC.')));
       }
     }, 120000); 
   });

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 import { boot } from './boot/logger.js';
 import { assertPortsAvailable, resolveStartupPorts } from './portManager.js';
-import { ask, showMainMenu } from './cli.js';
+import { ask, showMainMenu, MenuCancelledError } from './cli.js';
 import { runBlackBoxTests } from './testRunner.js';
 import { writeEnvOverrides } from './envWriter.js';
 import { spawnVite, spawnBackend, stopBackend, stopVite, waitForBackend, VITE_PORT, SERVER_PORT } from './process.js';
@@ -129,6 +129,7 @@ export async function main({ mode: requestedMode } = {}) {
   let backend = null;
   let localOrchestrator = null;
   let shutdownHandler = null;
+  let startupCompleted = false;
 
   try {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
@@ -138,6 +139,8 @@ export async function main({ mode: requestedMode } = {}) {
     }
 
     const mode = requestedMode || await showMainMenu();
+    if (mode === '0') { boot.info('Salida seleccionada. No se iniciaron servicios.'); return; }
+    if (!['1','2','3','4','5'].includes(mode)) throw new Error('Modo de inicio inválido: ' + mode);
     if (await handleSpecialModes(mode)) return;
 
     const checker = new StaticChecker(PLUGIN_DIR);
@@ -156,10 +159,12 @@ export async function main({ mode: requestedMode } = {}) {
       boot.success('Instancia local ya activa (PID '+portState.pid+'). Se reutilizan sus servicios; no se inicia otra ni se cierran puertos.');
       return;
     }
+    shutdownHandler = setupGracefulShutdown(() => backend, () => localOrchestrator, { isStarted: () => startupCompleted });
     await configureMode(mode, localOrchestrator, checker);
 
+    if (shutdownHandler.isStopping()) return;
     backend = await startServices(mode, localOrchestrator);
-    shutdownHandler = setupGracefulShutdown(backend, localOrchestrator);
+    if (shutdownHandler.isStopping()) return;
 
     if (mode === '3') {
       await localOrchestrator.waitForCanvasAndOpenBrowser();
@@ -172,16 +177,18 @@ export async function main({ mode: requestedMode } = {}) {
 
     boot.plain('');
     boot.plain('  ✨ Arranque completado. El plugin Feedback está operativo.');
+    startupCompleted = true;
     boot.plain('  Mantenga esta consola abierta. Presione Ctrl+C para detener.');
     boot.plain('');
 
   } catch (e) {
+    if (e instanceof MenuCancelledError) { process.exitCode = 130; return; }
     boot.error(`Error crítico: ${e.message}`);
     if (e.stack) boot.debug(e.stack);
     
     boot.info('Ejecutando limpieza por error (Graceful Shutdown)...');
     if (shutdownHandler) {
-      await shutdownHandler();
+      await shutdownHandler({ failure: true });
     } else {
       try {
         const { stopTlsProxy } = await import('./tlsProxy.js');

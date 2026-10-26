@@ -5,7 +5,7 @@ export function useTemplateEditor(template) {
   
   let initialContent = {
     alto: "Estimado {{nombre_estudiante}},\n\n¡Excelente trabajo en la actividad!\n\nSigue así.",
-    medio: "Estimado {{nombre_estudiante}},\n\nHas completado la actividad.\n\nEl promedio actual del curso es {{promedio_curso}}.\n\nTe sugerimos revisar los siguientes temas...",
+    medio: "Estimado {{nombre_estudiante}},\n\nHas completado la actividad.\n\nTe sugerimos revisar los siguientes temas...",
     bajo: "Estimado {{nombre_estudiante}},\n\nRevisa los aspectos pendientes de la actividad.\n\nNecesitas mejorar. Te sugerimos tutorías."
   };
 
@@ -31,10 +31,13 @@ export function useTemplateEditor(template) {
 
   useEffect(() => {
     const currentText = content[currentTab] || "";
-    let text = currentText
-      .replace(/{{nombre_estudiante}}/g, "Juan Pérez")
-      .replace(/{{calificacion}}/g, "3.5")
-      .replace(/{{promedio_curso}}/g, "5.2");
+    const text = currentText
+      .split('\n')
+      .filter(line => !line.includes('{{promedio_curso}}'))
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/{{nombre_estudiante}}/g, 'Juan Pérez')
+      .replace(/{{calificacion}}/g, '42 de 50 puntos');
     setPreview(text);
   }, [content, currentTab]);
 

@@ -3,7 +3,33 @@ import sanitizeHtml from 'sanitize-html';
 import { DomainError } from '../../utils/errors.js';
 
 const xmlDecode = (s) => String(s).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
-const getText = (xml) => [...xml.matchAll(/<(?:w:t|a:t)(?:\s[^>]*)?>([\s\S]*?)<\/(?:w:t|a:t)>/g)].map(m => xmlDecode(m[1])).join('');
+// Escaneo lineal de etiquetas XML, sin expresiones regulares con retroceso.
+function extractBlocks(xml, tags) {
+  const output = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    let start = -1, tag = '';
+    for (const candidate of tags) {
+      const at = xml.indexOf('<' + candidate, cursor);
+      if (at !== -1 && (start === -1 || at < start)) { start = at; tag = candidate; }
+    }
+    if (start === -1) break;
+    const boundary = xml[start + tag.length + 1];
+    if (boundary !== '>' && boundary !== ' ' && boundary !== '\t' && boundary !== '\n') {
+      cursor = start + tag.length + 1;
+      continue;
+    }
+    const openEnd = xml.indexOf('>', start);
+    if (openEnd === -1) break;
+    const close = '</' + tag + '>';
+    const end = xml.indexOf(close, openEnd + 1);
+    if (end === -1) { cursor = openEnd + 1; continue; }
+    output.push(xml.slice(openEnd + 1, end));
+    cursor = end + close.length;
+  }
+  return output;
+}
+const getText = xml => extractBlocks(xml, ['w:t', 'a:t']).map(xmlDecode).join('');
 
 export default class DocumentToMarkdownConverter {
   async convert(buffer, mime = '', filename = '') {
@@ -32,7 +58,7 @@ export default class DocumentToMarkdownConverter {
       const zip = await JSZip.loadAsync(buffer);
       const xml = await zip.file('word/document.xml')?.async('string');
       if (!xml) throw new DomainError('DOCX no válido', 422, 'INVALID_DOCUMENT');
-      markdown = [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map(([p]) => {
+      markdown = extractBlocks(xml, ['w:p']).map((p) => {
         const text = getText(p).trim();
         const heading = p.match(/<w:pStyle\s+w:val="Heading([1-6])"/)?.[1];
         return heading ? '#'.repeat(Number(heading)) + ' ' + text : text;
@@ -47,8 +73,8 @@ export default class DocumentToMarkdownConverter {
       const chunks = [];
       for (const [i, name] of slides.entries()) {
         const xml = await zip.file(name).async('string');
-        chunks.push('## Diapositiva ' + (i+1) + '\n\n' + [...xml.matchAll(/<a:p(?:\s[^>]*)?>[\s\S]*?<\/a:p>/g)]
-          .map(([p]) => getText(p).trim()).filter(Boolean).join('\n\n'));
+        chunks.push('## Diapositiva ' + (i+1) + '\n\n' + extractBlocks(xml, ['a:p'])
+          .map((p) => getText(p).trim()).filter(Boolean).join('\n\n'));
       }
       markdown = chunks.join('\n\n');
       visualRequired = Object.keys(zip.files).some(n => n.startsWith('ppt/media/'));

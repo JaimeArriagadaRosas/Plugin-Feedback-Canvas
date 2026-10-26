@@ -6,60 +6,67 @@ export default class TokenRotationJob {
     this.tokenRepo = canvasTokenManager.tokenRepo;
     this.intervalMs = intervalMs;
     this.timer = null;
+    this.initialTimer = null;
+    this.inFlight = null;
+    this.running = false;
+    this.wasStarted = false;
   }
 
   start() {
-    if (this.timer) {
-      return;
-    }
-    logger.info('[JOBS] Iniciando job proactivo de rotación de tokens.');
-    // Ejecutar inicialmente con un ligero retraso (5s) para no ensuciar los logs de "Arranque completado"
-    setTimeout(() => {
-      this.run().catch(e => logger.error(`[JOBS] Error inicial: ${e.message}`));
+    if (this.running) return;
+    this.running = true;
+    this.wasStarted = true;
+    logger.info('[JOBS] Starting proactive token rotation job.');
+    this.initialTimer = setTimeout(() => {
+      this.initialTimer = null;
+      if (this.running) this.run().catch(e => logger.error('[JOBS] Initial rotation failed: ' + e.message));
     }, 5000);
-    
-    // Configurar intervalo
     this.timer = setInterval(() => {
-      this.run().catch(e => logger.error(`[JOBS] Error en ejecución: ${e.message}`));
+      if (this.running) this.run().catch(e => logger.error('[JOBS] Rotation failed: ' + e.message));
     }, this.intervalMs);
   }
 
   stop() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-      logger.info('[JOBS] Job detenido.');
-    }
+    this.running = false;
+    if (this.initialTimer) clearTimeout(this.initialTimer);
+    if (this.timer) clearInterval(this.timer);
+    this.initialTimer = null;
+    this.timer = null;
+    logger.info('[JOBS] Job stopped.');
+    // Already-running OAuth requests cannot be aborted safely here; callers can
+    // await this promise during shutdown before closing the PostgreSQL pool.
+    return this.inFlight ?? Promise.resolve();
   }
 
   async run() {
-    logger.debug('[JOBS] Escaneando tokens próximos a expirar...');
+    if (this.inFlight) return this.inFlight;
+    const work = this._scan();
+    this.inFlight = work;
+    try { return await work; } finally { if (this.inFlight === work) this.inFlight = null; }
+  }
+
+  async _scan() {
+    logger.debug('[JOBS] Scanning expiring tokens...');
     try {
-      // 15 minutos de margen
-      const upcomingExpiryThreshold = new Date(Date.now() + 15 * 60 * 1000);
-      
-      const expiringTokens = await this.tokenRepo.getExpiringTokens(upcomingExpiryThreshold);
-      
-      if (!expiringTokens || expiringTokens.length === 0) {
-        return; // Nada que refrescar
-      }
-
-      logger.info(`\n[JOBS] Se encontraron ${expiringTokens.length} tokens próximos a expirar. Refrescando...`);
-
-      for (const tokenData of expiringTokens) {
-        if (!tokenData.refresh_token) {
-          logger.debug(`[JOBS] Saltando token de ${tokenData.canvas_sub} (no tiene refresh_token).`);
-          continue;
+      const threshold = new Date(Date.now() + 15 * 60 * 1000);
+      const tokens = await this.tokenRepo.getExpiringTokens(threshold);
+      if (!tokens?.length) return;
+      logger.info('[JOBS] Found ' + tokens.length + ' expiring tokens. Refreshing...');
+      for (const tokenData of tokens) {
+        if (!this.running && this.timer === null && this.initialTimer === null) {
+          // Direct calls to run() in diagnostics still work, while a stopped
+          // live job must not initiate additional refresh requests.
+          if (this.wasStarted) break;
         }
-
+        if (!tokenData.refresh_token) continue;
         try {
           await this.tokenManager.refreshToken(tokenData.canvas_sub, tokenData.refresh_token);
         } catch (err) {
-          logger.warn(`[JOBS] No se pudo rotar el token proactivamente para ${tokenData.canvas_sub}: ${err.message}`);
+          logger.warn('[JOBS] Could not rotate token for ' + tokenData.canvas_sub + ': ' + err.message);
         }
       }
-    } catch (e) {
-      logger.error(`[JOBS] Error crítico al escanear/rotar tokens: ${e.message}`);
+    } catch (err) {
+      logger.error('[JOBS] Rotation scan failed: ' + err.message);
     }
   }
 }

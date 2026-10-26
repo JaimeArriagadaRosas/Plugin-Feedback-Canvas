@@ -28,6 +28,16 @@ export async function autoStartLocalDbContainer() {
         // Ignorar si el ps falla y proceder a iniciar
       }
 
+      const { SharedDependencyRecovery } = await import('../../../installer/src/recovery/SharedDependencyRecovery.js');
+      const decision = await new SharedDependencyRecovery().plan(projectRoot);
+      if (decision.kind === 'reuse') {
+        logger.info('[DB] Dependencias compartidas compatibles; sin cambios Docker.');
+        return true;
+      }
+      if (decision.kind === 'block') {
+        logger.warn('[DB] Arranque de contenedores bloqueado para proteger servicios compartidos: ' + decision.reason);
+        return false;
+      }
       logger.info('[DB] Base de datos inactiva o no encontrada. Encendiendo contenedor de PostgreSQL (Docker)...');
       await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'], { cwd: projectRoot });
       logger.info('[DB] Contenedor iniciado y PostgreSQL está listo (healthy).');
