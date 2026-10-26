@@ -1,8 +1,11 @@
 import { stopBackend, stopVite } from './process.js';
 import { boot } from './boot/logger.js';
 
-export function setupGracefulShutdown(backend, localOrchestrator) {
+export function setupGracefulShutdown(backend, localOrchestrator, { isStarted = () => true } = {}) {
+  const getBackend = typeof backend === 'function' ? backend : () => backend;
+  const getOrchestrator = typeof localOrchestrator === 'function' ? localOrchestrator : () => localOrchestrator;
   let shutdownPromise;
+  let failed = false;
   const onSignal = () => { void shutdown().catch(error => { boot.error(error.message); process.exit(1); }); };
   const onInput = key => { if (key === '\u0003' || key === '\u0004') onSignal(); };
   let rawOwned = false;
@@ -37,18 +40,20 @@ export function setupGracefulShutdown(backend, localOrchestrator) {
         boot.warn?.(label + ': ' + error.message);
       } finally { clearTimeout(timer); }
     }
-    await step('TLS proxy', async () => localOrchestrator?.stopTlsProxy?.());
-    await step('Backend', async () => stopBackend(backend));
+    await step('TLS proxy', async () => getOrchestrator()?.stopTlsProxy?.());
+    await step('Backend', async () => stopBackend(getBackend()));
     await step('Vite', async () => stopVite());
     boot.success(errors ? 'Shutdown finished with warnings.' : 'Shutdown completed.');
     boot.endStage();
-    process.exit(errors ? 1 : 0);
+    process.exit(errors || failed ? 1 : isStarted() ? 0 : 130);
   }
 
-  function shutdown() {
+  function shutdown({ failure = false } = {}) {
+    if (failure) failed = true;
     if (!shutdownPromise) shutdownPromise = performShutdown();
     return shutdownPromise;
   }
+  shutdown.isStopping = () => Boolean(shutdownPromise);
   process.on('SIGINT', onSignal);
   process.on('SIGTERM', onSignal);
   return shutdown;

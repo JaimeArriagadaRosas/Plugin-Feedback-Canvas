@@ -129,6 +129,7 @@ export async function main({ mode: requestedMode } = {}) {
   let backend = null;
   let localOrchestrator = null;
   let shutdownHandler = null;
+  let startupCompleted = false;
 
   try {
     const setupCompletePath = path.join(PLUGIN_DIR, '.setup_complete');
@@ -158,10 +159,13 @@ export async function main({ mode: requestedMode } = {}) {
       boot.success('An existing local instance (PID '+portState.pid+') is already running. Its services will be reused; no ports will be closed.');
       return;
     }
+    // Register before the long-running Canvas/Docker/LTI preparation.
+    shutdownHandler = setupGracefulShutdown(() => backend, () => localOrchestrator, { isStarted: () => startupCompleted });
     await configureMode(mode, localOrchestrator, checker);
 
+    if (shutdownHandler.isStopping()) return;
     backend = await startServices(mode, localOrchestrator);
-    shutdownHandler = setupGracefulShutdown(backend, localOrchestrator);
+    if (shutdownHandler.isStopping()) return;
 
     if (mode === '3') {
       await localOrchestrator.waitForCanvasAndOpenBrowser();
@@ -174,6 +178,7 @@ export async function main({ mode: requestedMode } = {}) {
 
     boot.plain('');
     boot.plain('  ✨ Startup completed. The Feedback plugin is operational.');
+    startupCompleted = true;
     boot.plain('  Keep this console open. Press Ctrl+C to stop.');
     boot.plain('');
 
@@ -184,7 +189,7 @@ export async function main({ mode: requestedMode } = {}) {
 
     boot.info('Running error cleanup (Graceful Shutdown)...');
     if (shutdownHandler) {
-      await shutdownHandler();
+      await shutdownHandler({ failure: true });
     } else {
       try {
         const { stopTlsProxy } = await import('./tlsProxy.js');
