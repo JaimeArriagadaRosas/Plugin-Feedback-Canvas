@@ -1,46 +1,32 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import request from 'supertest';
-// Supongamos que app.js exporta la instancia de Express sin el app.listen
-// Dependiendo de tu arquitectura, esto se importa desde tu archivo de setup.
-// import app from '../../src/app.js'; 
+import pg from 'pg';
 
+// Opt-in: never connect to production or the normal local application database.
 const describeDocker = process.env.RUN_DOCKER_TESTS === 'true' ? describe : describe.skip;
 
-describeDocker('Backend Smoke Test con Testcontainers', () => {
+describeDocker('Integración aislada PostgreSQL del backend', () => {
   let pgContainer;
-  let client;
+  let isolatedPool;
 
   beforeAll(async () => {
-    // 1. Levantar contenedor de base de datos efímero
     pgContainer = await new PostgreSqlContainer('postgres:15-alpine')
       .withDatabase('test_db')
       .withUsername('test_user')
       .withPassword('test_pass')
       .start();
-
-    // 2. Aquí iría la inyección de las variables de entorno para que el servidor o DB client conecten a testcontainers
-    process.env.DB_HOST = pgContainer.getHost();
-    process.env.DB_PORT = pgContainer.getPort();
-    process.env.DB_NAME = 'test_db';
-    process.env.DB_USER = 'test_user';
-    process.env.DB_PASSWORD = 'test_pass';
-
-    // (Opcional) Correr migraciones o inicializar la DB aquí
-  }, 60000); // 60s timeout for testcontainers pull and start
+    isolatedPool = new pg.Pool({ connectionString: pgContainer.getConnectionUri(),
+      connectionTimeoutMillis: 5000, max: 2 });
+  }, 120000);
 
   afterAll(async () => {
-    // 3. Destruir el contenedor tras las pruebas
-    if (pgContainer) {
-      await pgContainer.stop();
-    }
+    if (isolatedPool) await isolatedPool.end();
+    if (pgContainer) await pgContainer.stop();
   });
 
-  it('debería ejecutar una prueba aislada sin tocar la DB real', async () => {
-    expect(pgContainer.getHost()).toBeDefined();
+  it('consulta una base efímera sin tocar la base configurada', async () => {
+    const { rows } = await isolatedPool.query('SELECT current_database() AS database_name, 1 AS health');
+    expect(rows).toEqual([{ database_name: 'test_db', health: 1 }]);
     expect(pgContainer.getPort()).toBeGreaterThan(0);
-    // Ejemplo si app estuviera expuesta:
-    // const res = await request(app).get('/api/health');
-    // expect(res.status).toBe(200);
   });
 });
