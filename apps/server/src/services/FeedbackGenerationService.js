@@ -49,35 +49,33 @@ export default class FeedbackGenerationService {
   // Existing generation orchestration is intentionally preserved during score-policy parity.
   // eslint-disable-next-line max-lines-per-function
   async generateFeedback(courseId, assignmentId, studentId, templateId, currentGrade, teacherId, metadata = {}) {
-    try {
-      logger.debug(`[DEBUG] generateFeedback started for student ${studentId}. isRegenerate = ${metadata.isRegenerate}`);
-      
-      const existingFeedbacks = await this.feedbackRepo.findByStudent(studentId, courseId);
-      const validation = FeedbackValidator.validateGeneration(existingFeedbacks, assignmentId, studentId, metadata.isRegenerate);
-      
-      if (!validation.isValid) {
-        return validation.skipData;
+    logger.debug(`[DEBUG] generateFeedback started for student ${studentId}. isRegenerate = ${metadata.isRegenerate}`);
+
+    const existingFeedbacks = await this.feedbackRepo.findByStudent(studentId, courseId);
+    const validation = FeedbackValidator.validateGeneration(existingFeedbacks, assignmentId, studentId, metadata.isRegenerate);
+    if (!validation.isValid) return validation.skipData;
+
+    const pending = existingFeedbacks.find(fb => fb.tarea_id == assignmentId && (fb.estado === 'PENDIENTE' || fb.estado === 'EDITADO' || !fb.estado));
+    logger.debug(`[DEBUG] student ${studentId} proceeding to fetchCanvasData`);
+
+    const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
+    const rawGrade = canvasData.submission?.score ?? canvasData.submission?.entered_score ?? canvasData.submission?.unposted_score;
+    const explicitGrade = currentGrade !== undefined && currentGrade !== null && currentGrade !== '';
+    if (!explicitGrade && (rawGrade === null || rawGrade === undefined || rawGrade === '' ||
+      (canvasData.submission?.submission_type === 'online_quiz' && canvasData.submission?.workflow_state === 'pending_review'))) {
+      if (canvasData.submission?.submission_type === 'online_quiz') {
+        const answers = await this.canvasGateway.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
+        canvasData.submission = { ...canvasData.submission, body: null, answers };
       }
+      return this.ungraded.generate({ courseId, assignmentId, studentId, teacherId, pending, canvasData, metadata });
+    }
 
-      const pending = existingFeedbacks.find(fb => fb.tarea_id == assignmentId && (fb.estado === 'PENDIENTE' || fb.estado === 'EDITADO' || !fb.estado));
+    return this._generateGradedFeedback({ courseId, assignmentId, studentId, templateId, currentGrade, teacherId, metadata, pending, canvasData });
+  }
 
-      logger.debug(`[DEBUG] student ${studentId} proceeding to fetchCanvasData`);
-
-      const canvasData = await this._fetchCanvasData(courseId, assignmentId, studentId, teacherId);
-      const { assignment, assignmentName, student, questions, rubric } = canvasData;
-
-      const rawGrade = canvasData.submission?.score ?? canvasData.submission?.entered_score ?? canvasData.submission?.unposted_score;
-      const explicitGrade = currentGrade !== undefined && currentGrade !== null && currentGrade !== '';
-      if (!explicitGrade && (rawGrade === null || rawGrade === undefined || rawGrade === '' ||
-        (canvasData.submission?.submission_type === 'online_quiz' && canvasData.submission?.workflow_state === 'pending_review'))) {
-        if (canvasData.submission?.submission_type === 'online_quiz') {
-          const answers = await this.canvasGateway.getQuizAnswers(courseId, assignmentId, studentId, teacherId);
-          canvasData.submission = { ...canvasData.submission, body: null, answers };
-        }
-        return this.ungraded.generate({ courseId, assignmentId, studentId, teacherId, pending, canvasData, metadata });
-      }
-
-      const finalCourseName = metadata.courseName || `Curso ${courseId}`;
+  async _generateGradedFeedback({ courseId, assignmentId, studentId, templateId, currentGrade, teacherId, metadata, pending, canvasData }) {
+    const { assignment, assignmentName, student, questions, rubric } = canvasData;
+    const finalCourseName = metadata.courseName || `Curso ${courseId}`;
       const finalAssignmentName = metadata.assignmentName || assignmentName || assignment?.name || `Tarea ${assignmentId}`;
       const finalStudentName = metadata.studentName || student?.name || 'Estudiante';
 
@@ -176,9 +174,6 @@ export default class FeedbackGenerationService {
           profile: { level: profile.level, trend: profile.trend, average: profile.average }
         }
       };
-    } catch (error) {
-      throw error;
-    }
   }
 
   async _appendActiveVariableData(context, activeVariables = []) {
