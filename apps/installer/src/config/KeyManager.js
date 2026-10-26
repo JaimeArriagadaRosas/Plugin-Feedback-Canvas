@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import crypto from 'crypto';
 import { getEnvVar, updateEnvVars } from '../orchestration/envWriter.js';
 
@@ -18,7 +20,20 @@ export default class KeyManager {
     for (const key of keysToValidate) {
       // Read directly from .env and environment variables
       // eslint-disable-next-line security/detect-object-injection
-      const currentValue = process.env[key] || getEnvVar(pluginDir, key);
+      const storedValue = getEnvVar(pluginDir, key);
+      const runtimeValue = process.env[key];
+      const currentValue = storedValue || runtimeValue;
+      // A persisted installation must never silently replace its encryption key.
+      // An old database may contain credentials requiring the original key.
+      if (key === 'ENCRYPTION_KEY' && storedValue && runtimeValue && storedValue !== runtimeValue) {
+        throw new Error('ENCRYPTION_KEY mismatch between .env and process environment. No key was changed.');
+      }
+      if (key === 'ENCRYPTION_KEY' &&
+          (!currentValue || currentValue.length !== EXPECTED_KEY_HEX_LENGTH || currentValue.includes('your_')) &&
+          existsSync(join(pluginDir, '.setup_complete'))) {
+        throw new Error('Existing installation: ENCRYPTION_KEY missing or invalid. Restore the previous key; refusing automatic rotation.');
+      }
+
       
       // Validate if the key is missing or if it is a placeholder (e.g. "your_encryption_key_here")
       // or if its length is invalid.

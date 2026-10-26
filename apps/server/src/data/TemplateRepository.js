@@ -1,3 +1,4 @@
+import { normalizeSeedTemplateContent } from '../services/templates/normalizeSeedTemplateContent.js';
 import db from './db.js';
 
 /**
@@ -73,6 +74,19 @@ export default class TemplateRepository {
         ('Detailed Feedback', '{"alto":"Dear {{student_name}},\\n\\nYou have shown an outstanding mastery of the concepts, with a very solid foundation that shows a great level of understanding and dedication.\\n\\nKeep it up, excellent performance!\\n\\nRegards,\\nTeacher","medio":"Dear {{student_name}},\\n\\nYou have a good foundation, but there are specific areas we need to reinforce to achieve full mastery of the topics covered in this assessment.\\n\\nI encourage you to review the study material.\\n\\nRegards,\\nTeacher","bajo":"Dear {{student_name}},\\n\\nIt is essential that we review the content covered in class, as it is evident that key concepts are not yet consolidated.\\n\\nPlease contact me to clarify doubts or attend tutoring hours.\\n\\nRegards,\\nTeacher"}', NULL),
         ('Peer Review', '{"alto":"Hello {{student_name}},\\n\\nYour peers and I agree that your work is outstanding and adds great value to the peer review.\\n\\nCongratulations!\\n\\nRegards,\\nTeacher","medio":"Hello {{student_name}},\\n\\nAccording to the peer review, your performance is average, presenting an adequate job but with improvement opportunities identified by your peers.\\n\\nKeep working!\\n\\nRegards,\\nTeacher","bajo":"Hello {{student_name}},\\n\\nThe peer review indicates there are significant weaknesses in your submission that must be addressed, according to the co-evaluation consensus.\\n\\nReview your peers'' comments.\\n\\nRegards,\\nTeacher"}', NULL);
       `);
+    }
+
+    // Normalize persisted default templates BEFORE copying them to a new teacher.
+    // Only templates with profesor_id IS NULL are handled here.
+    const seedRows = await db.query(
+      'SELECT id, contenido FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL'
+    );
+    for (const seed of seedRows.rows) {
+      const normalized = normalizeSeedTemplateContent(seed.contenido);
+      if (normalized !== seed.contenido) {
+        await db.query('UPDATE Plantilla_Feedback SET contenido = $1 WHERE id = $2 AND profesor_id IS NULL',
+          [normalized, seed.id]);
+      }
     }
 
     await db.query(

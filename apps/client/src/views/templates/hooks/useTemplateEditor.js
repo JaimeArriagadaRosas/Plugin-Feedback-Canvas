@@ -33,7 +33,7 @@ export function useTemplateEditor(template) {
     const currentText = content[currentTab] || "";
     const text = currentText
       .split('\n')
-      .filter(line => !line.includes('{{course_average}}'))
+      .map(line => line.replaceAll("{{course_average}}", "[Course average unavailable in preview]"))
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .replace(/{{student_name}}/g, "John Doe")
