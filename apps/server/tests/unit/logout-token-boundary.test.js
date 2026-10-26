@@ -1,5 +1,7 @@
 import {describe,it,expect,vi,beforeEach} from 'vitest';
 vi.mock('../../src/security/envGuard.js',()=>({isProduction:()=>false}));
+vi.mock('../../src/data/db.js',()=>({default:{query:vi.fn(),pool:{connect:vi.fn()}}}));
+vi.mock('../../src/data/UsuarioRepository.js',()=>({default:class UsuarioRepository {}}));
 import LocalAuthController from '../../src/controllers/AuthController.local.js';
 const controller=new LocalAuthController();
 const response=()=>({clearCookie:vi.fn(),json:vi.fn().mockReturnValue({ok:true})});
