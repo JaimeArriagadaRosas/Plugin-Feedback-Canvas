@@ -62,3 +62,13 @@ Real API calls passed for PPTX, PDF, and text; negative conversion tests passed 
 - Replaced computed response-property lookups with `Object.entries` and fixed six CI lint errors: document XML scan, quiz access, and `FeedbackGenerationService` method length. Full ESLint run passed.
 - Existing local Docker containers did not include Canvas web/API; real ungraded Classic Quiz E2E cannot be accepted without that service. No Gemini request or database mutation was made for the blocked quiz.
 - Do not publish or merge the English branch until the clean local Classic Quiz fixture yields a verifiable student-answer row and a real qualitative draft with null grades, followed by full validation.
+
+## E2E closure — October 26, 2026
+
+- Completed the isolated Classic Quiz through official Canvas API calls (quiz 7, assignment 17, student 9, Anna Brown). The original problematic quiz 6 remains unchanged.
+- The Canvas essay attempt is `pending_review`; Canvas stores provisional `score=0`, `grade="0"` for the essay. The plugin treats the pending-review attempt as qualitative and persists null `nota_canvas` / `nota_chile`; Canvas's values must not be described as null.
+- New `tools/diagnostics/prepare-english-quiz-api.mjs` creates or reuses the exact test quiz and student submission, validates the pending-review state and refuses a different grade; `run-english-quiz-e2e.sh` boots option 3 when necessary, requests the Student Analysis report and runs readonly, preflight and generation stages.
+- Readonly answer extraction **PASS**: one answer with actual English text from Canvas. Content preflight **PASS**: 279 chars, zero AI calls and zero DB writes.
+- First Gemini attempt failed on an external 503 (high model demand), before persistence. A subsequent controlled run completed successfully with Gemini 3.6 Flash and exactly one pending qualitative draft: feedback ID 4, 1,105 characters, English, no Canvas publishing, no Canvas grade change.
+- `feedback-e2e.mjs` now rejects generate requests when any feedback record already exists for the same student/course/assignment, preventing duplicate drafts and unnecessary Gemini calls on a rerun.
+- Execution log: `logs/english-quiz-api-e2e-20261026.log`. End-to-end script returned exit code 0.

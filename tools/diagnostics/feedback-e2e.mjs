@@ -81,6 +81,7 @@ const previous=await repository.findByStudent(String(student),String(course));
 const existing=previous.filter(f=>String(f.tarea_id)===String(assignment));
 record('EXISTING_FEEDBACK',{count:existing.length,states:existing.map(f=>f.estado)});
 if(existing.some(f=>['ENVIADO','APROBADO'].includes(f.estado)))throw Error('SKIP: approved or sent feedback must not be overwritten');
+if(action==='generate' && existing.length)throw Error('SKIP: existing feedback for this submission; refusing duplicate Gemini request');
 const pending=existing.find(f=>['PENDIENTE','EDITADO',null,undefined].includes(f.estado));
 const configuration=new IAConfigManager(new TokenRepository(),new ConfigRepository());
 const service=new UngradedFeedbackService(gateway,repository,configuration);

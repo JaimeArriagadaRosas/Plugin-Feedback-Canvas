@@ -38,13 +38,12 @@ docker inspect canvas-lms-master-web-1 >/dev/null || fail "Canvas web container 
 if [ ! -s tmp/canvas_local_users.json ]; then
   fail "Local Canvas test user credentials were not initialized by option 3"
 fi
-echo "[E2E] Ensuring the isolated ungraded English quiz fixture..."
-FIXTURE="$(docker exec -e CONFIRM_ENGLISH_QUIZ_FIXTURE=YES -i canvas-lms-master-web-1 bundle exec rails runner - < tools/diagnostics/create-clean-english-quiz-fixture.rb)" || fail "Could not create/verify local quiz fixture"
+echo "[E2E] Creating/reusing an isolated quiz via the official Canvas API..."
+FIXTURE="$(node tools/diagnostics/prepare-english-quiz-api.mjs)" || fail "Canvas API quiz fixture failed"
 echo "$FIXTURE"
-QUIZ="$(printf '%s' "$FIXTURE" | grep -oE 'quiz=[0-9]+' | tail -1 | cut -d= -f2)"
-ASSIGNMENT="$(printf '%s' "$FIXTURE" | grep -oE 'assignment=[0-9]+' | tail -1 | cut -d= -f2)"
-STUDENT="$(printf '%s' "$FIXTURE" | grep -oE 'student=[0-9]+' | tail -1 | cut -d= -f2)"
-[ -n "$QUIZ" ] && [ -n "$ASSIGNMENT" ] && [ -n "$STUDENT" ] || fail "Invalid fixture result"
+IDENTIFIERS="$(printf '%s' "$FIXTURE" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const line=s.trim().split(String.fromCharCode(10)).find(x=>x.includes("FIXTURE_READY"));if(!line)process.exit(2);const v=JSON.parse(line);console.log([v.quiz,v.assignment,v.student].join(" "))})')" || fail "Quiz fixture result missing"
+read -r QUIZ ASSIGNMENT STUDENT <<< "$IDENTIFIERS"
+[ -n "$QUIZ" ] && [ -n "$ASSIGNMENT" ] && [ -n "$STUDENT" ] || fail "Invalid fixture IDs"
 echo "[E2E] Requesting Canvas Student Analysis for the fixture..."
 node tools/diagnostics/request-quiz-student-analysis.mjs --course=1 --quiz="$QUIZ" --create-report || true
 REPORT_READY=0
