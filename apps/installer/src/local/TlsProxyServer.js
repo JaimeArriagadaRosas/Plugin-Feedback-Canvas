@@ -162,11 +162,14 @@ export async function startTlsProxy() {
   return server;
 }
 
-export function stopTlsProxy() {
-  void close(serverInstance);
-  void close(proxyInstance);
+export async function stopTlsProxy() {
+  const server = serverInstance;
+  const proxy = proxyInstance;
   serverInstance = null;
   proxyInstance = null;
+  // closeAllConnections releases existing keep-alive sockets after requests drain.
+  server?.closeIdleConnections?.();
+  await Promise.all([close(server), close(proxy)]);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

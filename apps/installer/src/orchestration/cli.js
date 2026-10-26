@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import pc from 'picocolors';
 import { confirm, input } from '@inquirer/prompts';
+export class MenuCancelledError extends Error { constructor() { super('Menu cancelled'); this.name = 'MenuCancelledError'; } }
 
 // Load .env so NON_INTERACTIVE/STARTUP_MODE are available
 dotenv.config({ quiet: true });
@@ -12,8 +13,9 @@ export async function ask(question, defaultValue) {
     });
     const trimmed = answer.trim();
     return trimmed || (defaultValue !== undefined ? String(defaultValue) : '');
-  } catch {
-    return defaultValue !== undefined ? String(defaultValue) : '';
+  } catch (error) {
+    if (error?.name === 'ExitPromptError' || error?.name === 'AbortPromptError' || error?.name === 'AbortError') throw new MenuCancelledError();
+    throw error;
   }
 }
 
@@ -31,6 +33,7 @@ export async function showMainMenu() {
     console.log('  ' + pc.yellow('[3]') + ' Run Canvas LMS Locally ' + pc.dim('(Docker Development Environment)'));
     console.log('  ' + pc.red('[4]') + ' Black-Box Validation ' + pc.dim('(Health Checks & E2E Tests)'));
     console.log('  ' + pc.cyan('[5]') + ' Switch Language / Branch ' + pc.dim('(English / Spanish)'));
+    console.log('  ' + pc.dim('[0] Exit'));
     console.log(pc.blue('========================================================='));
     console.log(`- Auto-selected: ${mode} (NON_INTERACTIVE mode)`);
     return mode;
@@ -44,9 +47,13 @@ export async function showMainMenu() {
   console.log('  ' + pc.yellow('[3]') + ' Run Canvas LMS Locally ' + pc.dim('(Docker Development Environment)'));
   console.log('  ' + pc.red('[4]') + ' Black-Box Validation ' + pc.dim('(Health Checks & E2E Tests)'));
   console.log('  ' + pc.cyan('[5]') + ' Switch Language / Branch ' + pc.dim('(English / Spanish)'));
+  console.log('  ' + pc.dim('[0] Exit'));
   console.log(pc.blue('========================================================='));
-  const mode = await ask('Select an option (1-5)', '3');
-  return mode;
+  while (true) {
+    const mode = await ask('Select an option (0-5)', '3');
+    if (['0','1','2','3','4','5'].includes(mode)) return mode;
+    console.log(pc.yellow('Invalid option. Choose 0 through 5.'));
+  }
 }
 
 export async function showRoleMenu() {
@@ -84,7 +91,8 @@ export async function askConfirm(message, defaultVal = false) {
       message: message,
       default: defaultVal
     });
-  } catch {
-    return defaultVal;
+  } catch (error) {
+    if (error?.name === 'ExitPromptError' || error?.name === 'AbortPromptError' || error?.name === 'AbortError') throw new MenuCancelledError();
+    throw error;
   }
 }

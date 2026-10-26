@@ -36,3 +36,28 @@ F. A watchdog timer should guarantee control returns to the shell **after** clea
 
 ## Spanish parity later
 Spanish main is not modified. Port the same cancellation semantics, coordinator, ownership checks, process termination, and exact tests after proving the English implementation. Spanish UI must say `[0] Salir` and avoid auto-running option 3 on cancellation.
+
+## Implementation and validation follow-up
+
+The following changes have now been implemented **in English only**:
+- Menu option `[0] Exit` and validation of choices 0–5; invalid entries are reprompted.
+- Distinct `MenuCancelledError` from Inquirer aborts; a Ctrl+C at the menu no longer defaults to 3. The main orchestration treats cancellation as exit code 130.
+- Prompt confirmation cancellation similarly propagates rather than silently taking a default response.
+- Graceful shutdown is idempotent: repeated calls share one Promise. Signal/raw-input listeners are unregistered, TTY mode restored, and TLS, backend and Vite are shut down in sequence with bounded waits.
+- Process termination has a bounded SIGINT → SIGTERM → SIGKILL escalation rather than indefinite waiting, and Vite launches in a Linux process group to target that invocation's descendants. No Docker container or volume is removed during shutdown.
+- TLS proxy `stopTlsProxy` now waits for the close callbacks rather than returning immediately.
+- The **existing early-startup window before the shutdown coordinator is registered** remains a limitation. Real SIGINT during Docker setup and browser opening requires a separate end-to-end test before claiming full coverage.
+
+Updated scenario tests `startup-menu-interrupt-diagnostics.test.js` and `startup-shutdown-diagnostics.test.js` now assert intended behavior, not the previously observed bugs. PTY integration `simulate-startup-pty.py` confirms Ctrl+C => 130; blank Enter => 3; option 0 => 0; invalid option 999 followed by 0 => 0. No Canvas or backend services were started by that test.
+
+### Relevance to OAuth refresh
+`CanvasTokenManager` now treats exhausted transient network/429/5xx/db-storage errors as a retryable service error (HTTP 503) rather than unauthorized (HTTP 401). Credentials are preserved; true Canvas invalid grants (400/401) still require reauthorization per existing policy. `token-refresh-extended.test.js` covers 429, 500, 502, 503, 504, connection timeout, failed DB persistence, independent user refreshes and no further refresh after stop.
+
+### Pending architecture improvements
+- Model startup and shutdown as a single lifecycle coordinator registered **before** any long-running setup; ensure interrupted preflight/install/startup cleans only resources created by the current attempt.
+- Run dedicated end-to-end SIGINT/SIGTERM tests after backend/proxy/Vite startup, with no shared containers touched; validate removal of owned listeners on 3000/5173/8443.
+- A browser logout should not be treated as OAuth revocation; a separate authenticated `Disconnect Canvas` workflow is required for intentional revocation and prevention of in-flight stale token writes.
+- Multiple simultaneous backend processes will need a distributed refresh lock and a token-generation compare-and-swap on persistence.
+
+### Spanish parity
+Port menu option `[0] Salir`, cancellation semantics, CLI confirmation propagation, shutdown cleanup, TLS proxy close and process ownership controls. Port the OAuth transient-failure classification and `token-refresh-extended.test.js` scenarios as well as prior `TokenRotationJob` and repository changes. Test independently in Spanish; do not cherry-pick unrelated English template changes.

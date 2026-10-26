@@ -11,14 +11,15 @@ let viteProcess = null;
 export function spawnVite() {
   viteProcess = spawn('npm', ['run', 'dev'], {
     cwd: PLUGIN_DIR,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    detached: process.platform !== 'win32'
   });
   viteProcess.once('exit', () => { viteProcess = null; });
   return viteProcess;
 }
 
 export function stopVite() {
-  return stopChild(viteProcess);
+  return stopChild(viteProcess, { group: true });
 }
 
 export function spawnBackend() {
@@ -48,22 +49,25 @@ export function stopBackend(backend) {
   return stopChild(backend);
 }
 
-function stopChild(child) {
+function stopChild(child, { group = false } = {}) {
   return new Promise((resolve) => {
-    if (!child || child.killed) {
+    if (!child || child.exitCode != null || child.signalCode != null) {
       return resolve();
     }
-    const onExit = () => {
-      child.removeListener('error', onError);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.off('exit', finish); child.off('error', finish);
       resolve();
     };
-    const onError = () => {
-      child.removeListener('exit', onExit);
-      resolve();
+    const signal = sig => {
+      try { if (group && process.platform !== 'win32' && child.pid) process.kill(-child.pid,sig); else child.kill(sig); } catch { /* already exited */ }
     };
-    child.once('exit', onExit);
-    child.once('error', onError);
-    child.kill('SIGINT');
+    child.once('exit', finish); child.once('error', finish);
+    const timer = setTimeout(() => { signal('SIGTERM'); setTimeout(() => { signal('SIGKILL'); finish(); }, 1200).unref(); }, 3500);
+    signal('SIGINT');
   });
 }
 

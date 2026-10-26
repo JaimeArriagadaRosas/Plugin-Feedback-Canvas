@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 import { boot } from './boot/logger.js';
 import { assertPortsAvailable, resolveStartupPorts } from './portManager.js';
-import { ask, showMainMenu } from './cli.js';
+import { ask, showMainMenu, MenuCancelledError } from './cli.js';
 import { runBlackBoxTests } from './testRunner.js';
 import { writeEnvOverrides } from './envWriter.js';
 import { spawnVite, spawnBackend, stopBackend, stopVite, waitForBackend, VITE_PORT, SERVER_PORT } from './process.js';
@@ -138,6 +138,8 @@ export async function main({ mode: requestedMode } = {}) {
     }
 
     const mode = requestedMode || await showMainMenu();
+    if (mode === '0') { boot.info('Exit selected. No services started.'); return; }
+    if (!['1','2','3','4','5'].includes(mode)) throw new Error('Invalid startup mode: ' + mode);
     if (await handleSpecialModes(mode)) return;
 
     const checker = new StaticChecker(PLUGIN_DIR);
@@ -176,6 +178,7 @@ export async function main({ mode: requestedMode } = {}) {
     boot.plain('');
 
   } catch (e) {
+    if (e instanceof MenuCancelledError) { process.exitCode = 130; return; }
     boot.error(`Critical error: ${e.message}`);
     if (e.stack) boot.debug(e.stack);
 

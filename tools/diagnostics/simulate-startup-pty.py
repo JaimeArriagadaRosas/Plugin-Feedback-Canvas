@@ -19,6 +19,7 @@ def exercise(name, reply):
     buf=b''
     started=time.monotonic()
     sent=False
+    retry_sent=False
     try:
         while time.monotonic()-started<7:
             readable,_,_=select.select([master],[],[],0.1)
@@ -34,6 +35,9 @@ def exercise(name, reply):
                     time.sleep(0.2)
                     os.write(master,reply)
                     sent=True
+                if name == 'invalid_choice' and sent and not retry_sent and b'Invalid option' in buf:
+                    os.write(master,b'0\r')
+                    retry_sent=True
             if child.poll() is not None and not readable:
                 break
         try:
