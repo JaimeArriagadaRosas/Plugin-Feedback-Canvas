@@ -8,6 +8,7 @@ import { AssetBuilder } from './installers/AssetBuilder.js';
 import { CanvasBringup } from './CanvasBringup.js';
 import { PostflightSetup } from './PostflightSetup.js';
 import { askConfirm } from '../orchestration/cli.js';
+import { SharedDependencyRecovery } from '../recovery/SharedDependencyRecovery.js';
 
 export class EnvironmentSetup {
   constructor(boot, pluginDir, canvasDir, {
@@ -149,6 +150,18 @@ export class EnvironmentSetup {
     const needsRecovery = (dbStatus && dbStatus !== 'starting') || (gStatus && gStatus !== 'starting');
 
     if (needsRecovery) {
+      // Only on a failed preflight: identify shared containers before any Compose mutation.
+      const decision = await new SharedDependencyRecovery().plan(this.pluginDir);
+      if (decision.kind === 'reuse') {
+        this.boot.info('Compatible shared Docker services detected; reusing without container changes.');
+        const { runMigrations } = await import('@plugin-feedback/plugin-database');
+        await runMigrations();
+        return;
+      }
+      if (decision.kind === 'block') {
+        throw new Error('Safe dependency recovery blocked: ' + decision.reason +
+          '. Existing containers and volumes were not modified.');
+      }
       this.boot.info('Dependencies missing/unhealthy. Attempting recovery...');
       const toRecover = [];
       if (dbStatus && dbStatus !== 'starting') toRecover.push('db');
