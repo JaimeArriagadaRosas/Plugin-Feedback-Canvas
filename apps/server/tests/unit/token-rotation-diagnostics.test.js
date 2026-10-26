@@ -49,12 +49,12 @@ describe('Canvas token rotation diagnostic scenarios',()=>{
     const fields=encrypted.split(':');fields[2]='00'+fields[2].slice(2);
     expect(()=>EncryptionService.decrypt(fields.join(':'))).toThrow(/Failed to decrypt/);
   });
-  it('reveals startup timeout remaining active after stop (known issue)',async()=>{
+  it('cancels the initial scheduled scan on shutdown',async()=>{
     vi.useFakeTimers();
     const repo={getExpiringTokens:vi.fn().mockResolvedValue([])};
     const job=new TokenRotationJob({tokenRepo:repo},300000);
     job.start();job.stop();
     await vi.advanceTimersByTimeAsync(5001);
-    expect(repo.getExpiringTokens).toHaveBeenCalledTimes(1);
+    expect(repo.getExpiringTokens).not.toHaveBeenCalled();
   });
 });

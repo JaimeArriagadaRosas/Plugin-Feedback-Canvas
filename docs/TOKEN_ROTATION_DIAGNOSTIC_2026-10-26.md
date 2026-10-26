@@ -36,3 +36,17 @@ No plaintext secrets were printed. This evidence is consistent with an older enc
 
 ## Spanish parity
 The branch should preserve this diagnostic and its tests when parity work starts, but the proposed behavioral changes have **not** been made on either branch.
+
+## Implementation completed — lifecycle hardening
+
+Changes in English branch:
+- `TokenRotationJob` stores and cancels its initial 5-second timeout, avoids scheduling duplicate jobs on repeated `start()`, deduplicates overlapping scans, and exposes its pending scan as a Promise from `stop()`.
+- During shutdown, remaining queued users are not refreshed. A refresh already in progress is allowed to finish; `server.js` now awaits the job shutdown before calling `db.pool.end()`.
+- `CanvasTokenRepository` now quietly detects unreadable refresh-token ciphertext on scheduled scans and warns only once per canvas_sub per process. It never deletes, resets, or overwrites unreadable credentials. The warning state is cleared on successful token save/deletion. On a fresh process restart, one warning may appear again.
+- No modification of the existing two real OAuth rows, ENCRYPTION_KEY, Canvas access privileges, or Docker resources.
+
+Logout interpretation: `/api/auth/local-logout` and `/api/auth/lti-logout` only clear local browser/LTI cookies, while the Canvas `/session-events` logout is a one-way diagnostic beacon with no authenticated revocation guarantees. Proactive refresh is associated with persistent OAuth authorization, not an individual browser session. Therefore browser logout deliberately does **not** revoke tokens or prevent all future server-side token refreshes; otherwise independent sessions/background work may break. A separate authenticated `Disconnect Canvas` endpoint must be designed, with explicit user intent, revocation if supported, saved-token deletion, authorization validation, and race-safe prevention of any in-flight refresh persisting credentials afterward. Do not add a revocation side effect to unauthenticated beacons.
+
+New isolated tests: `token-rotation-lifecycle.test.js` verifies double-start idempotency, cancellation of timers, scan deduplication, shutdown while refreshing. `token-manager-failures.test.js` verifies invalid grants (400/401), an expired access token lacking refresh, reuse of a still-valid access token, and retry/recovery from transient 503. Added to the original seven crypto/rotation diagnostics tests, 15 tests pass.
+
+Future Spanish parity: port exactly the changes in `TokenRotationJob.js`, `CanvasTokenRepository.js` and `server.js` with these new tests. Do not merge language-specific changes. Pending deeper scenarios include genuine Canvas OAuth revocation and token rotation semantics, multi-process distributed locking, race with an explicit disconnect, and durable cross-restart quarantine/alerting for permanently unreadable ciphertext. A once-per-process warning is sufficient for local diagnosis but not a persistent remediation state.

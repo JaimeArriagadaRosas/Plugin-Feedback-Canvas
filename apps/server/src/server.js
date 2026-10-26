@@ -16,7 +16,7 @@ export async function shutdown(signal = 'SIGINT', errorDetails = null) {
 
   if (serverInstance) {
     if (serverInstance.tokenRotationJob) {
-      serverInstance.tokenRotationJob.stop();
+      await serverInstance.tokenRotationJob.stop();
     }
     serverInstance.close(() => {
       if (!isOrchestrated) logger.info('[SHUTDOWN] HTTP server closed (not accepting new connections).');
