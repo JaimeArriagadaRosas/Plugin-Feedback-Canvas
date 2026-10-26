@@ -22,6 +22,11 @@ describe('Contrato del generador de entregables sintéticos',()=>{
     expect(fs.existsSync(path.join(masters,'dummy.pptx'))).toBe(true);
     expect(fs.existsSync(path.join(masters,'dummy.xlsx'))).toBe(true);
   });
+  it('genera tiempos válidos de inicio y finalización de cuestionarios Canvas',()=>{
+    expect(source).toContain('started_at: commenced_at');
+    expect(source).toContain('finished_at: completed_at');
+    expect(source).toContain('commenced_at = completed_at - rand(5..25).minutes');
+  });
   it('asocia el adjunto creado a la entrega, usando el id retornado por Attachment.create',()=>{
     expect(source).toContain('att = Attachment.create!(');
     expect(source).toContain('context: student_user');

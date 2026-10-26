@@ -121,11 +121,15 @@ module SubmissionFactory
       end
 
       qs = Quizzes::QuizSubmission.where(quiz_id: quiz.id, user_id: student_user.id).first_or_create!
+      completed_at = Time.now - rand(1..5).days
+      commenced_at = completed_at - rand(5..25).minutes
       qs.update!(
         workflow_state: 'complete',
         score: score,
         kept_score: score,
-        finished_at: Time.now - rand(1..5).days,
+        started_at: commenced_at,
+        finished_at: completed_at,
+        quiz_data: quiz.quiz_data,
         submission_data: submission_data
       )
       

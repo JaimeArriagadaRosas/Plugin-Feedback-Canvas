@@ -3,7 +3,7 @@ import { DomainError } from '../../utils/errors.js';
 
 const parseCsv = (content) => new Promise((resolve, reject) => {
   const rows = [];
-  parseString(content, { headers: true, ignoreEmpty: true })
+  parseString(content, { headers: columns => columns.map((header,index) => `${String(header || '').trim() || 'column'}__${index}`), ignoreEmpty: true })
     .on('error', reject).on('data', row => rows.push(row)).on('end', () => resolve(rows));
 });
 
@@ -33,9 +33,9 @@ export default class QuizAnswerFacade {
 
     const { buffer } = await this.adapter.downloadSubmissionAttachment({id:analysis.file.id,filename:analysis.file.filename}, teacherId);
     const rows = await parseCsv(buffer.toString('utf8'));
-    const match = rows.find(row => String(row.id) === String(studentId));
+    const match = rows.find(row => String(Object.entries(row).find(([key]) => key === 'id__0' || /^id__\d+$/.test(key))?.[1]) === String(studentId));
     if (!match) throw new DomainError('El informe no contiene al estudiante', 422, 'QUIZ_STUDENT_NOT_IN_REPORT');
-    const reportedAt = Date.parse(String(match.submitted || '').replace(' UTC', 'Z').replace(' ', 'T'));
+    const reportedAt = Date.parse(String(Object.entries(match).find(([key]) => /^submitted__\d+$/.test(key))?.[1] || '').replace(' UTC', 'Z').replace(' ', 'T'));
     const attemptAt = Date.parse(selected.finished_at || '');
     if (!Number.isFinite(reportedAt) || !Number.isFinite(attemptAt) || Math.abs(reportedAt - attemptAt) > 60000)
       throw new DomainError('Student Analysis no corresponde al último intento; regenerar el informe', 422, 'QUIZ_REPORT_STALE');
@@ -43,7 +43,7 @@ export default class QuizAnswerFacade {
       /^\d+:\s/.test(key) && String(value || '').trim());
     const answers = questionEntries.map(([key, value]) => ({
       question_id:Number(key.split(':')[0]),
-      question_text:key.replace(/^\d+:\s*/,''),
+      question_text:key.replace(/^\d+:\s*/,'').replace(/__\d+$/,''),
       answer:String(value).trim()
     }));
     if (!answers.length) throw new DomainError('Canvas no expone respuestas verificables de este intento', 422, 'QUIZ_ANSWERS_UNAVAILABLE');

@@ -16,8 +16,11 @@ describe('plantillas y puntuaciones neutrales en español',()=>{
   const initial=s.split('let initialContent = {')[1].split('};')[0];
   expect(initial).not.toMatch(/\{\{calificacion\}\}|\{\{promedio_curso\}\}/);
  });
- it.each([[0,100,'bajo'],[60,100,'medio'],[85.9,100,'medio'],[86,100,'alto'],[43,50,'alto']])('puntaje %s/%s corresponde a %s',(score,max,range)=>{
+ it.each([[0,100,'bajo'],[59.9,100,'bajo'],[60,100,'medio'],[85.9,100,'medio'],[86,100,'alto'],[43,50,'alto'],[8.6,10,'alto']])('puntaje %s/%s corresponde a %s',(score,max,range)=>{
   expect(CanvasScorePolicy.classify(score,max).range).toBe(range);
+ });
+ it('no clasifica puntajes con máximo inválido',()=>{
+  expect(()=>CanvasScorePolicy.classify(1,0)).toThrow();
  });
  it('selecciona tono alto sin convertir a escala chilena',async()=>{
   const repo={getById:vi.fn().mockResolvedValue({contenido:JSON.stringify({alto:'ALTO',medio:'MEDIO',bajo:'BAJO'})})};

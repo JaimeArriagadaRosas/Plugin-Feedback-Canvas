@@ -36,7 +36,7 @@ export const requireCanvasOAuth = (canvasTokenManagerOrRepo) => {
           }
           accessToken = await refreshLocks.get(canvasSub);
         } catch (e) {
-          if (!e.metadata?.requireOAuth) throw e;
+          if (!(e.data?.requireOAuth || e.metadata?.requireOAuth)) throw e;
           // Do not re-throw here: it will be handled in if (!accessToken) below
         }
       } else {

@@ -149,30 +149,54 @@ export default class FileController {
   }
 
   async _downloadFile(downloadUrl, context) {
-    const destOrigin = new URL(downloadUrl).origin;
-    const canvasOrigin = new URL(context.url).origin;
+    let currentUrl = downloadUrl;
+    let response;
+    let redirects = 0;
+    const MAX_REDIRECTS = 5;
 
-    const headers = { ...context.headers };
-    if (destOrigin !== canvasOrigin) {
-      delete headers.Authorization;
-      delete headers.authorization;
-      delete headers.Host;
-      delete headers.host;
-    }
+    let headers = { ...context.headers };
 
-    const downloadContext = { ...context, headers };
-    let response = await this._fetch(downloadUrl, downloadContext);
+    while (redirects <= MAX_REDIRECTS) {
+      const destOrigin = new URL(currentUrl).origin;
+      const canvasOrigin = new URL(context.url).origin;
 
-    // Follow manual redirect
-    if (response.status === 302 || response.status === 301) {
-      let loc = response.headers.get('location');
-      if (loc) {
+      if (destOrigin !== canvasOrigin) {
+        delete headers.Authorization;
+        delete headers.authorization;
+        delete headers.Host;
+        delete headers.host;
+      }
+
+      const downloadContext = { ...context, headers };
+      response = await this._fetch(currentUrl, downloadContext);
+
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        redirects++;
+        if (redirects > MAX_REDIRECTS) {
+          throw this._httpError(502, 'TOO_MANY_REDIRECTS', 'Se alcanzó el límite máximo de redirecciones');
+        }
+        let loc = response.headers.get('location');
+        if (!loc) break;
+
+        const nextUrlObj = new URL(loc, currentUrl);
+        const currentUrlObj = new URL(currentUrl);
+        if (currentUrlObj.searchParams.has('sf_verifier') && !nextUrlObj.searchParams.has('sf_verifier')) {
+          nextUrlObj.searchParams.set('sf_verifier', currentUrlObj.searchParams.get('sf_verifier'));
+        }
+
+        loc = nextUrlObj.toString();
+
         if (process.env.STARTUP_MODE === '3' && loc.startsWith('http://localhost:8443')) {
           loc = loc.replace(/^http:/, 'https:');
-          logger.info('[FileController] Fallback TLS aplicado a Location redirect', { loc });
+          const u = new URL(loc);
+          logger.info('[FileController] TLS fallback applied to Location redirect', {
+            protocol: u.protocol, hostname: u.hostname, port: u.port, pathname: u.pathname
+          });
         }
-        response = await this._fetch(loc, downloadContext);
+        currentUrl = loc;
+        continue;
       }
+      break;
     }
     if (!response.ok) {
       const code = response.status === 401 ? 'AUTH_CANVAS' : 'CANVAS_FILE_DOWNLOAD';
