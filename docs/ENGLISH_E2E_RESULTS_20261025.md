@@ -45,3 +45,20 @@ Actual generation requires `--mode=generate --confirm=ONE_REQUEST`. **Do not rer
 ## Acceptance boundary
 
 Real API calls passed for PPTX, PDF, and text; negative conversion tests passed for ZIP and XLSX; persisted drafts and Canvas grades were independently checked. Classic Quiz and New Quizzes/group behavior are **not fully validated**. Existing PPTX fixtures remain Spanish until a new isolated seed run, though future English seed output is corrected. Do not merge the English feature branch until remaining user-acceptance tests are reviewed.
+
+## Follow-up — Classic Quiz diagnostics and English string audit
+
+- Diagnostic evidence from the Canvas background worker exposed the Student Analysis failure: `Quizzes::QuizStatistics::StudentAnalysis#to_csv` calls `submission.quiz_data.detect`, but the synthetic quiz attempts were created with `quiz_data=nil`. All 20 test attempts were affected. The English seeder has been changed to set `quiz_data: quiz.quiz_data` for **future** synthetic attempts; it also sets a valid `started_at` before `finished_at`.
+- A local metadata-only repair of the 20 synthetic `quiz_data` fields allowed one Student Analysis request to complete at 100%. However, the direct repair wrote an incorrectly encoded YAML value, causing Canvas API HTTP 500. **This bad change was rolled back by restoring `quiz_data` to its original nil state in all 20 local attempts**, without changing scores or answers. This means existing fixture question snapshots remain incomplete: do not treat a completed report job as end-to-end acceptance. The proper durable repair should seed fresh, Rails-serialized quiz attempts, not use direct update_columns for serialized attributes.
+- A new isolated regression test covers Canvas Student Analysis CSVs with duplicate score headers (e.g., `25.0` repeated); the English adapter preserves per-column identity and strips synthetic suffixes from question descriptions. It passes with the existing quiz facade tests.
+- `tools/diagnostics/audit-english-strings.mjs` found **0 candidate Spanish strings** in the selected English feedback, Canvas adapter, installer-orchestration and seeder source directories. This is a targeted scan, not a complete UI localization certification.
+- Real Gemini E2E results for PPTX, PDF and text remain 3/3 passing and their drafts remain pending/ungraded. Existing XLSX/ZIP negative cases remain approved.
+- Classic Quiz **remains blocked for full E2E** pending creation of a clean, ungraded quiz submission with valid Rails-managed snapshots and successful answer extraction. Never alter existing students' grades to force a positive test.
+
+## Continuation — 2026-10-26
+
+- Preserved all outstanding changes on `feat/english-qualitative-feedback-parity`; did not merge or modify `english-version` or `main`.
+- Fixed quiz Student Analysis regression test after the Canvas endpoint gained `?includes_all_versions=true`. All three focused quiz tests passed (2 files).
+- Replaced computed response-property lookups with `Object.entries` and fixed six CI lint errors: document XML scan, quiz access, and `FeedbackGenerationService` method length. Full ESLint run passed.
+- Existing local Docker containers did not include Canvas web/API; real ungraded Classic Quiz E2E cannot be accepted without that service. No Gemini request or database mutation was made for the blocked quiz.
+- Do not publish or merge the English branch until the clean local Classic Quiz fixture yields a verifiable student-answer row and a real qualitative draft with null grades, followed by full validation.

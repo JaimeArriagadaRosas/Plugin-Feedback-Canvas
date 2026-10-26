@@ -9,10 +9,10 @@ export default function createVariablesRoutes() {
   router.use(authorizeRole(['teacher', 'admin']));
 
 
-  // Obtener configuración de variables por curso
+  // Retrieve variable configuration by course
   router.get('/:courseId/variables', CourseVariablesController.getCourseVariables);
 
-  // Guardar configuración de variables por curso
+  // Save variable configuration by course
   router.put('/:courseId/variables', CourseVariablesController.saveCourseVariables);
 
   return router;

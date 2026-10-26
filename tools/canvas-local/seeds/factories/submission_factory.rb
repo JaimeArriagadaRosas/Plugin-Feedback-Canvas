@@ -129,6 +129,7 @@ module SubmissionFactory
         kept_score: score,
         started_at: commenced_at,
         finished_at: completed_at,
+        quiz_data: quiz.quiz_data,
         submission_data: submission_data
       )
       

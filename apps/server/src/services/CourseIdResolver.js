@@ -2,12 +2,12 @@ import logger from '../utils/logger.js';
 
 export default class CourseIdResolver {
   /**
-   * Resuelve el ID del curso. 
-   * Si no se provee, intenta obtenerlo de las variables de entorno como fallback (DESIGN-05).
+   * Resolves the course identifier.
+   * When absent, tries the environment variables as a fallback (DESIGN-05).
    * 
    * @param {string|null|undefined} courseId 
-   * @param {string|null} studentId Para propósitos de logging
-   * @returns {string|null} El courseId resuelto o null si no se puede resolver
+   * @param {string|null} studentId For logging purposes
+   * @returns {string|null} Resolved courseId or null when it cannot be resolved
    */
   static resolve(courseId, studentId = null) {
     if (!courseId || courseId === 'undefined' || courseId === 'null') {

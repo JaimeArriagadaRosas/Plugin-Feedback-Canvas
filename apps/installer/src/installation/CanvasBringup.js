@@ -209,7 +209,7 @@ export class CanvasBringup {
       { context: ExecutionContext.CONTAINER_CACHE_WRITE }
     );
     if (plugin.success) return true;
-    this.boot.error(`No se pudo instalar bundler-multilock: ${plugin.err}`);
+    this.boot.error(`Could not install bundler-multilock: ${plugin.err}`);
     return false;
   }
 

@@ -11,12 +11,12 @@ function fixture(questions) {
 }
 describe('QuizAnswerFacade', () => {
   it('recovers the actual student answer through Canvas API', async () => {
-    const answers = await fixture([{id:21,question_text:'Explica API Gateway',answer:'Enruta y autentica peticiones'}])
+    const answers = await fixture([{id:21,question_text:'Explain API Gateway',answer:'Routes and authenticates requests'}])
       .getQuizAnswers(1,16,7,'teacher');
-    expect(answers).toEqual([{question_id:21,question_text:'Explica API Gateway',answer:'Enruta y autentica peticiones'}]);
+    expect(answers).toEqual([{question_id:21,question_text:'Explain API Gateway',answer:'Routes and authenticates requests'}]);
   });
   it('blocks when Canvas only exposes the questions', async () => {
-    await expect(fixture([{id:21,question_text:'Explica API Gateway'}])
+    await expect(fixture([{id:21,question_text:'Explain API Gateway'}])
       .getQuizAnswers(1,16,7,'teacher')).rejects.toMatchObject({errorCode:'QUIZ_REPORT_PENDING'});
   });
 });

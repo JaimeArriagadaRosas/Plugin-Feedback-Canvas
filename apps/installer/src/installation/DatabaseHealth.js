@@ -35,7 +35,7 @@ export class DatabaseHealth {
         throw new Error(`Could not establish connection with PostgreSQL (${serviceName}).`);
       }
     } else {
-      this.boot.warn('No se pudo detectar el servicio de Postgres en docker-compose, asumiendo listo.');
+      this.boot.warn('Could not locate the PostgreSQL service in docker-compose; assuming it is ready.');
     }
 
     const migrationsDone = await this.checkMigrations();

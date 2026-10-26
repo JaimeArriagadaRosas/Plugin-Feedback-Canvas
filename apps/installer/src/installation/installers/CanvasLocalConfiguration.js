@@ -91,7 +91,7 @@ export class CanvasLocalConfiguration {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       return this.fs.readFileSync(target, 'utf8') === this.fs.readFileSync(example, 'utf8');
     } catch (error) {
-      this.boot.warn(`No se pudo verificar la plantilla de Canvas: ${error}`);
+      this.boot.warn(`Could not verify the Canvas template: ${error}`);
       return false;
     }
   }
