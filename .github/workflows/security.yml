@@ -91,3 +91,19 @@ jobs:
       - run: npx --yes npm@11.8.0 ci
       - run: npx playwright install --with-deps chromium
       - run: npx --yes npm@11.8.0 run test:client
+
+  postgres-integration:
+    name: PostgreSQL disposable integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.12.0'
+          cache: npm
+      - run: npx --yes npm@11.8.0 ci
+      - name: Test isolated PostgreSQL with Testcontainers
+        run: npx --yes npm@11.8.0 exec -- vitest run --project=@plugin-feedback/server tests/integration/backend_smoke.test.js --pool=forks --fileParallelism=false
+        env:
+          CI: true
+          RUN_DOCKER_TESTS: 'true'
