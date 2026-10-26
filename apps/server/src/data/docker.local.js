@@ -28,6 +28,18 @@ export async function autoStartLocalDbContainer() {
         // Ignore if ps fails and proceed to start
       }
 
+      // Recovery path only: avoid attempting a second Compose project over shared containers.
+      const { SharedDependencyRecovery } = await import('../../../installer/src/recovery/SharedDependencyRecovery.js');
+      const decision = await new SharedDependencyRecovery().plan(projectRoot);
+      if (decision.kind === 'reuse') {
+        logger.info('[DB] Existing compatible local dependency containers detected; no Docker changes needed.');
+        return true;
+      }
+      if (decision.kind === 'block') {
+        logger.warn('[DB] Container startup blocked to protect shared services: ' + decision.reason);
+        return false;
+      }
+
       logger.info('[DB] Database inactive or not found. Starting PostgreSQL container (Docker)...');
       await execa('docker', ['compose', '-f', 'docker-compose.db.yml', 'up', '-d', '--wait'], { cwd: projectRoot });
       logger.info('[DB] Container started and PostgreSQL is ready (healthy).');

@@ -201,7 +201,19 @@ export class EnvironmentSetup {
   async _verifyPostInstall() {
     this.boot.info('Running post-installation verification...');
     const result = await new PreflightChecks(this.boot, this.canvasDir, this.pluginDir).runChecks();
-    if (!result.allOk) throw new Error('Post-installation verification failed; components are still missing.');
+    if (result.allOk) return;
+    const remaining = { ...result.missing };
+    const hasSharedDependencyWarning = !!(remaining.plugin_db_status || remaining.gotenberg_status);
+    delete remaining.plugin_db_status;
+    delete remaining.gotenberg_status;
+    if (hasSharedDependencyWarning && Object.keys(remaining).length === 0) {
+      const decision = await new SharedDependencyRecovery().plan(this.pluginDir);
+      if (decision.kind === 'reuse') {
+        this.boot.info('Postflight: healthy shared dependencies verified without changing Compose ownership.');
+        return;
+      }
+    }
+    throw new Error('Post-installation verification failed; components are still missing.');
   }
 
   async _bringupAndVerify(dockerProfile) {
