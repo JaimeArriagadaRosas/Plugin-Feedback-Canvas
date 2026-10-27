@@ -33,11 +33,11 @@ export function useTemplateEditor(template) {
     const currentText = content[currentTab] || "";
     const text = currentText
       .split('\n')
-      .map(line => line.replaceAll("{{course_average}}", "[Course average unavailable in preview]"))
+      .map(line => line.replaceAll("{{course_average}}", "74 out of 100 points"))
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .replace(/{{student_name}}/g, "John Doe")
-      .replace(/{{grade}}/g, "42 out of 50 points");
+      .replace(/{{grade}}/g, "88 out of 100 points");
     setPreview(text);
   }, [content, currentTab]);
 
