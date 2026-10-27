@@ -26,5 +26,8 @@ Teacher approves feedback; student opens it through Canvas LTI and rates indepen
 - GitHub Actions postgres-integration now runs all server tests with disposable PostgreSQL enabled, instead of only backend_smoke. A test-only encryption key is provided; no real secrets are modified.
 - No destructive Docker/database operations.
 
+## Real LTI identity regression (second repair)
+A live Canvas LTI student request returned HTTP 403 despite successful authentication because FeedbackMutationService required ltiContext.studentId, while AppIdentity exposes canonicalUserId, numericUserId and ltiUserId. The failure was reproduced before the repair using a real AppIdentity instance and PostgreSQL 15. The mutation now resolves the canonical authenticated student ID and retains ownership checks. Independent PostgreSQL suite: 10/10 passed for each language branch. The live browser acceptance still requires restarting the backend after deployment.
+
 ## Follow-up
 A browser-based LTI acceptance test using a logged-in real student is still recommended for visible stars/usefulness after refresh, network interruption and log-in recovery. Restart only backend and Vite so the UI loads updated code. No migration needed because no schema changes were made.

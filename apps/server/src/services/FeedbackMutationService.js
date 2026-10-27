@@ -27,7 +27,8 @@ export default class FeedbackMutationService {
   }
 
   async rateByStudent(feedbackId, rating, esUtil, ltiContext = null) {
-    if (!ltiContext?.studentId) throw new AppError('Se requiere la identidad del estudiante', 403);
+    const studentId = ltiContext?.canonicalUserId || ltiContext?.numericUserId || ltiContext?.studentId || ltiContext?.ltiUserId;
+    if (!studentId) throw new AppError('Se requiere la identidad del estudiante', 403);
     if (rating !== undefined && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
       throw new AppError('La valoración debe ser un entero de 1 a 5', 400);
     }
@@ -37,7 +38,7 @@ export default class FeedbackMutationService {
     if (rating === undefined && esUtil === undefined) throw new AppError('No se proporcionó ninguna valoración', 400);
     const existing = await this.feedbackRepo.getById(feedbackId);
     if (!existing) throw new AppError('Feedback no encontrado', 404);
-    if (String(existing.estudiante_id) !== String(ltiContext.studentId)) {
+    if (String(existing.estudiante_id) !== String(studentId)) {
       throw new AppError('Acceso denegado: el feedback pertenece a otro estudiante', 403);
     }
     if (!['APROBADO', 'ENVIADO'].includes(existing.estado)) {
