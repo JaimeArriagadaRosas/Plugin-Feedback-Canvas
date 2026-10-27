@@ -1,3 +1,4 @@
+import { isApprovedFeedback } from '../../../services/FeedbackStatusMetrics.js';
 import PDFDocument from 'pdfkit';
 
 const COLORS = { blue: '#0374B5', text: '#333333', light: '#F5F5F5', line: '#E0E0E0' };
@@ -19,7 +20,7 @@ export function createPdfReport({ data, auditLogs, migrationLogs }) {
 
 function calculateMetrics(data) {
   const metrics = {
-    total: data.length, approved: 0, pending: 0, edited: 0, rejected: 0,
+    total: data.length, approved: 0, sent: 0, pending: 0, edited: 0, rejected: 0,
     teacherRatings: { sum: 0, count: 0 }, studentRatings: { sum: 0, count: 0 },
     stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, courses: new Map()
   };
@@ -39,7 +40,7 @@ function updateMetrics(metrics, row) {
   if (!metrics.courses.has(key)) metrics.courses.set(key, { name: row.nombre_curso || `Course ${key}`, total: 0, approved: 0 });
   const course = metrics.courses.get(key);
   course.total += 1;
-  if (status === 'APROBADO') course.approved += 1;
+  if (isApprovedFeedback(status)) course.approved += 1;
 }
 
 function addRating(ratings, value, stars) {
