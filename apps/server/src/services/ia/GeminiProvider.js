@@ -98,12 +98,18 @@ export default class GeminiProvider extends IAProvider {
         
         const data = await response.json();
         const incompatible = /(?:image|imagen|banana|tts|speech|audio|live|embedding|embed|vision|veo|lyria|video|robotics|computer-use|aqa)/i;
-        const retired = /(?:gemini-1\.[0-9]|gemini-2\.[0-4]|-deprecated|-retired|-exp(?:erimental)?(?:-|$))/i;
+        const versionMatch = id => /^gemini-(\d+)\.(\d+)(?:-|$)/i.exec(id);
+        const isSupportedVersion = id => {
+          const match = versionMatch(id);
+          return Boolean(match && (Number(match[1]) > 3 || (Number(match[1]) === 3 && Number(match[2]) >= 6)));
+        };
+        const retired = /(?:-deprecated|-retired|-exp(?:erimental)?(?:-|$))/i;
         return (Array.isArray(data.models) ? data.models : [])
           .filter(m => {
             const id = String(m?.name || '').replace(/^models\//, '');
             return Array.isArray(m?.supportedGenerationMethods)
               && m.supportedGenerationMethods.includes('generateContent')
+              && isSupportedVersion(id)
               && !incompatible.test(id + ' ' + (m.displayName || ''))
               && !retired.test(id);
           })
