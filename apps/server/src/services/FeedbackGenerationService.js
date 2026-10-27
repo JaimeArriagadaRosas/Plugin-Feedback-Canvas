@@ -117,6 +117,16 @@ export default class FeedbackGenerationService {
       context.submission.pointsPossible = scorePolicy.possible;
       context.submission.score = scorePolicy.earned;
 
+      // Optional course-wide Canvas statistic; never substitute an assignment average.
+      if (template.contenido.includes('{{course_average}}') &&
+          typeof this.canvasGateway.getCourseAverage === 'function') {
+        try {
+          context.canvasCourseAverage = await this.canvasGateway.getCourseAverage(courseId, teacherId);
+        } catch (error) {
+          logger.warn('Canvas course-wide average unavailable; optional variable omitted.');
+        }
+      }
+
       context.instructionIA = context.instructionIA + '\n' + template.instructionIA + activeVariablesInfo.text;
       await this._appendActiveVariableData(context, activeVariablesInfo.activeVars);
 
