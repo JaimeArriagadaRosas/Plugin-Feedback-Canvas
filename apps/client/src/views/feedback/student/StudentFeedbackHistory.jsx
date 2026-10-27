@@ -16,7 +16,7 @@ export default function StudentFeedbackHistory({ assignments, onSelect, courseNa
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.courseTitle}>{courseName || 'Historial de Feedback'}</h2>
+      <h2 className={styles.courseTitle}>{courseName || 'Feedback History'}</h2>
       {assignments.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📚</div>
@@ -28,10 +28,10 @@ export default function StudentFeedbackHistory({ assignments, onSelect, courseNa
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Fecha de entrega</th>
-                <th style={{ textAlign: 'center' }}>Puntaje</th>
-                <th style={{ textAlign: 'center' }}>Detalles</th>
+                <th>Name</th>
+                <th>Due Date</th>
+                <th style={{ textAlign: 'center' }}>Score</th>
+                <th style={{ textAlign: 'center' }}>Details</th>
               </tr>
             </thead>
             <tbody>

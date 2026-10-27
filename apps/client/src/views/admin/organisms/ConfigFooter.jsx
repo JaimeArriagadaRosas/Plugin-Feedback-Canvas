@@ -3,7 +3,7 @@ import Button from '../../../components/atoms/Button';
 import { useButtonLogger } from '../../../hooks/useButtonLogger';
 import styles from './ConfigFooter.module.css';
 
-export default function ConfigFooter({ onSave, onDiscard, saveLabel = 'Sincronizar y Actualizar Motor de IA Ahora' }) {
+export default function ConfigFooter({ onSave, onDiscard, saveLabel = 'Sync and Update AI Engine Now' }) {
   const logSave = useButtonLogger();
   const logDiscard = useButtonLogger();
 

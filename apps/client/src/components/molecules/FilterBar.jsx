@@ -26,7 +26,7 @@ export default function FilterBar({
       ))}
       {onClear && (
         <Button variant="secondary" size="sm" onClick={onClear} className={styles.clear}>
-          Limpiar Filtros
+          Clear Filters
         </Button>
       )}
     </div>

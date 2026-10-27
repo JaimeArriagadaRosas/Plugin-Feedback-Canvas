@@ -85,7 +85,7 @@ export default function TemplateManagement({ courseId, onBack, onNext }) {
       const duplicated = {
         ...templateToDuplicate,
         id: undefined,
-        name: `Copia de ${templateToDuplicate.name}`,
+        name: `Copy of ${templateToDuplicate.name}`,
         ranges: templateToDuplicate.ranges,
         contenido: templateToDuplicate.contenido,
       };

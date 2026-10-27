@@ -6,7 +6,7 @@ export default function DataTable({
   data = [],
   columns = [],
   loading = false,
-  emptyMessage = 'Sin datos',
+  emptyMessage = 'No data',
   rowKey = (row, index) => index,
   renderRow,
   className = '',
@@ -15,7 +15,7 @@ export default function DataTable({
   if (loading) {
     return (
       <div className={styles.state}>
-        <Spinner label="Cargando datos..." />
+        <Spinner label="Loading data..." />
       </div>
     );
   }

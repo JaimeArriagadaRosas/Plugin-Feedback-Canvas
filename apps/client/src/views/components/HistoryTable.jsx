@@ -7,13 +7,13 @@ export default function HistoryTable({ tareas }) {
       <thead>
         <tr className={styles.tableHead}>
           <th className={styles.thLeft}>
-            Tarea
+            Assignment
           </th>
           <th className={styles.thCenter}>
-            Nota
+            Grade
           </th>
           <th className={styles.thRight}>
-            Fecha
+            Date
           </th>
         </tr>
       </thead>

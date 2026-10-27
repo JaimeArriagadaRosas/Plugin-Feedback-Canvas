@@ -7,10 +7,10 @@ export default function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Confirmar',
+  title = 'Confirm',
   message,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
   confirmVariant = 'primary',
 }) {
   const logConfirm = useButtonLogger();
