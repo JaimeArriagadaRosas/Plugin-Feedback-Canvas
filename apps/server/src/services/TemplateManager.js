@@ -28,11 +28,11 @@ export default class TemplateManager {
   async getTemplatesForProfesor(profesorId) {
     let templates = await this.templateRepo.listByProfesor(profesorId);
     const hasSeeded = await this.templateRepo.hasSeededTemplates(profesorId);
-    if (!hasSeeded) {
-      await this.templateRepo.cloneDefaultTemplates(profesorId);
-      await this.templateRepo.markTemplatesAsSeeded(profesorId);
-      templates = await this.templateRepo.listByProfesor(profesorId);
-    }
+    const localePresent = await this.templateRepo.hasLocaleTemplateRecord(profesorId);
+    if (!localePresent) await this.templateRepo.cloneDefaultTemplates(profesorId);
+    if (!hasSeeded) await this.templateRepo.markTemplatesAsSeeded(profesorId);
+    // Re-read even if another concurrent request provisioned the templates after our first read.
+    templates = await this.templateRepo.listByProfesor(profesorId);
     const owned = templates.filter(t => t.profesor_id != null && String(t.profesor_id) === String(profesorId));
     return owned.length ? owned : templates.filter(t => t.profesor_id == null || String(t.profesor_id) === String(profesorId));
   }

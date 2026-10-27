@@ -7,6 +7,7 @@ describe('first-login template lifecycle diagnostics', () => {
     const repo = {
       listByProfesor: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce(templates),
       hasSeededTemplates: vi.fn().mockResolvedValue(false),
+      hasLocaleTemplateRecord: vi.fn().mockResolvedValue(false),
       cloneDefaultTemplates: vi.fn().mockResolvedValue(undefined),
       markTemplatesAsSeeded: vi.fn().mockResolvedValue(undefined)
     };
@@ -18,6 +19,7 @@ describe('first-login template lifecycle diagnostics', () => {
     const repo = {
       listByProfesor: vi.fn().mockResolvedValue([{ profesor_id: 'teacher-test' }]),
       hasSeededTemplates: vi.fn().mockResolvedValue(true),
+      hasLocaleTemplateRecord: vi.fn().mockResolvedValue(true),
       cloneDefaultTemplates: vi.fn(), markTemplatesAsSeeded: vi.fn()
     };
     await new TemplateManager(repo).getTemplatesForProfesor('teacher-test');

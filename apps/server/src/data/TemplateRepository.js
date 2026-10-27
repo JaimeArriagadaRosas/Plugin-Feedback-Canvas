@@ -65,35 +65,69 @@ export default class TemplateRepository {
     return true;
   }
 
+  async hasLocaleTemplateRecord(profesorId) {
+    const names = ['Standard Class', 'Detailed Feedback', 'Peer Review'];
+    // A soft-deleted default is deliberately absent from the visible list, but counts as provisioned.
+    const result = await db.query(
+      'SELECT COUNT(DISTINCT nombre)::int AS count FROM Plantilla_Feedback WHERE profesor_id=$1 AND nombre=ANY($2::text[])',
+      [profesorId, names]
+    );
+    return result.rows[0].count === names.length;
+  }
+
   async cloneDefaultTemplates(profesorId) {
-    const res = await db.query('SELECT count(*) as count FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL');
-    if (parseInt(res.rows[0].count) === 0) {
-      await db.query(`
-        INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id) VALUES 
-        ('Standard Class', '{"alto":"Dear {{student_name}},\\n\\n\\n\\nYou have done very well, excellent work.\\n\\nBest regards,\\nTeacher","medio":"Dear {{student_name}},\\n\\n\\n\\nYou have done a somewhat adequate job, but there are aspects you can improve.\\n\\nBest regards,\\nTeacher","bajo":"Dear {{student_name}},\\n\\n\\n\\nPlease, you need to put in more effort. Consult the material to improve.\\n\\nBest regards,\\nTeacher"}', NULL),
+    const names = ['Standard Class', 'Detailed Feedback', 'Peer Review'];
+    const connection = await db.pool.connect();
+    try {
+      await connection.query('BEGIN');
+      await connection.query("SELECT pg_advisory_xact_lock(hashtext('feedback-english-default-templates'))");
+      await connection.query(`
+        WITH seed(nombre, contenido, profesor_id) AS (VALUES
+('Standard Class', '{"alto":"Dear {{student_name}},\\n\\n\\n\\nYou have done very well, excellent work.\\n\\nBest regards,\\nTeacher","medio":"Dear {{student_name}},\\n\\n\\n\\nYou have done a somewhat adequate job, but there are aspects you can improve.\\n\\nBest regards,\\nTeacher","bajo":"Dear {{student_name}},\\n\\n\\n\\nPlease, you need to put in more effort. Consult the material to improve.\\n\\nBest regards,\\nTeacher"}', NULL),
         ('Detailed Feedback', '{"alto":"Dear {{student_name}},\\n\\nYou have shown an outstanding mastery of the concepts, with a very solid foundation that shows a great level of understanding and dedication.\\n\\nKeep it up, excellent performance!\\n\\nRegards,\\nTeacher","medio":"Dear {{student_name}},\\n\\nYou have a good foundation, but there are specific areas we need to reinforce to achieve full mastery of the topics covered in this assessment.\\n\\nI encourage you to review the study material.\\n\\nRegards,\\nTeacher","bajo":"Dear {{student_name}},\\n\\nIt is essential that we review the content covered in class, as it is evident that key concepts are not yet consolidated.\\n\\nPlease contact me to clarify doubts or attend tutoring hours.\\n\\nRegards,\\nTeacher"}', NULL),
-        ('Peer Review', '{"alto":"Hello {{student_name}},\\n\\nYour peers and I agree that your work is outstanding and adds great value to the peer review.\\n\\nCongratulations!\\n\\nRegards,\\nTeacher","medio":"Hello {{student_name}},\\n\\nAccording to the peer review, your performance is average, presenting an adequate job but with improvement opportunities identified by your peers.\\n\\nKeep working!\\n\\nRegards,\\nTeacher","bajo":"Hello {{student_name}},\\n\\nThe peer review indicates there are significant weaknesses in your submission that must be addressed, according to the co-evaluation consensus.\\n\\nReview your peers'' comments.\\n\\nRegards,\\nTeacher"}', NULL);
+        ('Peer Review', '{"alto":"Hello {{student_name}},\\n\\nYour peers and I agree that your work is outstanding and adds great value to the peer review.\\n\\nCongratulations!\\n\\nRegards,\\nTeacher","medio":"Hello {{student_name}},\\n\\nAccording to the peer review, your performance is average, presenting an adequate job but with improvement opportunities identified by your peers.\\n\\nKeep working!\\n\\nRegards,\\nTeacher","bajo":"Hello {{student_name}},\\n\\nThe peer review indicates there are significant weaknesses in your submission that must be addressed, according to the co-evaluation consensus.\\n\\nReview your peers'' comments.\\n\\nRegards,\\nTeacher"}', NULL)
+        )
+        INSERT INTO Plantilla_Feedback(nombre, contenido, profesor_id)
+        SELECT seed.nombre, seed.contenido, NULL FROM seed
+        WHERE NOT EXISTS (
+          SELECT 1 FROM Plantilla_Feedback existing
+          WHERE existing.nombre = seed.nombre
+            AND existing.profesor_id IS NULL AND existing.deleted_at IS NULL
+        );
       `);
-    }
-
-    // Normalize persisted default templates BEFORE copying them to a new teacher.
-    // Only templates with profesor_id IS NULL are handled here.
-    const seedRows = await db.query(
-      'SELECT id, contenido FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL'
-    );
-    for (const seed of seedRows.rows) {
-      const normalized = normalizeSeedTemplateContent(seed.contenido);
-      if (normalized !== seed.contenido) {
-        await db.query('UPDATE Plantilla_Feedback SET contenido = $1 WHERE id = $2 AND profesor_id IS NULL',
-          [normalized, seed.id]);
+      // Normalize only the English seeds, never unrelated global templates.
+      const defaults = await connection.query(
+        'SELECT id, contenido FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL AND nombre=ANY($1::text[])',
+        [names]
+      );
+      for (const seed of defaults.rows) {
+        const normalized = normalizeSeedTemplateContent(seed.contenido);
+        if (normalized !== seed.contenido) {
+          await connection.query(
+            'UPDATE Plantilla_Feedback SET contenido=$1 WHERE id=$2 AND profesor_id IS NULL',
+            [normalized, seed.id]
+          );
+        }
       }
+      await connection.query(`
+        INSERT INTO Plantilla_Feedback(nombre, contenido, profesor_id)
+        SELECT original.nombre, original.contenido, $1::varchar(50)
+        FROM Plantilla_Feedback original
+        WHERE original.profesor_id IS NULL AND original.deleted_at IS NULL
+          AND original.nombre=ANY($2::text[])
+          AND NOT EXISTS (
+            SELECT 1 FROM Plantilla_Feedback own
+            WHERE own.profesor_id=$1::varchar(50) AND own.nombre=original.nombre
+          )
+        ON CONFLICT (nombre, profesor_id) DO NOTHING
+      `, [profesorId, names]);
+      await connection.query('COMMIT');
+    } catch (error) {
+      await connection.query('ROLLBACK');
+      throw error;
+    } finally {
+      connection.release();
     }
-
-    await db.query(
-      `INSERT INTO Plantilla_Feedback (nombre, contenido, profesor_id)
-       SELECT nombre, contenido, $1 FROM Plantilla_Feedback WHERE profesor_id IS NULL AND deleted_at IS NULL`,
-      [profesorId]
-    );
   }
 
   async hasSeededTemplates(profesorId) {
