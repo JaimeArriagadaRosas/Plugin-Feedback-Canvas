@@ -48,6 +48,7 @@ export async function showMainMenu() {
   console.log('  ' + pc.yellow('[3]') + ' Ejecutar localmente Canvas LMS ' + pc.dim('(Entorno Docker de desarrollo)'));
   console.log('  ' + pc.red('[4]') + ' Validaciones de Caja Negra ' + pc.dim('(Health Checks y Tests E2E)'));
   console.log('  ' + pc.cyan('[5]') + ' Cambiar idioma / rama ' + pc.dim('(Español / English)'));
+  console.log('  ' + pc.dim('[0] Salir'));
   console.log(pc.blue('========================================================='));
   while (true) {
     const mode = await ask('Seleccione una opción (0-5)', '3');
