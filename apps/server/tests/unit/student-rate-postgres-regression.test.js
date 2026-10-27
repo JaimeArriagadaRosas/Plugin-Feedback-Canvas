@@ -29,6 +29,12 @@ suite('student rate persistence on isolated PostgreSQL 15', () => {
   }, 120000);
   beforeEach(async () => { await pool.query('UPDATE historial_feedback_generado SET calificacion_estudiante=NULL,es_util=NULL'); });
   afterAll(async () => { if (pool) await pool.end(); if (container) await container.stop(); state.pool=null; });
+  it('accepts a real AppIdentity with canonical numeric student ID', async () => {
+    const { AppIdentity } = await import('../../src/domain/identity/AppIdentity.js');
+    const identity = new AppIdentity({ ltiUserId:'student-uuid-7', numericUserId:'7', roles:['Learner'], entry:'student', source:'session-token' });
+    await service.rateByStudent(1,4,true,identity);
+    expect((await row()).calificacion_estudiante).toBe(4);
+  });
   it('saves stars one through five and preserves usefulness', async () => {
     for (const stars of [1,2,3,4,5]) {
       await service.rateByStudent(1,stars,undefined,{ studentId:'7' });
