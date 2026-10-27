@@ -18,7 +18,7 @@ export default class VariableConfigController {
       const { courseId } = req.params;
       const variablesObj = req.body;
       const updated = await this.variableManager.saveCourseVariables(courseId, variablesObj);
-      res.json({ exito: true, mensaje: 'Variables actualizadas correctamente', data: updated });
+      res.json({ exito: true, mensaje: 'Variables updated successfully', data: updated });
     } catch (error) {
       next(error);
     }

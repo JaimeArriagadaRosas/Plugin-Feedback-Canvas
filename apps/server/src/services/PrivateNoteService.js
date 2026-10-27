@@ -12,14 +12,14 @@ export default class PrivateNoteService {
   async updateNote(feedbackId, notaPrivada) {
     const fb = await this.feedbackRepo.getById(feedbackId);
     if (!fb) {
-      throw new AppError(`Feedback ${feedbackId} no encontrado`, 404);
+      throw new AppError(`Feedback ${feedbackId} not found`, 404);
     }
     
     try {
       return await this.feedbackRepo.updatePrivateNote(feedbackId, notaPrivada);
     } catch (error) {
-      logger.error(`[PrivateNoteService] Error actualizando nota para feedback ${feedbackId}`, { error: error.message });
-      throw new AppError('Error actualizando nota privada en base de datos', 500);
+      logger.error(`[PrivateNoteService] Error updating private note for feedback ${feedbackId}`, { error: error.message });
+      throw new AppError('Error updating private note in the database', 500);
     }
   }
 }

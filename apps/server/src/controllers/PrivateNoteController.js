@@ -11,11 +11,11 @@ export default class PrivateNoteController {
       const { nota_privada } = req.body;
       
       if (!id) {
-        return next(new AppError('ID de feedback requerido', 400));
+        return next(new AppError('Feedback ID is required', 400));
       }
 
       const result = await this.privateNoteService.updateNote(id, nota_privada);
-      res.json({ exito: true, mensaje: 'Nota privada actualizada', data: result });
+      res.json({ exito: true, mensaje: 'Private note updated', data: result });
     } catch (error) {
       next(error);
     }

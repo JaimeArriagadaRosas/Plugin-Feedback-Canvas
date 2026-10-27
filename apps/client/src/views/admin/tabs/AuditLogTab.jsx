@@ -1,6 +1,11 @@
 import styles from '../AdminPanel.module.css';
 import { useAuditLogs } from '../../../hooks/useAuditLogs';
 
+const formatAuditText = (value) => String(value ?? '')
+  .replace(/\bFALLIDA\b/g, 'FAILED')
+  .replace(/\bDENEGADO\b/g, 'DENIED')
+  .replace(/\bMensaje:/g, 'Message:');
+
 export default function AuditLogTab() {
   const { logs, loading, error, fetchLogs } = useAuditLogs(50);
 
@@ -72,11 +77,11 @@ export default function AuditLogTab() {
                       display: 'inline-block'
                     }}>
                       {log.accion.includes('FALLIDA') || log.accion.includes('DENEGADO') ? '⚠️ ' : '🛡️ '} 
-                      {log.accion}
+                      {formatAuditText(log.accion)}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px', color: '#666' }}>
-                    <div>{log.detalle}</div>
+                    <div>{formatAuditText(log.detalle)}</div>
                     {log.ip_address && <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px' }}>IP: {log.ip_address}</div>}
                   </td>
                 </tr>

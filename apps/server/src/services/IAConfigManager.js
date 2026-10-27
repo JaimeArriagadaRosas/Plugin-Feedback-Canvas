@@ -27,7 +27,7 @@ export default class IAConfigManager {
     
     // Si se solicitó un proveedor específico y no tiene llave, fallamos
     if (!keyData || !keyData.apiKey) {
-      throw new Error(`No se encontró una llave de API activa para el servicio: ${serviceName}`);
+      throw new Error(`No active API key found for the service: ${serviceName}`);
     }
 
     const config = this.configRepo ? await this.configRepo.getConfigIA() : null;

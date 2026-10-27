@@ -11,7 +11,7 @@ export default function PendingFeedbacksIndicator({ courseId }) {
   const { data: summary = { count: 0, students: [] } } = useQuery({
     queryKey: ['pending-summary', courseId],
     queryFn: async () => {
-      const qs = courseId && courseId !== 'Todos' ? `?courseId=${courseId}` : '';
+      const qs = courseId && courseId !== 'All' ? `?courseId=${courseId}` : '';
       const response = await api.get(`/feedback/pending/summary${qs}`);
       if (response.exito) {
         return response.data;

@@ -116,7 +116,7 @@ export default function VariablesGlobalView() {
                 onChange={handleInputChange}
                 disabled={submitting}
               />
-              <small>Example: {'{{asistencia_porcentaje}}'}</small>
+              <small>Example: {'{{attendance_percentage}}'}</small>
             </div>
             <div className={styles.formGroup}>
               <label>Description and Source</label>
