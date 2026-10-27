@@ -122,6 +122,15 @@ export default class FeedbackGenerationService {
 
       context.submission.pointsPossible = scorePolicy.possible;
       context.submission.score = scorePolicy.earned;
+      // Estadística general opcional; el promedio de una tarea no la reemplaza.
+      if (template.contenido.includes('{{promedio_curso}}') &&
+          typeof this.canvasGateway.getCourseAverage === 'function') {
+        try {
+          context.canvasCourseAverage = await this.canvasGateway.getCourseAverage(courseId, teacherId);
+        } catch (error) {
+          logger.warn('Promedio general del curso no disponible; se omite variable opcional.');
+        }
+      }
       context.instructionIA = context.instructionIA + '\n' + template.instructionIA + activeVariablesInfo.text;
       await this._appendActiveVariableData(context, activeVariablesInfo.activeVars);
 
