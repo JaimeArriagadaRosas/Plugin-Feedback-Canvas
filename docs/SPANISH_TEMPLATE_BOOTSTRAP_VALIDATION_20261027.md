@@ -14,3 +14,6 @@ ESLint: aprobado.
 
 ## Pendientes
 Validacion de interfaz LTI, flujos de edicion/previsualizacion/asignacion, inyeccion de fallos de transaccion y evaluacion inglesa aislada. No se han borrado bases de datos ni contenedores persistentes.
+
+## Parity rerun 2026-10-27
+Reproduced intermittent simultaneous first-login response with missing templates (database eventually contained three). TemplateManager now refreshes the final list after first-login checks, even when another request provisioned templates concurrently. PostgreSQL 15 parity: 10/10 pass. npm test: 321 pass / 11 skip. ESLint: pass.

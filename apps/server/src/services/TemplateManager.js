@@ -31,9 +31,10 @@ export default class TemplateManager {
     const localePresent = await this.templateRepo.hasLocaleTemplateRecord(profesorId);
     if (!localePresent) {
       await this.templateRepo.cloneDefaultTemplates(profesorId);
-      templates = await this.templateRepo.listByProfesor(profesorId);
     }
     if (!hasSeeded) await this.templateRepo.markTemplatesAsSeeded(profesorId);
+    // Another parallel login can finish seeding after the first list call.
+    templates = await this.templateRepo.listByProfesor(profesorId);
     const owned = templates.filter(t => t.profesor_id != null && String(t.profesor_id) === String(profesorId));
     return owned.length ? owned : templates.filter(t => t.profesor_id == null || String(t.profesor_id) === String(profesorId));
   }
