@@ -12,6 +12,8 @@ export default function StudentRecentFeedback({
   studentRating,
   studentEsUtil,
   ratingSaved,
+  ratingError,
+  ratingPending,
   onRate,
   onBack,
 }) {
@@ -79,7 +81,7 @@ export default function StudentRecentFeedback({
                   <StarRating 
                     value={studentRating} 
                     onChange={handleRate} 
-                    readonly={false} 
+                    readonly={ratingPending}
                   />
                 </div>
 
@@ -88,17 +90,20 @@ export default function StudentRecentFeedback({
                   <Button 
                     variant={studentEsUtil === true ? 'primary' : 'outline'} 
                     onClick={() => handleUtilChange(true)}
+                    disabled={ratingPending}
                   >
                     Yes, it was useful
                   </Button>
                   <Button 
                     variant={studentEsUtil === false ? 'danger' : 'outline'} 
                     onClick={() => handleUtilChange(false)}
+                    disabled={ratingPending}
                   >
                     It wasn't useful
                   </Button>
                 </div>
 
+                {ratingError && <span role='alert'>{ratingError}</span>}
                 {ratingSaved && <span className={styles.ratingSavedMsg}>✓ Thank you for your rating!</span>}
               </div>
             </div>

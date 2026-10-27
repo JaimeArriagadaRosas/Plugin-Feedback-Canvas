@@ -33,8 +33,8 @@ export default class StudentController {
   async rateByStudent(req, res) {
     const { id, rating, esUtil } = req.body;
     
-    // The service must use appIdentity to know it is the student rating
-    await this.feedbackService.rateByStudent(id, rating, esUtil, req.appIdentity);
-    res.json({ exito: true, mensaje: 'Utility rating saved successfully' });
+    // El servicio deberá usar el appIdentity para saber que es el estudiante calificando
+    const saved = await this.feedbackService.rateByStudent(id, rating, esUtil, req.appIdentity);
+    res.json({ exito: true, mensaje: 'Rating saved successfully', data: saved });
   }
 }

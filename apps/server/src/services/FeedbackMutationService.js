@@ -27,8 +27,25 @@ export default class FeedbackMutationService {
   }
 
   async rateByStudent(feedbackId, rating, esUtil, ltiContext = null) {
-    if (ltiContext?.studentId != null) await this._assertStudentOwnership(feedbackId, ltiContext.studentId);
-    await this.feedbackRepo.updateEstudianteRating(feedbackId, rating, esUtil);
+    if (!ltiContext?.studentId) throw new AppError('Student identity required', 403);
+    if (rating !== undefined && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
+      throw new AppError('Rating must be an integer from 1 to 5', 400);
+    }
+    if (esUtil !== undefined && typeof esUtil !== 'boolean') {
+      throw new AppError('Usefulness must be boolean', 400);
+    }
+    if (rating === undefined && esUtil === undefined) throw new AppError('No rating provided', 400);
+    const existing = await this.feedbackRepo.getById(feedbackId);
+    if (!existing) throw new AppError('Feedback not found', 404);
+    if (String(existing.estudiante_id) !== String(ltiContext.studentId)) {
+      throw new AppError('Access denied: feedback belongs to another student', 403);
+    }
+    if (!['APROBADO', 'ENVIADO'].includes(existing.estado)) {
+      throw new AppError('Only published feedback can be rated', 400);
+    }
+    const saved = await this.feedbackRepo.updateEstudianteRating(feedbackId, rating, esUtil);
+    if (!saved) throw new AppError('Feedback not found', 404);
+    return { feedbackId, rating: saved.calificacion_estudiante, esUtil: saved.es_util };
   }
 
   async approveAndSend(command, ltiContext = null, providedTeacherId = null) {
