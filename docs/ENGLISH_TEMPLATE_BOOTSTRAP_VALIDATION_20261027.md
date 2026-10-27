@@ -22,3 +22,6 @@ npm run lint: passed. git diff --check: passed.
 
 ## Remaining validations
 Browser-based LTI login and assign/edit/preview operations; failure-injection transaction rollback and fully clean installation of Canvas need an isolated environment. No production or Spanish volumes have been deleted or reset.
+
+## Test parity 2026-10-27
+Added independent english-template-bootstrap-postgres.test.js mirrored from the two Spanish bootstrap tests. Together with the eight extended checks, PostgreSQL 15 parity: 10/10 passed. ESLint: passed. No production code change was necessary for the parity addition.
