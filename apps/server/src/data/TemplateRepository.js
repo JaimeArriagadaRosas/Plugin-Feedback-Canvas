@@ -107,13 +107,13 @@ export default class TemplateRepository {
       }
       await connection.query(`
         INSERT INTO Plantilla_Feedback(nombre,contenido,profesor_id)
-        SELECT original.nombre,original.contenido,$1
+        SELECT original.nombre,original.contenido,$1::varchar(50)
         FROM Plantilla_Feedback original
         WHERE original.profesor_id IS NULL AND original.deleted_at IS NULL
           AND original.nombre=ANY($2::text[])
           AND NOT EXISTS (
             SELECT 1 FROM Plantilla_Feedback own
-            WHERE own.profesor_id=$1 AND own.nombre=original.nombre
+            WHERE own.profesor_id=$1::varchar(50) AND own.nombre=original.nombre
           )
         ON CONFLICT (nombre,profesor_id) DO NOTHING
       `,[profesorId,names]);
