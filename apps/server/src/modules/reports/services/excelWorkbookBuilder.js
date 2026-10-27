@@ -1,3 +1,4 @@
+import { isApprovedFeedback } from '../../../services/FeedbackStatusMetrics.js';
 import ExcelJS from 'exceljs';
 
 export async function createExcelReport(sources) {
@@ -14,6 +15,7 @@ function calculateMetrics(data) {
   const metrics = {
     total: data.length,
     approved: 0,
+    sent: 0,
     pending: 0,
     edited: 0,
     rejected: 0,
@@ -28,7 +30,8 @@ function calculateMetrics(data) {
 
 function updateMetrics(metrics, row) {
   const status = row.estado || 'PENDIENTE';
-  if (status === 'APROBADO') metrics.approved += 1;
+  if (isApprovedFeedback(status)) metrics.approved += 1;
+  if (status === 'ENVIADO') metrics.sent += 1;
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;
@@ -60,7 +63,7 @@ function updateCourseMetrics(courses, row, status) {
   }
   const course = courses.get(key);
   course.total += 1;
-  if (status === 'APROBADO') course.approved += 1;
+  if (isApprovedFeedback(status)) course.approved += 1;
   addRating(course.teacherRating, row.calificacion_profesor);
   addRating(course.studentRating, row.calificacion_estudiante);
 }
@@ -73,7 +76,7 @@ function addGlobalSheets(workbook, metrics) {
     ['Tasa de Aprobación Global', formatPercentage(metrics.approved, metrics.total)],
     ['Promedio Valoración Profesores', withStars(teacherAverage)],
     ['Promedio Valoración Estudiantes', withStars(studentAverage)],
-    ['---', '---'], ['Total Aprobados', metrics.approved], ['Total Editados', metrics.edited],
+    ['---', '---'], ['Total Aprobados', metrics.approved], ['Total Enviados', metrics.sent], ['Total Editados', metrics.edited],
     ['Total Pendientes', metrics.pending], ['Total Rechazados', metrics.rejected]
   ].map(([metrica, valor]) => ({ metrica, valor })));
   addRowsSheet(workbook, 'Utilidad del Feedback', metricColumns('Métrica de Utilidad (Estudiantes)'), [
@@ -182,4 +185,4 @@ function formatDate(value) { return value ? new Date(value).toLocaleString() : '
 function valueOrNa(value) { return value === null || value === undefined ? 'N/A' : value; }
 function formatAverage({ sum, count }) { return count ? (sum / count).toFixed(1) : 'N/A'; }
 function formatPercentage(value, total) { return total ? `${((value / total) * 100).toFixed(1)}%` : 'N/A'; }
-function withStars(value) { return value === 'N/A' ? value : `${value} ⭐`; }
+function withStars(value) { return value === 'N/A' || value === null || value === undefined || value === '' ? 'N/A' : `${value} ⭐`; }

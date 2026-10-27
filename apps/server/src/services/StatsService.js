@@ -27,6 +27,8 @@ export default class StatsService {
       byStatus[status] = (byStatus[status] || 0) + count;
     });
 
+    // ENVIADO is a terminal approved state; keep states disjoint but group for KPI.
+    const approvedTotal = (byStatus.APROBADO || 0) + (byStatus.ENVIADO || 0);
     const percentages = {};
     if (total > 0) {
       for (const [status, count] of Object.entries(byStatus)) {
@@ -35,7 +37,7 @@ export default class StatsService {
       }
     }
 
-    return { total, byStatus, percentages };
+    return { total, byStatus, percentages, approvedTotal, approvalPercentage: total ? Math.round(approvedTotal * 100 / total) : 0 };
   }
 
   async getGradeDistribution(courseId, assignmentId) {

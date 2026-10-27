@@ -100,12 +100,17 @@ export default class GeminiProvider extends IAProvider {
         }
         
         const data = await response.json();
-        return data.models
-          .filter(m => m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => ({
-            id: m.name.replace('models/', ''),
-            name: m.displayName || m.name.replace('models/', '')
-          }));
+        const incompatible = /(?:image|imagen|banana|tts|speech|audio|live|embedding|embed|vision|veo|lyria|video|robotics|computer-use|aqa)/i;
+        const retired = /(?:gemini-1\.[0-9]|gemini-2\.[0-4]|-deprecated|-retired|-exp(?:erimental)?(?:-|$))/i;
+        return (Array.isArray(data.models) ? data.models : [])
+          .filter(m => {
+            const id = String(m?.name || '').replace(/^models\//, '');
+            return Array.isArray(m?.supportedGenerationMethods)
+              && m.supportedGenerationMethods.includes('generateContent')
+              && !incompatible.test(id + ' ' + (m.displayName || ''))
+              && !retired.test(id);
+          })
+          .map(m => ({ id: m.name.replace(/^models\//, ''), name: m.displayName || m.name.replace(/^models\//, '') }));
       } catch (error) {
          GeminiErrorHandler.handleError(error);
       }

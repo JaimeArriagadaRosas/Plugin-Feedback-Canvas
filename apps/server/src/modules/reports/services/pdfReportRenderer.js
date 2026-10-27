@@ -1,3 +1,4 @@
+import { isApprovedFeedback } from '../../../services/FeedbackStatusMetrics.js';
 import PDFDocument from 'pdfkit';
 
 const COLORS = { blue: '#0374B5', text: '#333333', light: '#F5F5F5', line: '#E0E0E0' };
@@ -19,7 +20,7 @@ export function createPdfReport({ data, auditLogs, migrationLogs }) {
 
 function calculateMetrics(data) {
   const metrics = {
-    total: data.length, approved: 0, pending: 0, edited: 0, rejected: 0,
+    total: data.length, approved: 0, sent: 0, pending: 0, edited: 0, rejected: 0,
     teacherRatings: { sum: 0, count: 0 }, studentRatings: { sum: 0, count: 0 },
     stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, courses: new Map()
   };
@@ -29,7 +30,8 @@ function calculateMetrics(data) {
 
 function updateMetrics(metrics, row) {
   const status = row.estado || 'PENDIENTE';
-  if (status === 'APROBADO') metrics.approved += 1;
+  if (isApprovedFeedback(status)) metrics.approved += 1;
+  if (status === 'ENVIADO') metrics.sent += 1;
   else if (status === 'PENDIENTE') metrics.pending += 1;
   else if (status === 'EDITADO') metrics.edited += 1;
   else if (status === 'RECHAZADO') metrics.rejected += 1;
@@ -39,7 +41,7 @@ function updateMetrics(metrics, row) {
   if (!metrics.courses.has(key)) metrics.courses.set(key, { name: row.nombre_curso || `Curso ${key}`, total: 0, approved: 0 });
   const course = metrics.courses.get(key);
   course.total += 1;
-  if (status === 'APROBADO') course.approved += 1;
+  if (isApprovedFeedback(status)) course.approved += 1;
 }
 
 function addRating(ratings, value, stars) {
@@ -93,7 +95,7 @@ function drawKpi(document, x, y, title, value) {
 
 function drawStateDistribution(document, metrics) {
   drawSectionTitle(document, 'Distribución por Estado');
-  const states = [['APROBADOS', metrics.approved], ['EDITADOS', metrics.edited], ['PENDIENTES', metrics.pending], ['RECHAZADOS', metrics.rejected]];
+  const states = [['APROBADOS', metrics.approved], ['ENVIADOS', metrics.sent], ['EDITADOS', metrics.edited], ['PENDIENTES', metrics.pending], ['RECHAZADOS', metrics.rejected]];
   states.forEach(([name, count]) => {
     document.fillColor(COLORS.text).fontSize(12).text(name, 50, document.y);
     document.text(String(count), 200, document.y);

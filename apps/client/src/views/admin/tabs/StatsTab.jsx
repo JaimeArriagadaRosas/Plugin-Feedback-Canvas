@@ -57,7 +57,7 @@ export default function StatsTab() {
           <div style={{ padding: '20px', background: '#e6f4ea', borderRadius: '8px', minWidth: '200px' }}>
             <h3 style={{ margin: '0 0 10px 0' }}>Aprobados</h3>
             <p style={{ fontSize: '32px', fontWeight: 'bold', margin: '0', color: '#137333' }}>
-              {stats.byStatus['APROBADO'] || 0} ({stats.percentages['APROBADO'] || 0}%)
+              {(stats.byStatus['APROBADO'] || 0) + (stats.byStatus['ENVIADO'] || 0)} ({stats.approvalPercentage ?? 0}%)
             </p>
           </div>
 
@@ -76,6 +76,8 @@ export default function StatsTab() {
           </div>
         </div>
       )}
+
+      {stats && <p style={{ marginTop: '12px' }}>Enviados: {stats.byStatus['ENVIADO'] || 0}</p>}
 
       <div style={{ marginTop: '30px', display: 'flex', gap: '15px' }}>
         <button 
