@@ -33,11 +33,11 @@ export function useTemplateEditor(template) {
     const currentText = content[currentTab] || "";
     const text = currentText
       .split('\n')
-      .map(line => line.replaceAll('{{promedio_curso}}', '[Promedio del curso no disponible en vista previa]'))
+      .map(line => line.replaceAll('{{promedio_curso}}', '74 de 100 puntos'))
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .replace(/{{nombre_estudiante}}/g, 'Juan Pérez')
-      .replace(/{{calificacion}}/g, '42 de 50 puntos');
+      .replace(/{{calificacion}}/g, '88 de 100 puntos');
     setPreview(text);
   }, [content, currentTab]);
 
