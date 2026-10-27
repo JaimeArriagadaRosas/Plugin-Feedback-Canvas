@@ -67,12 +67,13 @@ export default class TemplateRepository {
 
   async hasLocaleTemplateRecord(profesorId) {
     const names = ['Clase Estándar', 'Feedback Detallado', 'Evaluación Cruzada'];
-    // Include soft-deleted rows: never recreate a template a teacher intentionally removed.
+    // Each default must have a record; soft-deleted records count as intentionally removed.
+    // Checking only one record leaves partially provisioned teachers permanently incomplete.
     const res = await db.query(
-      'SELECT 1 FROM Plantilla_Feedback WHERE profesor_id=$1 AND nombre=ANY($2::text[]) LIMIT 1',
+      'SELECT COUNT(DISTINCT nombre)::int AS count FROM Plantilla_Feedback WHERE profesor_id=$1 AND nombre=ANY($2::text[])',
       [profesorId, names]
     );
-    return res.rowCount > 0;
+    return res.rows[0].count === names.length;
   }
 
   async cloneDefaultTemplates(profesorId) {
