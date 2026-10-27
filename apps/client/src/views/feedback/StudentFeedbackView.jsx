@@ -24,6 +24,8 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
     studentRating,
     studentEsUtil,
     ratingSaved,
+    ratingError,
+    ratingPending,
     handleSelectAssignment,
     handleRateFeedback,
     handleBackToList,
@@ -75,6 +77,8 @@ export default function StudentFeedbackView({ initialStudentId = 1, onExit }) {
             studentRating={studentRating}
             studentEsUtil={studentEsUtil}
             ratingSaved={ratingSaved}
+            ratingError={ratingError}
+            ratingPending={ratingPending}
             onRate={handleRateFeedback}
             onBack={handleBackToList}
           />

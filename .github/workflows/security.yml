@@ -102,8 +102,9 @@ jobs:
           node-version: '22.12.0'
           cache: npm
       - run: npx --yes npm@11.8.0 ci
-      - name: Test isolated PostgreSQL with Testcontainers
-        run: npx --yes npm@11.8.0 exec -- vitest run --project=@plugin-feedback/server tests/integration/backend_smoke.test.js --pool=forks --fileParallelism=false
+      - name: Test all server regressions against disposable PostgreSQL
+        run: npx --yes npm@11.8.0 exec -- vitest run --project=@plugin-feedback/server --pool=forks --fileParallelism=false
         env:
           CI: true
           RUN_DOCKER_TESTS: 'true'
+          ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'

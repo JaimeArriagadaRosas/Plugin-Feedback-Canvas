@@ -63,8 +63,12 @@ export const schemas = {
     .or(z.record(z.unknown())),
   studentRate: z.object({
     id: idNum,
-    rating: z.number().min(1).max(5),
-  }),
+    rating: z.number().int().min(1).max(5).optional(),
+    esUtil: z.boolean().optional(),
+  }).strict().refine(
+    data => data.rating !== undefined || data.esUtil !== undefined,
+    { message: 'Se requieren estrellas o una valoración de utilidad' }
+  ),
   localRole: z.object({
     role: z.enum(['admin', 'teacher', 'student']),
   }),

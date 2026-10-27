@@ -197,17 +197,13 @@ export default class FeedbackRepository {
     let res = await db.query(
       `UPDATE Historial_Feedback_Generado 
        SET calificacion_estudiante = COALESCE($1, calificacion_estudiante), 
-           es_util = COALESCE($2, es_util),
-           actualizado_en = NOW()
+           es_util = COALESCE($2, es_util)
        WHERE id = $3 
        RETURNING *`,
       [pgRating, pgEsUtil, id]
     );
     
-    if (res.rows.length === 0) {
-      res = await db.query('SELECT * FROM Historial_Feedback_Generado WHERE id = $1', [id]);
-    }
-    return res.rows[0];
+    return res.rows[0] ?? null;
   }
 
   async updatePrivateNote(id, notaPrivada) {
