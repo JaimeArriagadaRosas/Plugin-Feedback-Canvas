@@ -142,3 +142,17 @@ las fuentes históricas. Esto no demuestra aún login LTI cruzando versiones ni
 un upgrade entre versiones distintas de Canvas.
 
 Documentación: [Laboratorio histórico real](QA_CANVAS_HISTORICAL_REAL_20261111.md).
+
+## Demostración histórica con Rails y navegador headless
+
+Se ejecutaron siete escenarios con datos PostgreSQL históricos reales sobre
+redes y volúmenes Docker desechables: login normal de agosto y octubre, dos
+cruces de configuración que generan HTTP 500 antes del POST de login, dos
+controles que recuperan los logins conservando la clave de cifrado asociada a
+la base, y una base incompleta bloqueada antes de Rails.
+
+Este hallazgo **no es la excepción FK del profesor**. Es una incompatibilidad
+de configuración y datos distinta; no se habilitaron autorreparaciones de
+claves. Tampoco se modificó el menú interactivo.
+
+Informe técnico: [Canvas histórico: login y clave de cifrado](QA_CANVAS_HISTORICAL_LOGIN_CAUSAL_20261111.md).
