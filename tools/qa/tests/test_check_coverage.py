@@ -31,6 +31,35 @@ class CoverageTests(unittest.TestCase):
         data["results"].pop()
         self.assertFalse(coverage.check_report(data,coverage.BROWSER)["ok"])
 
+    def test_one_new_real_port_e2e_reduces_gap_without_claiming_old_canvas_support(self):
+        expected = {
+            "external_occupied_port_e2e":"PASS",
+            "interrupted_full_canvas_setup_e2e":"INTEGRATION_ONLY",
+            "historical_canvas_version_upgrade_e2e":"NOT_VERIFIED",
+            "real_multi_shard_account_login":"NOT_VERIFIED",
+            "original_professor_fk_without_injection":"NOT_REPRODUCED"
+        }
+        result=coverage.check_remaining_scenarios({
+            "cases":[{"scenario":key,"status":value} for key,value in expected.items()]
+        })
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["verified"],1)
+        self.assertEqual(result["expected"],1)
+        self.assertEqual(len(result["pending"]),4)
+        self.assertIn("historical_canvas_version_upgrade_e2e",result["pending"])
+
+    def test_false_multi_shard_success_is_refused(self):
+        cases=[{"scenario":key,"status":"PASS"} for key in coverage.GAPS]
+        result=coverage.check_remaining_scenarios({"cases":cases})
+        self.assertFalse(result["ok"])
+        self.assertIn("real_multi_shard_account_login_unexpected_status",result["issues"])
+
+    def test_missing_or_duplicate_scenario_is_never_complete(self):
+        cases=[{"scenario":key,"status":"PASS"} for key in coverage.GAPS]
+        self.assertFalse(coverage.check_remaining_scenarios({"cases":cases[:-1]})["ok"])
+        cases.append(cases[0])
+        self.assertFalse(coverage.check_remaining_scenarios({"cases":cases})["ok"])
+
     def test_future_canvas_migration_and_multishard_are_explicit_gaps(self):
         self.assertIn("historical_canvas_version_upgrade_e2e",coverage.GAPS)
         self.assertIn("real_multi_shard_account_login",coverage.GAPS)

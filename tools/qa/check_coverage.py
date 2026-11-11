@@ -56,36 +56,67 @@ def check_report(payload, expected, *, requires_cleanup=False):
             "verified":sum(seen.get(name)=="PASS" for name in expected),
             "expected":len(expected)}
 
+def check_remaining_scenarios(payload):
+    expected = set(GAPS)
+    scenarios = payload.get("cases")
+    if not isinstance(scenarios, list):
+        return {"ok":False, "verified":0, "issues":["missing_remaining_cases"], "pending":list(GAPS)}
+    keys = [case.get("scenario") for case in scenarios]
+    if len(keys) != len(set(keys)) or set(keys) != expected:
+        return {"ok":False, "verified":0, "issues":["remaining_case_ids_mismatch"], "pending":list(GAPS)}
+    statuses = {case["scenario"]:case.get("status") for case in scenarios}
+    allowed = {
+        "external_occupied_port_e2e":{"PASS"},
+        "interrupted_full_canvas_setup_e2e":{"INTEGRATION_ONLY"},
+        "historical_canvas_version_upgrade_e2e":{"NOT_VERIFIED"},
+        "real_multi_shard_account_login":{"NOT_VERIFIED","READY_FOR_MANUAL_E2E"},
+        "original_professor_fk_without_injection":{"NOT_REPRODUCED"}
+    }
+    issues=[key+"_unexpected_status" for key in GAPS if statuses[key] not in allowed[key]]
+    passed=statuses["external_occupied_port_e2e"]=="PASS"
+    return {
+        "ok":not issues and passed,
+        "verified":int(passed) if not issues else 0,
+        "expected":1,
+        "issues":issues,
+        "pending":[key for key in GAPS if key != "external_occupied_port_e2e"] if passed else list(GAPS),
+        "statuses":statuses
+    }
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docker-report",required=True)
     parser.add_argument("--browser-report",required=True)
     parser.add_argument("--output",required=True)
+    parser.add_argument("--remaining-report")
     args=parser.parse_args()
     qa_root=Path.home()/"qa-feedback-20261110/artifacts"
-    report_paths=[Path(x).resolve() for x in (args.docker_report,args.browser_report,args.output)]
+    report_paths=[Path(x).resolve() for x in (args.docker_report,args.browser_report,args.output,*([args.remaining_report] if args.remaining_report else []))]
     if any(not location.is_relative_to(qa_root) for location in report_paths):
         raise RuntimeError("Reports must stay within the isolated QA artifact directory.")
     docker=json.loads(report_paths[0].read_text())
     browser=json.loads(report_paths[1].read_text())
     docker_result=check_report(docker,DOCKER,requires_cleanup=True)
     browser_result=check_report(browser,BROWSER)
+    remaining_result=check_remaining_scenarios(json.loads(report_paths[3].read_text())) if args.remaining_report else None
+    additional=remaining_result["verified"] if remaining_result else 0
     total={
         "generatedAt":datetime.now(timezone.utc).isoformat(),
         "mode":"reconciliation_only_no_commands_no_migrations",
         "disposableDocker":docker_result,
         "headlessCanvasLti":browser_result,
-        "passedE2E":docker_result["verified"]+browser_result["verified"],
-        "totalExpectedE2E":len(DOCKER)+len(BROWSER),
-        "unverifiedScenarios":list(GAPS),
-        "completeForTestedScenarios":docker_result["ok"] and browser_result["ok"],
+        "remainingScenarios":remaining_result,
+        "passedE2E":docker_result["verified"]+browser_result["verified"]+additional,
+        "totalExpectedE2E":len(DOCKER)+len(BROWSER)+(1 if remaining_result else 0),
+        "unverifiedScenarios":remaining_result["pending"] if remaining_result else list(GAPS),
+        "completeForTestedScenarios":docker_result["ok"] and browser_result["ok"] and (remaining_result is None or remaining_result["ok"]),
         "allHistoricalCanvasCompatibilityVerified":False,
     }
     report_paths[2].write_text(json.dumps(total,ensure_ascii=False,indent=2)+"\n")
     report_paths[2].chmod(0o600)
     print("QA_COMPAT_COVERAGE",total["passedE2E"],"/",total["totalExpectedE2E"],
           "ALL_VERIFIED",total["completeForTestedScenarios"],
-          "PENDING",len(GAPS),"REPORT",report_paths[2])
+          "PENDING",len(total["unverifiedScenarios"]),"REPORT",report_paths[2])
     return 0 if total["completeForTestedScenarios"] else 1
 
 if __name__=="__main__":

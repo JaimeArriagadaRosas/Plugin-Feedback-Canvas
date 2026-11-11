@@ -116,3 +116,16 @@ Los siguientes siguen sin una reproducción E2E real:
 Se prioriza no alterar la instalación habitual. Las reparaciones de cuentas,
 términos y shards permanecen deliberadamente deshabilitadas hasta contar con
 evidencia de una recuperación segura y reversible.
+
+## Ampliación de las cinco situaciones restantes (11/11/2026)
+
+Se incorporó un ensayo E2E auténtico de puertos ajenos, dos pruebas de
+integración de reanudación de instalación, una comparación de historiales de
+migración de Canvas (solo lectura), y un verificador de requisitos multi-shard.
+La opción 6 también informa migraciones pendientes o desconocidas.
+
+**Cobertura total verificada: 26/26 E2E**, con cuatro cuestiones abiertas
+que se identifican separadamente, sin presentarlas como éxito.
+
+Detalles, comandos y limitaciones:
+[Escenarios restantes de Canvas](QA_CANVAS_REMAINING_SCENARIOS_20261111.md).
