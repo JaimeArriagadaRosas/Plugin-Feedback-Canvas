@@ -13,7 +13,8 @@ npm start
 ## Qué inspecciona
 
 - Disponibilidad de los archivos y versión Git de Canvas.
-- Identidad de los contenedores `postgres` y `web` de Canvas: etiquetas Compose, directorio de proyecto y estado.
+- Identidad de los contenedores `postgres`, `web` y `redis` de Canvas: etiquetas Compose, directorio de proyecto y estado.
+- Catálogo de Canvas: presencia de cuentas, términos, shards e historial de migraciones. Si faltan tablas básicas, detiene las consultas detalladas y muestra CANVAS-DB-SCHEMA-001 sin intentar reparaciones.
 - Base `canvas_development`: cantidad de cuentas, cuentas raíz, términos de servicio, referencias huérfanas, restricción FK de términos, FK pendientes de validar y tabla/cantidad de shards.
 - Muestra limitada de los logs recientes del contenedor web (hasta 350 líneas de las últimas 24 horas). Si existe un error reconocible con `account_id`, comprueba si la referencia existe en `accounts` de la base consultada, **sin guardar ni mostrar el ID**.
 
@@ -42,3 +43,5 @@ Las observaciones son **indicadores**, no una demostración automática de la ca
 - Validación manual en WSL: Canvas detenido genera informe parcial sin iniciar servicios; laboratorio Canvas activo permite verificar PostgreSQL mediante consultas exclusivamente de lectura.
 
 La función principal es `diagnoseCanvasReadOnly` en `apps/installer/src/diagnostics/CanvasReadOnlyDiagnosis.js`.
+
+Las advertencias DOCKER_REDIS_STOPPED y CANVAS-REDIS-001 indican Redis detenido o no saludable; ninguna realiza reinicios. CANVAS-DB-SCHEMA-002 indica ausencia del historial de migraciones. La detección de un esquema antiguo no implica que esté validada su actualización.

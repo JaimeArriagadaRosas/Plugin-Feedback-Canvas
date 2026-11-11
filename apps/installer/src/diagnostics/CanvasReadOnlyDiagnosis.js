@@ -8,6 +8,13 @@ const MAX_OUTPUT = 1024 * 1024;
 const TIMEOUT_MS = 10000;
 const READ_ONLY_PG = '-c default_transaction_read_only=on';
 
+const SQL_SCHEMA = `SELECT json_build_object(
+  'accountsExists', to_regclass('public.accounts') IS NOT NULL,
+  'termsExists', to_regclass('public.terms_of_services') IS NOT NULL,
+  'shardsExists', to_regclass('public.switchman_shards') IS NOT NULL,
+  'migrationsExists', to_regclass('public.schema_migrations') IS NOT NULL
+);`;
+
 const SQL_OVERVIEW = `SELECT json_build_object(
   'database', current_database(),
   'accountCount', (SELECT COUNT(*) FROM public.accounts),
@@ -88,6 +95,12 @@ async function inspectService(execute, canvasDir, name, report) {
       `El contenedor ${name} está detenido. No se reiniciará automáticamente.`);
     return null;
   }
+  if (name === 'redis' && obj.State?.Health?.Status &&
+      obj.State.Health.Status !== 'healthy') {
+    add(report, 'CANVAS-REDIS-001', 'unavailable',
+      'Redis está activo pero su comprobación de salud no es satisfactoria; no se reparó.');
+    return null;
+  }
   add(report, `DOCKER_${name.toUpperCase()}_RUNNING`, 'ok', `Contenedor ${name} activo y verificado.`);
   return ids[0];
 }
@@ -132,6 +145,8 @@ export async function diagnoseCanvasReadOnly({
       ? revision.stdout.trim() : null;
     const postgres = await inspectService(execute, canvasDir, 'postgres', report);
     const web = await inspectService(execute, canvasDir, 'web', report);
+    // Observe Redis; never restart or recreate it from the diagnosis.
+    await inspectService(execute, canvasDir, 'redis', report);
     let reference = null;
     if (web) {
       const logs = await run(execute, 'docker', ['logs', '--since', '24h', '--tail', '350', web]);
@@ -149,6 +164,24 @@ export async function diagnoseCanvasReadOnly({
       }
     }
     if (postgres) {
+      const catalog = parseJsonResult(await queryReadOnly(execute, postgres, SQL_SCHEMA, canvasDir));
+      if (!catalog) {
+        add(report, 'CANVAS-DB-SCHEMA-READ', 'unavailable',
+          'No fue posible inspeccionar el catálogo de Canvas en modo solo lectura.');
+        report.status = resultStatus(report.checks);
+        return { report, reportPath: saveReport(report, pluginDir) };
+      }
+      if (!catalog.accountsExists || !catalog.termsExists || !catalog.shardsExists) {
+        add(report, 'CANVAS-DB-SCHEMA-001', 'critical',
+          'El esquema de Canvas está incompleto o utiliza tablas incompatibles. No se ejecutarán migraciones.');
+        report.database = { schemaCatalog: catalog };
+        report.status = resultStatus(report.checks);
+        return { report, reportPath: saveReport(report, pluginDir) };
+      }
+      if (!catalog.migrationsExists) {
+        add(report, 'CANVAS-DB-SCHEMA-002', 'warning',
+          'No se encontró el historial de migraciones de Canvas. Se requiere revisión antes de actualizar.');
+      }
       const response = await queryReadOnly(execute, postgres, SQL_OVERVIEW, canvasDir);
       const overview = parseJsonResult(response);
       if (!overview || !Number.isInteger(overview.accountCount) || !Number.isInteger(overview.termsCount)) {
