@@ -7,6 +7,7 @@ import pg from 'pg';
 
 import { createDatabaseConfig } from '../connection/databaseConfig.js';
 import { MigrationProgressReporter } from './MigrationProgressReporter.js';
+import { inspectMigrationCompatibility } from './CompatibilityPreflight.js';
 
 const { Client } = pg;
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -88,6 +89,14 @@ export async function runMigrations(options = {}) {
     if (ownsClient) await client.connect();
     await client.query('SELECT pg_advisory_lock($1)', [advisoryLockId]);
     lockAcquired = true;
+    // Off by default: protects explicit legacy-migration investigations while
+    // preserving the user's established installation/update behavior.
+    if (options.requireSafeHistory === true || process.env.PLUGIN_SAFE_MIGRATION_PREFLIGHT === 'true') {
+      const diagnosis = await inspectMigrationCompatibility(client, migrationsDirectory);
+      if (diagnosis.status === 'blocked') {
+        throw new Error('[' + diagnosis.code + '] ' + diagnosis.reason + ' No se aplicaron migraciones.');
+      }
+    }
     await ensureMigrationTables(client);
     const pending = await readPendingMigrations(client, migrationsDirectory);
     if (pending.length === 0) reporter.noPending();

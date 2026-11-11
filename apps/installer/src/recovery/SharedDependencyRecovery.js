@@ -93,8 +93,15 @@ export class SharedDependencyRecovery {
     try {
       for (const service of stopped) {
         const fresh = await this.inspect(cwd);
+        // Services started during this same operation may still be in Docker's
+        // healthcheck warm-up phase. They are not foreign unhealthy services.
+        // Never ignore identity changes; require every service healthy at the end.
+        const alreadyStarted = new Set(recovered);
         if (fresh.find(s => s.name === service.name)?.state !== 'stopped' ||
-            fresh.some(s => s.owner !== owner || !['healthy', 'stopped'].includes(s.state))) {
+            fresh.some(s => s.owner !== owner || s.state === 'conflict' || s.state === 'absent' ||
+              (alreadyStarted.has(s.name)
+                ? s.state === 'stopped'
+                : !['healthy', 'stopped'].includes(s.state)))) {
           return { kind: 'block', services: fresh, recovered, reason: 'El estado de los contenedores cambió durante la comprobación' };
         }
         await this.exec('docker', ['start', service.name], { cwd, timeout: 15000 });

@@ -74,3 +74,7 @@ Thumbs.db
 
 # Este proyecto versiona archivos de codigo/configuracion con sufijo *.local.*.
 # No agregar una regla global *.local: no son automaticamente secretos.
+
+# Python QA local / test runner
+__pycache__/
+*.pyc

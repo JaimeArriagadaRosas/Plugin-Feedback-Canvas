@@ -1,0 +1,43 @@
+# Disposable QA only. Random project name is supplied by the isolated scenario runner.
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${QA_DB_PASSWORD:?QA_DB_PASSWORD_required}
+      POSTGRES_DB: feedback_plugin_db
+    ports:
+      - target: 5432
+        published: "${QA_DB_HOST_PORT:?QA_DB_HOST_PORT_required}"
+        host_ip: 127.0.0.1
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d feedback_plugin_db"]
+      interval: 2s
+      timeout: 2s
+      retries: 25
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    ports:
+      - target: 3000
+        published: "${QA_GOTENBERG_HOST_PORT:?QA_GOTENBERG_HOST_PORT_required}"
+        host_ip: 127.0.0.1
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 25
+  redis:
+    image: redis:7-alpine
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 25
+
+volumes:
+  test_db_data:

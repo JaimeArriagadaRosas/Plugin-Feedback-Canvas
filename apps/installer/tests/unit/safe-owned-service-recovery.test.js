@@ -115,6 +115,37 @@ describe('Safe recovery: exact identity, ownership and bounded operations',()=>{
     expect((await attempt(rt)).kind).toBe('block');
     expect(rt.calls.some(c=>c[1]==='start')).toBe(false);
   });
+  it('permite iniciar dos contenedores propios mientras el primero sigue arrancando',async()=>{
+    const rt=makeRuntime({stateDb:'stopped',stateG:'stopped'});
+    const inspect=rt.exec;
+    const states={
+      [env.PLUGIN_DB_CONTAINER_NAME]:'stopped',
+      [env.PLUGIN_GOTENBERG_CONTAINER_NAME]:'stopped'
+    };
+    rt.exec=async(command,args)=>{
+      if(args[0]==='start'){
+        rt.calls.push([command,...args]);
+        states[args[1]]='starting';
+        if(args[1]===env.PLUGIN_GOTENBERG_CONTAINER_NAME){
+          for(const name of Object.keys(states)) states[name]='healthy';
+        }
+        return {stdout:args[1]};
+      }
+      const result=await inspect(command,args);
+      const data=JSON.parse(result.stdout);
+      const state=states[args[1]];
+      data.State.Running=state!=='stopped';
+      data.State.Health.Status=state;
+      data.NetworkSettings.Ports=state==='stopped'?{}:data.HostConfig.PortBindings;
+      return {stdout:JSON.stringify(data)};
+    };
+    const result=await attempt(rt);
+    expect(result.kind).toBe('reuse');
+    expect(result.recovered).toEqual([env.PLUGIN_DB_CONTAINER_NAME,env.PLUGIN_GOTENBERG_CONTAINER_NAME]);
+    expect(result.services.every(s=>s.state==='healthy')).toBe(true);
+    expect(rt.calls.filter(c=>c[1]==='start')).toHaveLength(2);
+  });
+
   it('does not retry a failing docker start',async()=>{
     const rt=makeRuntime();
     const original=rt.exec;
