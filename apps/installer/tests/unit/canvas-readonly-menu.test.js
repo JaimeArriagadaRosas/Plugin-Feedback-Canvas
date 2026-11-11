@@ -36,6 +36,13 @@ describe('El menú de caja negra integra el diagnóstico 6', () => {
       const record = JSON.parse(fs.readFileSync(path.join(pluginDir, 'logs', 'canvas-diagnostics', reports[0])));
       expect(record.status).toBe('incomplete');
       expect(record.checks[0].code).toBe('CANVAS_FILES');
+      expect(record.support.status).toBe('incomplete');
+      expect(record.support.primaryCode).toBe('CANVAS_FILES');
+      expect(record.support.nextStep).toContain('Verificar la ubicación');
+      expect(output).toContain('RESUMEN TÉCNICO PARA SOPORTE (COPIAR)');
+      expect(output).toContain('INTERPRETACIÓN DEL DIAGNÓSTICO');
+      expect(output).toContain('SIGUIENTE PASO RECOMENDADO');
+      for (const line of record.support.summaryLines) expect(output).toContain(line);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

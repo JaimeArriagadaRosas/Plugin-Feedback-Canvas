@@ -55,6 +55,18 @@ async function runCanvasReadOnlyDiagnostic(pluginDir) {
     console.log(reportPath ? pc.cyan(`  [Canvas] Informe: ${reportPath}`) :
       pc.yellow('  [Canvas] No se pudo guardar el informe local.'));
     console.log(pc.dim('  [Canvas] No se modificaron cuentas, volúmenes ni servicios de Canvas.'));
+    if (report.support) {
+      console.log(pc.cyan('\n  ── RESUMEN TÉCNICO PARA SOPORTE (COPIAR) ──'));
+      for (const line of report.support.summaryLines) console.log('  ' + line);
+      console.log(pc.cyan('  ─────────────────────────────────────────────'));
+      console.log(pc.bold('\n  INTERPRETACIÓN DEL DIAGNÓSTICO'));
+      console.log('  ' + report.support.title);
+      console.log('  ' + report.support.explanation);
+      console.log(pc.bold('\n  SIGUIENTE PASO RECOMENDADO'));
+      console.log('  ' + report.support.nextStep);
+      console.log(pc.dim('\n  Alcance: ' + report.support.limitations.join(' ')));
+      console.log(pc.dim('  El resumen y estas recomendaciones también están incluidos en el informe JSON.'));
+    }
     return report.status === 'healthy' && Boolean(reportPath);
   } catch {
     console.error(pc.red('  [Canvas] No fue posible completar el diagnóstico sin modificaciones.'));

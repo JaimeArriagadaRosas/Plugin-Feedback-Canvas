@@ -3,6 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execa } from 'execa';
 import { getCanvasDirectory } from '../installation/utils/LocalWorkspacePaths.js';
+import { interpretCanvasDiagnosis } from './CanvasDiagnosisInterpreter.js';
 
 const MAX_OUTPUT = 1024 * 1024;
 const TIMEOUT_MS = 10000;
@@ -22,7 +23,10 @@ const SQL_OVERVIEW = `SELECT json_build_object(
   'defaultAccountExists', (SELECT EXISTS(SELECT 1 FROM public.accounts WHERE id = 1)),
   'termsCount', (SELECT COUNT(*) FROM public.terms_of_services),
   'orphanTerms', (SELECT COUNT(*) FROM public.terms_of_services t LEFT JOIN public.accounts a ON a.id = t.account_id WHERE a.id IS NULL),
-  'termsFkExists', (SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conname = 'fk_rails_337ba633a9')),
+  'termsFkExists', (SELECT EXISTS(SELECT 1 FROM pg_constraint
+    WHERE conname = 'fk_rails_337ba633a9' AND contype = 'f' AND convalidated
+      AND conrelid = to_regclass('public.terms_of_services')
+      AND confrelid = to_regclass('public.accounts'))),
   'unvalidatedForeignKeys', (SELECT COUNT(*) FROM pg_constraint WHERE contype = 'f' AND NOT convalidated),
   'shardsTableExists', (SELECT to_regclass('public.switchman_shards') IS NOT NULL)
 );`;
@@ -115,11 +119,17 @@ function saveReport(report, pluginDir) {
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-    const location = path.join(directory, `canvas-readonly-${Date.now()}-${randomUUID()}.json`);
+    const location = path.join(directory, `canvas-readonly-${Date.now()}-${report.diagnosticId}.json`);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.writeFileSync(location, JSON.stringify(report, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
     return location;
   } catch { return null; }
+}
+
+function finalizeReport(report, pluginDir) {
+  report.status = resultStatus(report.checks);
+  report.support = interpretCanvasDiagnosis(report);
+  return { report, reportPath: saveReport(report, pluginDir) };
 }
 
 export function assessCanvasMigrationVersions(sourceVersions, appliedVersions) {
@@ -201,6 +211,20 @@ async function inspectCanvasCatalog(execute, postgres, canvasDir, report) {
   return true;
 }
 
+async function inspectRevisions(execute, pluginDir, canvasDir, report) {
+  // Read-only metadata correlates an external diagnosis with an eventual fix.
+  const getRevision = async directory => {
+    const response = await run(execute, 'git', ['-C', directory, 'rev-parse', '--short', 'HEAD']);
+    return response.ok && /^[a-f\d]{7,16}$/i.test(response.stdout.trim()) ? response.stdout.trim() : null;
+  };
+  report.pluginRevision = await getRevision(pluginDir);
+  // Save only a dirty/clean indicator; never retain changed paths or diff text.
+  const localChanges = await run(execute, 'git',
+    ['-C', pluginDir, 'status', '--porcelain', '--untracked-files=no']);
+  report.pluginTrackedChanges = localChanges.ok ? Boolean(localChanges.stdout.trim()) : null;
+  report.canvasRevision = await getRevision(canvasDir);
+}
+
 /** No npm start, compose up, migrations, Rails runner, cleanup or database writes. */
 export async function diagnoseCanvasReadOnly({
   pluginDir, canvasDir = getCanvasDirectory(), execute = execa,
@@ -208,7 +232,7 @@ export async function diagnoseCanvasReadOnly({
 } = {}) {
   if (!pluginDir) throw new Error('Se requiere el directorio de Plugin Feedback.');
   const report = {
-    schemaVersion: 1, generatedAt: now(), mode: 'read-only',
+    schemaVersion: 1, generatedAt: now(), diagnosticId: randomUUID(), mode: 'read-only',
     status: 'incomplete', composeProject: null,
     checks: [], database: null, recentLoginFailure: null,
     note: 'Los resultados describen observaciones; no confirman una causa raíz. Solo se escribe este informe local.'
@@ -219,9 +243,7 @@ export async function diagnoseCanvasReadOnly({
     add(report, 'CANVAS_FILES', 'unavailable', 'No se encontró el archivo Docker Compose de Canvas.');
   } else {
     add(report, 'CANVAS_FILES', 'ok', 'Archivos de Canvas disponibles.');
-    const revision = await run(execute, 'git', ['-C', canvasDir, 'rev-parse', '--short', 'HEAD']);
-    report.canvasRevision = revision.ok && /^[a-f\d]{7,16}$/i.test(revision.stdout.trim())
-      ? revision.stdout.trim() : null;
+    await inspectRevisions(execute, pluginDir, canvasDir, report);
     const postgres = await inspectService(execute, canvasDir, 'postgres', report);
     const web = await inspectService(execute, canvasDir, 'web', report);
     // Observe Redis; never restart or recreate it from the diagnosis.
@@ -231,21 +253,27 @@ export async function diagnoseCanvasReadOnly({
       const logs = await run(execute, 'docker', ['logs', '--since', '24h', '--tail', '350', web]);
       if (logs.ok) {
         const sample = logs.stdout + '\n' + logs.stderr;
-        reference = lastAccountReference(sample);
+        const termsForeignKeyDetected =
+          /(?:PG::ForeignKeyViolation|ActiveRecord::InvalidForeignKey)[\s\S]{0,4000}terms_of_services|terms_of_services[\s\S]{0,4000}foreign key/i.test(sample);
+        // Ignore unrelated account_id references from other log entries.
+        reference = termsForeignKeyDetected ? lastAccountReference(sample) : null;
         report.recentLoginFailure = {
           checkedLastLines: 350,
-          termsForeignKeyDetected: /(?:PG::ForeignKeyViolation|ActiveRecord::InvalidForeignKey)[\s\S]{0,4000}terms_of_services|terms_of_services[\s\S]{0,4000}foreign key/i.test(sample),
+          termsForeignKeyDetected,
           accountReferenceSeen: Boolean(reference)
         };
         add(report, 'RAILS_LOGS', 'ok', 'Se revisó una muestra reciente de logs sin conservar su contenido.');
+        if (report.recentLoginFailure.termsForeignKeyDetected) {
+          add(report, 'CANVAS_LAST_FK_ERROR', 'warning',
+            'Se detectó una excepción de clave foránea relacionada con términos de servicio en la muestra reciente; la causa exacta no está confirmada.');
+        }
       } else {
         add(report, 'RAILS_LOGS', 'unavailable', 'No fue posible inspeccionar los logs recientes de Rails.');
       }
     }
     if (postgres) {
       if (!(await inspectCanvasCatalog(execute, postgres, canvasDir, report))) {
-        report.status = resultStatus(report.checks);
-        return { report, reportPath: saveReport(report, pluginDir) };
+        return finalizeReport(report, pluginDir);
       }
       const response = await queryReadOnly(execute, postgres, SQL_OVERVIEW, canvasDir);
       const overview = parseJsonResult(response);
@@ -294,6 +322,5 @@ export async function diagnoseCanvasReadOnly({
       }
     }
   }
-  report.status = resultStatus(report.checks);
-  return { report, reportPath: saveReport(report, pluginDir) };
+  return finalizeReport(report, pluginDir);
 }

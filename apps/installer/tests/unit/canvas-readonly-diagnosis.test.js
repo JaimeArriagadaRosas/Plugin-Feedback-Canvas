@@ -30,12 +30,14 @@ function makeMigrationSource(canvasDir) {
 
 
 
-function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = false, error = true, schemaMissing = false, missingMigrationHistory = false, redisUnhealthy = false, appliedVersions = [] } = {}) {
+function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = false, error = true, referenceExists = false, schemaMissing = false, missingMigrationHistory = false, redisUnhealthy = false, appliedVersions = [] } = {}) {
   const calls = [];
   const ids = { postgres: 'a'.repeat(64), web: 'b'.repeat(64), redis: 'c'.repeat(64) };
   const execute = vi.fn(async (command, args, options = {}) => {
     calls.push({ command, args, options });
-    if (command === 'git') return { stdout: 'a1b2c3d\n', exitCode: 0 };
+    if (command === 'git') return {
+      stdout: args.includes('status') ? '' : 'a1b2c3d\n', exitCode: 0
+    };
     if (command !== 'docker') throw Error('unexpected command');
     if (args[0] === 'compose') return { stdout: ids[args.at(-1)], exitCode: 0 };
     if (args[0] === 'inspect') {
@@ -60,7 +62,7 @@ function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = 
       if (failedSql) return { exitCode: 1, stderr: 'database credentials: secret' };
       const input = options.input;
       let payload;
-      if (input.includes("to_regclass('public.accounts')")) payload = {
+      if (input.includes("'accountsExists'") && input.includes("to_regclass('public.accounts')")) payload = {
         accountsExists: !schemaMissing,
         termsExists: true,
         shardsExists: true,
@@ -68,7 +70,7 @@ function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = 
       };
       else if (input.includes('FROM public.schema_migrations;')) payload = { versions: appliedVersions };
       else if (input.includes('FROM public.switchman_shards;')) payload = { shardCount: 1 };
-      else if (input.includes('WHERE id = 100000000000001')) payload = { exists: false };
+      else if (input.includes('WHERE id = 100000000000001')) payload = { exists: referenceExists };
       else payload = {
         database: 'canvas_development', accountCount: 5, rootAccountCount: 3,
         defaultAccountExists: true, termsCount: 3, orphanTerms: 0,
@@ -89,7 +91,14 @@ describe('Opción 6: Canvas solo lectura', () => {
     expect(report.status).toBe('healthy');
     expect(report.database.accountCount).toBe(5);
     expect(report.database.shardCount).toBe(1);
+    expect(report.support.summaryLines.join('\n')).toContain('Comprobaciones:');
+    expect(report.support.limitations.join(' ')).toContain('asociaciones reales entre shards');
+    expect(fs.readFileSync(reportPath,'utf8')).toContain(report.support.title);
     expect(reportPath).toContain('canvas-readonly-');
+    expect(path.basename(reportPath)).toContain(report.diagnosticId);
+    expect(report.pluginRevision).toBe('a1b2c3d');
+    expect(report.pluginTrackedChanges).toBe(false);
+    expect(report.support.summaryLines.join(' ')).toContain('Revisión Plugin Feedback: a1b2c3d');
     expect(fs.readFileSync(reportPath, 'utf8')).toContain('read-only');
     for (const call of mock.calls) {
       if (call.command !== 'docker') continue;
@@ -112,10 +121,40 @@ describe('Opción 6: Canvas solo lectura', () => {
       accountReferenceSeen: true, referenceExistsInAccounts: false, termsForeignKeyDetected: true
     });
     expect(report.status).toBe('warning');
+    expect(report.checks.some(check => check.code === 'CANVAS_LAST_FK_ERROR')).toBe(true);
+    expect(report.support.primaryCode).toBe('CANVAS_LAST_FK_ERROR');
+    expect(report.support.summaryLines.join(' ')).toContain('no encontrada en la tabla local');
     const contents = fs.readFileSync(reportPath, 'utf8');
     expect(contents).not.toContain('100000000000001');
     expect(contents).not.toContain('sensitive-fixture');
     if (process.platform !== 'win32') expect(fs.statSync(reportPath).mode & 0o777).toBe(0o600);
+  });
+
+  it('advierte un fallo FK incluso cuando la referencia existe en accounts local', async () => {
+    const { pluginDir, canvasDir } = fixture();
+    const mock = execution(canvasDir, { error: true, referenceExists: true });
+    const { report } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute: mock.execute });
+    expect(report.recentLoginFailure.referenceExistsInAccounts).toBe(true);
+    expect(report.status).toBe('warning');
+    expect(report.checks.some(c => c.code === 'CANVAS_LAST_FK_ERROR' && c.level === 'warning')).toBe(true);
+    expect(report.support.primaryCode).toBe('CANVAS_LAST_FK_ERROR');
+    expect(report.support.explanation).toContain('no demuestra');
+  });
+
+  it('marca una excepción FK aunque falte el account_id en la muestra reciente', async () => {
+    const { pluginDir, canvasDir } = fixture();
+    const mock = execution(canvasDir, { error: false });
+    const execute = vi.fn(async (command, args, options) => {
+      if (command === 'docker' && args[0] === 'logs') {
+        return { exitCode: 0, stdout: 'PG::ForeignKeyViolation: terms_of_services foreign key constraint violated' };
+      }
+      return mock.execute(command, args, options);
+    });
+    const { report } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute });
+    expect(report.status).toBe('warning');
+    expect(report.recentLoginFailure.accountReferenceSeen).toBe(false);
+    expect(report.support.primaryCode).toBe('CANVAS_LAST_FK_ERROR');
+    expect(report.support.summaryLines.join(' ')).toContain('Referencia de cuenta del error: no evaluado');
   });
 
   it('genera informe parcial cuando PostgreSQL y web están detenidos, sin iniciarlos', async () => {
@@ -159,6 +198,8 @@ describe('Opción 6: Canvas solo lectura', () => {
     const sql = mock.calls.filter(call => call.args[0] === 'exec').map(call => call.options.input);
     expect(sql.some(query => query.includes('FROM public.schema_migrations;'))).toBe(true);
     expect(sql.every(query => query.includes('BEGIN TRANSACTION READ ONLY;'))).toBe(true);
+    expect(sql.some(query => query.includes('conrelid = to_regclass(\'public.terms_of_services\')') &&
+      query.includes('confrelid = to_regclass(\'public.accounts\')'))).toBe(true);
   });
 
   it('advierte migración pendiente sin ejecutarla ni alterar datos', async () => {
