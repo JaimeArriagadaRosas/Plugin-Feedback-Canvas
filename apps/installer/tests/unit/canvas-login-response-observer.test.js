@@ -21,7 +21,7 @@ describe('Canvas login failure observer: non-destructive diagnostics', () => {
   it('recognizes the exact Rails exception without altering HTTP bytes', async () => {
     const result = await run(signature);
     expect(result.observed).toBe(true);
-    expect(result.warn).toHaveBeenCalledTimes(3);
+    expect(result.warn).toHaveBeenCalledTimes(4);
     expect(result.received).toBe(signature);
     expect(result.warn.mock.calls.flat().join(' ')).not.toContain('100000000000001');
   });
@@ -37,6 +37,6 @@ describe('Canvas login failure observer: non-destructive diagnostics', () => {
   it('does not diagnose a generic Rails error as missing accounts', async () => {
     const result=await run('<h1>ActiveRecord::StatementInvalid</h1>');
     expect(result.observed).toBe(true);
-    expect(result.warn).not.toHaveBeenCalled();
+    expect(result.warn.mock.calls.flat().join(' ')).toContain('CANVAS-LOGIN-500');
   });
 });

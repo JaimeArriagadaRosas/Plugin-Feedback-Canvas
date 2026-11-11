@@ -59,3 +59,5 @@ Capturas y logs se mantienen fuera del repositorio en `/home/jaime/qa-feedback-2
 - Pendientes: no hay acceso a los logs y estado del entorno del profesor; no se evaluaron exhaustivamente proveedores externos de IA ni todos los flujos de estudiantes y profesores.
 
 Los scripts destructivos de prueba temporal permanecen en la carpeta de evidencia externa, sin incorporarse al código publicado.
+
+Actualización 11/11/2026: consultar [matriz causal y recuperación segura](QA_CANVAS_CAUSAL_RECOVERY_20261111.md).

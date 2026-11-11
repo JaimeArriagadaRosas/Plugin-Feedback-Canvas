@@ -1,9 +1,9 @@
-import { analyzeLogString } from '../installation/utils/Diagnostics.js';
+import { classifyCanvasLoginIncident, safeCanvasIncidentRecord, printCanvasIncident, writeCanvasIncidentReport } from './CanvasLoginIncident.js';
 
 const MAX_CAPTURE_BYTES = 64 * 1024;
 
 /** Inspect only failed Canvas login HTML, without logging or changing the response body. */
-export function observeCanvasLoginFailure(request, upstream, logger = console) {
+export function observeCanvasLoginFailure(request, upstream, logger = console, { reportDirectory } = {}) {
   const pathname = String(request?.url || '').split('?')[0];
   if (request?.method !== 'POST' || pathname !== '/login/canvas' || Number(upstream?.statusCode || 0) < 500) return false;
 
@@ -18,12 +18,10 @@ export function observeCanvasLoginFailure(request, upstream, logger = console) {
     captured.push(sample);
   });
   upstream.once('end', () => {
-    const normalized = Buffer.concat(captured).toString('utf8').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-    const result = analyzeLogString(normalized);
-    if (result.type !== 'CANVAS_TERMS_FOREIGN_KEY') return;
-    logger.warn('[CANVAS-LOGIN] Canvas rechazó una referencia de cuenta al guardar términos de servicio.');
-    logger.warn('[CANVAS-LOGIN] Es un error de Canvas/PostgreSQL, no una prueba de que Plugin Feedback haya fallado.');
-    logger.warn('[CANVAS-LOGIN] Conserve los datos. Reiniciar la opción 3 permite verificar el entorno, pero no garantiza reparar la causa. No elimine volúmenes automáticamente.');
+    const incident = classifyCanvasLoginIncident(Buffer.concat(captured).toString('utf8'));
+    const record = safeCanvasIncidentRecord(incident, { statusCode: upstream.statusCode });
+    const reportPath = writeCanvasIncidentReport(record, { directory: reportDirectory, logger });
+    printCanvasIncident(incident, { logger, reportPath });
   });
   return true;
 }

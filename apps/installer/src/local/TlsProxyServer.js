@@ -42,7 +42,7 @@ function createCanvasProxy() {
         'x-forwarded-ssl': 'on'
       }
     }, (proxyResponse) => {
-      observeCanvasLoginFailure(request, proxyResponse);
+      observeCanvasLoginFailure(request, proxyResponse, console, { reportDirectory: path.join(pluginDirectory, 'logs', 'canvas-incidents') });
       const respHeaders = rewriteLocationHeader(proxyResponse.headers, request.url);
       response.writeHead(proxyResponse.statusCode || 502, respHeaders);
       proxyResponse.pipe(response);
