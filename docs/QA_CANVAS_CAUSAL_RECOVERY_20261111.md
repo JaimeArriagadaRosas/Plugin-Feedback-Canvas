@@ -69,3 +69,5 @@ Todas las pruebas con cambios en el estado de servicios se realizaron exclusivam
 - Un primer npm test sin ENCRYPTION_KEY falló en un fixture AES-GCM preexistente; al ejecutar con clave sintética de prueba se aprobó la regresión completa. No se guardó esa clave en Git.
 
 Estas pruebas no demuestran la causa espontánea del error original del profesor.
+
+Actualización del laboratorio (11/11/2026): [persistencia e investigación de shards](QA_CANVAS_PERSISTENCE_SHARD_LAB_20261111.md).
