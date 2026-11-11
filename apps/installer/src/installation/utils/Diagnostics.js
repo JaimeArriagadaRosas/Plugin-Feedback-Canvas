@@ -4,6 +4,18 @@ const MAX_LOG_TAIL_BYTES = 64 * 1024;
 
 const ERROR_SIGNATURES = [
   {
+    pattern: /(?:PG::ForeignKeyViolation|ActiveRecord::InvalidForeignKey)[\s\S]{0,8000}terms_of_services|terms_of_services[\s\S]{0,8000}foreign key constraint/i,
+    type: 'CANVAS_TERMS_FOREIGN_KEY',
+    diagnosis: 'Canvas no pudo registrar términos de servicio porque la cuenta referenciada no existe en la tabla esperada. Esto NO demuestra que el entorno sea antiguo.',
+    solution: 'Conserve los datos. Compruebe el ID global y local, la cuenta predeterminada, el shard y el PostgreSQL realmente utilizado. Reinicie mediante la opción 3 solo después de revisar el diagnóstico; no borre volúmenes automáticamente.'
+  },
+  {
+    pattern: /Bind for (?:127\.0\.0\.1|0\.0\.0\.0):(\d+) failed: port is already allocated|listen tcp [^\n]*: bind: address already in use/i,
+    type: 'HOST_PORT_OCCUPIED',
+    diagnosis: 'Otro contenedor o proceso ya está utilizando un puerto necesario para iniciar el entorno.',
+    solution: 'Identifique qué servicio ocupa el puerto y a qué proyecto pertenece. Detenga solo el servicio que corresponda, o elija puertos separados. No elimine bases de datos ni volúmenes.'
+  },
+  {
     pattern: /encryption key is incorrect/i,
     type: 'CANVAS_ENCRYPTION_KEY_MISMATCH',
     diagnosis: 'Canvas encontró una base de datos existente cifrada con otra clave.',

@@ -17,7 +17,13 @@ export class SharedDependencyRecovery {
 
   async inspect(cwd) {
     const services = [];
-    for (const entry of SHARED) {
+    for (const original of SHARED) {
+      const containerSetting = original.service === 'db' ? 'PLUGIN_DB_CONTAINER_NAME' : 'PLUGIN_GOTENBERG_CONTAINER_NAME';
+      const configuredName = this.environment[containerSetting];
+      if (configuredName && !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,126}$/.test(configuredName)) {
+        throw new Error('Invalid container name in ' + containerSetting);
+      }
+      const entry = { ...original, name: configuredName || original.name };
       let data;
       try {
         const result = await this.exec('docker', ['inspect', entry.name, '--format', '{{json .}}'], { cwd });
