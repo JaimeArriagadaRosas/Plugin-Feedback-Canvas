@@ -4,6 +4,7 @@ import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { URL } from 'node:url';
+import { observeCanvasLoginFailure } from './CanvasLoginResponseObserver.js';
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 const pluginDirectory = path.resolve(moduleDirectory, '..', '..', '..', '..');
@@ -41,6 +42,7 @@ function createCanvasProxy() {
         'x-forwarded-ssl': 'on'
       }
     }, (proxyResponse) => {
+      observeCanvasLoginFailure(request, proxyResponse, console, { reportDirectory: path.join(pluginDirectory, 'logs', 'canvas-incidents') });
       const respHeaders = rewriteLocationHeader(proxyResponse.headers, request.url);
       response.writeHead(proxyResponse.statusCode || 502, respHeaders);
       proxyResponse.pipe(response);

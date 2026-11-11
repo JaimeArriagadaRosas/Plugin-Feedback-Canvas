@@ -6,8 +6,14 @@ const SHARED = Object.freeze([
   { service: 'gotenberg', name: 'feedback_plugin_gotenberg_local', image: 'gotenberg/gotenberg:8', port: '3000/tcp', hostPort: '3001' }
 ]);
 const getEnv = (items, key) => items.find(item => item.startsWith(key + '='))?.slice(key.length + 1);
-const portMatches = (data, entry, expected) =>
-  data.NetworkSettings?.Ports?.[entry.port]?.some(port => String(port.HostPort) === String(expected)) === true;
+const portMatches = (data, entry, expected) => {
+  // For stopped containers Docker may omit active bindings. Never infer active
+  // port health from HostConfig when a service is running.
+  const published = data.State?.Running === false
+    ? data.HostConfig?.PortBindings?.[entry.port]
+    : data.NetworkSettings?.Ports?.[entry.port];
+  return published?.some(port => String(port.HostPort) === String(expected)) === true;
+};
 
 export class SharedDependencyRecovery {
   constructor({ exec = execa, environment = process.env } = {}) {
@@ -17,7 +23,13 @@ export class SharedDependencyRecovery {
 
   async inspect(cwd) {
     const services = [];
-    for (const entry of SHARED) {
+    for (const original of SHARED) {
+      const containerSetting = original.service === 'db' ? 'PLUGIN_DB_CONTAINER_NAME' : 'PLUGIN_GOTENBERG_CONTAINER_NAME';
+      const configuredName = this.environment[containerSetting];
+      if (configuredName && !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,126}$/.test(configuredName)) {
+        throw new Error('Invalid container name in ' + containerSetting);
+      }
+      const entry = { ...original, name: configuredName || original.name };
       let data;
       try {
         const result = await this.exec('docker', ['inspect', entry.name, '--format', '{{json .}}'], { cwd });
@@ -50,13 +62,56 @@ export class SharedDependencyRecovery {
           data.Mounts?.some(m => m.Type === 'volume' && m.Destination === '/var/lib/postgresql/data') === true;
       }
 
-      const identityOk = !!owner && actualService === entry.service && imageOk && portOk && configurationOk;
+      const identityOk = !!owner && (!this.environment.COMPOSE_PROJECT_NAME || owner === this.environment.COMPOSE_PROJECT_NAME) && actualService === entry.service && imageOk && portOk && configurationOk;
       services.push({
         service: entry.service, name: entry.name, owner,
-        state: !identityOk ? 'conflict' : !running || !healthy ? 'unavailable' : 'healthy'
+        state: !identityOk ? 'conflict' : !running ? 'stopped' : !healthy ? 'unavailable' : 'healthy'
       });
     }
     return services;
+  }
+
+
+  /**
+   * Only starts already-owned, identity-verified stopped containers; never deletes,
+   * recreates, changes volumes or restarts an active service.
+   * Requires an explicit environment opt-in and an exact Compose project label.
+   */
+  async recoverOwnedStopped(cwd, { maxPolls = 5, intervalMs = 800, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
+    const before = await this.plan(cwd);
+    if (before.kind === 'reuse') return { ...before, recovered: [] };
+    const owner = this.environment.COMPOSE_PROJECT_NAME;
+    if (this.environment.PLUGIN_ALLOW_OWNED_SERVICE_RECOVERY !== 'true' || !owner) {
+      return { ...before, kind: 'block', reason: 'Autorecuperación no habilitada o proyecto Compose no identificado' };
+    }
+    const stopped = before.services.filter(s => s.state === 'stopped');
+    if (!stopped.length || before.services.some(s => !['healthy', 'stopped'].includes(s.state)) ||
+        before.services.some(s => s.owner !== owner)) {
+      return { ...before, kind: 'block', reason: 'Un servicio no está detenido o no pertenece inequívocamente a este proyecto' };
+    }
+    const recovered = [];
+    try {
+      for (const service of stopped) {
+        const fresh = await this.inspect(cwd);
+        if (fresh.find(s => s.name === service.name)?.state !== 'stopped' ||
+            fresh.some(s => s.owner !== owner || !['healthy', 'stopped'].includes(s.state))) {
+          return { kind: 'block', services: fresh, recovered, reason: 'El estado de los contenedores cambió durante la comprobación' };
+        }
+        await this.exec('docker', ['start', service.name], { cwd, timeout: 15000 });
+        recovered.push(service.name);
+      }
+      for (let attempt = 0; attempt < maxPolls; attempt++) {
+        const services = await this.inspect(cwd);
+        if (services.every(s => s.state === 'healthy')) return { kind: 'reuse', services, recovered };
+        if (services.some(s => ['conflict', 'absent'].includes(s.state))) {
+          return { kind: 'block', services, recovered, reason: 'La identidad o disponibilidad cambió tras iniciar el servicio' };
+        }
+        if (attempt + 1 < maxPolls) await wait(intervalMs);
+      }
+      return { kind: 'block', services: await this.inspect(cwd), recovered, reason: 'El servicio no alcanzó un estado saludable dentro del límite' };
+    } catch (error) {
+      return { kind: 'block', services: await this.inspect(cwd), recovered, reason: 'Fallo en el inicio controlado: ' + error.message };
+    }
   }
 
   async plan(cwd) {

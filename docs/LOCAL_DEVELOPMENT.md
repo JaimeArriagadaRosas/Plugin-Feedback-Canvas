@@ -165,3 +165,18 @@ npx --yes npm@11.8.0 run build
 ```
 
 Consulte [TESTING.md](TESTING.md) para las pruebas de cliente, integración y E2E.
+
+### Varios checkouts de Plugin Feedback en la misma computadora (2026-11-10)
+
+Cuando se ejecuten varias instalaciones independientes, asigne **nombres y puertos exclusivos** a PostgreSQL y Gotenberg en el archivo `.env` de cada checkout:
+
+```dotenv
+PLUGIN_DB_CONTAINER_NAME=feedback_db_segunda_instalacion
+PLUGIN_GOTENBERG_CONTAINER_NAME=feedback_gotenberg_segunda_instalacion
+DB_PORT=55432
+GOTENBERG_PORT=53001
+```
+
+Los valores predeterminados antiguos siguen siendo válidos si solo existe una instalación. No confunda un choque de nombres o puertos con corrupción de datos. El instalador puede bloquear una dependencia que pertenece a otro proyecto; use configuración independiente en lugar de eliminar contenedores o volúmenes ajenos. Mantenga estos valores en `.env` porque algunas fases recargan dicho archivo y reemplazan variables suministradas solo al ejecutar el comando.
+
+Ante una pantalla `ActiveRecord::InvalidForeignKey` de términos de servicio en el controlador de login de Canvas, conserve los datos. Revise la cuenta referenciada, el contexto de shard y la conexión PostgreSQL efectiva. No afirme que se trata de una instalación antigua sin pruebas adicionales.

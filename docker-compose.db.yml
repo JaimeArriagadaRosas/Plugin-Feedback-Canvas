@@ -2,7 +2,7 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: feedback_plugin_db_local
+    container_name: ${PLUGIN_DB_CONTAINER_NAME:-feedback_plugin_db_local}
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_db_password_strong}
@@ -20,9 +20,9 @@ services:
       start_period: 120s
   gotenberg:
     image: gotenberg/gotenberg:8
-    container_name: feedback_plugin_gotenberg_local
+    container_name: ${PLUGIN_GOTENBERG_CONTAINER_NAME:-feedback_plugin_gotenberg_local}
     ports:
-      - "3001:3000"
+      - "127.0.0.1:${GOTENBERG_PORT:-3001}:3000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-I", "-f", "http://localhost:3000/health"]

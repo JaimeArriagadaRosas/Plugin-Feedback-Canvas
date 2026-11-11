@@ -150,7 +150,13 @@ export class EnvironmentSetup {
     const needsRecovery = (dbStatus && dbStatus !== 'starting') || (gStatus && gStatus !== 'starting');
 
     if (needsRecovery) {
-      const decision = await new SharedDependencyRecovery().plan(this.pluginDir);
+      const recovery = new SharedDependencyRecovery();
+      let decision = await recovery.plan(this.pluginDir);
+      if (decision.kind === 'block' && process.env.PLUGIN_ALLOW_OWNED_SERVICE_RECOVERY === 'true') {
+        this.boot.warn('[RECOVERY-SERVICE-001] Verificando si existe un servicio detenido y propio que pueda reanudarse...');
+        decision = await recovery.recoverOwnedStopped(this.pluginDir);
+        if (decision.recovered?.length) this.boot.info('[RECOVERY-SERVICE-001] Se inició un servicio del proyecto; verificando su salud.');
+      }
       if (decision.kind === 'reuse') {
         this.boot.info('Servicios Docker compartidos saludables; reutilizando sin recrearlos.');
         const { runMigrations } = await import('@plugin-feedback/plugin-database');
