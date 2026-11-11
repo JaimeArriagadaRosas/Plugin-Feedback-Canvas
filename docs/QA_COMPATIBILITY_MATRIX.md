@@ -179,3 +179,11 @@ antes de recuperar exclusivamente servicios propios y detenidos, y valida su
 salud antes de continuar. Se conserva el menú sin cambios.
 
 Informe: [Recuperación segura — tres escenarios](QA_RECUPERACION_SERVICIOS_TRES_ESCENARIOS_20261111.md).
+
+### Corrección de interacción Fast Boot (11/11/2026)
+
+La opción 3 preserva el origen interactivo de la selección para que la
+bandera `NON_INTERACTIVE=true` impuesta posteriormente por el arranque
+no suprima la confirmación segura. Una prueba real PTY mostró el prompt
+y lo rechazó sin iniciar contenedores; los arranques no atendidos siguen
+bloqueados sin opt-in.

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
 import { SharedDependencyRecovery } from '../../src/recovery/SharedDependencyRecovery.js';
+import { modeWasSelectedInteractively } from '../../src/orchestration/recoveryInteraction.js';
 
 const cwd = '/tmp/qa-owned-recovery';
 const project = 'qa-owned-recovery';
@@ -164,5 +165,66 @@ describe('Main startup and recovery consent matrix — no menu changes', () => {
     const result = await lab.recovery.recoverWithConsent(cwd, { confirm: lab.confirm });
     expect(result.kind).toBe('block');
     expect(started(lab)).toEqual([]);
+  });
+});
+
+describe('Interactive menu provenance survives internal NON_INTERACTIVE=true', () => {
+  it('detects real manual mode selection before internal mode switch', () => {
+    expect(modeWasSelectedInteractively({requestedMode:undefined,
+      nonInteractive:undefined,stdinIsTTY:true})).toBe(true);
+    expect(modeWasSelectedInteractively({requestedMode:undefined,
+      nonInteractive:'false',stdinIsTTY:true})).toBe(true);
+    expect(modeWasSelectedInteractively({requestedMode:'3',
+      nonInteractive:undefined,stdinIsTTY:true})).toBe(false);
+    expect(modeWasSelectedInteractively({requestedMode:undefined,
+      nonInteractive:'true',stdinIsTTY:true})).toBe(false);
+    expect(modeWasSelectedInteractively({requestedMode:undefined,
+      nonInteractive:undefined,stdinIsTTY:false})).toBe(false);
+  });
+
+  async function withTTY(isTTY,callback) {
+    const former=Object.getOwnPropertyDescriptor(process.stdin,'isTTY');
+    Object.defineProperty(process.stdin,'isTTY',{configurable:true,value:isTTY});
+    try { return await callback(); }
+    finally {
+      if(former)Object.defineProperty(process.stdin,'isTTY',former);
+      else delete process.stdin.isTTY;
+    }
+  }
+
+  it('regression: interactive mode 3 still prompts after main sets NON_INTERACTIVE=true', async () => {
+    await withTTY(true,async()=>{
+      const lab=laboratory({db:'stopped',gotenberg:'stopped'});
+      lab.recovery.environment.NON_INTERACTIVE='true';
+      lab.recovery.environment.PLUGIN_RECOVERY_MENU_INTERACTIVE='true';
+      const result=await lab.recovery.recoverWithConsent(cwd,{confirm:lab.confirm,...options});
+      expect(result.kind).toBe('reuse');
+      expect(lab.confirm).toHaveBeenCalledOnce();
+      expect(started(lab)).toEqual([DB,G]);
+    });
+  });
+
+  it('unattended startup cannot spoof interactive consent without TTY', async () => {
+    await withTTY(false,async()=>{
+      const lab=laboratory({db:'stopped',gotenberg:'stopped'});
+      lab.recovery.environment.NON_INTERACTIVE='true';
+      lab.recovery.environment.PLUGIN_RECOVERY_MENU_INTERACTIVE='true';
+      const result=await lab.recovery.recoverWithConsent(cwd,{confirm:lab.confirm,...options});
+      expect(result.kind).toBe('block');
+      expect(started(lab)).toEqual([]);
+      expect(lab.confirm).not.toHaveBeenCalled();
+    });
+  });
+
+  it('internally noninteractive startup without menu provenance still refuses prompt', async () => {
+    await withTTY(true,async()=>{
+      const lab=laboratory({db:'stopped',gotenberg:'stopped'});
+      lab.recovery.environment.NON_INTERACTIVE='true';
+      lab.recovery.environment.PLUGIN_RECOVERY_MENU_INTERACTIVE='false';
+      const result=await lab.recovery.recoverWithConsent(cwd,{confirm:lab.confirm,...options});
+      expect(result.kind).toBe('block');
+      expect(started(lab)).toEqual([]);
+      expect(lab.confirm).not.toHaveBeenCalled();
+    });
   });
 });

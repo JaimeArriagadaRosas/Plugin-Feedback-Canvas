@@ -71,3 +71,36 @@ El E2E de Docker verifica PostgreSQL/Gotenberg, pero **no garantiza por sí mism
 ## Restricciones mantenidas
 
 No se tocó el menú, ni los clones antiguos, ni los volúmenes históricos. La implementación se realizó únicamente en este clon unificado. Los recursos QA se eliminaron después de ejecutar las pruebas. No se ha realizado push a GitHub.
+
+
+## Corrección de la confirmación interactiva (11/11/2026)
+
+La primera implementación encontró un bloqueo adicional al probar `npm start`
+en el terminal del usuario. Aunque la opción 3 se había seleccionado
+manualmente, `apps/installer/src/orchestration/main.js` establecía
+`NON_INTERACTIVE=true` después de la selección para gestionar el resto del
+arranque sin interrupciones. La recuperación confundía ese valor interno con
+una ejecución desatendida y rechazaba mostrar la confirmación.
+
+Se añadió un marcador temporal **solo de proceso**:
+`PLUGIN_RECOVERY_MENU_INTERACTIVE`, que captura una selección realmente
+manual (menú invocado, `NON_INTERACTIVE` originalmente distinto de
+`true`, entrada TTY) **antes** de configurar las etapas posteriores. La
+recuperación exige este marcador **y** un TTY verdadero cuando
+`NON_INTERACTIVE=true`. Un lanzamiento sin terminal, una selección
+automática o un modo solicitado por API no pueden utilizar este mecanismo
+para aprobar recuperaciones sin consentimiento.
+
+El menú visible, sus opciones y su implementación de entrada no se
+modificaron. No se guardó el marcador en `.env`.
+
+**Prueba en terminal real (PTY):** se abrió la confirmación para los dos
+contenedores originales del usuario, pero el verificador forzó una respuesta
+negativa. La pregunta apareció, recibió la respuesta y devolvió bloqueo por
+cancelación, con **ambos contenedores originales aún detenidos**. Esta prueba
+confirma que el prompt existe y funciona; no equivale a haber arrancado el
+Canvas real.
+
+El comportamiento queda cubierto permanentemente en
+`interactive-shared-service-recovery.test.js`, incluyendo selección manual,
+modo no interactivo real y simulación de un marcador sin TTY.

@@ -7,6 +7,7 @@ import { assertPortsAvailable, resolveStartupPorts } from './portManager.js';
 import { ask, showMainMenu, MenuCancelledError } from './cli.js';
 import { runBlackBoxTests } from './testRunner.js';
 import { writeEnvOverrides } from './envWriter.js';
+import { modeWasSelectedInteractively } from './recoveryInteraction.js';
 import { spawnVite, spawnBackend, stopBackend, stopVite, waitForBackend, VITE_PORT, SERVER_PORT } from './process.js';
 import { StaticChecker } from './boot/checks/StaticChecker.js';
 import { LtiBootstrap } from './boot/lti.js';
@@ -138,6 +139,7 @@ export async function main({ mode: requestedMode } = {}) {
       boot.plain('  · Modo Fast Boot detectado y validado (.setup_complete y assets presentes).');
     }
 
+    const selectedInteractively = modeWasSelectedInteractively({ requestedMode });
     const mode = requestedMode || await showMainMenu();
     if (mode === '0') { boot.info('Salida seleccionada. No se iniciaron servicios.'); return; }
     if (!['1','2','3','4','5'].includes(mode)) throw new Error('Modo de inicio inválido: ' + mode);
@@ -145,6 +147,9 @@ export async function main({ mode: requestedMode } = {}) {
 
     const checker = new StaticChecker(PLUGIN_DIR);
     await prepareEnvironment(mode, checker);
+    // Internal NON_INTERACTIVE=true is for the later startup stages, not proof
+    // that the user did not just interact with the main menu.
+    process.env.PLUGIN_RECOVERY_MENU_INTERACTIVE = selectedInteractively ? 'true' : 'false';
 
 
 

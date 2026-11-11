@@ -140,7 +140,12 @@ export class SharedDependencyRecovery {
   async recoverWithConsent(cwd, { confirm, ...options } = {}) {
     const preview = await this.previewStoppedRecovery(cwd);
     if (preview.kind !== 'recoverable') return preview;
-    if (this.environment.NON_INTERACTIVE === 'true' || typeof confirm !== 'function') {
+    // main.js sets NON_INTERACTIVE=true *after* a person chooses a menu mode.
+    // Only a captured, TTY-backed menu selection can authorize asking again.
+    const attendedMenu = this.environment.PLUGIN_RECOVERY_MENU_INTERACTIVE === 'true' &&
+      process.stdin.isTTY === true;
+    if ((this.environment.NON_INTERACTIVE === 'true' && !attendedMenu) ||
+        typeof confirm !== 'function') {
       return { ...preview, kind: 'block', reason: 'La recuperación requiere confirmación interactiva' };
     }
     const allowed = await confirm(
