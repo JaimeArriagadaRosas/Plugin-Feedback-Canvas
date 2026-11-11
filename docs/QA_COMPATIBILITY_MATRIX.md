@@ -166,3 +166,16 @@ histórica incompleta se bloqueó. El backend local en HTTPS 3000 no estaba acti
 Estos resultados **no equivalen a un lanzamiento LTI verificado**.
 
 Documentación: [Compatibilidad histórica LTI](QA_CANVAS_HISTORICAL_LTI_READONLY_20261111.md).
+
+## Recuperación PostgreSQL/Gotenberg de la opción 3 (11/11/2026)
+
+Se implementaron **tres escenarios E2E reales de Docker**: servicios saludables,
+un servicio propio detenido y ambos servicios detenidos sin autorización previa
+configurada (bloqueo Fast Boot anterior). Los tres aprobaron. Cuatro controles
+negativos verificaron propietario, credenciales, puertos y ejecución desatendida.
+Todos los recursos Docker QA temporales fueron eliminados sin alterar los
+contenedores originales. La opción 3 ahora ofrece una **confirmación segura**
+antes de recuperar exclusivamente servicios propios y detenidos, y valida su
+salud antes de continuar. Se conserva el menú sin cambios.
+
+Informe: [Recuperación segura — tres escenarios](QA_RECUPERACION_SERVICIOS_TRES_ESCENARIOS_20261111.md).

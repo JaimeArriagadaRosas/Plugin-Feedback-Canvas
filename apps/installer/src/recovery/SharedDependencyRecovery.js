@@ -1,4 +1,5 @@
 import { execa } from 'execa';
+import path from 'node:path';
 
 // This module never creates, stops, removes or renames containers.
 const SHARED = Object.freeze([
@@ -16,9 +17,10 @@ const portMatches = (data, entry, expected) => {
 };
 
 export class SharedDependencyRecovery {
-  constructor({ exec = execa, environment = process.env } = {}) {
+  constructor({ exec = execa, environment = process.env, composeFile = 'docker-compose.db.yml' } = {}) {
     this.exec = exec;
     this.environment = environment;
+    this.composeFile = composeFile;
   }
 
   async inspect(cwd) {
@@ -73,11 +75,98 @@ export class SharedDependencyRecovery {
 
 
   /**
+   * Read-only, fail-closed preview for an interactive local restart.
+   * Compare Docker metadata against the actual Compose project definition, not
+   * just labels supplied by a container. Never infer permission from Fast Boot.
+   */
+  async previewStoppedRecovery(cwd) {
+    const current = await this.plan(cwd);
+    const safeStates = current.services.every(s => ['healthy', 'stopped'].includes(s.state));
+    const stopped = current.services.filter(s => s.state === 'stopped');
+    if (!safeStates || stopped.length === 0) {
+      return { ...current, kind: 'block', reason: 'No existen servicios propios detenidos verificables' };
+    }
+    let config;
+    try {
+      const output = await this.exec('docker',
+        ['compose', '-f', this.composeFile, 'config', '--format', 'json'], { cwd, timeout: 15000 });
+      config = JSON.parse(output.stdout);
+    } catch {
+      return { ...current, kind: 'block', reason: 'No se pudo verificar la identidad del proyecto Docker Compose' };
+    }
+    const owner = config?.name;
+    if (!/^[a-z0-9][a-z0-9_.-]{0,125}$/.test(owner || '') ||
+        !config.services?.db || !config.services?.gotenberg ||
+        current.services.some(s => s.owner !== owner)) {
+      return { ...current, kind: 'block', reason: 'Los servicios existentes no pertenecen al proyecto Compose actual' };
+    }
+    const expectedCompose = path.resolve(cwd, this.composeFile);
+    for (const service of current.services) {
+      const spec = config.services[service.service];
+      const expectedName = spec.container_name || `${owner}-${service.service}-1`;
+      if (service.name !== expectedName || spec.image !== SHARED.find(s => s.service === service.service).image) {
+        return { ...current, kind: 'block', reason: 'Nombre o imagen de un contenedor diferente al proyecto Compose actual' };
+      }
+      let data;
+      try {
+        const inspected = await this.exec('docker',
+          ['inspect', service.name, '--format', '{{json .}}'], { cwd, timeout: 15000 });
+        data = JSON.parse(inspected.stdout);
+      } catch {
+        return { ...current, kind: 'block', reason: 'No se pudo verificar nuevamente el contenedor' };
+      }
+      const labels = data.Config?.Labels || {};
+      const configFiles = (labels['com.docker.compose.project.config_files'] || '').split(',');
+      if (labels['com.docker.compose.project.working_dir'] !== path.dirname(expectedCompose) ||
+          !configFiles.includes(expectedCompose) ||
+          labels['com.docker.compose.project'] !== owner ||
+          labels['com.docker.compose.service'] !== service.service) {
+        return { ...current, kind: 'block', reason: 'Los metadatos Compose no corresponden a este clon' };
+      }
+      if (service.service === 'db') {
+        const volumeAlias = spec.volumes?.find(v => v.target === '/var/lib/postgresql/data')?.source;
+        const volumeName = config.volumes?.[volumeAlias]?.name;
+        if (!volumeName || !data.Mounts?.some(m => m.Type === 'volume' &&
+            m.Destination === '/var/lib/postgresql/data' && m.Name === volumeName)) {
+          return { ...current, kind: 'block', reason: 'El volumen de PostgreSQL no corresponde al proyecto Compose' };
+        }
+      }
+    }
+    return { kind: 'recoverable', services: current.services, owner,
+      stopped: stopped.map(s => s.name) };
+  }
+
+  /** A separate authorization path for normal interactive users (default NO). */
+  async recoverWithConsent(cwd, { confirm, ...options } = {}) {
+    const preview = await this.previewStoppedRecovery(cwd);
+    if (preview.kind !== 'recoverable') return preview;
+    if (this.environment.NON_INTERACTIVE === 'true' || typeof confirm !== 'function') {
+      return { ...preview, kind: 'block', reason: 'La recuperación requiere confirmación interactiva' };
+    }
+    const allowed = await confirm(
+      `Servicios propios detenidos: ${preview.stopped.join(', ')}. ¿Iniciarlos sin recrear contenedores ni volúmenes?`, false);
+    if (allowed !== true) {
+      return { ...preview, kind: 'block', reason: 'Recuperación cancelada: no se modificaron servicios' };
+    }
+    // Re-evaluate after the user's decision. A changed owner or stopped set
+    // invalidates consent; the low-level recoverer independently checks again.
+    const fresh = await this.previewStoppedRecovery(cwd);
+    if (fresh.kind !== 'recoverable' || fresh.owner !== preview.owner ||
+        JSON.stringify(fresh.stopped) !== JSON.stringify(preview.stopped)) {
+      return { ...fresh, kind: 'block', reason: 'El estado cambió antes de iniciar los contenedores' };
+    }
+    const permitted = new SharedDependencyRecovery({ exec: this.exec, composeFile: this.composeFile,
+      environment: { ...this.environment, COMPOSE_PROJECT_NAME: fresh.owner,
+        PLUGIN_ALLOW_OWNED_SERVICE_RECOVERY: 'true' } });
+    return permitted.recoverOwnedStopped(cwd, options);
+  }
+
+  /**
    * Only starts already-owned, identity-verified stopped containers; never deletes,
    * recreates, changes volumes or restarts an active service.
    * Requires an explicit environment opt-in and an exact Compose project label.
    */
-  async recoverOwnedStopped(cwd, { maxPolls = 5, intervalMs = 800, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
+  async recoverOwnedStopped(cwd, { maxPolls = 40, intervalMs = 1000, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
     const before = await this.plan(cwd);
     if (before.kind === 'reuse') return { ...before, recovered: [] };
     const owner = this.environment.COMPOSE_PROJECT_NAME;
