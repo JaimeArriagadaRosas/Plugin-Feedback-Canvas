@@ -155,7 +155,7 @@ def exception_fingerprint(text):
             "fkSignatureMatch":observed and "fk_rails_337ba633a9" in text,
             "loginControllerMatch":observed and "Login::CanvasController#create" in text}
 
-def pair_experiment(pair, role="admin"):
+def pair_experiment(pair, role="admin", *, lti_hook=None):
     if pair not in ALLOWED:raise QABlocked("Historical pair not allowlisted")
     if role not in ("admin","professor","student"):
         raise QABlocked("Historical QA login role not authorized")
@@ -258,6 +258,7 @@ def pair_experiment(pair, role="admin"):
             gems_args += ["--mount",f"type=volume,src={source},dst={target},readonly"]
         run_container(webname,[
             "--network",network,"--network-alias","web",
+            "--add-host","host.docker.internal:host-gateway",
             "-p","127.0.0.1::80",
             "--env-file",str(envfile),
             "--mount",f"type=bind,src={ALLOWED[pair]['source']},dst=/usr/src/app,readonly",
@@ -336,6 +337,13 @@ def pair_experiment(pair, role="admin"):
                                 "/usr/src/app/log/development.log"],timeout=20)
             combined=(web_logs.stdout+web_logs.stderr+rails_logs.stdout+rails_logs.stderr).decode(errors="replace")
             results.update(exception_fingerprint(combined))
+        if lti_hook is not None:
+            if not callable(lti_hook):
+                raise QABlocked("QA LTI hook is not callable")
+            results["isolatedLti"]=lti_hook({
+                "container":webname,"postgres":dbname,"canvasUrl":base,
+                "pair":pair,"role":role,
+            })
 
         return results
     except (QABlocked, OSError, TimeoutError, HTTPException) as exc:
