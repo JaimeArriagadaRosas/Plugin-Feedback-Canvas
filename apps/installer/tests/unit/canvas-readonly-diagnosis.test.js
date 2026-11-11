@@ -19,7 +19,18 @@ afterEach(() => {
   for (const root of workspaces.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = false, error = true, schemaMissing = false, missingMigrationHistory = false, redisUnhealthy = false } = {}) {
+function makeMigrationSource(canvasDir) {
+  const directory = path.join(canvasDir, 'db', 'migrate');
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, '20260101000000_initial.rb'), '# synthetic fixture');
+  fs.writeFileSync(path.join(directory, '20260202000000_next.rb'), '# synthetic fixture');
+  fs.writeFileSync(path.join(directory, '99999999999999999999_ensure_test_db_empty.rb'),
+    'def self.runnable?; Rails.env.test?; end');
+}
+
+
+
+function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = false, error = true, schemaMissing = false, missingMigrationHistory = false, redisUnhealthy = false, appliedVersions = [] } = {}) {
   const calls = [];
   const ids = { postgres: 'a'.repeat(64), web: 'b'.repeat(64), redis: 'c'.repeat(64) };
   const execute = vi.fn(async (command, args, options = {}) => {
@@ -55,6 +66,7 @@ function execution(canvasDir, { stopped = [], wrongProject = false, failedSql = 
         shardsExists: true,
         migrationsExists: !missingMigrationHistory
       };
+      else if (input.includes('FROM public.schema_migrations;')) payload = { versions: appliedVersions };
       else if (input.includes('FROM public.switchman_shards;')) payload = { shardCount: 1 };
       else if (input.includes('WHERE id = 100000000000001')) payload = { exists: false };
       else payload = {
@@ -130,6 +142,48 @@ describe('Opción 6: Canvas solo lectura', () => {
     const { report, reportPath } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute: mock.execute });
     expect(report.status).toBe('incomplete');
     expect(fs.readFileSync(reportPath, 'utf8')).not.toContain('credentials: secret');
+  });
+
+  it('compara migraciones de Canvas de forma segura y excluye solo el sentinel de test', async () => {
+    const { pluginDir, canvasDir } = fixture();
+    makeMigrationSource(canvasDir);
+    const mock = execution(canvasDir, {
+      error: false, appliedVersions: ['20260101000000', '20260202000000']
+    });
+    const { report } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute: mock.execute });
+    expect(report.status).toBe('healthy');
+    expect(report.migrationHistory).toMatchObject({
+      status: 'compatible', sourceCount: 2, appliedCount: 2, pendingCount: 0, unknownCount: 0
+    });
+    expect(report.checks.some(check => check.code === 'CANVAS-DB-HISTORY-OK')).toBe(true);
+    const sql = mock.calls.filter(call => call.args[0] === 'exec').map(call => call.options.input);
+    expect(sql.some(query => query.includes('FROM public.schema_migrations;'))).toBe(true);
+    expect(sql.every(query => query.includes('BEGIN TRANSACTION READ ONLY;'))).toBe(true);
+  });
+
+  it('advierte migración pendiente sin ejecutarla ni alterar datos', async () => {
+    const { pluginDir, canvasDir } = fixture();
+    makeMigrationSource(canvasDir);
+    const mock = execution(canvasDir, { error: false, appliedVersions: ['20260101000000'] });
+    const { report } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute: mock.execute });
+    expect(report.status).toBe('warning');
+    expect(report.migrationHistory.pendingCount).toBe(1);
+    expect(report.checks.some(check => check.code === 'CANVAS-DB-HISTORY-PENDING')).toBe(true);
+    expect(mock.calls.some(call => ['up','start','restart','stop'].includes(call.args[0]))).toBe(false);
+  });
+
+  it('bloquea un historial de Canvas desconocido sin intentar migrar', async () => {
+    const { pluginDir, canvasDir } = fixture();
+    makeMigrationSource(canvasDir);
+    const mock = execution(canvasDir, {
+      error: false, appliedVersions: ['20260101000000','20300101000000']
+    });
+    const { report } = await diagnoseCanvasReadOnly({ pluginDir, canvasDir, execute: mock.execute });
+    expect(report.status).toBe('critical');
+    expect(report.migrationHistory.unknownCount).toBe(1);
+    expect(report.checks.some(check => check.code === 'CANVAS-DB-HISTORY-UNKNOWN')).toBe(true);
+    expect(mock.calls.filter(call => call.args[0] === 'exec')
+      .every(call => !/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\b/i.test(call.options.input))).toBe(true);
   });
 
   it('detecta Redis detenido, no lo reinicia ni escribe en sus datos', async () => {

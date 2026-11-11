@@ -122,6 +122,63 @@ function saveReport(report, pluginDir) {
   } catch { return null; }
 }
 
+export function assessCanvasMigrationVersions(sourceVersions, appliedVersions) {
+  const known = new Set(sourceVersions);
+  const applied = new Set(appliedVersions);
+  const unknown = [...applied].filter(version => !known.has(version));
+  const pending = [...known].filter(version => !applied.has(version));
+  return {
+    status: unknown.length ? 'blocked' : pending.length ? 'review_required' : 'compatible',
+    sourceCount: known.size, appliedCount: applied.size,
+    pendingCount: pending.length, unknownCount: unknown.length
+  };
+}
+
+async function inspectCanvasVersionHistory(execute, postgres, canvasDir, report) {
+  const directory = path.join(canvasDir, 'db', 'migrate');
+  // A partially cloned Canvas tree may not have migration files yet.
+  if (!fs.existsSync(directory)) return;
+  let files;
+  try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    files = fs.readdirSync(directory).filter(file => /^\d{8,22}_.+\.rb$/.test(file));
+  } catch {
+    add(report, 'CANVAS-DB-HISTORY-SOURCE', 'unavailable', 'No se pudo leer el código de migraciones de Canvas.');
+    return;
+  }
+  // Canvas ships one sentinel migration that only runs under Rails.env.test.
+  // Exclude it ONLY when both its known filename and guard match.
+  const testOnlyFile = '99999999999999999999_ensure_test_db_empty.rb';
+  const sentinelPath = path.join(directory, testOnlyFile);
+  let isTestOnly = false;
+  try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    isTestOnly = files.includes(testOnlyFile) && fs.readFileSync(sentinelPath, 'utf8').includes('Rails.env.test?');
+  } catch { /* Include unreadable migration instead of suppressing it silently. */ }
+  const versions = files.filter(file => !isTestOnly || file !== testOnlyFile).map(file => file.split('_', 1)[0]);
+  if (!versions.length) {
+    add(report, 'CANVAS-DB-HISTORY-SOURCE', 'unavailable', 'No hay migraciones de Canvas verificables.');
+    return;
+  }
+  const statement = "SELECT json_build_object('versions', COALESCE(json_agg(version ORDER BY version), '[]'::json)) FROM public.schema_migrations;";
+  const result = parseJsonResult(await queryReadOnly(execute, postgres, statement, canvasDir));
+  if (!Array.isArray(result?.versions)) {
+    add(report, 'CANVAS-DB-HISTORY-READ', 'unavailable', 'No se pudo leer el historial de migraciones en modo solo lectura.');
+    return;
+  }
+  const audit = assessCanvasMigrationVersions(versions, result.versions.map(String));
+  report.migrationHistory = audit;
+  if (audit.unknownCount > 0) {
+    add(report, 'CANVAS-DB-HISTORY-UNKNOWN', 'critical',
+      'La base contiene versiones de migración que no aparecen en este código. Se bloquea cualquier reparación automática.');
+  } else if (audit.pendingCount > 0) {
+    add(report, 'CANVAS-DB-HISTORY-PENDING', 'warning',
+      'Hay migraciones de Canvas pendientes. Revise el procedimiento oficial y el respaldo antes de actualizar.');
+  } else {
+    add(report, 'CANVAS-DB-HISTORY-OK', 'ok', 'El historial de migraciones coincide con el código disponible.');
+  }
+}
+
 async function inspectCanvasCatalog(execute, postgres, canvasDir, report) {
   const catalog = parseJsonResult(await queryReadOnly(execute, postgres, SQL_SCHEMA, canvasDir));
   if (!catalog) {
@@ -138,6 +195,8 @@ async function inspectCanvasCatalog(execute, postgres, canvasDir, report) {
   if (!catalog.migrationsExists) {
     add(report, 'CANVAS-DB-SCHEMA-002', 'warning',
       'No se encontró el historial de migraciones de Canvas. Se requiere revisión antes de actualizar.');
+  } else {
+    await inspectCanvasVersionHistory(execute, postgres, canvasDir, report);
   }
   return true;
 }

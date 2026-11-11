@@ -15,6 +15,7 @@ npm start
 - Disponibilidad de los archivos y versión Git de Canvas.
 - Identidad de los contenedores `postgres`, `web` y `redis` de Canvas: etiquetas Compose, directorio de proyecto y estado.
 - Catálogo de Canvas: presencia de cuentas, términos, shards e historial de migraciones. Si faltan tablas básicas, detiene las consultas detalladas y muestra CANVAS-DB-SCHEMA-001 sin intentar reparaciones.
+- Historial de versiones de Canvas: compara archivos de `db/migrate` con `schema_migrations` mediante consultas de solo lectura. Los códigos CANVAS-DB-HISTORY-OK, CANVAS-DB-HISTORY-PENDING y CANVAS-DB-HISTORY-UNKNOWN distinguen coincidencia, versiones pendientes y versiones desconocidas. No ejecuta migraciones.
 - Base `canvas_development`: cantidad de cuentas, cuentas raíz, términos de servicio, referencias huérfanas, restricción FK de términos, FK pendientes de validar y tabla/cantidad de shards.
 - Muestra limitada de los logs recientes del contenedor web (hasta 350 líneas de las últimas 24 horas). Si existe un error reconocible con `account_id`, comprueba si la referencia existe en `accounts` de la base consultada, **sin guardar ni mostrar el ID**.
 
