@@ -122,6 +122,26 @@ function saveReport(report, pluginDir) {
   } catch { return null; }
 }
 
+async function inspectCanvasCatalog(execute, postgres, canvasDir, report) {
+  const catalog = parseJsonResult(await queryReadOnly(execute, postgres, SQL_SCHEMA, canvasDir));
+  if (!catalog) {
+    add(report, 'CANVAS-DB-SCHEMA-READ', 'unavailable',
+      'No fue posible inspeccionar el catálogo de Canvas en modo solo lectura.');
+    return false;
+  }
+  if (!catalog.accountsExists || !catalog.termsExists || !catalog.shardsExists) {
+    add(report, 'CANVAS-DB-SCHEMA-001', 'critical',
+      'El esquema de Canvas está incompleto o utiliza tablas incompatibles. No se ejecutarán migraciones.');
+    report.database = { schemaCatalog: catalog };
+    return false;
+  }
+  if (!catalog.migrationsExists) {
+    add(report, 'CANVAS-DB-SCHEMA-002', 'warning',
+      'No se encontró el historial de migraciones de Canvas. Se requiere revisión antes de actualizar.');
+  }
+  return true;
+}
+
 /** No npm start, compose up, migrations, Rails runner, cleanup or database writes. */
 export async function diagnoseCanvasReadOnly({
   pluginDir, canvasDir = getCanvasDirectory(), execute = execa,
@@ -164,23 +184,9 @@ export async function diagnoseCanvasReadOnly({
       }
     }
     if (postgres) {
-      const catalog = parseJsonResult(await queryReadOnly(execute, postgres, SQL_SCHEMA, canvasDir));
-      if (!catalog) {
-        add(report, 'CANVAS-DB-SCHEMA-READ', 'unavailable',
-          'No fue posible inspeccionar el catálogo de Canvas en modo solo lectura.');
+      if (!(await inspectCanvasCatalog(execute, postgres, canvasDir, report))) {
         report.status = resultStatus(report.checks);
         return { report, reportPath: saveReport(report, pluginDir) };
-      }
-      if (!catalog.accountsExists || !catalog.termsExists || !catalog.shardsExists) {
-        add(report, 'CANVAS-DB-SCHEMA-001', 'critical',
-          'El esquema de Canvas está incompleto o utiliza tablas incompatibles. No se ejecutarán migraciones.');
-        report.database = { schemaCatalog: catalog };
-        report.status = resultStatus(report.checks);
-        return { report, reportPath: saveReport(report, pluginDir) };
-      }
-      if (!catalog.migrationsExists) {
-        add(report, 'CANVAS-DB-SCHEMA-002', 'warning',
-          'No se encontró el historial de migraciones de Canvas. Se requiere revisión antes de actualizar.');
       }
       const response = await queryReadOnly(execute, postgres, SQL_OVERVIEW, canvasDir);
       const overview = parseJsonResult(response);

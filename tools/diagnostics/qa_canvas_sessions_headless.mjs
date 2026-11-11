@@ -29,7 +29,10 @@ try {
   const html = await page.content();
   const scenario = process.env.QA_SCENARIO || 'reload';
   if (!['login_only', 'reload', 'parallel_tabs', 'clear_cookies', 'tampered_cookie', 'idle'].includes(scenario)) throw Error('Escenario QA_SCENARIO desconocido.');
-  const checks = {};
+  const checks = {
+    login_302: post.status() === 302,
+    login_no_fk: !html.includes('PG::ForeignKeyViolation') && !html.includes('ActiveRecord::InvalidForeignKey')
+  };
   if (post.status() === 302 && scenario !== 'login_only') {
     const initial = await page.goto(base + '/courses/1', {waitUntil:'domcontentloaded'});
     checks.initial_course_200 = initial.status() === 200;

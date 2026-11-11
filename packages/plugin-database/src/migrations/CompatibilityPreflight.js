@@ -37,7 +37,26 @@ export async function inspectMigrationCompatibility(client, migrationsDirectory)
     const versions = present.rows[0]?.migration_table
       ? (await client.query('SELECT version FROM public.schema_migrations ORDER BY version')).rows.map(row => row.version)
       : [];
-    const result = assessMigrationHistory(known, versions);
+    let result = assessMigrationHistory(known, versions);
+    // Empty version history is safe only for a genuinely empty user schema.
+    // A previously interrupted migration may leave tables without its version marker.
+    if (versions.length === 0 && result.status === 'clean') {
+      const existing = await client.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public' AND c.relkind IN ('r','p')
+            AND c.relname NOT IN ('schema_migrations','migration_logs')
+        ) AS has_user_tables
+      `);
+      if (existing.rows[0]?.has_user_tables === true) {
+        result = {
+          status: 'blocked',
+          code: 'PLUGIN-DB-HISTORY-004',
+          reason: 'Se encontraron tablas de aplicación sin historial de migraciones confiable.'
+        };
+      }
+    }
     await client.query('ROLLBACK');
     return result;
   } catch (error) {

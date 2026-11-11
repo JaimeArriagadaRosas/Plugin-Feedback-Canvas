@@ -46,6 +46,27 @@ describe('Compatibilidad de historial PostgreSQL del plugin', () => {
     }
   });
 
+  it('bloquea tablas heredadas sin historial sin modificar su esquema', async () => {
+    const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-unknown-history-'));
+    try {
+      fs.writeFileSync(path.join(folder, '001_initial.sql'), 'SELECT 1;');
+      const calls = [];
+      const client = { query: vi.fn(async statement => {
+        calls.push(statement);
+        if (statement.includes('to_regclass')) return { rows: [{ migration_table: null }] };
+        if (statement.includes('has_user_tables')) return { rows: [{ has_user_tables: true }] };
+        return { rows: [] };
+      }) };
+      const diagnosis = await inspectMigrationCompatibility(client, folder);
+      expect(diagnosis).toMatchObject({ status: 'blocked', code: 'PLUGIN-DB-HISTORY-004' });
+      expect(calls).toContain('BEGIN TRANSACTION READ ONLY');
+      expect(calls).toContain('ROLLBACK');
+      expect(calls.every(sql => !/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\b/i.test(sql))).toBe(true);
+    } finally {
+      fs.rmSync(folder, { recursive: true, force: true });
+    }
+  });
+
   it('evita escritura o CREATE TABLE si una base tiene versión desconocida', async () => {
     const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-block-migration-'));
     try {
