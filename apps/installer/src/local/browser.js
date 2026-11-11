@@ -39,10 +39,19 @@ function launchDetached(command, args, spawnProcess = spawn) {
 }
 
 /**
+ * Opt-in doble: evita abrir el navegador del anfitrión durante QA.
+ * Si cualquiera de las variables falta, se conserva el flujo normal.
+ */
+export function shouldAutoOpenBrowser(environment = process.env) {
+  return !(environment.PLUGIN_TEST_MODE === 'true' && environment.PLUGIN_QA_NO_BROWSER === 'true');
+}
+
+/**
  * Abre una URL sin bloquear el instalador y usando siempre el navegador
  * predeterminado del sistema anfitrión.
  */
 export async function openBrowser(url, options = {}) {
+  if (!shouldAutoOpenBrowser(options.environment || process.env)) return false;
   try {
     const launch = resolveDefaultBrowserLaunch(url, options);
     const launcher = options.launcher || launchDetached;

@@ -6,7 +6,7 @@ import { BootResult } from '../orchestration/boot/result.js';
 import { EnvironmentSetup } from '../installation/EnvironmentSetup.js';
 import { LtiBootstrap } from '../orchestration/boot/lti.js';
 import { askConfirm } from '../orchestration/cli.js';
-import { waitForCanvasReady, openBrowser } from './browser.js';
+import { waitForCanvasReady, openBrowser, shouldAutoOpenBrowser } from './browser.js';
 
 async function createLocalCertificateBootstrap(boot) {
   const { SSLCertificateGenerator } = await import('../../../server/src/security/SSLCertificateGenerator.js');
@@ -28,12 +28,18 @@ async function createLocalCertificateBootstrap(boot) {
 
 export class Orchestrator {
   constructor(boot, pluginDir, canvasDir, {
-    certificateBootstrapFactory = createLocalCertificateBootstrap
+    certificateBootstrapFactory = createLocalCertificateBootstrap,
+    waitForCanvasReadyFn = waitForCanvasReady,
+    openBrowserFn = openBrowser,
+    environment = process.env
   } = {}) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
     this.certificateBootstrapFactory = certificateBootstrapFactory;
+    this.waitForCanvasReadyFn = waitForCanvasReadyFn;
+    this.openBrowserFn = openBrowserFn;
+    this.environment = environment;
   }
 
   async runCheck(stageName, checkFn) {
@@ -97,12 +103,16 @@ export class Orchestrator {
 
   async waitForCanvasAndOpenBrowser() {
     try {
-      await waitForCanvasReady();
+      await this.waitForCanvasReadyFn();
       this.boot.plain('');
       this.boot.plain('  √ Canvas LMS inicializado y proxy habilitado.');
       const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
+      if (!shouldAutoOpenBrowser(this.environment)) {
+        this.boot.info('[QA-NO-BROWSER-001] Canvas listo; apertura automática de navegador suprimida solo en modo QA.');
+        return;
+      }
       this.boot.plain('  · Abriendo Canvas con el navegador predeterminado del sistema...');
-      const browserOpened = await openBrowser(canvasBrowserUrl);
+      const browserOpened = await this.openBrowserFn(canvasBrowserUrl);
       if (!browserOpened) {
         this.boot.warn('No se pudo solicitar la apertura automática del navegador.');
         this.boot.action(`Abra manualmente: ${canvasBrowserUrl}`);
