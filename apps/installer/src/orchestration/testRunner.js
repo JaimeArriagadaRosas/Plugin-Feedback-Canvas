@@ -9,7 +9,7 @@ import { DataSeeder } from '../installation/DataSeeder.js';
 
 export async function runBlackBoxTests(pluginDir) {
   printMenu();
-  const option = (await ask('Seleccione una opcion (1-5)', '1')).toUpperCase();
+  const option = (await ask('Seleccione una opcion (1-6)', '1')).toUpperCase();
 
   switch (option) {
     case '1': return runVitestLocal(pluginDir);
@@ -17,6 +17,7 @@ export async function runBlackBoxTests(pluginDir) {
     case '3': return withServer('3', pluginDir, () => runPlaywrightTests(pluginDir, 'local'), { TEST_MODE: 'true' }, 300000);
     case '4': return runPlaywrightTests(pluginDir, 'real');
     case '5': return runStressSuite(pluginDir);
+    case '6': return runCanvasReadOnlyDiagnostic(pluginDir);
     default:
       console.log(pc.red('Opcion no valida.'));
       return false;
@@ -32,7 +33,33 @@ function printMenu() {
   console.log(`  ${pc.yellow('[3]')} E2E Playwright contra Canvas local ${pc.dim('(Docker)')}`);
   console.log(`  ${pc.yellow('[4]')} E2E Playwright contra Canvas real ${pc.dim('(requiere URL y cuenta)')}`);
   console.log(`  ${pc.yellow('[5]')} Pruebas de estres ${pc.dim('(Autocannon)')}`);
+  console.log(`  ${pc.yellow('[6]')} Diagnóstico de Canvas ${pc.dim('(solo lectura, informe JSON)')}`);
   console.log(pc.cyan('========================================================='));
+}
+
+async function runCanvasReadOnlyDiagnostic(pluginDir) {
+  console.log(pc.cyan('\n  [Canvas] Iniciando diagnóstico de solo lectura...'));
+  const { diagnoseCanvasReadOnly } = await import('../diagnostics/CanvasReadOnlyDiagnosis.js');
+  try {
+    const { report, reportPath } = await diagnoseCanvasReadOnly({ pluginDir });
+    for (const check of report.checks) {
+      const marker = check.level === 'ok' ? pc.green('✔') :
+        check.level === 'critical' ? pc.red('✖') : pc.yellow('!');
+      console.log(`  ${marker} [${check.code}] ${check.message}`);
+    }
+    const outcome = report.status === 'healthy' ? pc.green('Saludable') :
+      report.status === 'warning' ? pc.yellow('Advertencias') :
+        report.status === 'critical' ? pc.red('Errores detectados') :
+          pc.yellow('Incompleto; no se iniciaron servicios');
+    console.log(`\n  [Canvas] Resultado: ${outcome}`);
+    console.log(reportPath ? pc.cyan(`  [Canvas] Informe: ${reportPath}`) :
+      pc.yellow('  [Canvas] No se pudo guardar el informe local.'));
+    console.log(pc.dim('  [Canvas] No se modificaron cuentas, volúmenes ni servicios de Canvas.'));
+    return report.status === 'healthy' && Boolean(reportPath);
+  } catch {
+    console.error(pc.red('  [Canvas] No fue posible completar el diagnóstico sin modificaciones.'));
+    return false;
+  }
 }
 
 async function withServer(mode, pluginDir, runTest, envOverrides = {}, timeoutMs = 90000) {

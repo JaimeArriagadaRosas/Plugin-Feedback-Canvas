@@ -15,6 +15,8 @@ El proyecto usa varias capas. «Pasó el test» solo es útil si se identifica q
 | `npm run build` | compilación Vite productiva | dependencias instaladas |
 | `npm run test:coverage` | cobertura Vitest | mismo runtime que la suite |
 
+El menú de **Validaciones de Caja Negra → [6] Diagnóstico de Canvas (solo lectura)** inspecciona cuentas, términos, shards y contenedores sin modificar Canvas; consultar [la documentación del diagnóstico](CANVAS_READONLY_DIAGNOSTICO_20261111.md).
+
 Instale de forma reproducible:
 
 ```bash
