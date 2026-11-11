@@ -242,17 +242,13 @@ export class EnvironmentSetup {
   }
 
   async _bringupAndVerify(dockerProfile) {
-    // Etapas de presentación: conservan exactamente los mismos pasos y errores.
-    const present = (title, action) => typeof this.boot.withStage === 'function'
-      ? this.boot.withStage(title, action) : action();
+    // Solo separadores visuales: no alteran la sangría ni los pasos de instalación.
+    this.boot.subsection?.('Arranque de Canvas LMS');
     const bringup = new CanvasBringup(this.boot, this.canvasDir, { dockerProfile });
-    if (!(await present('Arranque de Canvas LMS', () => bringup.bringup()))) {
-      throw new Error('Fallo en el bringup de Canvas LMS.');
-    }
+    if (!(await bringup.bringup())) throw new Error('Fallo en el bringup de Canvas LMS.');
+    this.boot.subsection?.('Validación de datos y sincronización');
     const postflight = new PostflightSetup(this.boot, this.pluginDir, this.canvasDir);
-    if (!(await present('Validación de datos y sincronización', () => postflight.runChecks()))) {
-      throw new Error('Fallo en la verificación post-arranque.');
-    }
+    if (!(await postflight.runChecks())) throw new Error('Fallo en la verificación post-arranque.');
   }
 
   async ensureSetup() {

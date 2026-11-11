@@ -108,12 +108,9 @@ describe('presentación de consola del instalador (sin alterar las comprobacione
     }
   });
 
-  it('agrupa arranque y postflight en etapas sin modificar el orden ni las respuestas', async () => {
+  it('presenta arranque y postflight sin cambiar el orden de las tareas', async () => {
     const order = [];
-    const boot = {withStage: vi.fn(async (title, task) => {
-      order.push('abrir ' + title);
-      try {return await task();} finally {order.push('cerrar ' + title);}
-    })};
+    const boot = {subsection: vi.fn(title => order.push('título ' + title))};
     vi.spyOn(CanvasBringup.prototype, 'bringup').mockImplementation(async () => {
       order.push('CanvasBringup'); return true;
     });
@@ -123,21 +120,40 @@ describe('presentación de consola del instalador (sin alterar las comprobacione
     const setup = new EnvironmentSetup(boot, '/tmp/plugin', '/tmp/canvas');
     await setup._bringupAndVerify({});
     expect(order).toEqual([
-      'abrir Arranque de Canvas LMS',
+      'título Arranque de Canvas LMS',
       'CanvasBringup',
-      'cerrar Arranque de Canvas LMS',
-      'abrir Validación de datos y sincronización',
-      'PostflightSetup',
-      'cerrar Validación de datos y sincronización'
+      'título Validación de datos y sincronización',
+      'PostflightSetup'
     ]);
   });
 
+  it('los subtítulos y sus mensajes conservan dos espacios, sin crear otro nivel', async () => {
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const boot = new BootLogger();
+    await boot.withStage('Verificación e instalación de Canvas LMS', async () => {
+      expect(boot.stageStack).toHaveLength(1);
+      boot.subsection('Arranque de Canvas LMS');
+      expect(boot.stageStack).toHaveLength(1);
+      boot.info('Iniciando contenedores de Canvas LMS...');
+      boot.subsection('Validación de datos y sincronización');
+      expect(boot.stageStack).toHaveLength(1);
+      boot.success('Datos institucionales encontrados');
+    });
+    const lines = write.mock.calls.map(([message]) => message).join('').split(/\r?\n/);
+    expect(lines.some(line => /^  ── ▶ Arranque de Canvas LMS/.test(line))).toBe(true);
+    expect(lines.some(line => /^  ── ▶ Validación de datos y sincronización/.test(line))).toBe(true);
+    expect(lines.some(line => /^  · Iniciando contenedores de Canvas LMS/.test(line))).toBe(true);
+    expect(lines.some(line => /^  √ Datos institucionales encontrados/.test(line))).toBe(true);
+    expect(lines.some(line => /^    (?:·|√)/.test(line))).toBe(false);
+  });
+
   it('mantiene fallos de Canvas sin ejecutar el postflight', async () => {
-    const boot = {withStage: vi.fn(async (_title, task) => task())};
+    const boot = {subsection: vi.fn()};
     vi.spyOn(CanvasBringup.prototype, 'bringup').mockResolvedValue(false);
     const postflight = vi.spyOn(PostflightSetup.prototype, 'runChecks');
     const setup = new EnvironmentSetup(boot, '/tmp/plugin', '/tmp/canvas');
     await expect(setup._bringupAndVerify({})).rejects.toThrow('Fallo en el bringup de Canvas LMS.');
     expect(postflight).not.toHaveBeenCalled();
+    expect(boot.subsection).toHaveBeenCalledTimes(1);
   });
 });

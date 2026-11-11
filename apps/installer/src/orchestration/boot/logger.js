@@ -119,6 +119,15 @@ export class BootLogger {
     return name;
   }
 
+  // Separador visual dentro de la etapa actual; no agrega otra sangría.
+  subsection(name) {
+    this.endInlineCheck();
+    const color = STAGE_COLORS[this.stageIndex % STAGE_COLORS.length];
+    this.stageIndex++;
+    const indent = '  '.repeat(this.stageStack.length);
+    process.stdout.write(`\n${indent}${pc.bold(color('── ▶ ' + name + ' '))}${'─'.repeat(Math.max(2, 48 - name.length))}\n`);
+  }
+
   endStage() {
     this.stageStack.pop();
   }
