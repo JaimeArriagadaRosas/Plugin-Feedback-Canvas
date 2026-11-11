@@ -247,6 +247,54 @@ def docker_metadata(kind,name):
     if p.returncode:raise QABlocked("QA resource unavailable")
     return json.loads(text(p))
 
+def qa_client_id():
+    fixture=HOME/"qa-feedback-20261110/clean/Plugin-Feedback-Canvas/.env"
+    if not fixture.is_file() or not fixture.resolve().is_relative_to(HOME/"qa-feedback-20261110"):
+        return None
+    for line in fixture.read_text(encoding="utf8").splitlines():
+        if line.startswith("LTI_CLIENT_ID="):
+            client=line.partition("=")[2].strip().strip("'\\\"")
+            return client if re.fullmatch(r"[0-9]{1,18}",client) else None
+    return None
+
+def inspect_lti_catalog(db_container,client_id=None):
+    if client_id is not None and not re.fullmatch(r"[0-9]{1,18}",client_id):
+        raise QABlocked("Unexpected QA LTI client format")
+    client_compare=(f"developer_key_id={client_id}" if client_id is not None else "FALSE")
+    sql=f"""BEGIN TRANSACTION READ ONLY;
+SELECT json_build_object(
+ 'tools',COUNT(*),
+ 'publicTools',COUNT(*) FILTER (WHERE workflow_state='public'),
+ 'toolsWithDeveloperKey',COUNT(*) FILTER (WHERE developer_key_id IS NOT NULL),
+ 'toolsForLocalQaBackend',COUNT(*) FILTER (WHERE url LIKE 'https://localhost:3000%'),
+ 'toolsMatchingCurrentQaClient',COUNT(*) FILTER (WHERE {client_compare})
+) FROM public.context_external_tools;
+ROLLBACK;
+"""
+    proc=command(["docker","exec","-i","-e","PGHOST=/tmp",
+        "-e","PGOPTIONS=-c default_transaction_read_only=on",
+        db_container,"psql","-X","-q","-A","-t",
+        "-v","ON_ERROR_STOP=1","-U","postgres","-d","canvas_development"],
+        stdin=sql.encode(),timeout=25)
+    if proc.returncode:
+        return {"status":"CATALOG_UNAVAILABLE"}
+    try:
+        outcome=json.loads(text(proc).splitlines()[-1])
+    except (ValueError,IndexError):
+        return {"status":"CATALOG_UNAVAILABLE"}
+    if set(outcome)!={"tools","publicTools","toolsWithDeveloperKey","toolsForLocalQaBackend","toolsMatchingCurrentQaClient"}:
+        return {"status":"CATALOG_UNAVAILABLE"}
+    if any(not isinstance(n,int) or n<0 for n in outcome.values()):
+        return {"status":"CATALOG_UNAVAILABLE"}
+    outcome["clientIdProvided"]=client_id is not None
+    outcome["status"]="CONFIG_CANDIDATE" if (
+        outcome["publicTools"]>0 and
+        outcome["toolsForLocalQaBackend"]>0 and
+        outcome["toolsMatchingCurrentQaClient"]>0) else "REGISTRATION_REVIEW"
+    # Never imply a successful launch from registration metadata alone.
+    outcome["actualLtiLaunchConfirmed"]=False
+    return outcome
+
 def clone_pg(key):
     if key not in PG_SOURCES:raise QABlocked("Unknown historical PostgreSQL source")
     old=inspected_pg(key)
@@ -370,6 +418,8 @@ ROLLBACK;
                         map(int,parts)))
                     if report["integrity"]["orphanTerms"] or report["integrity"]["unvalidatedForeignKeys"]:
                         report["status"]="REVIEW"
+                    if catalog.get("accounts") and catalog.get("migrations"):
+                        report["ltiMetadata"]=inspect_lti_catalog(clone_container,qa_client_id())
                 else:raise QABlocked("Unknown SQL output format")
         else:
             report["status"]="BLOCKED"

@@ -156,3 +156,13 @@ de configuración y datos distinta; no se habilitaron autorreparaciones de
 claves. Tampoco se modificó el menú interactivo.
 
 Informe técnico: [Canvas histórico: login y clave de cifrado](QA_CANVAS_HISTORICAL_LOGIN_CAUSAL_20261111.md).
+
+## Auditoría LTI histórica de solo lectura (11/11/2026)
+
+Se inspeccionaron los registros LTI de dos bases Canvas 14 antiguas restauradas
+exclusivamente en volúmenes temporales. Ambas contienen una herramienta pública,
+pero el client_id del archivo privado QA no coincide con esa referencia; la base
+histórica incompleta se bloqueó. El backend local en HTTPS 3000 no estaba activo.
+Estos resultados **no equivalen a un lanzamiento LTI verificado**.
+
+Documentación: [Compatibilidad histórica LTI](QA_CANVAS_HISTORICAL_LTI_READONLY_20261111.md).

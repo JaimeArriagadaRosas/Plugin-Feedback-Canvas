@@ -136,6 +136,45 @@ class HistoricalSafetyTests(unittest.TestCase):
         self.assertTrue(any(argv[:3]==["docker","volume","rm"] and
                             argv[-1].startswith(historical.PREFIX) for argv in commands))
 
+    def test_lti_registration_metadata_is_not_a_real_launch(self):
+        import json
+        response=subprocess.CompletedProcess([],0,stdout=json.dumps({
+            "tools":1,"publicTools":1,"toolsWithDeveloperKey":1,
+            "toolsForLocalQaBackend":1,"toolsMatchingCurrentQaClient":1
+        }).encode()+b"\n",stderr=b"")
+        with patch.object(historical,"command",return_value=response) as call:
+            info=historical.inspect_lti_catalog("qa-owned-container","12345")
+            self.assertEqual(info["status"],"CONFIG_CANDIDATE")
+            self.assertFalse(info["actualLtiLaunchConfirmed"])
+            args=call.call_args.args[0]
+            self.assertIn("PGOPTIONS=-c default_transaction_read_only=on",args)
+            self.assertIn("BEGIN TRANSACTION READ ONLY",call.call_args.kwargs["stdin"].decode())
+            self.assertIn("developer_key_id=12345",call.call_args.kwargs["stdin"].decode())
+            self.assertNotIn("password",json.dumps(info).lower())
+
+    def test_unregistered_lti_is_safely_reported_as_review(self):
+        import json
+        response=subprocess.CompletedProcess([],0,stdout=json.dumps({
+            "tools":1,"publicTools":1,"toolsWithDeveloperKey":1,
+            "toolsForLocalQaBackend":1,"toolsMatchingCurrentQaClient":0
+        }).encode()+b"\n",stderr=b"")
+        with patch.object(historical,"command",return_value=response):
+            result=historical.inspect_lti_catalog("qa-owned-container","54321")
+            self.assertEqual(result["status"],"REGISTRATION_REVIEW")
+            self.assertFalse(result["actualLtiLaunchConfirmed"])
+
+    def test_invalid_client_id_is_never_interpolated_into_sql(self):
+        with patch.object(historical,"command") as run:
+            with self.assertRaisesRegex(historical.QABlocked,"LTI client format"):
+                historical.inspect_lti_catalog("qa-owned-container","1; DROP TABLE accounts;")
+            run.assert_not_called()
+
+    def test_missing_lti_tables_never_claims_success(self):
+        with patch.object(historical,"command",return_value=subprocess.CompletedProcess(
+                [],1,stdout=b"",stderr=b"missing table")):
+            result=historical.inspect_lti_catalog("qa-owned-container",None)
+            self.assertEqual(result["status"],"CATALOG_UNAVAILABLE")
+
     def test_volume_cleanup_uses_only_disposable_labels(self):
         self.assertEqual(historical.PREFIX,"qa-historical-")
         self.assertTrue(all(x.startswith("october") or x.startswith("august")
