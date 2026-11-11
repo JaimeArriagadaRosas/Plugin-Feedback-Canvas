@@ -129,3 +129,16 @@ que se identifican separadamente, sin presentarlas como éxito.
 
 Detalles, comandos y limitaciones:
 [Escenarios restantes de Canvas](QA_CANVAS_REMAINING_SCENARIOS_20261111.md).
+
+## Pruebas con versiones y volúmenes históricos reales (11/11/2026)
+
+Se implementó un laboratorio desde la línea de comandos, sin nuevas opciones de
+menú. Cuatro variantes del código histórico compilaron sobre copias temporales;
+dos bases PostgreSQL 14 históricas superaron las consultas de integridad y una
+tercera se bloqueó por carecer del esquema principal de Canvas.
+
+**Resultados:** 10 comprobaciones positivas, 1 bloqueo seguro, 0 cambios en
+las fuentes históricas. Esto no demuestra aún login LTI cruzando versiones ni
+un upgrade entre versiones distintas de Canvas.
+
+Documentación: [Laboratorio histórico real](QA_CANVAS_HISTORICAL_REAL_20261111.md).

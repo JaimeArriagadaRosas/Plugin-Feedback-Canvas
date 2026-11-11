@@ -1,0 +1,74 @@
+{
+  "purpose": "Synthetic structural fixtures derived from observed historical failure classes, without account records or credentials",
+  "fixtures": [
+    {
+      "name": "historical_canvas_core_complete",
+      "kind": "read_only_historical_postgres_clone",
+      "record": {
+        "status": "PASS",
+        "cleanupConfirmed": true,
+        "catalog": {
+          "accounts": true,
+          "terms": true,
+          "shards": true,
+          "migrations": true
+        },
+        "integrity": {
+          "orphanTerms": 0,
+          "unvalidatedForeignKeys": 0
+        }
+      },
+      "expected": "PASS"
+    },
+    {
+      "name": "historical_canvas_core_missing",
+      "kind": "incomplete_historical_canvas_schema",
+      "record": {
+        "status": "BLOCKED",
+        "cleanupConfirmed": true,
+        "catalog": {
+          "accounts": false,
+          "terms": false,
+          "shards": false,
+          "migrations": false
+        },
+        "reason": "Historical Canvas schema is missing required tables"
+      },
+      "expected": "SAFELY_BLOCKED"
+    },
+    {
+      "name": "hypothetical_orphan_terms",
+      "kind": "synthetic_integrity_regression",
+      "record": {
+        "status": "REVIEW",
+        "cleanupConfirmed": true,
+        "catalog": {
+          "accounts": true,
+          "terms": true,
+          "shards": true,
+          "migrations": true
+        },
+        "integrity": {
+          "orphanTerms": 1,
+          "unvalidatedForeignKeys": 0
+        }
+      },
+      "expected": "REVIEW"
+    },
+    {
+      "name": "cleanup_unconfirmed",
+      "kind": "synthetic_safety_regression",
+      "record": {
+        "status": "PASS",
+        "cleanupConfirmed": false,
+        "catalog": {
+          "accounts": true,
+          "terms": true,
+          "shards": true,
+          "migrations": true
+        }
+      },
+      "expected": "FAIL"
+    }
+  ]
+}
