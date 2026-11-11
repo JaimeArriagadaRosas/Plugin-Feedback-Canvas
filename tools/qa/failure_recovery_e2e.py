@@ -32,6 +32,7 @@ def require_guards():
     for key in ("QA_ALLOW_FAILURE_RECOVERY_E2E", "QA_ALLOW_FULL_LTI_E2E",
                 "QA_ALLOW_HISTORICAL_FULL_STACK", "QA_ALLOW_ISOLATED_PLUGIN_BACKEND",
                 "QA_ALLOW_CANVAS_RESTART_E2E", "QA_ALLOW_DISPOSABLE_COMPAT_TESTS",
+                "QA_ALLOW_CANVAS_PREFLIGHT_REAL_E2E",
                 "PLUGIN_TEST_MODE", "PLUGIN_QA_NO_BROWSER"):
         if os.environ.get(key) != "true":
             raise RuntimeError("Explicit QA authorization missing: "+key)
@@ -169,6 +170,12 @@ def main():
          "--pool=forks","--fileParallelism=false"],95,
         lambda rc,_:"INTEGRATION_ONLY" if rc==0 else "FAIL",
         "Installer orchestration and resume tested against temp filesystem; external services mocked"))
+
+    append(command_case("canvas_postgres_interruption_readonly_preflight",
+        [sys.executable,str(HERE/"qa_canvas_preflight_recovery_e2e.py"),
+         "--report",str(QA/"qa-matrix-canvas-preflight-recovery.json")],180,
+        lambda rc,_:"PASS_RECOVERED" if rc==0 else "FAIL",
+        "Actual isolated PostgreSQL stop/restart, incomplete schema and transactional rollback; no Canvas Rails migration"))
 
     append(command_case("external_port_occupied",
         ["node",str(HERE/"external_port_e2e.mjs")],35,

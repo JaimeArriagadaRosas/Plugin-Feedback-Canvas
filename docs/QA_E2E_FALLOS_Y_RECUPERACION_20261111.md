@@ -82,6 +82,7 @@ export QA_ALLOW_HISTORICAL_FULL_STACK=true
 export QA_ALLOW_ISOLATED_PLUGIN_BACKEND=true
 export QA_ALLOW_CANVAS_RESTART_E2E=true
 export QA_ALLOW_DISPOSABLE_COMPAT_TESTS=true
+export QA_ALLOW_CANVAS_PREFLIGHT_REAL_E2E=true
 export PLUGIN_TEST_MODE=true
 export PLUGIN_QA_NO_BROWSER=true
 
@@ -129,3 +130,18 @@ hacer aparecer un falso PASS.
 
 El informe se mantiene deliberadamente con `allScenariosFullyCertified=false`
 hasta que existan los tres laboratorios auténticos pendientes.
+
+### Ampliación de la fase siguiente
+
+Se incorporó un escenario adicional a la matriz ejecutable:
+`canvas_postgres_interruption_readonly_preflight`, que prueba en Docker real
+la recuperación de un PostgreSQL desechable, el bloqueo de un esquema
+incompleto y la reversión/reaplicación de una transacción fallida.
+No utiliza Rails ni acredita una migración oficial de Canvas.
+
+También se corrigió el preflight de `PreflightChecks` para que no
+arranque PostgreSQL al inspeccionarlo. Detalles y límites:
+[QA_CANVAS_PREFLIGHT_RECUPERACION_REAL_20261111.md](QA_CANVAS_PREFLIGHT_RECUPERACION_REAL_20261111.md).
+
+El informe de 10 escenarios mostrado arriba corresponde a la **ejecución
+anterior**; las nuevas ejecuciones incorporan el undécimo escenario.

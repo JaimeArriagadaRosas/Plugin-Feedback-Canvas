@@ -41,6 +41,13 @@ export class EnvironmentSetup {
     process.env.FAST_BOOT = 'false';
   }
 
+  _assertSafeCanvasPreflight(missing) {
+    if (missing.canvas_database_incomplete || missing.canvas_database_unverified) {
+      throw new Error('CANVAS-DB-PREFLIGHT-BLOCK: estado o identidad de PostgreSQL Canvas no verificable. ' +
+        'No se ejecutarán reparaciones automáticas ni reconstrucciones de datos.');
+    }
+  }
+
   async _runFastBoot(dockerProfile) {
     this.boot.info('Modo Fast Boot detectado: verificando runtime y contenedores...');
     const installer = this._createDockerInstaller();
@@ -56,6 +63,7 @@ export class EnvironmentSetup {
     const { allOk, missing } = await preflight.runChecks();
 
     if (!allOk) {
+      this._assertSafeCanvasPreflight(missing);
       this.boot.warn('Componentes estáticos faltantes o detenidos. Recuperando...');
       dockerProfile = await this._provisionMissing(missing, dockerProfile);
       await this._verifyPostInstall();
@@ -254,6 +262,7 @@ export class EnvironmentSetup {
     const preflight = new PreflightChecks(this.boot, this.canvasDir, this.pluginDir, { dockerState: dockerProfile });
     const { allOk, missing } = await preflight.runChecks();
     if (!allOk) {
+      this._assertSafeCanvasPreflight(missing);
       this.boot.warn('Componentes faltantes detectados. Iniciando setup reanudable...');
       dockerProfile = await this._provisionMissing(missing, dockerProfile);
       await this._verifyPostInstall();
