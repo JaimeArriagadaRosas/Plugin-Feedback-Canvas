@@ -25,10 +25,10 @@ export class PreflightChecks {
     const checks = [
       { name: 'Docker', fn: () => this.checkDocker() },
       { name: 'Docker Compose', fn: () => this.checkDockerCompose() },
-      { name: 'Canvas LMS clone', fn: () => this.checkCanvasClone() },
+      { name: 'Canvas LMS', fn: () => this.checkCanvasClone() },
       { name: 'Node.js', fn: () => this.checkNode() },
       { name: 'NPM', fn: () => this.checkNpm() },
-      { name: 'Plugin Dependencies (DB/Gotenberg)', fn: () => this.checkPluginDb() }
+      { name: 'Dependencias del plugin (DB/Gotenberg)', fn: () => this.checkPluginDb() }
     ];
 
     const missing = {};
@@ -37,19 +37,27 @@ export class PreflightChecks {
     for (let i = 0; i < checks.length; i++) {
       // eslint-disable-next-line security/detect-object-injection
       const check = checks[i];
-      this.boot.info(`[${i + 1}/6] Verificando ${check.name}...`);
-      const { ok, details } = await check.fn();
-      
+      const progress = `[${i + 1}/6] Verificando ${check.name}...`;
+      if (typeof this.boot.beginInlineCheck === 'function') this.boot.beginInlineCheck(progress);
+      else this.boot.info(progress);
+      let result;
+      try {
+        result = await check.fn();
+      } finally {
+        this.boot.endInlineCheck?.();
+      }
+      const { ok, details } = result;
+
       if (!ok) {
         allOk = false;
         Object.assign(missing, details);
-        this.boot.error(`${check.name}: no disponible`);
+        this.boot.error(`[${i + 1}/6] ${check.name}: no disponible`);
       } else {
-        this.boot.success(check.name);
+        this.boot.success(`[${i + 1}/6] ${check.name}`);
       }
     }
 
-    this.boot.info(`Verificación completada.`);
+    this.boot.info('Verificación de componentes completada.');
     return { allOk, missing };
   }
 

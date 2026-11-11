@@ -34,6 +34,29 @@ export class BootLogger {
     this.stageIndex = 0;
     this._dedupe = new Set();
     this._autoCleanup = null;
+    this._inlineCheckActive = false;
+  }
+
+  // El progreso ocupa una sola línea SOLO en terminales interactivas.
+  // En archivos, pipes y CI se conservan mensajes completos, sin controles ANSI.
+  beginInlineCheck(message) {
+    if (!this._visible('info')) return;
+    if (!process.stdout.isTTY ||
+        typeof process.stdout.clearLine !== 'function' ||
+        typeof process.stdout.cursorTo !== 'function') {
+      this.info(message);
+      return;
+    }
+    this.endInlineCheck();
+    this._inlineCheckActive = true;
+    process.stdout.write(`${'  '.repeat(this.stageStack.length)}· ${message}`);
+  }
+
+  endInlineCheck() {
+    if (!this._inlineCheckActive) return;
+    this._inlineCheckActive = false;
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
   }
 
   setVerbosity(v) {
@@ -50,12 +73,14 @@ export class BootLogger {
   }
 
   plain(msg) {
+    this.endInlineCheck();
     if (!this._visible('info')) return;
     const indent = '  '.repeat(this.stageStack.length);
     process.stdout.write(`${indent}${msg}\n`);
   }
 
   log(level, msg, opts = {}) {
+    this.endInlineCheck();
     // eslint-disable-next-line security/detect-object-injection
     const meta = LEVELS[level] || LEVELS.info;
     if (!this._visible(level)) return;
@@ -85,6 +110,7 @@ export class BootLogger {
 
   /** Inicia una etapa visual (línea de cabecera + nivel de indentación). */
   stage(name) {
+    this.endInlineCheck();
     this.stageStack.push(name);
     const color = STAGE_COLORS[this.stageIndex % STAGE_COLORS.length];
     this.stageIndex++;
