@@ -24,7 +24,17 @@ def call(args, *, env=None, timeout=100, check=True):
     except subprocess.TimeoutExpired:
         raise QAFailed("La operación QA superó su límite temporal.")
     if check and result.returncode:
-        raise QAFailed("Falló una operación restringida del laboratorio: " + " ".join(args[:3]))
+        # Retain only a fixed failure class. Raw Docker output may include
+        # environment values or internal identifiers and must not leave QA.
+        output = (result.stderr + result.stdout).lower()
+        category = ("port_conflict" if "port is already allocated" in output or
+                    "address already in use" in output else
+                    "unhealthy" if "unhealthy" in output else
+                    "image" if "pull access denied" in output or "manifest unknown" in output else
+                    "daemon" if "cannot connect to the docker daemon" in output else
+                    "compose_unknown")
+        raise QAFailed("Falló una operación restringida del laboratorio: " +
+                       " ".join(args[:3]) + " [" + category + "]")
     return result
 
 class DisposableLab:

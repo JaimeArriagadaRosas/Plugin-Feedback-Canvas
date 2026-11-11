@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 from disposable_services import DisposableLab, QAFailed, ROOT, call
@@ -30,8 +31,16 @@ def sentinel(lab):
     command=["docker","exec",lab.container("db"),"psql","-U","postgres",
              "-d","feedback_plugin_db","-X","-q","-A","-t","-v","ON_ERROR_STOP=1"]
     sql="CREATE TABLE IF NOT EXISTS qa_recovery_persistence (id int primary key); INSERT INTO qa_recovery_persistence VALUES (37) ON CONFLICT DO NOTHING;"
-    call(command+["-c",sql],timeout=20)
-    return command
+    # pg_isready may briefly succeed while the container's initial database
+    # setup is still settling. Retry only this idempotent QA-only sentinel.
+    # Identity is re-checked on every attempt; no historical DB is eligible.
+    for attempt in range(3):
+        lab.inspect("db")
+        result=call(command+["-c",sql],timeout=20,check=False)
+        if result.returncode==0:
+            return command
+        if attempt<2:time.sleep(2)
+    raise QAFailed("Disposable PostgreSQL sentinel could not be initialized after bounded retries")
 
 def check_sentinel(command):
     answer=call(command+["-c","SELECT count(*) FROM qa_recovery_persistence WHERE id=37;"],timeout=20)
@@ -116,8 +125,13 @@ def main():
         raise QAFailed("Report path must be under isolated QA artifacts")
     lab=DisposableLab()
     failure=None
+    failure_category=None
     try:test_matrix(lab)
-    except Exception as exc:failure=type(exc).__name__
+    except Exception as exc:
+        failure=type(exc).__name__
+        # QAFailed messages contain only internal QA operation names and
+        # fixed, sanitized error classes; never serialize raw Docker logs.
+        failure_category=str(exc)[:160] if isinstance(exc,QAFailed) else failure
     finally:cleaned=lab.cleanup()
     results={
         "date":datetime.now(timezone.utc).isoformat(),
@@ -127,6 +141,7 @@ def main():
         "menuModified":False,
         "cleanupConfirmed":cleaned,
         "startupFailure":failure,
+        "startupFailureCategory":failure_category,
         "scenarios":lab.results
     }
     target.write_text(json.dumps(results,ensure_ascii=False,indent=2)+"\n")
