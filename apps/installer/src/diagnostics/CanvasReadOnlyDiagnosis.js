@@ -105,7 +105,7 @@ async function inspectService(execute, canvasDir, name, report) {
       'Redis is running but its health check is not satisfactory; no repair was attempted.');
     return null;
   }
-  add(report, `DOCKER_${name.toUpperCase()}_RUNNING`, 'ok', `Contenedor ${name} activo y verificado.`);
+  add(report, `DOCKER_${name.toUpperCase()}_RUNNING`, 'ok', `Container ${name} running and verified.`);
   return ids[0];
 }
 
@@ -167,7 +167,7 @@ async function inspectCanvasVersionHistory(execute, postgres, canvasDir, report)
   } catch { /* Include unreadable migration instead of suppressing it silently. */ }
   const versions = files.filter(file => !isTestOnly || file !== testOnlyFile).map(file => file.split('_', 1)[0]);
   if (!versions.length) {
-    add(report, 'CANVAS-DB-HISTORY-SOURCE', 'unavailable', 'No hay migraciones de Canvas verificables.');
+    add(report, 'CANVAS-DB-HISTORY-SOURCE', 'unavailable', 'No verifiable Canvas migrations were found.');
     return;
   }
   const statement = "SELECT json_build_object('versions', COALESCE(json_agg(version ORDER BY version), '[]'::json)) FROM public.schema_migrations;";
@@ -183,7 +183,7 @@ async function inspectCanvasVersionHistory(execute, postgres, canvasDir, report)
       'The database contains migration versions absent from this source code. Automatic repairs are blocked.');
   } else if (audit.pendingCount > 0) {
     add(report, 'CANVAS-DB-HISTORY-PENDING', 'warning',
-      'Hay migraciones de Canvas pendientes. Revise el procedimiento oficial y el respaldo antes de actualizar.');
+      'Canvas migrations are pending. Review the official upgrade procedure and backups before updating.');
   } else {
     add(report, 'CANVAS-DB-HISTORY-OK', 'ok', 'Migration history matches the available source code.');
   }
@@ -230,7 +230,7 @@ export async function diagnoseCanvasReadOnly({
   pluginDir, canvasDir = getCanvasDirectory(), execute = execa,
   now = () => new Date().toISOString()
 } = {}) {
-  if (!pluginDir) throw new Error('Se requiere el directorio de Plugin Feedback.');
+  if (!pluginDir) throw new Error('Plugin Feedback directory is required.');
   const report = {
     schemaVersion: 1, generatedAt: now(), diagnosticId: randomUUID(), mode: 'read-only',
     status: 'incomplete', composeProject: null,
@@ -242,7 +242,7 @@ export async function diagnoseCanvasReadOnly({
   if (!fs.existsSync(compose)) {
     add(report, 'CANVAS_FILES', 'unavailable', 'The Canvas Docker Compose file was not found.');
   } else {
-    add(report, 'CANVAS_FILES', 'ok', 'Archivos de Canvas disponibles.');
+    add(report, 'CANVAS_FILES', 'ok', 'Canvas files are available.');
     await inspectRevisions(execute, pluginDir, canvasDir, report);
     const postgres = await inspectService(execute, canvasDir, 'postgres', report);
     const web = await inspectService(execute, canvasDir, 'web', report);
