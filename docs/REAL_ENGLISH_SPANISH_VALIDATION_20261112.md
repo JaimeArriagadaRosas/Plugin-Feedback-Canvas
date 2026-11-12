@@ -116,3 +116,55 @@ temporary D: main worktree pinned to the exact `main` commit.
 
 Do not push to origin or claim the latter solely because all current
 mock-based or database-level tests passed.
+
+
+## Additional isolated full-Rails and backend results
+
+The later isolated tests extend the earlier SQL/Mock comparison:
+
+- **Fresh Canvas Rails database:** the genuine Canvas `db:initial_setup` rake task
+  completed on an entirely separate PostgreSQL Docker volume and network.
+  The source checkout was mounted read-only; its pre-existing brandable CSS
+  assets were copied into a fresh QA-only writable Docker volume before Rails
+  startup. This addressed the previous HTTP 500 from missing CSS assets.
+- **HTTP login and Playwright:** `/login/canvas` returned HTTP 200. The
+  original unmodified browser regression, using a synthetic administrator
+  and QA-only course ID 1, passed all **six** scenarios: login-only, four
+  reloads, parallel tabs, clearing cookies and reauthentication, tampering
+  with the session cookie and reauthentication, and short idle retention.
+- **Rails foreign-key exception:** using the real initialized Canvas Rails
+  schema (no synthetic replacement table), a QA-only invalid insert with
+  explicit `public.terms_of_services` triggered
+  `ActiveRecord::InvalidForeignKey`, caused by
+  `PG::ForeignKeyViolation`, for the actual
+  `fk_rails_337ba633a9` constraint. Referential-integrity checks proved
+  no orphaned record remained. This is a model/database-layer reproduction,
+  **not** an injected exception from the professor's login controller.
+- **Actual English backend:** a separate Node backend process with its own
+  disposable PostgreSQL 15 database and loopback HTTPS port passed
+  `/health` and `/api/lti/jwks`. QA verified container cleanup, certificate
+  hashes and that the English Git worktree stayed clean.
+
+All four real-QA Docker trials confirmed cleanup and preservation of unrelated
+containers. The synthetic credentials are not retained in JSON evidence.
+
+Evidence on D: under
+`Documentos/MDL/Informatico/Plugin-Feedback-Parity-QA/reports`:
+- `isolated-rails-fresh-bootstrap.json`
+- `isolated-rails-active-record-fk.json`
+- `english-disposable-backend.json`
+- Previously confirmed `parity-comparison.json` (31 real cross-branch checks)
+
+Reusable bounded and guarded test drivers are now tracked at
+`tools/qa/disposable_rails_smoke.py` and
+`tools/qa/disposable_backend_smoke.py`. They require their explicit QA
+flags, use only disposable resources, and do not push commits.
+
+**Unverified:** a complete browser-mediated Canvas LTI 1.3 launch and
+OAuth token exchange into a *simultaneously running* disposable English
+Plugin Feedback backend; and the exact failure within
+`Login::CanvasController#create` reported by the professor. A direct
+ActiveRecord exception is not proof that the controller case was reproduced.
+
+These gaps must not be marked PASS, even though the standalone Rails and
+backend endpoints and the 31 comparison scenarios passed.
