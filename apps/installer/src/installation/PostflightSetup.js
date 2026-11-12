@@ -30,7 +30,7 @@ export class PostflightSetup {
     const hasData = await verifier.isDataPopulated();
 
     if (!hasData) {
-      this.boot.warn('Faltan los datos base de la Universidad. Intentando inyectar datos...');
+      this.boot.warn('Institutional base data are missing. Attempting to seed the database...');
 
       const rubyDependencyInstaller = this.rubyDependencyInstallerFactory(this.boot, this.canvasDir);
       const gemsOk = await rubyDependencyInstaller.ensureBundlerPlugins();

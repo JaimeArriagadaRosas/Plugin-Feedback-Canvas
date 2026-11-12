@@ -64,6 +64,10 @@ storybook-static/
 *.placeholder-fix
 *.orig
 
+# Python QA bytecode and temporary module caches
+__pycache__/
+*.py[cod]
+
 # Sistema y editores
 .DS_Store
 Thumbs.db

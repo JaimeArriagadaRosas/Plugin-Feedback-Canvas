@@ -24,7 +24,7 @@ export default class CanvasClient {
       this.dispatcher = new Agent({
         connect: { ca: caBuffer }
       });
-      logger.info('[CANVAS-API] Usando custom dispatcher con certificado mkcert para fetch.');
+      logger.info('[CANVAS-API] Using a custom fetch dispatcher with the mkcert certificate.');
     } else {
       this.dispatcher = undefined;
     }

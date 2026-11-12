@@ -14,7 +14,7 @@ export class MigrationProgressReporter {
 
   start(total) {
     this.total = total;
-    this._writeLine(`  · Applying ${total} local migrations...`);
+    this._writeLine(`  · Aplicando ${total} migraciones locales...`);
   }
 
   migrationStart(index, file) {
@@ -28,16 +28,16 @@ export class MigrationProgressReporter {
   }
 
   migrationFailed(index, file) {
-    const text = `  × Failed migration ${index}/${this.total}: ${formatMigrationName(file)}`;
+    const text = `  × Migration failed ${index}/${this.total}: ${formatMigrationName(file)}`;
     this._finishActiveLine(text);
   }
 
   complete() {
-    this._finishActiveLine(`  √ Local migrations applied (${this.total}/${this.total}).`);
+    this._finishActiveLine(`  √ Migraciones locales aplicadas (${this.total}/${this.total}).`);
   }
 
   noPending() {
-    this._writeLine('  √ Local migrations up to date.');
+    this._writeLine('  √ Local migrations are up to date.');
   }
 
   _finishActiveLine(text) {

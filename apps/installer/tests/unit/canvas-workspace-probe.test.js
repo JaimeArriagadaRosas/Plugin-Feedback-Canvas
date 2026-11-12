@@ -26,7 +26,7 @@ describe('CanvasWorkspaceProbe', () => {
 
     expect(result.ok).toBe(true);
     expect(result.errors).toHaveLength(0);
-    expect(boot.success).toHaveBeenCalledWith('Workspace verificado correctamente.');
+    expect(boot.success).toHaveBeenCalledWith('Workspace verified successfully.');
   });
 
   it('detects CANVAS_TMP_PERMISSION_DENIED when /usr/src/app/tmp is not writable', async () => {

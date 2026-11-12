@@ -10,8 +10,8 @@ export class CanvasWorkspaceProbe {
   }
 
   async runChecks() {
-    this.boot.info('Verifying workspace permissions and status...');
-    
+    this.boot.info('Verificando permisos y estado del workspace...');
+
     let ok = true;
     const errors = [];
 
@@ -37,13 +37,13 @@ export class CanvasWorkspaceProbe {
         const statCmd = await this.runner('docker', [
           'compose', 'exec', '-T', 'web', 'stat', '-c', '%u:%g %a', path
         ], { cwd: this.canvasDir, captureAll: true });
-        
+
         const statOutput = statCmd.success ? statCmd.out.trim() : 'unknown';
         const contextName = Object.keys(ExecutionContext).find(k => ExecutionContext[k] === context) || context;
-        
+
         errors.push({
           type,
-          message: `No se tienen permisos de escritura en ${path} (Contexto: ${contextName}, UID efectivo del probe: ${effectiveUid}, UID servicio por defecto: ${defaultUid}).`,
+          message: `Write permission is unavailable at ${path} (Context: ${contextName}, effective probe UID: ${effectiveUid}, default service UID: ${defaultUid}).`,
           details: `Stat: ${statOutput}\nError: ${probeCmd.err || probeCmd.out}`
         });
       }
@@ -58,9 +58,9 @@ export class CanvasWorkspaceProbe {
     await checkWrite('/home/docker/.bundle', 'CANVAS_BUNDLE_PERMISSION_DENIED', ExecutionContext.CONTAINER_CACHE_WRITE);
 
     if (!ok) {
-      this.boot.error('Permission issues detected on Canvas volumes.');
+      this.boot.error('Permission problems were detected in Canvas volumes.');
     } else {
-      this.boot.success('Workspace verificado correctamente.');
+      this.boot.success('Workspace verified successfully.');
     }
 
     return { ok, errors };

@@ -104,7 +104,7 @@ function isFastCheckPassing() {
     }
     return true;
   } catch (e) {
-    return true; // Fallback al import dinámico si algo falla al leer los JSON
+    return true; // Fallback to dynamic import if reading the JSON files fails
   }
 }
 

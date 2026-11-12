@@ -6,7 +6,7 @@ import { BootResult } from '../orchestration/boot/result.js';
 import { EnvironmentSetup } from '../installation/EnvironmentSetup.js';
 import { LtiBootstrap } from '../orchestration/boot/lti.js';
 import { askConfirm } from '../orchestration/cli.js';
-import { waitForCanvasReady, openBrowser } from './browser.js';
+import { waitForCanvasReady, openBrowser, shouldAutoOpenBrowser } from './browser.js';
 
 async function createLocalCertificateBootstrap(boot) {
   const { SSLCertificateGenerator } = await import('../../../server/src/security/SSLCertificateGenerator.js');
@@ -28,12 +28,18 @@ async function createLocalCertificateBootstrap(boot) {
 
 export class Orchestrator {
   constructor(boot, pluginDir, canvasDir, {
-    certificateBootstrapFactory = createLocalCertificateBootstrap
+    certificateBootstrapFactory = createLocalCertificateBootstrap,
+    waitForCanvasReadyFn = waitForCanvasReady,
+    openBrowserFn = openBrowser,
+    environment = process.env
   } = {}) {
     this.boot = boot;
     this.pluginDir = pluginDir;
     this.canvasDir = canvasDir;
     this.certificateBootstrapFactory = certificateBootstrapFactory;
+    this.waitForCanvasReadyFn = waitForCanvasReadyFn;
+    this.openBrowserFn = openBrowserFn;
+    this.environment = environment;
   }
 
   async runCheck(stageName, checkFn) {
@@ -51,15 +57,15 @@ export class Orchestrator {
   }
 
   async setupLocalCanvas(mode) {
-    // Canvas verification + installation (Python layer). Critical.
-    const canvasRes = await this.runCheck('Canvas LMS Verification and Installation', async () => {
+    // Verificación + instalación de Canvas (capa Python). Crítica.
+    const canvasRes = await this.runCheck('Canvas LMS verification and installation', async () => {
       try {
         const setup = new EnvironmentSetup(this.boot, this.pluginDir, this.canvasDir);
         await setup.ensureSetup();
         // Reload the environment variables so that spawnBackend() inherits them.
         const resEnv = dotenv.config({ path: path.join(this.pluginDir, '.env'), override: true, quiet: true });
         const cEnv = resEnv.parsed ? Object.keys(resEnv.parsed).length : 0;
-        this.boot.info(`Local environment reloaded from .env (${cEnv} variables).`);
+        this.boot.info(`Entorno local recargado desde .env (${cEnv} variables).`);
         return BootResult.ok({ installed: true });
       } catch (e) {
         this.boot.error(e.message);
@@ -74,11 +80,11 @@ export class Orchestrator {
       throw new Error('Canvas Setup Failed');
     }
     if (!(await this.ensureTlsPrerequisites())) {
-      throw new Error('Required TLS configuration for Canvas Local is missing.');
+      throw new Error('Required TLS configuration for local Canvas is missing.');
     }
 
-    // LTI: install/activate only in local mode.
-    const ltiResult = await this.runCheck('LTI 1.3 Initialization', async () => {
+    // LTI: instala/activa solo en modo local.
+    const ltiResult = await this.runCheck('LTI 1.3 initialization', async () => {
       const lti = new LtiBootstrap({ mode, log: this.boot });
       return lti.run();
     });
@@ -90,27 +96,31 @@ export class Orchestrator {
       const bootstrap = await this.certificateBootstrapFactory(this.boot);
       return bootstrap.ensure();
     } catch (error) {
-      this.boot.warn(`Could not prepare local HTTPS: ${error.message}`);
+      this.boot.warn(`Could not set up local HTTPS: ${error.message}`);
       return false;
     }
   }
 
   async waitForCanvasAndOpenBrowser() {
     try {
-      await waitForCanvasReady();
+      await this.waitForCanvasReadyFn();
       this.boot.plain('');
-      this.boot.plain('  √ Canvas LMS initialized and proxy enabled.');
+      this.boot.plain('  √ Canvas LMS inicializado y proxy habilitado.');
       const canvasBrowserUrl = 'https://localhost:8443/login/canvas';
-      this.boot.plain('  · Opening Canvas with the default system browser...');
-      const browserOpened = await openBrowser(canvasBrowserUrl);
+      if (!shouldAutoOpenBrowser(this.environment)) {
+        this.boot.info('[QA-NO-BROWSER-001] Canvas is ready; automatic browser opening is suppressed only in QA mode.');
+        return;
+      }
+      this.boot.plain('  · Abriendo Canvas con el navegador predeterminado del sistema...');
+      const browserOpened = await this.openBrowserFn(canvasBrowserUrl);
       if (!browserOpened) {
         this.boot.warn('Could not request automatic browser opening.');
-        this.boot.action(`Open manually: ${canvasBrowserUrl}`);
+        this.boot.action(`Abra manualmente: ${canvasBrowserUrl}`);
       }
     } catch (err) {
-      this.boot.warn('Could not detect that Canvas was ready');
+      this.boot.warn('Could not detect Canvas readiness');
       this.boot.warn(err.message);
-      this.boot.action('Open manually: https://localhost:8443/');
+      this.boot.action('Abra manualmente: https://localhost:8443/');
     }
   }
 
@@ -120,8 +130,8 @@ export class Orchestrator {
       await startTlsProxy();
       return true;
     } catch (err) {
-      this.boot.warn(`Could not start TLS proxy for Canvas: ${err.message}`);
-      this.boot.action('The LTI flow requires HTTPS; install mkcert and generate the local certificates.');
+      this.boot.warn(`Could not start the Canvas TLS proxy: ${err.message}`);
+      this.boot.action('El flujo LTI requiere HTTPS; instale mkcert y genere los certificados locales.');
       return false;
     }
   }

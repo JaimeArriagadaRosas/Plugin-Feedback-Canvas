@@ -7,6 +7,7 @@ import pg from 'pg';
 
 import { createDatabaseConfig } from '../connection/databaseConfig.js';
 import { MigrationProgressReporter } from './MigrationProgressReporter.js';
+import { inspectMigrationCompatibility } from './CompatibilityPreflight.js';
 
 const { Client } = pg;
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -64,7 +65,7 @@ async function applyMigration(client, migrationsDirectory, file, reporter, index
     await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
     await client.query(
       'INSERT INTO migration_logs (version, status, logs) VALUES ($1, $2, $3)',
-      [version, 'SUCCESS', `Successful execution of ${file}`],
+      [version, 'SUCCESS', `Successfully executed ${file}`],
     );
     await client.query('COMMIT');
 
@@ -88,6 +89,14 @@ export async function runMigrations(options = {}) {
     if (ownsClient) await client.connect();
     await client.query('SELECT pg_advisory_lock($1)', [advisoryLockId]);
     lockAcquired = true;
+    // Off by default: protects explicit legacy-migration investigations while
+    // preserving the user's established installation/update behavior.
+    if (options.requireSafeHistory === true || process.env.PLUGIN_SAFE_MIGRATION_PREFLIGHT === 'true') {
+      const diagnosis = await inspectMigrationCompatibility(client, migrationsDirectory);
+      if (diagnosis.status === 'blocked') {
+        throw new Error('[' + diagnosis.code + '] ' + diagnosis.reason + ' No migrations were applied.');
+      }
+    }
     await ensureMigrationTables(client);
     const pending = await readPendingMigrations(client, migrationsDirectory);
     if (pending.length === 0) reporter.noPending();

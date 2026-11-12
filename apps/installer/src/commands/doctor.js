@@ -101,7 +101,7 @@ async function checkServices(state) {
   reportPort(state, backendRunning, 'Backend Express', ':3000', 'npm run server');
   reportPort(state, await checkPort(5173), 'Frontend Vite', ':5173', 'npm run dev');
   if (await checkPort(8080)) ok(state, 'Canvas LMS (Docker)', 'Port 8080 in use');
-  else warn(state, 'Canvas LMS not detected on :8080', 'Para modo local usa npm start y elige opción 3.');
+  else warn(state, 'Canvas LMS not detected on :8080', 'For local mode run npm start and select option 3.');
   return backendRunning;
 }
 
@@ -111,9 +111,9 @@ function reportPort(state, active, name, port, command) {
 }
 
 async function checkApi(state, backendRunning) {
-  section('API del backend');
+  section('Backend API');
   if (!backendRunning) {
-    warn(state, 'API not verified', 'El backend no está corriendo.');
+    warn(state, 'API not verified', 'The backend is not running.');
     return;
   }
   await reportHealth(state);

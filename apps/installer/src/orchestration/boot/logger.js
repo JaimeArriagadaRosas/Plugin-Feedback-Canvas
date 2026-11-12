@@ -1,16 +1,16 @@
 import pc from 'picocolors';
 
 /**
- * BootLogger — Hierarchical and consistent output system for booting.
+ * BootLogger — Sistema de salida jerárquico y consistente para el arranque.
  *
- * Responsibilities (SRP):
- *  - Emit messages with semantic level (info, progress, success, warn,
- *    error, auto = automatic action, action = user required action).
- *  - Group the output by 'stage' visually and collapsibly.
- *  - Avoid spam through a deduplication cache of identical lines.
+ * Responsabilidades (SRP):
+ *  - Emitir mensajes con nivel semántico (info, progress, success, warn,
+ *    error, auto = acción automática, action = acción requerida por el usuario).
+ *  - Agrupar la salida por "etapa" (stage) de forma visual y colapsable.
+ *  - Evitar spam mediante un caché de deduplicación de líneas idénticas.
  *
- * Does not make business decisions: only presents. The verification logic
- * lives in the check/* modules.
+ * No toma decisiones de negocio: solo presenta. La lógica de verificación
+ * vive en los módulos check/*.
  */
 
 const LEVELS = {
@@ -18,7 +18,7 @@ const LEVELS = {
   progress: { tag: pc.blue('…'),  plain: '.... ' },
   success:  { tag: pc.green('√'),  plain: 'OK   ' },
   warn:     { tag: pc.yellow('!'),  plain: 'WARN ' },
-  error:    { tag: pc.red('!'),  plain: 'ERROR' }, // Error unified to red exclamation
+  error:    { tag: pc.red('!'),  plain: 'ERROR' }, // Unified error marker: red exclamation mark
   auto:     { tag: pc.cyan('·'), plain: 'AUTO ' },
   action:   { tag: pc.cyan('·') + pc.yellow(' Guide:'), plain: 'ACTION' },
 };
@@ -34,6 +34,29 @@ export class BootLogger {
     this.stageIndex = 0;
     this._dedupe = new Set();
     this._autoCleanup = null;
+    this._inlineCheckActive = false;
+  }
+
+  // El progreso ocupa una sola línea SOLO en terminales interactivas.
+  // En archivos, pipes y CI se conservan mensajes completos, sin controles ANSI.
+  beginInlineCheck(message) {
+    if (!this._visible('info')) return;
+    if (!process.stdout.isTTY ||
+        typeof process.stdout.clearLine !== 'function' ||
+        typeof process.stdout.cursorTo !== 'function') {
+      this.info(message);
+      return;
+    }
+    this.endInlineCheck();
+    this._inlineCheckActive = true;
+    process.stdout.write(`${'  '.repeat(this.stageStack.length)}· ${message}`);
+  }
+
+  endInlineCheck() {
+    if (!this._inlineCheckActive) return;
+    this._inlineCheckActive = false;
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
   }
 
   setVerbosity(v) {
@@ -50,12 +73,14 @@ export class BootLogger {
   }
 
   plain(msg) {
+    this.endInlineCheck();
     if (!this._visible('info')) return;
     const indent = '  '.repeat(this.stageStack.length);
     process.stdout.write(`${indent}${msg}\n`);
   }
 
   log(level, msg, opts = {}) {
+    this.endInlineCheck();
     // eslint-disable-next-line security/detect-object-injection
     const meta = LEVELS[level] || LEVELS.info;
     if (!this._visible(level)) return;
@@ -77,14 +102,15 @@ export class BootLogger {
   error(msg, opts)    { this.log('error', msg, opts); }
   debug(msg, opts)    { if (this.verbosity === 'debug') this.log('info', pc.gray(msg), opts); }
 
-  /** Action performed automatically by the orchestrator to fix. */
+  /** Acción realizada automáticamente por el orquestador para corregir. */
   auto(msg, opts) { this.log('auto', msg, opts); }
 
-  /** Action that the user must perform manually. */
+  /** Acción que el usuario debe realizar manualmente. */
   action(msg, opts) { this.log('action', msg, opts); }
 
-  /** Starts a visual stage (header line + indentation level). */
+  /** Inicia una etapa visual (línea de cabecera + nivel de indentación). */
   stage(name) {
+    this.endInlineCheck();
     this.stageStack.push(name);
     const color = STAGE_COLORS[this.stageIndex % STAGE_COLORS.length];
     this.stageIndex++;
@@ -93,11 +119,20 @@ export class BootLogger {
     return name;
   }
 
+  // Separador visual dentro de la etapa actual; no agrega otra sangría.
+  subsection(name) {
+    this.endInlineCheck();
+    const color = STAGE_COLORS[this.stageIndex % STAGE_COLORS.length];
+    this.stageIndex++;
+    const indent = '  '.repeat(this.stageStack.length);
+    process.stdout.write(`\n${indent}${pc.bold(color('── ▶ ' + name + ' '))}${'─'.repeat(Math.max(2, 48 - name.length))}\n`);
+  }
+
   endStage() {
     this.stageStack.pop();
   }
 
-  /** Executes fn within a stage and always closes it (success or error). */
+  /** Ejecuta fn dentro de una etapa y la cierra siempre (éxito o error). */
   async withStage(name, fn) {
     this.stage(name);
     try {

@@ -1,0 +1,66 @@
+import fs from 'node:fs/promises';
+
+export function assessMigrationHistory(knownVersions, appliedVersions) {
+  const known = [...knownVersions].sort();
+  const applied = [...appliedVersions];
+  const unique = new Set(applied);
+
+  if (unique.size !== applied.length) {
+    return { status: 'blocked', code: 'PLUGIN-DB-HISTORY-003', reason: 'Historial de migraciones duplicado.' };
+  }
+  const unexpected = applied.filter(version => !known.includes(version));
+  if (unexpected.length) {
+    return { status: 'blocked', code: 'PLUGIN-DB-HISTORY-001', reason: 'The database contains unknown migration versions.' };
+  }
+  const matchingPrefix = known.slice(0, applied.length);
+  if (matchingPrefix.some(version => !unique.has(version))) {
+    return { status: 'blocked', code: 'PLUGIN-DB-HISTORY-002', reason: 'Migration history is not a contiguous prefix.' };
+  }
+  return {
+    status: applied.length === known.length ? 'up-to-date' : applied.length ? 'compatible-legacy' : 'clean',
+    code: 'PLUGIN-DB-HISTORY-OK',
+    appliedCount: applied.length,
+    pendingCount: known.length - applied.length
+  };
+}
+
+/** SELECT-only, within a read-only transaction. Does not create schema_migrations. */
+export async function inspectMigrationCompatibility(client, migrationsDirectory) {
+  const files = (await fs.readdir(migrationsDirectory))
+    .filter(file => file.endsWith('.sql'))
+    .sort((a, b) => a.localeCompare(b));
+  const known = files.map(file => file.replace(/\.sql$/u, ''));
+
+  await client.query('BEGIN TRANSACTION READ ONLY');
+  try {
+    const present = await client.query("SELECT to_regclass('public.schema_migrations') AS migration_table");
+    const versions = present.rows[0]?.migration_table
+      ? (await client.query('SELECT version FROM public.schema_migrations ORDER BY version')).rows.map(row => row.version)
+      : [];
+    let result = assessMigrationHistory(known, versions);
+    // Empty version history is safe only for a genuinely empty user schema.
+    // A previously interrupted migration may leave tables without its version marker.
+    if (versions.length === 0 && result.status === 'clean') {
+      const existing = await client.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public' AND c.relkind IN ('r','p')
+            AND c.relname NOT IN ('schema_migrations','migration_logs')
+        ) AS has_user_tables
+      `);
+      if (existing.rows[0]?.has_user_tables === true) {
+        result = {
+          status: 'blocked',
+          code: 'PLUGIN-DB-HISTORY-004',
+          reason: 'Application tables were found without a reliable migration history.'
+        };
+      }
+    }
+    await client.query('ROLLBACK');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  }
+}

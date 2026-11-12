@@ -55,8 +55,8 @@ export function resolveFrontendDist(startDir) {
     dir = parent;
   }
 
-  logger.warn('[FRONTEND] Build not found (dist/index.html). SPA will not be served statically from el backend.');
-  logger.warn('[FRONTEND] -> If you are developing, Vite will serve it. Opcionalmente ejecuta "npm run build".');
+  logger.warn('[FRONTEND] Build not found (dist/index.html). SPA will not be served statically by the backend.');
+  logger.warn('[FRONTEND] -> If you are developing, Vite will serve it. Optionally run "npm run build".');
   return path.join(startDir, '../../../../../../dist');
 }
 

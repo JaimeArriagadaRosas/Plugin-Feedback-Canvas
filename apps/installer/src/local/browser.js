@@ -8,15 +8,15 @@ function isWsl(environment) {
 }
 
 /**
- * Resolves the command that delegates a URL to the OS default browser.
- * Does not detect or force specific browsers: the preference belongs to the user.
+ * Resuelve el comando que delega una URL al navegador predeterminado del SO.
+ * No detecta ni fuerza navegadores concretos: la preferencia pertenece al usuario.
  */
 export function resolveDefaultBrowserLaunch(url, {
   platform = os.platform(),
   environment = process.env
 } = {}) {
   if (platform === 'win32' || isWsl(environment)) {
-    // start queries the HTTP(S) association configured by the user in Windows.
+    // start consulta la asociación HTTP(S) configurada por el usuario en Windows.
     return { command: 'cmd.exe', args: ['/d', '/s', '/c', 'start', '', url] };
   }
   if (platform === 'darwin') return { command: 'open', args: [url] };
@@ -39,10 +39,19 @@ function launchDetached(command, args, spawnProcess = spawn) {
 }
 
 /**
- * Opens a URL without blocking the installer and always using the
- * default browser of the host system.
+ * Opt-in doble: evita abrir el navegador del anfitrión durante QA.
+ * Si cualquiera de las variables falta, se conserva el flujo normal.
+ */
+export function shouldAutoOpenBrowser(environment = process.env) {
+  return !(environment.PLUGIN_TEST_MODE === 'true' && environment.PLUGIN_QA_NO_BROWSER === 'true');
+}
+
+/**
+ * Abre una URL sin bloquear el instalador y usando siempre el navegador
+ * predeterminado del sistema anfitrión.
  */
 export async function openBrowser(url, options = {}) {
+  if (!shouldAutoOpenBrowser(options.environment || process.env)) return false;
   try {
     const launch = resolveDefaultBrowserLaunch(url, options);
     const launcher = options.launcher || launchDetached;
@@ -53,9 +62,9 @@ export async function openBrowser(url, options = {}) {
 }
 
 /**
- * Waits for Canvas LMS to be ready by polling its status endpoint.
- * Fails in a controlled manner (with a real timeout) so that the orchestrator
- * can suggest opening it manually, instead of hanging for 30 minutes.
+ * Espera a que Canvas LMS esté listo sondeando su endpoint de estado.
+ * Falla de forma controlada (con un timeout real) para que el orquestador
+ * pueda sugerir abrir manualmente, en lugar de colgarse 30 minutos.
  */
 export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
   const start = Date.now();
@@ -67,7 +76,7 @@ export async function waitForCanvasReady(timeoutMs = 30 * 60 * 1000) {
 
     const poll = (idx = 0) => {
       if (Date.now() - start > timeoutMs) {
-        return reject(new Error('Timeout waiting for Canvas LMS.'));
+        return reject(new Error('Timeout esperando a Canvas LMS.'));
       }
       // eslint-disable-next-line security/detect-object-injection
       const ep = endpoints[idx];
