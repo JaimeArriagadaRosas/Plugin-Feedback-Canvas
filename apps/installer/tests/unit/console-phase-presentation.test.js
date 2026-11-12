@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { stripVTControlCharacters } from 'node:util';
 import { BootLogger } from '../../src/orchestration/boot/logger.js';
 import { PreflightChecks } from '../../src/installation/PreflightChecks.js';
 import { EnvironmentSetup } from '../../src/installation/EnvironmentSetup.js';
@@ -139,7 +140,7 @@ describe('presentación de consola del instalador (sin alterar las comprobacione
       expect(boot.stageStack).toHaveLength(1);
       boot.success('Datos institucionales encontrados');
     });
-    const lines = write.mock.calls.map(([message]) => message).join('').split(/\r?\n/);
+    const lines = stripVTControlCharacters(write.mock.calls.map(([message]) => message).join('')).split(/\r?\n/);
     expect(lines.some(line => /^  ── ▶ Arranque de Canvas LMS/.test(line))).toBe(true);
     expect(lines.some(line => /^  ── ▶ Validación de datos y sincronización/.test(line))).toBe(true);
     expect(lines.some(line => /^  · Iniciando contenedores de Canvas LMS/.test(line))).toBe(true);
