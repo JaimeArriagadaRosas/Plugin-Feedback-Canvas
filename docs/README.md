@@ -42,10 +42,7 @@ Esta guía enseña el primer uso. Los temas especializados permanecen en documen
 | Contribuir al monorepo | [Contribución](development/CONTRIBUTING.md) |
 | Despliegue LTI institucional | [Despliegue](deployment/DEPLOYMENT.md) |
 
-### Planes de desarrollo registrados (pendientes)
-
-- [Motor de feedback cualitativo sin calificación: arquitectura, conversión a Markdown, rúbrica, pruebas e integración](history/plans/FEEDBACK_CUALITATIVO_SIN_NOTA.md).
-- [Paridad posterior con la versión inglesa: tareas y condiciones de cierre](history/plans/PARIDAD_VERSION_INGLES.md).
+Esta tabla resume la documentación principal del proyecto y sirve como punto de entrada rápido. Desde aquí se puede acceder a las guías de base de datos, arquitectura, instalación, entorno, pruebas, seguridad y despliegue según la necesidad.
 
 ## Abrir una consola o terminal
 
