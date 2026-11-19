@@ -29,19 +29,23 @@ Esta guía enseña el primer uso. Los temas especializados permanecen en documen
 
 | Necesidad | Documento |
 |---|---|
-| Instalar en Windows, Linux, WSL2 o macOS | [Instalación multiplataforma](INSTALLATION.md) |
-| Entender los modos y el ciclo diario de Canvas | [Desarrollo local](LOCAL_DEVELOPMENT.md) |
-| Permisos de volumen y compatibilidad de Docker | [Compatibilidad Docker](DOCKER_COMPATIBILITY.md) |
-| Variables, versiones, secretos y recursos | [Entorno de ejecución](ENVIRONMENT.md) |
-| Ejecutar las pruebas | [Estrategia de pruebas](TESTING.md) |
-| Diagnosticar errores | [Troubleshooting](TROUBLESHOOTING.md) |
-| Contribuir al monorepo | [Contribución](CONTRIBUTING.md) |
-| Despliegue LTI institucional | [Despliegue](DEPLOYMENT.md) |
+| Comprender y configurar la base de datos | [Base de datos](architecture/DATABASE.md) |
+| Entender la arquitectura del sistema | [Arquitectura](architecture/ARCHITECTURE.md) |
+| Instalar en Windows, Linux, WSL2 o macOS | [Instalación multiplataforma](setup/INSTALLATION.md) |
+| Entender los modos y el ciclo diario de Canvas | [Desarrollo local](setup/LOCAL_DEVELOPMENT.md) |
+| Permisos de volumen y compatibilidad de Docker | [Compatibilidad Docker](setup/DOCKER_COMPATIBILITY.md) |
+| Variables, versiones, secretos y recursos | [Entorno de ejecución](setup/ENVIRONMENT.md) |
+| Variables académicas y configuración por curso | [Variables del feedback](architecture/VARIABLES.md) |
+| Ejecutar las pruebas | [Estrategia de pruebas](testing/TESTING.md) |
+| Diagnosticar errores | [Troubleshooting](setup/TROUBLESHOOTING.md) |
+| Seguridad y gestión de secretos | [Seguridad](security/SECURITY.md) |
+| Contribuir al monorepo | [Contribución](development/CONTRIBUTING.md) |
+| Despliegue LTI institucional | [Despliegue](deployment/DEPLOYMENT.md) |
 
 ### Planes de desarrollo registrados (pendientes)
 
-- [Motor de feedback cualitativo sin calificación: arquitectura, conversión a Markdown, rúbrica, pruebas e integración](FEEDBACK_CUALITATIVO_SIN_NOTA.md).
-- [Paridad posterior con la versión inglesa: tareas y condiciones de cierre](PARIDAD_VERSION_INGLES.md).
+- [Motor de feedback cualitativo sin calificación: arquitectura, conversión a Markdown, rúbrica, pruebas e integración](history/plans/FEEDBACK_CUALITATIVO_SIN_NOTA.md).
+- [Paridad posterior con la versión inglesa: tareas y condiciones de cierre](history/plans/PARIDAD_VERSION_INGLES.md).
 
 ## Abrir una consola o terminal
 
@@ -122,7 +126,7 @@ Al seleccionar el modo 3 en Ubuntu, el proyecto puede pedir confirmación y cont
 
 ### macOS
 
-Instale Node LTS y Git con sus instaladores oficiales o el gestor que use su equipo. Para Canvas local use Docker Desktop u OrbStack. La automatización de certificados en macOS aún requiere validación adicional; consulte [Instalación multiplataforma](INSTALLATION.md).
+Instale Node LTS y Git con sus instaladores oficiales o el gestor que use su equipo. Para Canvas local use Docker Desktop u OrbStack. La automatización de certificados en macOS aún requiere validación adicional; consulte [Instalación multiplataforma](setup/INSTALLATION.md).
 
 ## Organización de carpetas
 
@@ -204,7 +208,7 @@ npx --yes npm@11.8.0 ci --no-fund --no-audit
 
 En local, el orquestador crea `.env` desde su plantilla segura cuando no existe y genera claves de desarrollo faltantes. Para ejecutar la opción 3 normalmente no necesita escribir secretos a mano.
 
-Puede editar `.env` para configurar proveedores IA, puertos o credenciales locales de prueba, pero nunca debe subirlo a Git. Tampoco copie a producción tokens de Canvas, claves privadas LTI, certificados locales o cuentas sintéticas. La lista de variables y su alcance está en [Entorno de ejecución](ENVIRONMENT.md).
+Puede editar `.env` para configurar proveedores IA, puertos o credenciales locales de prueba, pero nunca debe subirlo a Git. Tampoco copie a producción tokens de Canvas, claves privadas LTI, certificados locales o cuentas sintéticas. La lista de variables y su alcance está en [Entorno de ejecución](setup/ENVIRONMENT.md).
 
 > [!WARNING]
 > Si se regeneran claves locales mientras existen volúmenes con datos anteriores, algunos datos cifrados pueden dejar de ser legibles. El instalador no borra volúmenes automáticamente: respalde y decida un reset de forma explícita.
@@ -341,7 +345,7 @@ Problemas frecuentes:
 | certificado no confiable | ejecute `npm run verify:https`; no desactive TLS globalmente |
 | Canvas tarda o no responde | revise `docker compose ps` y los logs de `web`, `jobs` y `postgres` antes de borrar datos |
 
-Para comandos concretos, limpieza segura y casos por plataforma consulte [Troubleshooting](TROUBLESHOOTING.md). Para las suites automáticas use:
+Para comandos concretos, limpieza segura y casos por plataforma consulte [Troubleshooting](setup/TROUBLESHOOTING.md). Para las suites automáticas use:
 
 ```bash
 npx --yes npm@11.8.0 run lint

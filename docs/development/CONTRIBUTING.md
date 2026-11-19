@@ -109,7 +109,7 @@ npx --yes npm@11.8.0 run test:integration
 
 Si cambia setup/plataforma, agregue tests con dependencias inyectadas y valide al menos el sistema afectado. Un mock de Docker no demuestra una instalación real.
 
-Consulte [TESTING.md](TESTING.md) para la matriz completa.
+Consulte [TESTING.md](../testing/TESTING.md) para la matriz completa.
 
 ## 9. Base de datos
 
@@ -126,9 +126,9 @@ Consulte [TESTING.md](TESTING.md) para la matriz completa.
 - Use argumentos estructurados al lanzar procesos; evite `shell: true` y concatenación de entradas.
 - No ejecute scripts remotos sin versión/verificación.
 - No mate procesos ajenos ni borre carpetas/volúmenes como recuperación automática.
-- Ejecute Gitleaks conforme a [GITLEAKS.md](GITLEAKS.md).
+- Ejecute Gitleaks conforme a [GITLEAKS.md](../security/GITLEAKS.md).
 
-Vulnerabilidades se comunican según [SECURITY.md](SECURITY.md), no mediante issues públicos con detalles explotables.
+Vulnerabilidades se comunican según [SECURITY.md](../security/SECURITY.md), no mediante issues públicos con detalles explotables.
 
 ## 11. Documentación
 

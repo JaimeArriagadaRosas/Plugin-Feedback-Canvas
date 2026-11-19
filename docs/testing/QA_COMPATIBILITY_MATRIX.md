@@ -128,7 +128,7 @@ La opción 6 también informa migraciones pendientes o desconocidas.
 que se identifican separadamente, sin presentarlas como éxito.
 
 Detalles, comandos y limitaciones:
-[Escenarios restantes de Canvas](QA_CANVAS_REMAINING_SCENARIOS_20261111.md).
+[Escenarios restantes de Canvas](../history/qa/QA_CANVAS_REMAINING_SCENARIOS_20261111.md).
 
 ## Pruebas con versiones y volúmenes históricos reales (11/11/2026)
 
@@ -141,7 +141,7 @@ tercera se bloqueó por carecer del esquema principal de Canvas.
 las fuentes históricas. Esto no demuestra aún login LTI cruzando versiones ni
 un upgrade entre versiones distintas de Canvas.
 
-Documentación: [Laboratorio histórico real](QA_CANVAS_HISTORICAL_REAL_20261111.md).
+Documentación: [Laboratorio histórico real](../history/qa/QA_CANVAS_HISTORICAL_REAL_20261111.md).
 
 ## Demostración histórica con Rails y navegador headless
 
@@ -155,7 +155,7 @@ Este hallazgo **no es la excepción FK del profesor**. Es una incompatibilidad
 de configuración y datos distinta; no se habilitaron autorreparaciones de
 claves. Tampoco se modificó el menú interactivo.
 
-Informe técnico: [Canvas histórico: login y clave de cifrado](QA_CANVAS_HISTORICAL_LOGIN_CAUSAL_20261111.md).
+Informe técnico: [Canvas histórico: login y clave de cifrado](../history/qa/QA_CANVAS_HISTORICAL_LOGIN_CAUSAL_20261111.md).
 
 ## Auditoría LTI histórica de solo lectura (11/11/2026)
 
@@ -165,7 +165,7 @@ pero el client_id del archivo privado QA no coincide con esa referencia; la base
 histórica incompleta se bloqueó. El backend local en HTTPS 3000 no estaba activo.
 Estos resultados **no equivalen a un lanzamiento LTI verificado**.
 
-Documentación: [Compatibilidad histórica LTI](QA_CANVAS_HISTORICAL_LTI_READONLY_20261111.md).
+Documentación: [Compatibilidad histórica LTI](../history/qa/QA_CANVAS_HISTORICAL_LTI_READONLY_20261111.md).
 
 ## Recuperación PostgreSQL/Gotenberg de la opción 3 (11/11/2026)
 
@@ -178,7 +178,7 @@ contenedores originales. La opción 3 ahora ofrece una **confirmación segura**
 antes de recuperar exclusivamente servicios propios y detenidos, y valida su
 salud antes de continuar. Se conserva el menú sin cambios.
 
-Informe: [Recuperación segura — tres escenarios](QA_RECUPERACION_SERVICIOS_TRES_ESCENARIOS_20261111.md).
+Informe: [Recuperación segura — tres escenarios](../history/qa/QA_RECUPERACION_SERVICIOS_TRES_ESCENARIOS_20261111.md).
 
 ### Corrección de interacción Fast Boot (11/11/2026)
 

@@ -67,7 +67,7 @@ Este registro separa funcionalidades implementadas de preparación operativa. La
 
 **Riesgo:** filesystem mutable, divergencia entre réplicas, pérdida en redeploy, auditoría/rollback débiles y superficie de generación de código.
 
-**Cierre:** catálogo versionado de resolvers + configuración persistida/declarativa. Véase [VARIABLES.md](VARIABLES.md).
+**Cierre:** catálogo versionado de resolvers + configuración persistida/declarativa. Véase [VARIABLES.md](../architecture/VARIABLES.md).
 
 ## TD-07 — Matriz multiplataforma
 
@@ -123,5 +123,5 @@ Toasts, banners, avisos persistentes y notificaciones no comparten todavía un s
 
 - Toda deuda nueva incluye evidencia, riesgo, prioridad y criterio verificable de cierre.
 - «Hay código» no equivale a «funciona en producción».
-- Al cerrar una deuda, enlace pruebas/commit/artefacto y actualice [README](README.md), [TESTING](TESTING.md) o [DEPLOYMENT](DEPLOYMENT.md) según corresponda.
+- Al cerrar una deuda, enlace pruebas/commit/artefacto y actualice [README](../README.md), [TESTING](../testing/TESTING.md) o [DEPLOYMENT](../deployment/DEPLOYMENT.md) según corresponda.
 - No se guardan secretos ni informes privados en este documento.

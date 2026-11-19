@@ -148,7 +148,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
 
 ## 9. Variables productivas mínimas
 
-Revise [ENVIRONMENT.md](ENVIRONMENT.md). Como mínimo:
+Revise [ENVIRONMENT.md](../setup/ENVIRONMENT.md). Como mínimo:
 
 - conexión PostgreSQL sin credenciales por defecto;
 - `CANVAS_BASE_URL`, issuer/OIDC y endpoints públicos;

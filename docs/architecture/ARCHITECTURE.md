@@ -176,4 +176,4 @@ La preferencia arquitectónica es compartir dominio/casos de uso y sustituir ada
 - La carpeta de scripts heredados fue eliminada y los comandos consolidados en las aplicaciones correspondientes.
 - Los E2E actuales no cubren todavía de forma sólida todos los flujos críticos.
 
-Consulte [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) para responsables y criterios de cierre.
+Consulte [TECHNICAL_DEBT.md](../development/TECHNICAL_DEBT.md) para responsables y criterios de cierre.

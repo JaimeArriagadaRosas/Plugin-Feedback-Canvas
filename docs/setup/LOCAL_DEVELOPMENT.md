@@ -164,7 +164,7 @@ npx --yes npm@11.8.0 test
 npx --yes npm@11.8.0 run build
 ```
 
-Consulte [TESTING.md](TESTING.md) para las pruebas de cliente, integración y E2E.
+Consulte [TESTING.md](../testing/TESTING.md) para las pruebas de cliente, integración y E2E.
 
 ### Varios checkouts de Plugin Feedback en la misma computadora (2026-11-10)
 
